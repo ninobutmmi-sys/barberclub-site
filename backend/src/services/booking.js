@@ -78,19 +78,19 @@ async function createBooking(data) {
       throw ApiError.conflict('Ce créneau vient d\'être pris par un autre client. Veuillez en choisir un autre.');
     }
 
-    // 5. Find or create client by phone
+    // 5. Find or create client by phone OR email (centralizes client data)
     let clientResult = await client.query(
-      'SELECT id FROM clients WHERE phone = $1 AND deleted_at IS NULL',
-      [data.phone]
+      'SELECT id FROM clients WHERE (phone = $1 OR (email = $2 AND email IS NOT NULL AND email != \'\')) AND deleted_at IS NULL LIMIT 1',
+      [data.phone, data.email || '']
     );
 
     let clientId;
     if (clientResult.rows.length > 0) {
       clientId = clientResult.rows[0].id;
-      // Update name if provided (client may have corrected it)
+      // Update client info (name, phone, email) — keeps data fresh
       await client.query(
-        'UPDATE clients SET first_name = $1, last_name = $2 WHERE id = $3',
-        [data.first_name, data.last_name, clientId]
+        'UPDATE clients SET first_name = $1, last_name = $2, phone = $3, email = COALESCE($4, email) WHERE id = $5',
+        [data.first_name, data.last_name, data.phone, data.email || null, clientId]
       );
     } else {
       // Create new client
@@ -100,14 +100,6 @@ async function createBooking(data) {
         [data.first_name, data.last_name, data.phone, data.email || null]
       );
       clientId = newClient.rows[0].id;
-    }
-
-    // Update email if provided and client doesn't have one
-    if (data.email) {
-      await client.query(
-        'UPDATE clients SET email = $1 WHERE id = $2 AND (email IS NULL OR email = $3)',
-        [data.email, clientId, '']
-      );
     }
 
     // 6. Insert the booking

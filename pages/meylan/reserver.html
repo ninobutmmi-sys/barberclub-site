@@ -1162,10 +1162,10 @@
                         <p class="form-error" id="phoneError">Numéro français invalide</p>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="email">Email (facultatif)</label>
-                        <input class="form-input" type="email" id="email" placeholder="jean@exemple.fr" autocomplete="email">
-                        <p class="form-error" id="emailError">Email invalide</p>
-                        <p class="form-hint">Pour recevoir la confirmation par email</p>
+                        <label class="form-label" for="email">Email *</label>
+                        <input class="form-input" type="email" id="email" placeholder="jean@exemple.fr" autocomplete="email" required>
+                        <p class="form-error" id="emailError">Email requis</p>
+                        <p class="form-hint">Pour recevoir la confirmation et vos futurs rendez-vous</p>
                     </div>
                 </div>
             </div>
@@ -1221,7 +1221,12 @@
         'use strict';
 
         // ---- CONFIG ----
-        const API = 'http://localhost:3000/api';
+        const API_PROD = 'https://barberclub-site-production.up.railway.app/api';
+        const API_DEV = 'http://localhost:3000/api';
+        const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? API_DEV
+            : API_PROD;
+        const MAX_RETRIES = 2;
 
         // ---- STATE ----
         const state = {
@@ -1269,26 +1274,40 @@
             setTimeout(() => toastEl.classList.remove('visible'), duration);
         }
 
-        async function api(path) {
-            const res = await fetch(API + path);
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || 'Erreur serveur');
+        async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (!res.ok) {
+                        const data = await res.json().catch(() => ({}));
+                        const err = new Error(data.error || 'Erreur serveur');
+                        err.status = res.status;
+                        throw err;
+                    }
+                    return res.json();
+                } catch (e) {
+                    const isNetworkError = !e.status; // fetch() threw (no response)
+                    const isServerError = e.status >= 500;
+                    const shouldRetry = (isNetworkError || isServerError) && attempt < retries;
+
+                    if (!shouldRetry) throw e;
+
+                    // Wait before retrying (500ms, then 1500ms)
+                    await new Promise(r => setTimeout(r, (attempt + 1) * 500));
+                }
             }
-            return res.json();
+        }
+
+        async function api(path) {
+            return fetchWithRetry(API + path);
         }
 
         async function apiPost(path, body) {
-            const res = await fetch(API + path, {
+            return fetchWithRetry(API + path, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || 'Erreur serveur');
-            }
-            return res.json();
         }
 
         // ---- NAVIGATION ----
@@ -1701,8 +1720,8 @@
                 $('#phoneError').classList.remove('visible');
             }
 
-            // Email (optional, but if filled must be valid)
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            // Email (required)
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 $('#email').classList.add('error');
                 $('#emailError').classList.add('visible');
                 valid = false;
@@ -1739,7 +1758,7 @@
                 first_name: $('#firstName').value.trim(),
                 last_name: $('#lastName').value.trim(),
                 phone: phoneClean,
-                email: $('#email').value.trim() || undefined,
+                email: $('#email').value.trim(),
             };
 
             actionBtn.classList.add('loading');
@@ -1821,9 +1840,21 @@
 
         // ---- INIT ----
         async function init() {
-            await loadBarbers();
-            pageLoading.classList.add('hidden');
-            updateActionBtn();
+            try {
+                await loadBarbers();
+                if (state.barbers.length === 0) throw new Error('no barbers');
+                pageLoading.classList.add('hidden');
+                updateActionBtn();
+            } catch (e) {
+                // Show user-friendly error on loading screen
+                pageLoading.innerHTML = `
+                    <div style="text-align:center;padding:40px 20px;">
+                        <p style="font-size:16px;font-weight:600;margin-bottom:12px;">Service temporairement indisponible</p>
+                        <p style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:24px;">Réessayez dans quelques instants</p>
+                        <button onclick="location.reload()" style="padding:14px 28px;background:#fff;color:#000;border:none;border-radius:12px;font-family:Orbitron,sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;">Réessayer</button>
+                    </div>
+                `;
+            }
         }
 
         init();

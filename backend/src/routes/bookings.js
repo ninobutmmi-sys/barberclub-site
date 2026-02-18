@@ -132,7 +132,7 @@ router.post('/bookings',
     body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
     body('phone').trim().notEmpty().withMessage('Téléphone requis')
       .matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numéro de téléphone français invalide'),
-    body('email').optional({ values: 'falsy' }).isEmail().withMessage('Email invalide').normalizeEmail(),
+    body('email').trim().notEmpty().withMessage('Email requis').isEmail().withMessage('Email invalide').normalizeEmail(),
   ],
   handleValidation,
   async (req, res, next) => {
