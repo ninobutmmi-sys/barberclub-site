@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <!-- SEO Meta Tags -->
+    <title>BarberClub | Barbier & Coiffeur Homme Grenoble, Meylan, Isère</title>
+    <meta name="description"
+        content="BarberClub : votre barbier et coiffeur homme à Grenoble et Meylan. Salons premium en Isère pour dégradés, taille de barbe, coupes tendance. Proche Corenc. Réservez en ligne !">
+    <meta name="keywords"
+        content="barber grenoble, coiffeur grenoble, coiffeur meylan, coiffeur isère, coiffeur corenc, barbier grenoble, barbier meylan, coiffeur homme grenoble, salon coiffure grenoble, dégradé grenoble, barbershop grenoble, coupe homme isère">
+    <meta name="author" content="BarberClub">
+    <meta name="robots" content="index, follow">
+    <meta name="geo.region" content="FR-38">
+    <meta name="geo.placename" content="Grenoble, Meylan">
+    <link rel="canonical" href="https://barberclub.fr">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="BarberClub - Barbier & Coiffeur Homme Grenoble & Meylan">
+    <meta property="og:description"
+        content="Vos barbiers premium en Isère. 2 salons : Grenoble centre et Meylan. Coupes tendance, dégradés, barbe. Réservez en ligne !">
+    <meta property="og:url" content="https://barberclub.fr">
+    <meta property="og:image" content="https://barberclub.fr/assets/images/salons/grenoble/salon-grenoble.jpg">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="BarberClub">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="BarberClub - Barbier Grenoble & Meylan">
+    <meta name="twitter:description" content="Vos barbiers premium en Isère. 2 salons : Grenoble et Meylan.">
+    <meta name="twitter:image" content="https://barberclub.fr/assets/images/salons/grenoble/salon-grenoble.jpg">
+
+    <!-- Mobile & PWA -->
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="config/manifest.json">
+    <link rel="icon" type="image/png" sizes="96x96" href="assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Schema.org Organization -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "BarberClub",
+        "description": "Barbier et coiffeur homme premium en Isère. Salons à Grenoble et Meylan.",
+        "url": "https://barberclub.fr",
+        "logo": "https://barberclub.fr/assets/images/common/logo-blanc.png",
+        "areaServed": [
+            {
+                "@type": "City",
+                "name": "Grenoble"
+            },
+            {
+                "@type": "City",
+                "name": "Meylan"
+            },
+            {
+                "@type": "City",
+                "name": "Corenc"
+            },
+            {
+                "@type": "AdministrativeArea",
+                "name": "Isère"
+            }
+        ],
+        "sameAs": [
+            "https://www.instagram.com/barberclub.grenoble",
+            "https://www.instagram.com/barberclub.meylan"
+        ]
+    }
+    </script>
+    <style>
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        /* LAYOUT */
+        .landing {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HEADER */
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom,
+                    rgba(0, 0, 0, 1) 0%,
+                    rgba(0, 0, 0, 0.8) 50%,
+                    transparent 100%);
+            height: 100px;
+        }
+
+        .logo {
+            height: 65px;
+            width: auto;
+        }
+
+        @media (min-width: 768px) {
+            .header {
+                height: 100px;
+                padding: 15px 30px;
+            }
+
+            .logo {
+                height: 80px;
+            }
+        }
+
+        /* SALONS */
+        .salons {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        @media (min-width: 768px) {
+            .salons {
+                flex-direction: row;
+            }
+        }
+
+        /* SALON CARD */
+        .salon {
+            flex: 1;
+            position: relative;
+            min-height: 50vh;
+            min-height: 50dvh;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        @media (min-width: 768px) {
+            .salon {
+                min-height: 100vh;
+                min-height: 100dvh;
+            }
+        }
+
+        /* BACKGROUND IMAGE */
+        .salon-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-size: cover;
+            background-position: center center;
+            filter: brightness(0.5);
+            transition: transform 0.4s ease, filter 0.4s ease;
+        }
+
+        .salon-grenoble .salon-bg {
+            background-image: url('assets/images/salons/grenoble/salon-grenoble.jpg');
+        }
+
+        .salon-meylan .salon-bg {
+            background-image: url('assets/images/salons/meylan/salon-meylan-interieur.jpg');
+        }
+
+        .salon:hover .salon-bg {
+            transform: scale(1.03);
+            filter: brightness(0.6);
+        }
+
+        /* OVERLAY */
+        .salon-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(0deg,
+                    rgba(0, 0, 0, 0.8) 0%,
+                    rgba(0, 0, 0, 0.2) 50%,
+                    rgba(0, 0, 0, 0) 100%);
+            pointer-events: none;
+        }
+
+        /* CONTENT */
+        .salon-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            padding: 30px 20px;
+            padding-bottom: max(30px, env(safe-area-inset-bottom));
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .salon-content {
+                padding: 50px;
+                align-items: center;
+                text-align: center;
+            }
+        }
+
+        /* TITLE */
+        .salon-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 36px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            line-height: 1;
+        }
+
+        @media (min-width: 768px) {
+            .salon-title {
+                font-size: 60px;
+            }
+        }
+
+        /* BUTTON */
+        .salon-cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 260px;
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 54px;
+        }
+
+        .salon-cta:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        @media (min-width: 768px) {
+            .salon-cta {
+                width: auto;
+                max-width: none;
+                padding: 16px 32px;
+            }
+
+            .salon-cta:hover {
+                background: rgba(255, 255, 255, 0.25);
+                border-color: rgba(255, 255, 255, 0.5);
+            }
+        }
+
+        .cta-icon {
+            width: 18px;
+            height: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        .salon:hover .cta-icon {
+            transform: translateX(3px);
+        }
+
+        /* SEPARATOR */
+        .separator {
+            height: 2px;
+            background: #fff;
+            position: relative;
+            z-index: 50;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8),
+                0 0 20px rgba(255, 255, 255, 0.5),
+                0 0 35px rgba(255, 255, 255, 0.3);
+        }
+
+        .separator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 75px;
+            background: radial-gradient(ellipse, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+        }
+
+        @media (min-width: 768px) {
+            .separator {
+                position: absolute;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 2px;
+                height: 100%;
+                background: linear-gradient(180deg,
+                        transparent 5%,
+                        #fff 20%,
+                        #fff 80%,
+                        transparent 95%);
+                box-shadow: 0 0 8px rgba(255, 255, 255, 0.8),
+                    0 0 20px rgba(255, 255, 255, 0.5),
+                    0 0 35px rgba(255, 255, 255, 0.3);
+            }
+
+            .separator::before {
+                width: 60px;
+                height: 200px;
+            }
+        }
+
+        /* ANIMATIONS D'ENTRÉE */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes expandH {
+            from {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+
+            to {
+                transform: scaleX(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes expandV {
+            from {
+                transform: translateX(-50%) scaleY(0);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(-50%) scaleY(1);
+                opacity: 1;
+            }
+        }
+
+        .logo {
+            animation: scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+
+        .salon-content {
+            opacity: 0;
+            animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .salon-grenoble .salon-content {
+            animation-delay: 0.2s;
+        }
+
+        .salon-meylan .salon-content {
+            animation-delay: 0.35s;
+        }
+
+        .separator {
+            animation: expandH 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+            transform-origin: center;
+            opacity: 0;
+        }
+
+        @media (min-width: 768px) {
+            .separator {
+                animation: expandV 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+            }
+        }
+
+        .salon-bg {
+            animation: fadeIn 1.2s ease forwards;
+        }
+
+        /* REDUCED MOTION */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-delay: 0s !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .salon-content,
+            .separator,
+            .logo {
+                opacity: 1;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="landing">
+        <header class="header">
+            <img src="assets/images/common/logo-blanc.png" alt="BarberClub" class="logo">
+        </header>
+
+        <main class="salons">
+            <a href="pages/grenoble/" class="salon salon-grenoble">
+                <div class="salon-bg"></div>
+                <div class="salon-overlay"></div>
+                <div class="salon-content">
+                    <h2 class="salon-title">Grenoble</h2>
+                    <span class="salon-cta">
+                        Réserver
+                        <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </span>
+                </div>
+            </a>
+
+            <div class="separator"></div>
+
+            <a href="pages/meylan/" class="salon salon-meylan">
+                <div class="salon-bg"></div>
+                <div class="salon-overlay"></div>
+                <div class="salon-content">
+                    <h2 class="salon-title">Meylan</h2>
+                    <span class="salon-cta">
+                        Réserver
+                        <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </span>
+                </div>
+            </a>
+        </main>
+
+    </div>
+
+    <script>
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('SW registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Réserver en ligne au salon BarberClub Grenoble">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Réserver | BarberClub Grenoble</title>
+    <link rel="manifest" href="../../config/manifest.json">
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ORBITRON EXTRA BOLD FONT */
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+        }
+
+        .page {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        /* HEADER */
+        .header {
+            position: relative;
+            z-index: 100;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .header-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .header-subtitle {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .header-center {
+            text-align: center;
+        }
+
+        .header-spacer {
+            width: 40px;
+        }
+
+        /* IFRAME CONTAINER */
+        .booking-container {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+
+        .booking-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+        }
+
+        /* Loading state */
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            z-index: 10;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .header {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        /* REDUCED MOTION */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <!-- HEADER -->
+        <header class="header">
+            <a href="../../" class="back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+            </a>
+            <div class="header-center">
+                <h1 class="header-title">Réserver</h1>
+                <p class="header-subtitle">Salon de Grenoble</p>
+            </div>
+            <div class="header-spacer"></div>
+        </header>
+
+        <!-- BOOKING IFRAME -->
+        <div class="booking-container">
+            <div class="loading-overlay" id="loading">
+                <div class="loading-spinner"></div>
+                <p class="loading-text">Chargement de la réservation...</p>
+            </div>
+            <iframe src="https://book.timify.com/?accountId=662ab032662b882b9529faca&hideCloseButton=true"
+                class="booking-iframe" id="booking-frame" title="Réservation BarberClub Grenoble" allow="payment"
+                loading="eager"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Hide loading overlay when iframe loads
+        const iframe = document.getElementById('booking-frame');
+        const loading = document.getElementById('loading');
+
+        iframe.addEventListener('load', () => {
+            loading.classList.add('hidden');
+        });
+
+        // Fallback: hide after 5s even if load event doesn't fire
+        setTimeout(() => {
+            loading.classList.add('hidden');
+        }, 5000);
+    </script>
+</body>
+
+</html>

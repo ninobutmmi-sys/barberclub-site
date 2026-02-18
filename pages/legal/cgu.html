@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Conditions Générales d'Utilisation - BarberClub Grenoble & Meylan">
+    <meta name="theme-color" content="#000000">
+    <meta name="robots" content="noindex, nofollow">
+    <title>CGU | BarberClub</title>
+    <link rel="manifest" href="../../config/manifest.json">
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ORBITRON EXTRA BOLD FONT */
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            line-height: 1.7;
+        }
+
+        /* HEADER */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.2);
+        }
+
+        .back-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .logo {
+            height: 75px;
+            width: auto;
+        }
+
+        .header-spacer {
+            width: 40px;
+        }
+
+        /* CONTENT */
+        .content {
+            padding: 100px 20px 60px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .section {
+            margin-bottom: 35px;
+            padding: 25px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .section p, .section li {
+            font-size: 14px;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 12px;
+        }
+
+        .section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .section li {
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .section li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .section a {
+            color: #fff;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .section strong {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        /* FOOTER LINKS */
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 30px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin-top: 40px;
+        }
+
+        .footer-link {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: #fff;
+        }
+
+        .footer-link.active {
+            color: #fff;
+        }
+
+        /* DESKTOP */
+        @media (min-width: 768px) {
+            .content {
+                padding: 120px 40px 80px;
+            }
+
+            .page-title {
+                font-size: 42px;
+            }
+
+            .section {
+                padding: 30px;
+            }
+
+            .section p, .section li {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <a href="../../" class="back-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+        <div class="header-spacer"></div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="content">
+        <h1 class="page-title">Conditions Générales d'Utilisation</h1>
+        <p class="page-subtitle">Dernière mise à jour : Janvier 2025</p>
+
+        <div class="section">
+            <h2 class="section-title">1. Objet</h2>
+            <p>Les présentes Conditions Générales d'Utilisation (CGU) ont pour objet de définir les modalités et conditions d'utilisation du site internet BarberClub, ainsi que les droits et obligations des utilisateurs.</p>
+            <p>L'accès et l'utilisation du site impliquent l'acceptation pleine et entière des présentes CGU. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser ce site.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">2. Accès au site</h2>
+            <p>Le site est accessible gratuitement à tout utilisateur disposant d'un accès à Internet. Tous les frais liés à l'accès au site (matériel informatique, connexion Internet, etc.) sont à la charge de l'utilisateur.</p>
+            <p>BarberClub met en œuvre tous les moyens raisonnables pour assurer un accès continu au site mais ne peut garantir une disponibilité permanente. L'accès peut être interrompu pour des raisons de maintenance, de mise à jour ou pour toute autre raison technique.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">3. Services proposés</h2>
+            <p>Le site BarberClub a pour vocation de :</p>
+            <ul>
+                <li>Présenter les salons BarberClub de Grenoble et Meylan</li>
+                <li>Informer sur les prestations et tarifs proposés</li>
+                <li>Permettre la prise de rendez-vous en ligne via des services tiers (Planity, Timify)</li>
+                <li>Fournir les informations pratiques (horaires, adresses, contact)</li>
+                <li>Présenter l'équipe de coiffeurs-barbiers</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">4. Réservation en ligne</h2>
+            <p>La prise de rendez-vous en ligne s'effectue via des plateformes tierces (Planity pour Grenoble, Timify pour Meylan). Ces services sont soumis à leurs propres conditions générales d'utilisation.</p>
+            <p><strong>Politique d'annulation :</strong></p>
+            <ul>
+                <li>Toute annulation doit être effectuée au minimum 24 heures avant le rendez-vous</li>
+                <li>En cas de non-présentation ou d'annulation tardive répétée, BarberClub se réserve le droit de refuser de futures réservations</li>
+                <li>Pour annuler ou modifier un rendez-vous, contactez directement le salon concerné par téléphone</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">5. Tarifs</h2>
+            <p>Les tarifs affichés sur le site sont donnés à titre indicatif et sont exprimés en euros TTC. BarberClub se réserve le droit de modifier ses tarifs à tout moment sans préavis.</p>
+            <p>Les tarifs applicables sont ceux en vigueur au moment de la prestation. En cas de différence entre les tarifs affichés sur le site et ceux pratiqués en salon, ces derniers prévalent.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">6. Comportement des utilisateurs</h2>
+            <p>L'utilisateur s'engage à utiliser le site de manière conforme à sa destination et à ne pas :</p>
+            <ul>
+                <li>Porter atteinte aux droits de tiers ou à l'ordre public</li>
+                <li>Tenter d'accéder à des zones non autorisées du site</li>
+                <li>Introduire des virus ou tout autre code malveillant</li>
+                <li>Collecter des informations sur d'autres utilisateurs</li>
+                <li>Utiliser le site à des fins commerciales non autorisées</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">7. Propriété intellectuelle</h2>
+            <p>L'ensemble des éléments du site (textes, images, logos, vidéos, graphismes) sont protégés par le droit de la propriété intellectuelle et appartiennent à BarberClub ou font l'objet d'une autorisation d'utilisation.</p>
+            <p>Toute reproduction, représentation, modification ou exploitation non autorisée de tout ou partie du site est strictement interdite et peut donner lieu à des poursuites.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">8. Liens externes</h2>
+            <p>Le site peut contenir des liens vers des sites tiers (Instagram, TikTok, Google Maps, plateformes de réservation). BarberClub n'exerce aucun contrôle sur ces sites et décline toute responsabilité quant à leur contenu, leurs pratiques et leur politique de confidentialité.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">9. Protection des données personnelles</h2>
+            <p>BarberClub s'engage à respecter la confidentialité des données personnelles communiquées par les utilisateurs. Pour plus d'informations sur la collecte et le traitement de vos données, veuillez consulter notre <a href="politique-confidentialite.html">Politique de confidentialité</a>.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">10. Modification des CGU</h2>
+            <p>BarberClub se réserve le droit de modifier les présentes CGU à tout moment. Les modifications entrent en vigueur dès leur publication sur le site. Il est conseillé aux utilisateurs de consulter régulièrement cette page.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">11. Droit applicable et juridiction</h2>
+            <p>Les présentes CGU sont régies par le droit français. En cas de litige relatif à l'interprétation ou l'exécution des présentes, et à défaut de règlement amiable, les tribunaux de Grenoble seront seuls compétents.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">12. Contact</h2>
+            <p>Pour toute question relative aux présentes CGU :</p>
+            <ul>
+                <li><strong>Email :</strong> contact@barberclub.fr</li>
+                <li><strong>Téléphone Grenoble :</strong> 09 56 30 93 86</li>
+                <li><strong>Téléphone Meylan :</strong> 04 58 28 21 75</li>
+            </ul>
+        </div>
+
+        <nav class="footer-links">
+            <a href="mentions-legales.html" class="footer-link">Mentions légales</a>
+            <a href="cgu.html" class="footer-link active">CGU</a>
+            <a href="politique-confidentialite.html" class="footer-link">Confidentialité</a>
+        </nav>
+    </main>
+</body>
+</html>

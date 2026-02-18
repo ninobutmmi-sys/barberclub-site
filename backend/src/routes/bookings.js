@@ -1,0 +1,243 @@
+const { Router } = require('express');
+const { body, param, query } = require('express-validator');
+const { handleValidation } = require('../middleware/validate');
+const { publicLimiter } = require('../middleware/rateLimiter');
+const { optionalAuth } = require('../middleware/auth');
+const bookingService = require('../services/booking');
+const availabilityService = require('../services/availability');
+const { generateICS } = require('../utils/ics');
+const { ApiError } = require('../utils/errors');
+const db = require('../config/database');
+
+const router = Router();
+
+// UUID-shaped regex (accepts non-standard UUIDs like our seed data)
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// ============================================
+// GET /api/barbers — List active barbers
+// ============================================
+router.get('/barbers', publicLimiter, async (req, res, next) => {
+  try {
+    const result = await db.query(
+      `SELECT id, name, role, photo_url
+       FROM barbers
+       WHERE is_active = true AND deleted_at IS NULL
+       ORDER BY sort_order`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// GET /api/services — List services (optionally filtered by barber)
+// ============================================
+router.get('/services', publicLimiter, async (req, res, next) => {
+  try {
+    const { barber_id } = req.query;
+
+    let queryText;
+    let params;
+
+    if (barber_id && barber_id !== 'any') {
+      // Services offered by this specific barber
+      queryText = `
+        SELECT s.id, s.name, s.price, s.duration
+        FROM services s
+        JOIN barber_services bs ON s.id = bs.service_id
+        WHERE bs.barber_id = $1 AND s.is_active = true AND s.deleted_at IS NULL
+        ORDER BY s.sort_order`;
+      params = [barber_id];
+    } else {
+      // All active services
+      queryText = `
+        SELECT id, name, price, duration
+        FROM services
+        WHERE is_active = true AND deleted_at IS NULL
+        ORDER BY sort_order`;
+      params = [];
+    }
+
+    const result = await db.query(queryText, params);
+    res.json(result.rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// GET /api/availability — Available time slots
+// ============================================
+router.get('/availability',
+  publicLimiter,
+  [
+    query('service_id').matches(uuidRegex).withMessage('Service ID invalide'),
+    query('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide (format: YYYY-MM-DD)'),
+    query('barber_id').optional(),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { barber_id, service_id, date } = req.query;
+
+      // Validate date is not in the past
+      const requestedDate = new Date(date + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (requestedDate < today) {
+        return res.json([]);
+      }
+
+      // If date is today, filter out past slots
+      const isToday = requestedDate.getTime() === today.getTime();
+
+      const slots = await availabilityService.getAvailableSlots(
+        barber_id || 'any',
+        service_id,
+        date
+      );
+
+      if (isToday) {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const filtered = slots.filter((slot) => {
+          const [h, m] = slot.time.split(':').map(Number);
+          return h * 60 + m > currentMinutes;
+        });
+        return res.json(filtered);
+      }
+
+      res.json(slots);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// POST /api/bookings — Create a booking
+// ============================================
+router.post('/bookings',
+  publicLimiter,
+  optionalAuth,
+  [
+    body('barber_id').notEmpty().withMessage('Barber requis'),
+    body('service_id').matches(uuidRegex).withMessage('Service ID invalide'),
+    body('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide'),
+    body('start_time').matches(/^\d{2}:\d{2}$/).withMessage('Heure invalide (format: HH:MM)'),
+    body('first_name').trim().notEmpty().withMessage('Prénom requis').isLength({ max: 100 }),
+    body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
+    body('phone').trim().notEmpty().withMessage('Téléphone requis')
+      .matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numéro de téléphone français invalide'),
+    body('email').optional({ values: 'falsy' }).isEmail().withMessage('Email invalide').normalizeEmail(),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const booking = await bookingService.createBooking({
+        ...req.body,
+        source: 'online',
+      });
+
+      res.status(201).json(booking);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /api/bookings/:id — Get booking details (via cancel token)
+// ============================================
+router.get('/bookings/:id',
+  publicLimiter,
+  [
+    param('id').matches(uuidRegex).withMessage('ID invalide'),
+    query('token').matches(uuidRegex).withMessage('Token invalide'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const result = await db.query(
+        `SELECT b.id, b.date, b.start_time, b.end_time, b.status, b.price, b.cancel_token,
+                s.name as service_name, s.duration as service_duration,
+                br.name as barber_name
+         FROM bookings b
+         JOIN services s ON b.service_id = s.id
+         JOIN barbers br ON b.barber_id = br.id
+         WHERE b.id = $1 AND b.cancel_token = $2 AND b.deleted_at IS NULL`,
+        [req.params.id, req.query.token]
+      );
+
+      if (result.rows.length === 0) {
+        throw ApiError.notFound('Rendez-vous introuvable');
+      }
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// POST /api/bookings/:id/cancel — Cancel a booking
+// ============================================
+router.post('/bookings/:id/cancel',
+  publicLimiter,
+  [
+    param('id').matches(uuidRegex).withMessage('ID invalide'),
+    body('token').matches(uuidRegex).withMessage('Token invalide'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const result = await bookingService.cancelBooking(req.params.id, req.body.token);
+      res.json({ message: 'Rendez-vous annulé avec succès', booking: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /api/bookings/:id/ics — Download ICS calendar file
+// ============================================
+router.get('/bookings/:id/ics',
+  publicLimiter,
+  [
+    param('id').matches(uuidRegex).withMessage('ID invalide'),
+    query('token').matches(uuidRegex).withMessage('Token invalide'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const result = await db.query(
+        `SELECT b.id, b.date, b.start_time, b.end_time,
+                s.name as service_name, br.name as barber_name
+         FROM bookings b
+         JOIN services s ON b.service_id = s.id
+         JOIN barbers br ON b.barber_id = br.id
+         WHERE b.id = $1 AND b.cancel_token = $2 AND b.deleted_at IS NULL`,
+        [req.params.id, req.query.token]
+      );
+
+      if (result.rows.length === 0) {
+        throw ApiError.notFound('Rendez-vous introuvable');
+      }
+
+      const icsContent = generateICS(result.rows[0]);
+
+      res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="barberclub-rdv.ics"');
+      res.send(icsContent);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+module.exports = router;

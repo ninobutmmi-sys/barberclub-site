@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Clément - Barber chez BarberClub Grenoble">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Clément | BarberClub Grenoble</title>
+    <link rel="manifest" href="../../config/manifest.json">
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ORBITRON EXTRA BOLD FONT */
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .header.scrolled {
+            background: rgba(0, 0, 0, 1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 50%;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .logo {
+            height: 60px;
+            width: auto;
+        }
+
+        .header-spacer {
+            width: 40px;
+        }
+
+        .hero {
+            position: relative;
+            padding-top: 60px;
+        }
+
+        .hero-video {
+            width: 100%;
+            aspect-ratio: 9/16;
+            max-height: 70vh;
+            object-fit: cover;
+            display: block;
+        }
+
+        .hero-gradient {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: linear-gradient(to top, #000 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .profile {
+            position: relative;
+            z-index: 10;
+            margin-top: -80px;
+            padding: 0 20px;
+        }
+
+        .profile-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .profile-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 42px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .profile-role {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 16px;
+        }
+
+        .profile-salon {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .profile-salon svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .info-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .info-card {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .info-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .bio-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .bio-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .bio-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .social-section {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .social-link {
+            width: 50px;
+            height: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .social-link svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .cta-section {
+            margin-bottom: 32px;
+        }
+
+        .cta-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 18px 24px;
+            background: #fff;
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .cta-btn:active {
+            transform: scale(0.98);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .cta-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .gallery-section {
+            padding: 0 0 100px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.3), transparent);
+        }
+
+        .gallery {
+            columns: 2;
+            column-gap: 8px;
+            padding: 0 8px;
+        }
+
+        .gallery-item {
+            break-inside: avoid;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .gallery-item video {
+            width: 100%;
+            display: block;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .gallery-item img,
+        .gallery-item video {
+            width: 100%;
+            display: block;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Play indicator for videos */
+        .gallery-item .play-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 75px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .gallery-item:hover .play-indicator {
+            opacity: 1;
+        }
+
+        .gallery-item .play-indicator svg {
+            width: 24px;
+            height: 24px;
+            fill: #fff;
+            margin-left: 4px;
+        }
+
+        /* DESKTOP */
+        @media (min-width: 768px) {
+            .back-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+                transform: scale(1.05);
+            }
+
+            .logo {
+                height: 75px;
+            }
+
+            .social-link:hover {
+                background: rgba(255, 255, 255, 0.2);
+                transform: translateY(-2px);
+            }
+
+            .cta-btn:hover {
+                transform: scale(1.02);
+                box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+            }
+        }
+
+        /* DESKTOP LARGE - Split layout */
+        @media (min-width: 1024px) {
+            html {
+                background: #000;
+            }
+
+            body {
+                background: url('../../assets/images/salons/grenoble/salon-grenoble.jpg') center center / cover no-repeat fixed;
+                min-height: 100vh;
+            }
+
+            body::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.85);
+                pointer-events: none;
+                z-index: 0;
+            }
+
+            body::after {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background:
+                    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+                    radial-gradient(ellipse at 70% 80%, rgba(255, 255, 255, 0.03) 0%, transparent 40%);
+                pointer-events: none;
+                z-index: 0;
+            }
+
+            .header {
+                z-index: 100;
+            }
+
+            .hero {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 45%;
+                height: 100vh;
+                padding-top: 120px;
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+                background: transparent;
+                z-index: 1;
+            }
+
+            .hero-video,
+            .hero-photo {
+                width: 80%;
+                max-width: 400px;
+                height: auto;
+                max-height: 75vh;
+                aspect-ratio: 9/16;
+                border-radius: 24px;
+                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
+                            0 0 0 1px rgba(255, 255, 255, 0.1);
+            }
+
+            .hero-gradient {
+                display: none;
+            }
+
+            .profile {
+                position: relative;
+                z-index: 2;
+                margin-left: 45%;
+                margin-top: 0;
+                padding: 100px 60px 40px;
+                max-width: 600px;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .profile-header {
+                text-align: left;
+                margin-bottom: 32px;
+            }
+
+            .profile-name {
+                font-size: 56px;
+            }
+
+            .profile-role {
+                font-size: 16px;
+            }
+
+            .info-section {
+                justify-content: flex-start;
+                gap: 16px;
+                margin-bottom: 32px;
+            }
+
+            .info-card {
+                flex: 0 0 auto;
+                min-width: 140px;
+                padding: 20px 24px;
+            }
+
+            .info-value {
+                font-size: 28px;
+            }
+
+            .bio-section {
+                padding: 24px;
+                margin-bottom: 32px;
+            }
+
+            .bio-title {
+                font-size: 18px;
+            }
+
+            .bio-text {
+                font-size: 15px;
+                line-height: 1.7;
+            }
+
+            .cta-section {
+                margin-bottom: 0;
+            }
+
+            .cta-btn {
+                width: auto;
+                display: inline-flex;
+                padding: 20px 40px;
+                font-size: 14px;
+            }
+
+            .gallery-section {
+                position: relative;
+                z-index: 2;
+                margin-left: 45%;
+                padding: 40px 60px 100px;
+                max-width: 700px;
+            }
+
+            .section-title {
+                padding: 0;
+                font-size: 28px;
+                margin-bottom: 24px;
+            }
+
+            .gallery {
+                columns: 2;
+                column-gap: 16px;
+                padding: 0;
+                max-width: none;
+            }
+
+            .gallery-item {
+                margin-bottom: 16px;
+                border-radius: 16px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header" id="header">
+        <a href="../grenoble/barbers.html" class="back-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+        </a>
+        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+        <div class="header-spacer"></div>
+    </header>
+
+    <section class="hero">
+        <video class="hero-video" autoplay loop muted playsinline preload="none">
+            <source src="../../assets/videos/barbers/clement.mp4" type="video/mp4">
+        </video>
+        <div class="hero-gradient"></div>
+    </section>
+
+    <div class="profile">
+        <div class="profile-header">
+            <h1 class="profile-name">Clément</h1>
+            <p class="profile-role">Barber</p>
+            <span class="profile-salon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                </svg>
+                Salon de Grenoble
+            </span>
+        </div>
+
+        <div class="info-section">
+            <div class="info-card">
+                <div class="info-value">19</div>
+                <div class="info-label">Ans</div>
+            </div>
+            <div class="info-card">
+                <div class="info-value">Voiron</div>
+                <div class="info-label">Origine</div>
+            </div>
+        </div>
+
+        <div class="bio-section">
+            <h2 class="bio-title">À propos</h2>
+            <p class="bio-text">
+                Clément vit à Voiron et a débuté la coiffure il y a 3 ans, dont 1 an et demi en demi salon.
+                Premier coiffeur à avoir rejoint le premier salon qui a ouvert à Grenoble,
+                il combine technique impeccable et créativité pour des résultats qui font la différence.
+            </p>
+        </div>
+
+
+
+        <div class="cta-section">
+            <a href="../grenoble/reserver.html" class="cta-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                Prendre RDV avec Clément
+            </a>
+        </div>
+    </div>
+
+    <section class="gallery-section">
+        <h2 class="section-title">Ses Réalisations</h2>
+        <div class="gallery">
+            <!-- Image -->
+            <div class="gallery-item">
+                <img src="../../assets/videos/coupes-clement/IMG_0365.PNG" alt="Coupe réalisée par Clément">
+            </div>
+            <!-- Video 1 -->
+            <div class="gallery-item">
+                <video autoplay loop muted playsinline preload="none">
+                    <source src="../../assets/videos/coupes-clement/IMG_0861.mp4" type="video/mp4">
+                </video>
+            </div>
+            <!-- Video 2 -->
+            <div class="gallery-item">
+                <video autoplay loop muted playsinline preload="none">
+                    <source src="../../assets/videos/coupes-clement/IMG_1497.mp4" type="video/mp4">
+                </video>
+            </div>
+            <!-- Video 3 -->
+            <div class="gallery-item">
+                <video autoplay loop muted playsinline preload="none">
+                    <source src="../../assets/videos/coupes-clement/IMG_1508.mp4" type="video/mp4">
+                </video>
+            </div>
+            <!-- Video 4 -->
+            <div class="gallery-item">
+                <video autoplay loop muted playsinline preload="none">
+                    <source src="../../assets/videos/coupes-clement/IMG_1841.mp4" type="video/mp4">
+                </video>
+            </div>
+            <!-- Video 5 -->
+            <div class="gallery-item">
+                <video autoplay loop muted playsinline preload="none">
+                    <source src="../../assets/videos/coupes-clement/IMG_1995.mp4" type="video/mp4">
+                </video>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const header = document.getElementById('header');
+        window.addEventListener('scroll', () => {
+            header.classList.toggle('scrolled', window.scrollY > 50);
+        }, { passive: true });
+    </script>
+</body>
+
+</html>

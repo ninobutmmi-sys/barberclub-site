@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Politique de confidentialité - BarberClub Grenoble & Meylan">
+    <meta name="theme-color" content="#000000">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Politique de Confidentialité | BarberClub</title>
+    <link rel="manifest" href="../../config/manifest.json">
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ORBITRON EXTRA BOLD FONT */
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            line-height: 1.7;
+        }
+
+        /* HEADER */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.2);
+        }
+
+        .back-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .logo {
+            height: 75px;
+            width: auto;
+        }
+
+        .header-spacer {
+            width: 40px;
+        }
+
+        /* CONTENT */
+        .content {
+            padding: 100px 20px 60px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .intro {
+            font-size: 15px;
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 0 10px;
+        }
+
+        .section {
+            margin-bottom: 35px;
+            padding: 25px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .section p, .section li {
+            font-size: 14px;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 12px;
+        }
+
+        .section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .section li {
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .section li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .section a {
+            color: #fff;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .section strong {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        /* FOOTER LINKS */
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 30px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin-top: 40px;
+        }
+
+        .footer-link {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: #fff;
+        }
+
+        .footer-link.active {
+            color: #fff;
+        }
+
+        /* DESKTOP */
+        @media (min-width: 768px) {
+            .content {
+                padding: 120px 40px 80px;
+            }
+
+            .page-title {
+                font-size: 42px;
+            }
+
+            .section {
+                padding: 30px;
+            }
+
+            .section p, .section li {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <a href="../../" class="back-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+        <div class="header-spacer"></div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="content">
+        <h1 class="page-title">Politique de Confidentialité</h1>
+        <p class="page-subtitle">Dernière mise à jour : Janvier 2025</p>
+
+        <p class="intro">BarberClub s'engage à protéger la vie privée des utilisateurs de son site internet conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et Libertés.</p>
+
+        <div class="section">
+            <h2 class="section-title">1. Responsable du traitement</h2>
+            <p>Le responsable du traitement des données personnelles est :</p>
+            <ul>
+                <li><strong>BarberClub</strong></li>
+                <li><strong>Adresse :</strong> 5 Rue Clôt Bey, 38000 Grenoble</li>
+                <li><strong>Email :</strong> contact@barberclub.fr</li>
+                <li><strong>Téléphone :</strong> 09 56 30 93 86</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">2. Données collectées</h2>
+            <p>Dans le cadre de l'utilisation de notre site et de nos services, nous pouvons collecter les données suivantes :</p>
+            <ul>
+                <li><strong>Données d'identification :</strong> nom, prénom, numéro de téléphone</li>
+                <li><strong>Données de réservation :</strong> date, heure, type de prestation, coiffeur choisi</li>
+                <li><strong>Données de navigation :</strong> adresse IP, type de navigateur, pages consultées (via cookies)</li>
+            </ul>
+            <p>La plupart de ces données sont collectées via les plateformes de réservation tierces (Planity, Timify) qui disposent de leurs propres politiques de confidentialité.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">3. Finalités du traitement</h2>
+            <p>Vos données personnelles sont collectées et traitées pour les finalités suivantes :</p>
+            <ul>
+                <li>Gestion des réservations et des rendez-vous</li>
+                <li>Communication relative à vos rendez-vous (confirmation, rappel, annulation)</li>
+                <li>Amélioration de nos services et de l'expérience utilisateur</li>
+                <li>Réponse à vos demandes de contact</li>
+                <li>Statistiques de fréquentation du site (anonymisées)</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">4. Base légale du traitement</h2>
+            <p>Le traitement de vos données repose sur :</p>
+            <ul>
+                <li><strong>L'exécution d'un contrat :</strong> pour la gestion de vos réservations</li>
+                <li><strong>Votre consentement :</strong> pour les cookies non essentiels et les communications marketing</li>
+                <li><strong>L'intérêt légitime :</strong> pour l'amélioration de nos services et la sécurité du site</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">5. Durée de conservation</h2>
+            <p>Vos données personnelles sont conservées pendant les durées suivantes :</p>
+            <ul>
+                <li><strong>Données de réservation :</strong> 3 ans après le dernier rendez-vous</li>
+                <li><strong>Données de contact :</strong> 3 ans après le dernier contact</li>
+                <li><strong>Données de navigation :</strong> 13 mois maximum (cookies)</li>
+            </ul>
+            <p>Au-delà de ces durées, les données sont supprimées ou anonymisées.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">6. Destinataires des données</h2>
+            <p>Vos données peuvent être transmises aux destinataires suivants :</p>
+            <ul>
+                <li>Le personnel de BarberClub (coiffeurs, gérants)</li>
+                <li>Les plateformes de réservation (Planity, Timify) - en tant que sous-traitants</li>
+                <li>Les prestataires techniques (hébergeur du site)</li>
+            </ul>
+            <p>Nous ne vendons ni ne louons vos données personnelles à des tiers à des fins commerciales.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">7. Transfert de données</h2>
+            <p>Vos données sont hébergées en France ou dans l'Union Européenne. En cas de transfert vers un pays tiers, nous nous assurons que des garanties appropriées sont mises en place conformément au RGPD.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">8. Vos droits</h2>
+            <p>Conformément au RGPD, vous disposez des droits suivants :</p>
+            <ul>
+                <li><strong>Droit d'accès :</strong> obtenir la confirmation que des données vous concernant sont traitées et en obtenir une copie</li>
+                <li><strong>Droit de rectification :</strong> demander la correction de données inexactes</li>
+                <li><strong>Droit à l'effacement :</strong> demander la suppression de vos données</li>
+                <li><strong>Droit à la limitation :</strong> demander la limitation du traitement</li>
+                <li><strong>Droit à la portabilité :</strong> recevoir vos données dans un format structuré</li>
+                <li><strong>Droit d'opposition :</strong> vous opposer au traitement de vos données</li>
+                <li><strong>Droit de retirer votre consentement :</strong> à tout moment, sans affecter la licéité du traitement antérieur</li>
+            </ul>
+            <p>Pour exercer ces droits, contactez-nous à : <strong>contact@barberclub.fr</strong></p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">9. Cookies</h2>
+            <p>Notre site utilise des cookies pour :</p>
+            <ul>
+                <li><strong>Cookies essentiels :</strong> nécessaires au fonctionnement du site</li>
+                <li><strong>Cookies de performance :</strong> pour analyser l'utilisation du site (anonymes)</li>
+                <li><strong>Cookies tiers :</strong> liés aux services intégrés (cartes, réseaux sociaux)</li>
+            </ul>
+            <p>Vous pouvez gérer vos préférences de cookies via les paramètres de votre navigateur.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">10. Sécurité</h2>
+            <p>BarberClub met en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données contre tout accès non autorisé, modification, divulgation ou destruction.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">11. Réclamation</h2>
+            <p>Si vous estimez que le traitement de vos données constitue une violation de vos droits, vous pouvez introduire une réclamation auprès de la CNIL :</p>
+            <ul>
+                <li><strong>Site web :</strong> <a href="https://www.cnil.fr" target="_blank" rel="noopener">www.cnil.fr</a></li>
+                <li><strong>Adresse :</strong> CNIL - 3 Place de Fontenoy, TSA 80715, 75334 Paris Cedex 07</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">12. Modification de la politique</h2>
+            <p>BarberClub se réserve le droit de modifier cette politique de confidentialité à tout moment. Les modifications entrent en vigueur dès leur publication sur le site. Nous vous invitons à consulter régulièrement cette page.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">13. Contact</h2>
+            <p>Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits :</p>
+            <ul>
+                <li><strong>Email :</strong> contact@barberclub.fr</li>
+                <li><strong>Téléphone :</strong> 09 56 30 93 86</li>
+                <li><strong>Adresse :</strong> BarberClub, 5 Rue Clôt Bey, 38000 Grenoble</li>
+            </ul>
+        </div>
+
+        <nav class="footer-links">
+            <a href="mentions-legales.html" class="footer-link">Mentions légales</a>
+            <a href="cgu.html" class="footer-link">CGU</a>
+            <a href="politique-confidentialite.html" class="footer-link active">Confidentialité</a>
+        </nav>
+    </main>
+</body>
+</html>

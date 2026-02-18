@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <!-- SEO Meta Tags -->
+    <title>Barber Grenoble | BarberClub - Coiffeur Homme & Barbier Grenoble Centre</title>
+    <meta name="description"
+        content="BarberClub Grenoble : votre barbier et coiffeur homme au centre de Grenoble (38000). Dégradés, taille de barbe, coupes tendance. Salon premium en Isère. Réservez en ligne !">
+    <meta name="keywords"
+        content="barber grenoble, coiffeur grenoble, barbier grenoble, coiffeur homme grenoble, salon de coiffure grenoble, dégradé grenoble, coiffeur isère, barbershop grenoble, coupe homme grenoble, barbe grenoble">
+    <meta name="author" content="BarberClub">
+    <meta name="robots" content="index, follow">
+    <meta name="geo.region" content="FR-38">
+    <meta name="geo.placename" content="Grenoble">
+    <link rel="canonical" href="https://barberclub.fr/grenoble">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="business.business">
+    <meta property="og:title" content="BarberClub Grenoble - Barbier & Coiffeur Homme">
+    <meta property="og:description"
+        content="Votre barbier premium au centre de Grenoble. Coupes tendance, dégradés, taille de barbe. Réservez votre RDV en ligne !">
+    <meta property="og:url" content="https://barberclub.fr/grenoble">
+    <meta property="og:image" content="https://barberclub.fr/assets/images/salons/grenoble/salon-grenoble.jpg">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="BarberClub">
+    <meta property="business:contact_data:street_address" content="Centre-ville Grenoble">
+    <meta property="business:contact_data:locality" content="Grenoble">
+    <meta property="business:contact_data:region" content="Isère">
+    <meta property="business:contact_data:postal_code" content="38000">
+    <meta property="business:contact_data:country_name" content="France">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="BarberClub Grenoble - Barbier & Coiffeur Homme">
+    <meta name="twitter:description"
+        content="Votre barbier premium au centre de Grenoble. Coupes tendance, dégradés, taille de barbe.">
+    <meta name="twitter:image" content="https://barberclub.fr/assets/images/salons/grenoble/salon-grenoble.jpg">
+
+    <!-- Mobile & PWA -->
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="../../config/manifest.json">
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Schema.org LocalBusiness -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BarberShop",
+        "name": "BarberClub Grenoble",
+        "description": "Barbier et coiffeur homme premium au centre de Grenoble. Spécialisté en dégradés, taille de barbe et coupes tendance.",
+        "url": "https://barberclub.fr/grenoble",
+        "image": "https://barberclub.fr/assets/images/salons/grenoble/salon-grenoble.jpg",
+        "telephone": "+33956309386",
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Centre-ville",
+            "addressLocality": "Grenoble",
+            "addressRegion": "Isère",
+            "postalCode": "38000",
+            "addressCountry": "FR"
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 45.1885,
+            "longitude": 5.7245
+        },
+        "areaServed": [
+            {
+                "@type": "City",
+                "name": "Grenoble"
+            },
+            {
+                "@type": "AdministrativeArea",
+                "name": "Isère"
+            }
+        ],
+        "priceRange": "€€",
+        "openingHoursSpecification": [
+            {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                "opens": "09:00",
+                "closes": "19:00"
+            }
+        ],
+        "sameAs": [
+            "https://www.instagram.com/barberclub.grenoble"
+        ]
+    }
+    </script>
+    <style>
+        /* ORBITRON FONT */
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        .page {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* BACKGROUND */
+        .bg {
+            position: absolute;
+            inset: 0;
+            background: url('../../assets/images/salons/grenoble/salon-grenoble.jpg') center/cover no-repeat;
+            filter: brightness(0.35);
+        }
+
+        .bg-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg,
+                    rgba(0, 0, 0, 0.7) 0%,
+                    rgba(0, 0, 0, 0.2) 30%,
+                    rgba(0, 0, 0, 0.2) 60%,
+                    rgba(0, 0, 0, 0.8) 100%);
+        }
+
+        /* HEADER */
+        .header {
+            position: relative;
+            z-index: 10;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .back-btn {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 50%;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* LOGO IN HEADER */
+        .header-logo {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 70px;
+            width: auto;
+            opacity: 0;
+            animation: fadeIn 0.8s ease forwards;
+        }
+
+        /* LOGO CENTRAL */
+        .logo-container {
+            position: relative;
+            z-index: 10;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .logo {
+            display: none;
+        }
+
+        .title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(38px, 10vw, 80px);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            text-align: center;
+            padding: 0 20px;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        /* NAVIGATION */
+        .nav {
+            position: relative;
+            z-index: 10;
+            padding: 0 20px;
+            padding-bottom: max(30px, env(safe-area-inset-bottom));
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 18px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            text-decoration: none;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            opacity: 0.8;
+        }
+
+        .nav-item.full {
+            grid-column: span 2;
+        }
+
+        /* CTA BUTTON - Rendezvous - White Background */
+        .nav-item.cta {
+            background: linear-gradient(135deg, #ffffff, #f5f5f5);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            color: #000;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-item.cta::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    rgba(0, 0, 0, 0.1) 50%,
+                    transparent 100%);
+            animation: ctaShine 3s ease-in-out infinite;
+        }
+
+        @keyframes ctaShine {
+            0% {
+                left: -100%;
+            }
+
+            50% {
+                left: 100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        .nav-item.cta:active {
+            background: linear-gradient(135deg, #f5f5f5, #e5e5e5);
+            border-color: rgba(255, 255, 255, 1);
+            box-shadow: 0 2px 15px rgba(255, 255, 255, 0.25);
+        }
+
+        .nav-item.cta svg {
+            opacity: 1;
+            color: #000;
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .bg {
+            animation: fadeIn 1s ease forwards;
+        }
+
+        .logo {
+            animation: scaleIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .title {
+            opacity: 0;
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+        }
+
+        .back-btn {
+            opacity: 0;
+            animation: fadeIn 0.4s ease 0.1s forwards;
+        }
+
+        .nav-item {
+            opacity: 0;
+            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .nav-grid .nav-item:nth-child(1) {
+            animation-delay: 0.25s;
+        }
+
+        .nav-grid .nav-item:nth-child(2) {
+            animation-delay: 0.32s;
+        }
+
+        .nav-grid .nav-item:nth-child(3) {
+            animation-delay: 0.39s;
+        }
+
+        .nav-grid .nav-item:nth-child(4) {
+            animation-delay: 0.46s;
+        }
+
+        .nav-grid .nav-item:nth-child(5) {
+            animation-delay: 0.53s;
+        }
+
+        /* DESKTOP */
+        @media (min-width: 768px) {
+            .nav {
+                max-width: 600px;
+                margin: 0 auto;
+                padding-bottom: 60px;
+            }
+
+            .nav-item:hover {
+                background: rgba(255, 255, 255, 0.15);
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+
+            .nav-item.cta:hover {
+                background: linear-gradient(135deg, #ffffff, #f5f5f5);
+                transform: translateY(-3px);
+                box-shadow: 0 8px 30px rgba(255, 255, 255, 0.4);
+            }
+
+            .logo {
+                height: 55px;
+            }
+        }
+
+        /* BARBERS SECTION */
+        .barbers-section {
+            position: relative;
+            z-index: 10;
+            padding: 40px 0 30px;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.05em;
+        }
+
+        /* Barbers Carousel */
+        .barbers-carousel {
+            display: flex;
+            gap: 14px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding: 0 20px 20px;
+        }
+
+        .barbers-carousel::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Video Card */
+        .barber-video-card {
+            flex: 0 0 160px;
+            scroll-snap-align: start;
+            position: relative;
+            aspect-ratio: 9/14;
+            border-radius: 20px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .barber-video-card:active {
+            transform: scale(0.97);
+        }
+
+        .barber-video-card video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .barber-video-card:active video {
+            transform: scale(1.05);
+        }
+
+        .barber-video-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg,
+                    transparent 40%,
+                    rgba(0, 0, 0, 0.3) 60%,
+                    rgba(0, 0, 0, 0.85) 100%);
+            pointer-events: none;
+        }
+
+        .barber-video-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .barber-video-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .barber-video-role {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        /* Arrow indicator */
+        .barber-video-arrow {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+
+        .barber-video-arrow svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Animations for barbers */
+        .barber-video-card {
+            opacity: 0;
+            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .barber-video-card:nth-child(1) {
+            animation-delay: 0.6s;
+        }
+
+        .barber-video-card:nth-child(2) {
+            animation-delay: 0.7s;
+        }
+
+        .barber-video-card:nth-child(3) {
+            animation-delay: 0.8s;
+        }
+
+        .barber-video-card:nth-child(4) {
+            animation-delay: 0.9s;
+        }
+
+        .section-header {
+            opacity: 0;
+            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards;
+        }
+
+        /* REDUCED MOTION */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-delay: 0s !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .logo,
+            .title,
+            .back-btn,
+            .nav-item,
+            .barber-video-card,
+            .section-header {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        /* DESKTOP */
+        @media (min-width: 768px) {
+            .barbers-carousel {
+                justify-content: center;
+                padding: 0 40px 20px;
+            }
+
+            .barber-video-card {
+                flex: 0 0 180px;
+            }
+
+            .barber-video-card:hover {
+                transform: translateY(-8px);
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+
+            .barber-video-card:hover video {
+                transform: scale(1.05);
+            }
+        }
+
+        /* BOOKING MODAL - PREMIUM DESIGN */
+        .booking-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+            padding: 20px;
+        }
+
+        .booking-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.98));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .modal-content {
+            position: relative;
+            z-index: 1;
+            max-width: 550px;
+            width: 100%;
+            background: linear-gradient(135deg, rgba(25, 25, 35, 0.98), rgba(15, 15, 20, 0.98));
+            backdrop-filter: blur(60px);
+            -webkit-backdrop-filter: blur(60px);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 45px 35px;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow:
+                0 10px 40px rgba(0, 0, 0, 0.5),
+                0 0 60px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .booking-modal.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .modal-icon {
+            width: 56px;
+            height: 56px;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
+            animation: iconPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes iconPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 4px 30px rgba(255, 255, 255, 0.2);
+                transform: scale(1.05);
+            }
+        }
+
+        .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #ffffff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-body {
+            margin-bottom: 36px;
+            padding: 0 10px;
+        }
+
+        .modal-body p {
+            font-size: 15.5px;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.92);
+            margin-bottom: 22px;
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-body p::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -11px;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        }
+
+        .modal-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-body p:last-child::before {
+            display: none;
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 20px 28px;
+            background: linear-gradient(135deg, #ffffff, #f5f5f5);
+            color: #000;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow:
+                0 4px 15px rgba(255, 255, 255, 0.2),
+                0 0 30px rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .modal-btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .modal-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+        }
+
+        @media (min-width: 768px) {
+            .modal-content {
+                padding: 50px 45px;
+            }
+
+            .modal-title {
+                font-size: 36px;
+            }
+
+            .modal-btn:hover {
+                transform: translateY(-2px);
+                box-shadow:
+                    0 6px 25px rgba(255, 255, 255, 0.3),
+                    0 0 40px rgba(255, 255, 255, 0.15);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .booking-modal,
+            .modal-content,
+            .modal-btn,
+            .modal-icon {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+        <div class="bg"></div>
+        <div class="bg-overlay"></div>
+
+        <header class="header">
+            <a href="../../" class="back-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+            </a>
+            <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="header-logo"></a>
+        </header>
+
+        <div class="logo-container">
+            <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+            <h1 class="title">Grenoble</h1>
+        </div>
+
+        <nav class="nav">
+            <div class="nav-grid">
+                <a href="barbers.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    Nos Barbers
+                </a>
+                <a href="prestations.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="6" cy="6" r="3" />
+                        <path d="M8.12 8.12L12 12" />
+                        <path d="M20 4L8.12 15.88" />
+                        <circle cx="6" cy="18" r="3" />
+                        <path d="M14.8 14.8L20 20" />
+                    </svg>
+                    Prestations
+                </a>
+                <a href="reserver.html" class="nav-item full cta">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    Rendez-vous
+                </a>
+                <a href="galerie.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                    Galerie
+                </a>
+                <a href="contact.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    Contact
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- BOOKING MODAL -->
+    <div class="booking-modal" id="bookingModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <svg class="modal-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <h2 class="modal-title">INFORMATIONS</h2>
+            </div>
+            <div class="modal-body">
+                <p>Tout retard supérieur à 5 minutes pourra entraîner l'annulation de votre rendez-vous afin de
+                    respecter les clients suivants.</p>
+                <p>Toute absence non signalée ou annulation tardive sera facturée lors de votre prochaine visite. Les
+                    annulations/modifications doivent être effectués au plus tard 24 heures avant.</p>
+            </div>
+            <button class="modal-btn" id="modalConfirm">J'AI COMPRIS</button>
+        </div>
+    </div>
+
+    <script>
+        // Booking modal functionality
+        const modal = document.getElementById('bookingModal');
+        const modalConfirm = document.getElementById('modalConfirm');
+        const bookingButtons = document.querySelectorAll('a[href="reserver.html"]');
+
+        // Intercept booking button clicks
+        bookingButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+
+        // Confirm button
+        modalConfirm.addEventListener('click', () => {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            window.location.href = 'reserver.html';
+        });
+
+        // Close on overlay click
+        modal.querySelector('.modal-overlay').addEventListener('click', () => {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    </script>
+</body>
+
+</html>

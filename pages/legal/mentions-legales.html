@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Mentions légales - BarberClub Grenoble & Meylan">
+    <meta name="theme-color" content="#000000">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Mentions Légales | BarberClub</title>
+    <link rel="manifest" href="../../config/manifest.json">
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ORBITRON EXTRA BOLD FONT */
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            line-height: 1.7;
+        }
+
+        /* HEADER */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.2);
+        }
+
+        .back-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .logo {
+            height: 75px;
+            width: auto;
+        }
+
+        .header-spacer {
+            width: 40px;
+        }
+
+        /* CONTENT */
+        .content {
+            padding: 100px 20px 60px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .section {
+            margin-bottom: 35px;
+            padding: 25px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .section p, .section li {
+            font-size: 14px;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 12px;
+        }
+
+        .section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .section li {
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .section li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .section a {
+            color: #fff;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .section strong {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        /* FOOTER LINKS */
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 30px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin-top: 40px;
+        }
+
+        .footer-link {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: #fff;
+        }
+
+        .footer-link.active {
+            color: #fff;
+        }
+
+        /* DESKTOP */
+        @media (min-width: 768px) {
+            .content {
+                padding: 120px 40px 80px;
+            }
+
+            .page-title {
+                font-size: 42px;
+            }
+
+            .section {
+                padding: 30px;
+            }
+
+            .section p, .section li {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <a href="../../" class="back-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+        <div class="header-spacer"></div>
+    </header>
+
+    <!-- CONTENT -->
+    <main class="content">
+        <h1 class="page-title">Mentions Légales</h1>
+        <p class="page-subtitle">Dernière mise à jour : Janvier 2025</p>
+
+        <div class="section">
+            <h2 class="section-title">1. Éditeur du site</h2>
+            <p>Le site internet barberclub.fr est édité par :</p>
+            <ul>
+                <li><strong>Raison sociale :</strong> BarberClub</li>
+                <li><strong>Forme juridique :</strong> [À compléter - SARL, SAS, Auto-entrepreneur, etc.]</li>
+                <li><strong>Siège social :</strong> 5 Rue Clôt Bey, 38000 Grenoble</li>
+                <li><strong>SIRET :</strong> [À compléter]</li>
+                <li><strong>Numéro de TVA :</strong> [À compléter si applicable]</li>
+                <li><strong>Capital social :</strong> [À compléter si applicable]</li>
+                <li><strong>Directeur de la publication :</strong> [Nom du gérant]</li>
+                <li><strong>Email :</strong> contact@barberclub.fr</li>
+                <li><strong>Téléphone Grenoble :</strong> 09 56 30 93 86</li>
+                <li><strong>Téléphone Meylan :</strong> 04 58 28 21 75</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">2. Hébergement</h2>
+            <p>Ce site est hébergé par :</p>
+            <ul>
+                <li><strong>Hébergeur :</strong> [Nom de l'hébergeur - ex: OVH, Ionos, etc.]</li>
+                <li><strong>Adresse :</strong> [Adresse de l'hébergeur]</li>
+                <li><strong>Téléphone :</strong> [Téléphone de l'hébergeur]</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">3. Propriété intellectuelle</h2>
+            <p>L'ensemble du contenu de ce site (textes, images, vidéos, logos, graphismes, icônes) est la propriété exclusive de BarberClub ou de ses partenaires et est protégé par les lois françaises et internationales relatives à la propriété intellectuelle.</p>
+            <p>Toute reproduction, représentation, modification, publication, adaptation de tout ou partie des éléments du site, quel que soit le moyen ou le procédé utilisé, est interdite sans autorisation écrite préalable de BarberClub.</p>
+            <p>Le logo et la marque BarberClub sont des marques déposées. Toute utilisation non autorisée de ces éléments engage la responsabilité de son auteur.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">4. Limitation de responsabilité</h2>
+            <p>BarberClub s'efforce de fournir sur ce site des informations aussi précises que possible. Toutefois, BarberClub ne pourra être tenu responsable des omissions, des inexactitudes et des carences dans la mise à jour, qu'elles soient de son fait ou du fait des tiers partenaires qui lui fournissent ces informations.</p>
+            <p>Les informations présentes sur ce site sont données à titre indicatif et sont susceptibles d'évoluer. Les tarifs affichés peuvent être modifiés sans préavis.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">5. Liens hypertextes</h2>
+            <p>Le site peut contenir des liens hypertextes vers d'autres sites (réseaux sociaux, partenaires de réservation, etc.). BarberClub n'exerce aucun contrôle sur ces sites et décline toute responsabilité quant à leur contenu et aux services qu'ils proposent.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">6. Droit applicable</h2>
+            <p>Les présentes mentions légales sont régies par le droit français. En cas de litige, et à défaut de résolution amiable, les tribunaux français seront seuls compétents.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">7. Contact</h2>
+            <p>Pour toute question concernant ces mentions légales, vous pouvez nous contacter :</p>
+            <ul>
+                <li><strong>Par email :</strong> contact@barberclub.fr</li>
+                <li><strong>Par téléphone :</strong> 09 56 30 93 86 (Grenoble) ou 04 58 28 21 75 (Meylan)</li>
+                <li><strong>Par courrier :</strong> BarberClub, 5 Rue Clôt Bey, 38000 Grenoble</li>
+            </ul>
+        </div>
+
+        <nav class="footer-links">
+            <a href="mentions-legales.html" class="footer-link active">Mentions légales</a>
+            <a href="cgu.html" class="footer-link">CGU</a>
+            <a href="politique-confidentialite.html" class="footer-link">Confidentialité</a>
+        </nav>
+    </main>
+</body>
+</html>

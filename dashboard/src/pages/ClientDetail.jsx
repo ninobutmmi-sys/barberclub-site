@@ -1,0 +1,164 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getClient, updateClient, deleteClient } from '../api';
+
+function formatPrice(cents) {
+  return (cents / 100).toFixed(2).replace('.', ',') + ' €';
+}
+
+export default function ClientDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [client, setClient] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editNotes, setEditNotes] = useState(false);
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => { loadClient(); }, [id]);
+
+  async function loadClient() {
+    setLoading(true);
+    try {
+      const data = await getClient(id);
+      setClient(data);
+      setNotes(data.notes || '');
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  }
+
+  async function saveNotes() {
+    try {
+      await updateClient(id, { notes });
+      setEditNotes(false);
+      loadClient();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm('Supprimer ce client (RGPD) ? Cette action est irréversible.')) return;
+    try {
+      await deleteClient(id);
+      navigate('/clients');
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  if (loading) return <div className="page-body"><div className="empty-state">Chargement...</div></div>;
+  if (!client) return <div className="page-body"><div className="empty-state">Client introuvable</div></div>;
+
+  return (
+    <>
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="btn btn-ghost" onClick={() => navigate('/clients')}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          </button>
+          <div>
+            <h2 className="page-title">{client.first_name} {client.last_name}</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{client.phone}</p>
+          </div>
+        </div>
+        <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+          Supprimer (RGPD)
+        </button>
+      </div>
+
+      <div className="page-body">
+        {/* Stats cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
+          <StatCard label="Visites" value={client.visit_count} />
+          <StatCard label="CA Total" value={formatPrice(client.total_spent)} />
+          <StatCard label="No-shows" value={client.no_show_count} danger={client.no_show_count > 0} />
+          <StatCard label="Annulations" value={client.cancelled_count} />
+          <StatCard label="Service favori" value={client.favourite_service || '-'} small />
+          <StatCard label="Barber favori" value={client.favourite_barber || '-'} small />
+        </div>
+
+        {/* Notes */}
+        <div className="card" style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <label className="label" style={{ margin: 0 }}>Notes internes</label>
+            {editNotes ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-primary btn-sm" onClick={saveNotes}>Enregistrer</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => { setEditNotes(false); setNotes(client.notes || ''); }}>Annuler</button>
+              </div>
+            ) : (
+              <button className="btn btn-secondary btn-sm" onClick={() => setEditNotes(true)}>Modifier</button>
+            )}
+          </div>
+          {editNotes ? (
+            <textarea
+              className="input"
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Notes privées sur ce client..."
+              style={{ resize: 'vertical' }}
+            />
+          ) : (
+            <p style={{ fontSize: 13, color: notes ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+              {notes || 'Aucune note'}
+            </p>
+          )}
+        </div>
+
+        {/* Booking history */}
+        <label className="label" style={{ marginBottom: 12 }}>Historique des rendez-vous</label>
+        {client.bookings?.length === 0 ? (
+          <div className="empty-state">Aucun rendez-vous</div>
+        ) : (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Horaire</th>
+                  <th>Prestation</th>
+                  <th>Barber</th>
+                  <th>Prix</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {client.bookings?.map((b) => (
+                  <tr key={b.id}>
+                    <td style={{ fontWeight: 600, fontSize: 13 }}>{b.date}</td>
+                    <td style={{ fontSize: 13 }}>{b.start_time?.slice(0, 5)} - {b.end_time?.slice(0, 5)}</td>
+                    <td style={{ fontSize: 13 }}>{b.service_name}</td>
+                    <td style={{ fontSize: 13 }}>{b.barber_name}</td>
+                    <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12 }}>{formatPrice(b.price)}</td>
+                    <td><span className={`badge badge-${b.status}`}>{b.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function StatCard({ label, value, danger, small }) {
+  return (
+    <div className="card" style={{ textAlign: 'center', padding: 16 }}>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+        {label}
+      </div>
+      <div style={{
+        fontFamily: small ? 'var(--font)' : 'var(--font-display)',
+        fontSize: small ? 13 : 20,
+        fontWeight: small ? 600 : 800,
+        color: danger ? 'var(--danger)' : 'var(--text)',
+      }}>
+        {value}
+      </div>
+    </div>
+  );
+}
