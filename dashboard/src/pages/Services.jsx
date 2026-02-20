@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getServices, createService, updateService, deleteService, getBarbers } from '../api';
+import useMobile from '../hooks/useMobile';
 
 function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
@@ -13,6 +14,7 @@ const COLOR_PALETTE = [
 ];
 
 export default function Services() {
+  const isMobile = useMobile();
   const [services, setServices] = useState([]);
   const [barbers, setBarbers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,26 @@ export default function Services() {
       <div className="page-body">
         {loading ? (
           <div className="empty-state">Chargement...</div>
+        ) : isMobile ? (
+          <div className="mob-card-list">
+            {services.map((s) => (
+              <div key={s.id} className="mob-card-item" onClick={() => setModal(s)} style={{ flexWrap: 'wrap' }}>
+                <div style={{ width: 12, height: 12, borderRadius: 3, background: s.color || '#22c55e', flexShrink: 0, border: '1px solid rgba(var(--overlay),0.1)' }} />
+                <div className="mob-card-left">
+                  <div className="mob-card-title">{s.name}</div>
+                  <div className="mob-card-sub">{formatPrice(s.price)} · {s.duration} min</div>
+                </div>
+                <div className="mob-card-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className={`badge badge-${s.is_active ? 'active' : 'inactive'}`} style={{ fontSize: 9 }}>
+                    {s.is_active ? 'Actif' : 'Inactif'}
+                  </span>
+                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: 4 }} onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="table-wrapper">
             <table>

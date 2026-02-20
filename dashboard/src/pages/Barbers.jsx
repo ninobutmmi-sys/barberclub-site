@@ -7,6 +7,7 @@ import {
   addBarberOverride,
   deleteBarberOverride,
 } from '../api';
+import useMobile from '../hooks/useMobile';
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
@@ -59,6 +60,7 @@ function InlineStatus({ status }) {
 // ============================================
 
 export default function Barbers() {
+  const isMobile = useMobile();
   const [barbers, setBarbers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -557,6 +559,7 @@ function WeeklyScheduleEditor({ schedule, updateDay, saving, onSave }) {
           flexDirection: 'column',
           gap: 6,
           marginBottom: 20,
+          overflowX: 'auto',
         }}
       >
         {schedule.map((day, idx) => (

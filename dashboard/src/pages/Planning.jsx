@@ -27,13 +27,14 @@ import {
   parseISO,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import useMobile from '../hooks/useMobile';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function formatPrice(cents) {
-  return (cents / 100).toFixed(2).replace('.', ',') + ' \u20AC';
+  return (cents / 100).toFixed(2).replace('.', ',') + ' €';
 }
 
 function timeToMinutes(t) {
@@ -910,35 +911,40 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
     } catch (err) { setError(err.message); setSaving(false); }
   }
 
-  const formRow = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 };
-
   const RECURRENCE_LABELS = { weekly: 'Toutes les semaines', biweekly: 'Toutes les 2 semaines', monthly: 'Tous les mois' };
+
+  // Helper: format price
+  const priceDisplay = selectedService ? (selectedService.price / 100).toFixed(2).replace('.', ',') + ' €' : null;
 
   // ---------- RECURRENCE RESULT VIEW ----------
   if (recurrenceResult) {
     const { created, skipped } = recurrenceResult;
     return (
       <div className="modal-backdrop" onClick={onClose}>
-        <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
-          <div className="modal-header">
-            <h3 className="modal-title">RDV recurrents crees</h3>
+        <div className="bk-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="bk-header">
+            <h3>
+              <span className="bk-icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              RDV récurrents créés
+            </h3>
             <button className="btn-ghost" onClick={() => { setRecurrenceResult(null); onCreated(); }}><CloseIcon /></button>
           </div>
-          <div className="modal-body">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, padding: '12px 14px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 8 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(34,197,94,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#22c55e" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
-              </div>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>{created.length} rendez-vous cree{created.length > 1 ? 's' : ''}</div>
+
+          <div style={{ padding: '0 24px 16px' }}>
+            <div className="bk-client-badge" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.03))' }}>
+              <div className="bk-dot" />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>{created.length} rendez-vous créé{created.length > 1 ? 's' : ''}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>{RECURRENCE_LABELS[recurrenceType]}</div>
               </div>
             </div>
 
             {skipped.length > 0 && (
-              <div style={{ padding: '10px 14px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 8, marginBottom: 12 }}>
+              <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.03))', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b', marginBottom: 6 }}>
-                  {skipped.length} date{skipped.length > 1 ? 's' : ''} ignoree{skipped.length > 1 ? 's' : ''} (creneaux deja pris)
+                  {skipped.length} date{skipped.length > 1 ? 's' : ''} ignorée{skipped.length > 1 ? 's' : ''} (créneaux déjà pris)
                 </div>
                 {skipped.map((s, i) => (
                   <div key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '2px 0' }}>
@@ -953,17 +959,21 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
                 {created.map((bk, i) => {
                   const d = typeof bk.date === 'string' ? bk.date.slice(0, 10) : bk.date;
                   return (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(var(--overlay),0.04)', fontSize: 13 }}>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(var(--overlay),0.04)', fontSize: 13 }}>
                       <span style={{ fontWeight: 600 }}>{d}</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>{bk.start_time?.slice(0, 5)} - {bk.end_time?.slice(0, 5)}</span>
+                      <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 800 }}>{bk.start_time?.slice(0, 5)} - {bk.end_time?.slice(0, 5)}</span>
                     </div>
                   );
                 })}
               </div>
             )}
           </div>
-          <div className="modal-footer">
-            <button className="btn btn-primary btn-sm" onClick={() => { setRecurrenceResult(null); onCreated(); }}>Fermer</button>
+
+          <div className="bk-footer" style={{ justifyContent: 'flex-end' }}>
+            <button className="bk-btn-create" onClick={() => { setRecurrenceResult(null); onCreated(); }}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              Fermer
+            </button>
           </div>
         </div>
       </div>
@@ -972,94 +982,117 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
-        <div className="modal-header">
-          <h3 className="modal-title">Nouveau rendez-vous</h3>
+      <div className="bk-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="bk-header">
+          <h3>
+            <span className="bk-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </span>
+            Nouveau rendez-vous
+          </h3>
           <button className="btn-ghost" onClick={onClose}><CloseIcon /></button>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            {error && (
-              <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', fontSize: 13, marginBottom: 14 }}>{error}</div>
-            )}
 
-            {/* Section RDV */}
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 8 }}>Rendez-vous</div>
-            <div style={formRow}>
-              <div className="form-group">
-                <label className="label">Barber</label>
-                <select className="input" value={barberId} onChange={(e) => setBarberId(e.target.value)} required>
-                  {barbers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="label">Prestation</label>
-                <select className="input" value={serviceId} onChange={(e) => setServiceId(e.target.value)} required>
-                  {services.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.duration}min)</option>)}
-                </select>
-              </div>
+        <form onSubmit={handleSubmit}>
+          {error && (
+            <div className="bk-error">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              {error}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <div className="form-group">
-                <label className="label">Date</label>
+          )}
+
+          {/* ---- Section RDV ---- */}
+          <div className="bk-section">
+            <div className="bk-section-label">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Rendez-vous
+            </div>
+
+            {/* Barber chips */}
+            <div className="bk-barbers">
+              {barbers.map((b) => (
+                <div
+                  key={b.id}
+                  className={`bk-barber-chip${barberId === b.id ? ' active' : ''}`}
+                  onClick={() => setBarberId(b.id)}
+                >
+                  <div className="bk-avatar">{b.name.charAt(0).toUpperCase()}</div>
+                  {b.name}
+                </div>
+              ))}
+            </div>
+
+            {/* Service */}
+            <div className="bk-field">
+              <label>Prestation</label>
+              <select className="input" value={serviceId} onChange={(e) => setServiceId(e.target.value)} required>
+                {services.map((s) => <option key={s.id} value={s.id}>{s.name} — {s.duration}min</option>)}
+              </select>
+            </div>
+
+            {/* Date / Heure / Durée */}
+            <div className="bk-grid-3">
+              <div className="bk-field">
+                <label>Date</label>
                 <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
               </div>
-              <div className="form-group">
-                <label className="label">Heure</label>
+              <div className="bk-field">
+                <label>Heure</label>
                 <input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} min="09:00" max="19:00" required />
               </div>
-              <div className="form-group">
-                <label className="label">Duree (min)</label>
+              <div className="bk-field">
+                <label>Durée (min)</label>
                 <input className="input" type="number" value={duration} onChange={(e) => setDuration(parseInt(e.target.value) || 0)} min="5" step="5" required />
               </div>
             </div>
+          </div>
 
-            {/* Recurrence toggle */}
-            <div style={{ height: 1, background: 'rgba(var(--overlay),0.08)', margin: '12px 0' }} />
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 0', marginBottom: repeatEnabled ? 8 : 0 }}>
+          {/* ---- Recurrence ---- */}
+          <div style={{ padding: '0 24px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '4px 0' }}>
               <div
+                className={`bk-toggle ${repeatEnabled ? 'on' : 'off'}`}
                 onClick={(e) => { e.preventDefault(); setRepeatEnabled(!repeatEnabled); }}
-                style={{
-                  width: 36, height: 20, borderRadius: 10,
-                  background: repeatEnabled ? '#3b82f6' : 'rgba(var(--overlay),0.12)',
-                  position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0,
-                }}
               >
-                <div style={{
-                  width: 16, height: 16, borderRadius: '50%', background: '#fff',
-                  position: 'absolute', top: 2, left: repeatEnabled ? 18 : 2, transition: 'left 0.2s',
-                }} />
+                <div className="bk-knob" />
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>Repeter</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Répéter</span>
+              {repeatEnabled && (
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>
+                  ({RECURRENCE_LABELS[recurrenceType]})
+                </span>
+              )}
             </label>
 
             {repeatEnabled && (
-              <div style={{ padding: '10px 14px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 8, marginBottom: 4 }}>
-                <div className="form-group" style={{ marginBottom: 10 }}>
-                  <label className="label">Frequence</label>
+              <div className="bk-recurrence-box" style={{ marginTop: 10 }}>
+                <div className="bk-field" style={{ marginBottom: 10 }}>
+                  <label>Fréquence</label>
                   <select className="input" value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)}>
                     <option value="weekly">Toutes les semaines</option>
                     <option value="biweekly">Toutes les 2 semaines</option>
                     <option value="monthly">Tous les mois</option>
                   </select>
                 </div>
-                <div style={formRow}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label">Fin</label>
+                <div className="bk-grid-2">
+                  <div className="bk-field" style={{ marginBottom: 0 }}>
+                    <label>Fin</label>
                     <select className="input" value={recurrenceEndType} onChange={(e) => setRecurrenceEndType(e.target.value)}>
-                      <option value="occurrences">Apres X seances</option>
-                      <option value="end_date">A une date</option>
+                      <option value="occurrences">Après X séances</option>
+                      <option value="end_date">À une date</option>
                     </select>
                   </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
+                  <div className="bk-field" style={{ marginBottom: 0 }}>
                     {recurrenceEndType === 'occurrences' ? (
                       <>
-                        <label className="label">Nb de seances</label>
+                        <label>Nb de séances</label>
                         <input className="input" type="number" value={recurrenceOccurrences} onChange={(e) => setRecurrenceOccurrences(Math.max(2, Math.min(52, parseInt(e.target.value) || 2)))} min="2" max="52" />
                       </>
                     ) : (
                       <>
-                        <label className="label">Date de fin</label>
+                        <label>Date de fin</label>
                         <input className="input" type="date" value={recurrenceEndDate} onChange={(e) => setRecurrenceEndDate(e.target.value)} min={date} required={recurrenceEndType === 'end_date'} />
                       </>
                     )}
@@ -1067,47 +1100,61 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
                 </div>
               </div>
             )}
+          </div>
 
-            <div style={{ height: 1, background: 'rgba(var(--overlay),0.08)', margin: '12px 0' }} />
+          <div className="bk-divider" />
 
-            {/* Section Client */}
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 8 }}>Client</div>
+          {/* ---- Section Client ---- */}
+          <div className="bk-section">
+            <div className="bk-section-label">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Client
+            </div>
 
             {/* Autocomplete search */}
             {!selectedClient && (
-              <div ref={searchWrapperRef} style={{ position: 'relative', marginBottom: 12 }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="label">Rechercher un client existant</label>
+              <div ref={searchWrapperRef} style={{ position: 'relative', marginBottom: 14 }}>
+                <div className="bk-field" style={{ marginBottom: 0 }}>
+                  <label>Rechercher un client existant</label>
                   <div style={{ position: 'relative' }}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
                     <input
                       className="input"
                       value={searchQuery}
                       onChange={handleSearchChange}
-                      placeholder="Nom, prenom ou telephone..."
+                      placeholder="Nom, prénom ou téléphone..."
                       onKeyDown={(e) => { if (e.key === 'Escape') setSearchOpen(false); }}
+                      style={{ paddingLeft: 32 }}
                     />
-                    {searchLoading && <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', fontSize: 12 }}>...</span>}
+                    {searchLoading && (
+                      <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)' }}>
+                        <div style={{ width: 14, height: 14, border: '2px solid rgba(var(--overlay),0.1)', borderTopColor: 'var(--text-secondary)', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                      </div>
+                    )}
                   </div>
                 </div>
                 {searchOpen && searchResults.length > 0 && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-hover)', border: '1px solid rgba(var(--overlay),0.1)', borderRadius: 6, zIndex: 50, maxHeight: 200, overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                  <div className="bk-search-results">
                     {searchResults.map((c) => (
-                      <div
-                        key={c.id}
-                        style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(var(--overlay),0.06)', transition: 'background 0.1s' }}
-                        onClick={() => handleSelectClient(c)}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(var(--overlay),0.06)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                      >
-                        <div style={{ fontSize: 13, fontWeight: 600 }}>{c.first_name} {c.last_name}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{c.phone}{c.email ? ` — ${c.email}` : ''}</div>
+                      <div key={c.id} className="bk-search-item" onClick={() => handleSelectClient(c)}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, rgba(var(--overlay),0.08), rgba(var(--overlay),0.03))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', flexShrink: 0 }}>
+                            {(c.first_name || '?').charAt(0).toUpperCase()}{(c.last_name || '?').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600 }}>{c.first_name} {c.last_name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{c.phone}{c.email ? ` · ${c.email}` : ''}</div>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
                 {searchOpen && searchQuery.trim().length >= 2 && searchResults.length === 0 && !searchLoading && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-hover)', border: '1px solid rgba(var(--overlay),0.1)', borderRadius: 6, zIndex: 50, padding: '10px 14px', fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center' }}>
-                    Aucun client trouve
+                  <div className="bk-search-results" style={{ padding: '12px 14px', fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center' }}>
+                    Aucun client trouvé
                   </div>
                 )}
               </div>
@@ -1115,39 +1162,61 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
 
             {/* Selected client badge */}
             {selectedClient && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, padding: '8px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{selectedClient.first_name} {selectedClient.last_name}</span>
-                <button type="button" onClick={handleClearClient} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 4px' }}>&times;</button>
+              <div className="bk-client-badge">
+                <div className="bk-dot" />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{selectedClient.first_name} {selectedClient.last_name}</div>
+                  {selectedClient.phone && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{selectedClient.phone}</div>}
+                </div>
+                <button type="button" onClick={handleClearClient} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 4px', transition: 'color 0.15s' }} onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text)'; }} onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}>&times;</button>
               </div>
             )}
 
-            <div style={formRow}>
-              <div className="form-group">
-                <label className="label">Prenom</label>
-                <input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.6 } : undefined} />
+            <div className="bk-grid-2">
+              <div className="bk-field">
+                <label>Prénom</label>
+                <input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.5 } : undefined} />
               </div>
-              <div className="form-group">
-                <label className="label">Nom</label>
-                <input className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} required readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.6 } : undefined} />
+              <div className="bk-field">
+                <label>Nom</label>
+                <input className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} required readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.5 } : undefined} />
               </div>
             </div>
-            <div style={formRow}>
-              <div className="form-group">
-                <label className="label">Telephone</label>
-                <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.6 } : undefined} />
+            <div className="bk-grid-2">
+              <div className="bk-field">
+                <label>Téléphone</label>
+                <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.5 } : undefined} />
               </div>
-              <div className="form-group">
-                <label className="label">Email</label>
-                <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.6 } : undefined} />
+              <div className="bk-field">
+                <label>Email <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optionnel)</span></label>
+                <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.5 } : undefined} />
               </div>
             </div>
           </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Annuler</button>
-            <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
-              {saving ? 'Creation...' : repeatEnabled ? 'Creer la serie' : 'Creer le RDV'}
-            </button>
+
+          {/* ---- Footer with price + actions ---- */}
+          <div className="bk-footer">
+            <div>
+              {priceDisplay && (
+                <span className="bk-price">{priceDisplay}<small>· {duration}min</small></span>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="bk-btn-cancel" onClick={onClose}>Annuler</button>
+              <button type="submit" className="bk-btn-create" disabled={saving}>
+                {saving ? (
+                  <>
+                    <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                    Création...
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    {repeatEnabled ? 'Créer la série' : 'Créer le RDV'}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -1662,7 +1731,7 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
 // ---------------------------------------------------------------------------
 
 export default function Planning() {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const isMobile = useMobile();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState(window.innerWidth < 768 ? 'day' : 'week');
   const [bookings, setBookings] = useState([]);
@@ -1680,16 +1749,10 @@ export default function Planning() {
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
 
-  // Detect mobile
+  // Force day view on mobile
   useEffect(() => {
-    const onResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (mobile) setView('day');
-    };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+    if (isMobile) setView('day');
+  }, [isMobile]);
 
   const currentDateStr = format(currentDate, 'yyyy-MM-dd');
 
@@ -1850,51 +1913,81 @@ export default function Planning() {
   return (
     <>
       {/* Header */}
-      <div className="page-header" style={isMobile ? { flexDirection: 'column', alignItems: 'stretch', gap: 8 } : undefined}>
-        <div style={isMobile ? { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } : undefined}>
-          <div>
-            <h2 className="page-title" style={isMobile ? { fontSize: 18 } : undefined}>Planning</h2>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', gap: 12 }}>
-              <span>RDV : <span style={{ fontFamily: 'var(--font-display, Orbitron, monospace)', fontWeight: 800, fontSize: 13, color: 'var(--text)', marginLeft: 4 }}>{stats.count}</span></span>
-              <span>CA : <span style={{ fontFamily: 'var(--font-display, Orbitron, monospace)', fontWeight: 800, fontSize: 13, color: 'var(--text)', marginLeft: 4 }}>{formatPrice(stats.revenue)}</span></span>
+      {isMobile ? (
+        <div className="page-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 className="page-title" style={{ fontSize: 18 }}>Planning</h2>
+              <div className="plan-kpis">
+                <span className="plan-kpi">RDV <span className="plan-kpi-val">{stats.count}</span></span>
+                <span className="plan-kpi-dot" />
+                <span className="plan-kpi">CA <span className="plan-kpi-val">{formatPrice(stats.revenue)}</span></span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="plan-block-btn" onClick={handleBlockClick} style={{ padding: '6px 10px', fontSize: 11 }}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                Bloquer
+              </button>
+              <button className="plan-create-btn" onClick={handleCreateClick} style={{ padding: '6px 12px' }}>
+                <PlusIcon size={14} /> Nouveau
+              </button>
             </div>
           </div>
-          {isMobile && (
-            <button className="btn btn-primary btn-sm" onClick={handleCreateClick} style={{ padding: '6px 10px' }}>
-              <PlusIcon size={14} /> Nouveau
-            </button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}>
+              <button className="plan-nav-btn" onClick={goPrev}><ChevronLeft /></button>
+              <span className="plan-nav-label" style={{ minWidth: 0, fontSize: 13 }}>{navDisplay}</span>
+              <button className="plan-nav-btn" onClick={goNext}><ChevronRight /></button>
+            </div>
+            <button className="plan-today-btn" style={{ padding: '4px 10px', fontSize: 12 }} onClick={goToday}>Aujourd&apos;hui</button>
+          </div>
         </div>
+      ) : (
+        <div className="plan-header">
+          <div className="plan-left">
+            <div className="plan-title-block">
+              <h2>Planning</h2>
+              <div className="plan-kpis">
+                <span className="plan-kpi">RDV <span className="plan-kpi-val">{stats.count}</span></span>
+                <span className="plan-kpi-dot" />
+                <span className="plan-kpi">CA <span className="plan-kpi-val">{formatPrice(stats.revenue)}</span></span>
+              </div>
+            </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: isMobile ? 'space-between' : undefined }}>
-          {!isMobile && (
-            <div style={{ display: 'flex', background: 'rgba(var(--overlay),0.04)', borderRadius: 6, overflow: 'hidden', border: '1px solid rgba(var(--overlay),0.08)' }}>
+            <div style={{ width: 1, height: 28, background: 'rgba(var(--overlay),0.08)' }} />
+
+            <div className="plan-view-toggle">
               {['week', 'day'].map((v) => (
-                <button key={v} onClick={() => setView(v)} style={{ padding: '6px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: view === v ? 'rgba(var(--overlay),0.10)' : 'transparent', color: view === v ? 'var(--text)' : 'var(--text-secondary)', transition: 'all 0.15s' }}>
+                <button key={v} className={`plan-view-btn${view === v ? ' active' : ''}`} onClick={() => setView(v)}>
                   {v === 'week' ? 'Semaine' : 'Jour'}
                 </button>
               ))}
             </div>
-          )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: isMobile ? 1 : undefined, justifyContent: isMobile ? 'center' : undefined }}>
-            <button onClick={goPrev} style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid rgba(var(--overlay),0.08)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft /></button>
-            <span style={{ fontSize: isMobile ? 13 : 14, fontWeight: 600, color: 'var(--text)', textTransform: 'capitalize', minWidth: isMobile ? 0 : 180, textAlign: 'center', userSelect: 'none' }}>{navDisplay}</span>
-            <button onClick={goNext} style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid rgba(var(--overlay),0.08)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight /></button>
+            <div className="plan-nav">
+              <button className="plan-nav-btn" onClick={goPrev}><ChevronLeft /></button>
+              <span className="plan-nav-label">{navDisplay}</span>
+              <button className="plan-nav-btn" onClick={goNext}><ChevronRight /></button>
+            </div>
+
+            <button className="plan-today-btn" onClick={goToday}>Aujourd&apos;hui</button>
+            <button className="plan-icon-btn" onClick={handleRefresh} disabled={refreshing} title="Actualiser">
+              <RefreshIcon spinning={refreshing} />
+            </button>
           </div>
 
-          <button className="btn btn-secondary btn-sm" onClick={goToday} style={isMobile ? { padding: '4px 10px', fontSize: 12 } : undefined}>Aujourd&apos;hui</button>
-          <button className="btn btn-secondary btn-sm" onClick={handleRefresh} disabled={refreshing} title="Actualiser" style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <RefreshIcon spinning={refreshing} />
-          </button>
-          {!isMobile && (
-            <>
-              <button className="btn btn-secondary btn-sm" onClick={handleBlockClick} style={{ color: 'var(--text-secondary)' }}>Bloquer créneau</button>
-              <button className="btn btn-primary btn-sm" onClick={handleCreateClick}><PlusIcon size={14} /> Nouveau RDV</button>
-            </>
-          )}
+          <div className="plan-controls">
+            <button className="plan-block-btn" onClick={handleBlockClick}>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+              Bloquer
+            </button>
+            <button className="plan-create-btn" onClick={handleCreateClick}>
+              <PlusIcon size={13} /> Nouveau RDV
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Grid */}
       <div className="page-body" style={{ paddingBottom: 0 }}>

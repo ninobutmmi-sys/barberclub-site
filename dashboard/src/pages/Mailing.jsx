@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getClients } from '../api';
+import useMobile from '../hooks/useMobile';
 
 // ============================================
 // Mailing Page — Email campaigns
@@ -65,6 +66,7 @@ function MailIcon() {
 }
 
 export default function Mailing() {
+  const isMobile = useMobile();
   const [tab, setTab] = useState('compose'); // 'compose' | 'settings'
   const [template, setTemplate] = useState(EMAIL_TEMPLATES[0]);
   const [subject, setSubject] = useState(EMAIL_TEMPLATES[0].subject);
@@ -199,6 +201,9 @@ export default function Mailing() {
         @media (max-width: 1100px) {
           .mailing-preview-col { display: none !important; }
           .mailing-compose-grid { grid-template-columns: 1.2fr 0.8fr !important; }
+        }
+        @media (max-width: 768px) {
+          .mailing-compose-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
       <div className="page-header">

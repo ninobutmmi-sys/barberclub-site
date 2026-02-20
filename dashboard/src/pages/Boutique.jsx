@@ -5,6 +5,7 @@ import {
   getGiftCards, createGiftCard, updateGiftCard,
   getBarbers,
 } from '../api';
+import useMobile from '../hooks/useMobile';
 
 function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
@@ -20,6 +21,7 @@ const CATEGORIES = [
 ];
 
 export default function Boutique() {
+  const isMobile = useMobile();
   const [tab, setTab] = useState('products'); // products | gift-cards | sales
   const [products, setProducts] = useState([]);
   const [giftCards, setGiftCards] = useState([]);
@@ -123,7 +125,7 @@ export default function Boutique() {
                 padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 border: 'none', borderBottom: tab === t.id ? '2px solid var(--text)' : '2px solid transparent',
                 background: 'transparent', color: tab === t.id ? 'var(--text)' : 'var(--text-secondary)',
-                transition: 'all 0.15s',
+                transition: 'all 0.15s', flex: isMobile ? 1 : undefined,
               }}
             >
               {t.label}
@@ -169,77 +171,98 @@ export default function Boutique() {
                   </button>
                 </div>
 
-                <div className="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Produit</th>
-                        <th>Catégorie</th>
-                        <th>Prix achat</th>
-                        <th>Prix vente</th>
-                        <th>Marge</th>
-                        <th>Stock</th>
-                        <th style={{ width: 120 }}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredProducts.map((p) => {
-                        const margin = p.sell_price - p.buy_price;
-                        const marginPct = p.buy_price > 0 ? Math.round((margin / p.buy_price) * 100) : 0;
-                        const isLow = p.stock_quantity <= p.alert_threshold;
-                        return (
-                          <tr key={p.id} style={{ opacity: p.is_active ? 1 : 0.4 }}>
-                            <td style={{ fontWeight: 600 }}>
-                              {p.name}
-                              {p.description && (
-                                <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)', marginTop: 1 }}>{p.description}</div>
-                              )}
-                            </td>
-                            <td style={{ fontSize: 12 }}>
-                              {CATEGORIES.find((c) => c.value === p.category)?.label || p.category}
-                            </td>
-                            <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{formatPrice(p.buy_price)}</td>
-                            <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{formatPrice(p.sell_price)}</td>
-                            <td>
-                              <span style={{ color: margin > 0 ? '#22c55e' : '#ef4444', fontWeight: 700, fontSize: 12 }}>
-                                {formatPrice(margin)} ({marginPct}%)
-                              </span>
-                            </td>
-                            <td>
-                              <span style={{
-                                fontWeight: 700, fontSize: 13,
-                                color: isLow ? '#ef4444' : p.stock_quantity > 20 ? '#22c55e' : '#f59e0b',
-                              }}>
-                                {p.stock_quantity}
-                              </span>
-                              {isLow && (
-                                <span style={{ marginLeft: 6, fontSize: 10, color: '#ef4444', fontWeight: 600 }}>
-                                  ⚠ BAS
+                {isMobile ? (
+                  <div className="mob-card-list">
+                    {filteredProducts.map((p) => {
+                      const isLow = p.stock_quantity <= p.alert_threshold;
+                      return (
+                        <div key={p.id} className="mob-card-item" onClick={() => setModal(p)} style={{ opacity: p.is_active ? 1 : 0.4 }}>
+                          <div className="mob-card-left">
+                            <div className="mob-card-title">{p.name}</div>
+                            <div className="mob-card-sub">{CATEGORIES.find((c) => c.value === p.category)?.label || p.category}</div>
+                          </div>
+                          <div className="mob-card-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontWeight: 700, fontSize: 12, color: isLow ? '#ef4444' : '#22c55e' }}>{p.stock_quantity}</span>
+                            <span className="mob-card-value">{formatPrice(p.sell_price)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {filteredProducts.length === 0 && <div className="empty-state">Aucun produit</div>}
+                  </div>
+                ) : (
+                  <div className="table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Produit</th>
+                          <th>Catégorie</th>
+                          <th>Prix achat</th>
+                          <th>Prix vente</th>
+                          <th>Marge</th>
+                          <th>Stock</th>
+                          <th style={{ width: 120 }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredProducts.map((p) => {
+                          const margin = p.sell_price - p.buy_price;
+                          const marginPct = p.buy_price > 0 ? Math.round((margin / p.buy_price) * 100) : 0;
+                          const isLow = p.stock_quantity <= p.alert_threshold;
+                          return (
+                            <tr key={p.id} style={{ opacity: p.is_active ? 1 : 0.4 }}>
+                              <td style={{ fontWeight: 600 }}>
+                                {p.name}
+                                {p.description && (
+                                  <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)', marginTop: 1 }}>{p.description}</div>
+                                )}
+                              </td>
+                              <td style={{ fontSize: 12 }}>
+                                {CATEGORIES.find((c) => c.value === p.category)?.label || p.category}
+                              </td>
+                              <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{formatPrice(p.buy_price)}</td>
+                              <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{formatPrice(p.sell_price)}</td>
+                              <td>
+                                <span style={{ color: margin > 0 ? '#22c55e' : '#ef4444', fontWeight: 700, fontSize: 12 }}>
+                                  {formatPrice(margin)} ({marginPct}%)
                                 </span>
-                              )}
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', gap: 4 }}>
-                                <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => setSaleModal(p)}>
-                                  Vendre
-                                </button>
-                                <button className="btn btn-ghost btn-sm" onClick={() => setModal(p)}>
-                                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                                </button>
-                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteProduct(p.id)}>
-                                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {filteredProducts.length === 0 && (
-                        <tr><td colSpan="7" style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucun produit</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                              </td>
+                              <td>
+                                <span style={{
+                                  fontWeight: 700, fontSize: 13,
+                                  color: isLow ? '#ef4444' : p.stock_quantity > 20 ? '#22c55e' : '#f59e0b',
+                                }}>
+                                  {p.stock_quantity}
+                                </span>
+                                {isLow && (
+                                  <span style={{ marginLeft: 6, fontSize: 10, color: '#ef4444', fontWeight: 600 }}>
+                                    ⚠ BAS
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => setSaleModal(p)}>
+                                    Vendre
+                                  </button>
+                                  <button className="btn btn-ghost btn-sm" onClick={() => setModal(p)}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                  </button>
+                                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteProduct(p.id)}>
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {filteredProducts.length === 0 && (
+                          <tr><td colSpan="7" style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucun produit</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </>
             )}
 
@@ -253,91 +276,130 @@ export default function Boutique() {
                   </button>
                 </div>
 
-                <div className="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Code</th>
-                        <th>Montant initial</th>
-                        <th>Solde restant</th>
-                        <th>Acheteur</th>
-                        <th>Destinataire</th>
-                        <th>Expiration</th>
-                        <th>Statut</th>
-                        <th style={{ width: 60 }}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {giftCards.map((gc) => {
-                        const expired = gc.expires_at && new Date(gc.expires_at) < new Date();
-                        const used = gc.balance === 0;
-                        return (
-                          <tr key={gc.id} style={{ opacity: gc.is_active && !expired ? 1 : 0.5 }}>
-                            <td style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, letterSpacing: 1 }}>{gc.code}</td>
-                            <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{formatPrice(gc.initial_amount)}</td>
-                            <td>
-                              <span style={{ fontWeight: 700, color: gc.balance > 0 ? '#22c55e' : '#888' }}>
-                                {formatPrice(gc.balance)}
-                              </span>
-                            </td>
-                            <td style={{ fontSize: 12 }}>{gc.buyer_name || '–'}</td>
-                            <td style={{ fontSize: 12 }}>{gc.recipient_name || '–'}</td>
-                            <td style={{ fontSize: 12 }}>
-                              {gc.expires_at ? new Date(gc.expires_at).toLocaleDateString('fr-FR') : 'Illimitée'}
-                            </td>
-                            <td>
-                              <span className={`badge badge-${expired ? 'inactive' : used ? 'inactive' : 'active'}`}>
-                                {expired ? 'Expirée' : used ? 'Utilisée' : 'Active'}
-                              </span>
-                            </td>
-                            <td>
-                              <button className="btn btn-ghost btn-sm" onClick={() => setGcModal(gc)}>
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {giftCards.length === 0 && (
-                        <tr><td colSpan="8" style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucune carte cadeau</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                {isMobile ? (
+                  <div className="mob-card-list">
+                    {giftCards.map((gc) => {
+                      const expired = gc.expires_at && new Date(gc.expires_at) < new Date();
+                      const used = gc.balance === 0;
+                      return (
+                        <div key={gc.id} className="mob-card-item" onClick={() => setGcModal(gc)} style={{ opacity: gc.is_active && !expired ? 1 : 0.5 }}>
+                          <div className="mob-card-left">
+                            <div className="mob-card-title" style={{ fontFamily: 'monospace', letterSpacing: 1 }}>{gc.code}</div>
+                            <div className="mob-card-sub">{gc.buyer_name || '–'} → {gc.recipient_name || '–'}</div>
+                          </div>
+                          <div className="mob-card-right">
+                            <div className="mob-card-value" style={{ color: gc.balance > 0 ? '#22c55e' : 'var(--text-muted)' }}>{formatPrice(gc.balance)}</div>
+                            <div style={{ marginTop: 2 }}><span className={`badge badge-${expired ? 'inactive' : used ? 'inactive' : 'active'}`} style={{ fontSize: 9 }}>{expired ? 'Expiree' : used ? 'Utilisee' : 'Active'}</span></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {giftCards.length === 0 && <div className="empty-state">Aucune carte cadeau</div>}
+                  </div>
+                ) : (
+                  <div className="table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Code</th>
+                          <th>Montant initial</th>
+                          <th>Solde restant</th>
+                          <th>Acheteur</th>
+                          <th>Destinataire</th>
+                          <th>Expiration</th>
+                          <th>Statut</th>
+                          <th style={{ width: 60 }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {giftCards.map((gc) => {
+                          const expired = gc.expires_at && new Date(gc.expires_at) < new Date();
+                          const used = gc.balance === 0;
+                          return (
+                            <tr key={gc.id} style={{ opacity: gc.is_active && !expired ? 1 : 0.5 }}>
+                              <td style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 13, letterSpacing: 1 }}>{gc.code}</td>
+                              <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{formatPrice(gc.initial_amount)}</td>
+                              <td>
+                                <span style={{ fontWeight: 700, color: gc.balance > 0 ? '#22c55e' : '#888' }}>
+                                  {formatPrice(gc.balance)}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: 12 }}>{gc.buyer_name || '–'}</td>
+                              <td style={{ fontSize: 12 }}>{gc.recipient_name || '–'}</td>
+                              <td style={{ fontSize: 12 }}>
+                                {gc.expires_at ? new Date(gc.expires_at).toLocaleDateString('fr-FR') : 'Illimitee'}
+                              </td>
+                              <td>
+                                <span className={`badge badge-${expired ? 'inactive' : used ? 'inactive' : 'active'}`}>
+                                  {expired ? 'Expiree' : used ? 'Utilisee' : 'Active'}
+                                </span>
+                              </td>
+                              <td>
+                                <button className="btn btn-ghost btn-sm" onClick={() => setGcModal(gc)}>
+                                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {giftCards.length === 0 && (
+                          <tr><td colSpan="8" style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucune carte cadeau</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </>
             )}
 
             {/* ====== SALES HISTORY TAB ====== */}
             {tab === 'sales' && (
-              <div className="table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Produit</th>
-                      <th>Qté</th>
-                      <th>Total</th>
-                      <th>Paiement</th>
-                      <th>Vendu par</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sales.map((s) => (
-                      <tr key={s.id}>
-                        <td style={{ fontSize: 12 }}>{new Date(s.sold_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                        <td style={{ fontWeight: 600 }}>{s.product_name}</td>
-                        <td>{s.quantity}</td>
-                        <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{formatPrice(s.total_price)}</td>
-                        <td style={{ fontSize: 12, textTransform: 'uppercase' }}>{s.payment_method}</td>
-                        <td style={{ fontSize: 12 }}>{s.barber_name || '–'}</td>
+              isMobile ? (
+                <div className="mob-card-list">
+                  {sales.map((s) => (
+                    <div key={s.id} className="mob-card-item" style={{ cursor: 'default' }}>
+                      <div className="mob-card-left">
+                        <div className="mob-card-title">{s.product_name}</div>
+                        <div className="mob-card-sub">{new Date(s.sold_at).toLocaleDateString('fr-FR')} · x{s.quantity} · {s.payment_method}</div>
+                      </div>
+                      <div className="mob-card-right">
+                        <div className="mob-card-value">{formatPrice(s.total_price)}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {sales.length === 0 && <div className="empty-state">Aucune vente</div>}
+                </div>
+              ) : (
+                <div className="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Produit</th>
+                        <th>Qté</th>
+                        <th>Total</th>
+                        <th>Paiement</th>
+                        <th>Vendu par</th>
                       </tr>
-                    ))}
-                    {sales.length === 0 && (
-                      <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucune vente</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {sales.map((s) => (
+                        <tr key={s.id}>
+                          <td style={{ fontSize: 12 }}>{new Date(s.sold_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                          <td style={{ fontWeight: 600 }}>{s.product_name}</td>
+                          <td>{s.quantity}</td>
+                          <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{formatPrice(s.total_price)}</td>
+                          <td style={{ fontSize: 12, textTransform: 'uppercase' }}>{s.payment_method}</td>
+                          <td style={{ fontSize: 12 }}>{s.barber_name || '–'}</td>
+                        </tr>
+                      ))}
+                      {sales.length === 0 && (
+                        <tr><td colSpan="6" style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucune vente</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )
             )}
           </>
         )}

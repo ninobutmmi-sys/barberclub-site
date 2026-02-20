@@ -559,6 +559,116 @@ router.get('/trends', async (req, res, next) => {
 });
 
 // ============================================
+// GET /api/admin/analytics/members — Member stats
+// ============================================
+router.get('/members', async (req, res, next) => {
+  try {
+    // Total clients vs members
+    const counts = await db.query(
+      `SELECT
+         COUNT(*) as total_clients,
+         COUNT(*) FILTER (WHERE has_account = true) as total_members
+       FROM clients
+       WHERE deleted_at IS NULL`
+    );
+
+    // New members this month
+    const firstOfMonth = new Date().toISOString().substring(0, 8) + '01';
+    const newMembers = await db.query(
+      `SELECT COUNT(*) as count FROM clients
+       WHERE has_account = true AND deleted_at IS NULL
+         AND created_at >= $1`,
+      [firstOfMonth]
+    );
+
+    // Revenue comparison: members vs guests (last 3 months)
+    const revenueComparison = await db.query(
+      `SELECT
+         COALESCE(SUM(b.price) FILTER (WHERE c.has_account = true), 0) as member_revenue,
+         COUNT(b.id) FILTER (WHERE c.has_account = true) as member_bookings,
+         COALESCE(SUM(b.price) FILTER (WHERE c.has_account = false OR c.has_account IS NULL), 0) as guest_revenue,
+         COUNT(b.id) FILTER (WHERE c.has_account = false OR c.has_account IS NULL) as guest_bookings
+       FROM bookings b
+       JOIN clients c ON b.client_id = c.id
+       WHERE b.status IN ('confirmed', 'completed')
+         AND b.deleted_at IS NULL
+         AND b.date >= CURRENT_DATE - INTERVAL '3 months'`
+    );
+
+    // Average spend per visit: members vs guests
+    const avgSpend = await db.query(
+      `SELECT
+         ROUND(AVG(b.price) FILTER (WHERE c.has_account = true)) as member_avg,
+         ROUND(AVG(b.price) FILTER (WHERE c.has_account = false OR c.has_account IS NULL)) as guest_avg
+       FROM bookings b
+       JOIN clients c ON b.client_id = c.id
+       WHERE b.status IN ('confirmed', 'completed')
+         AND b.deleted_at IS NULL
+         AND b.date >= CURRENT_DATE - INTERVAL '3 months'`
+    );
+
+    // Average visits per client: members vs guests (last 3 months)
+    const avgVisits = await db.query(
+      `SELECT
+         ROUND(AVG(visit_count) FILTER (WHERE has_account = true), 1) as member_avg_visits,
+         ROUND(AVG(visit_count) FILTER (WHERE has_account = false OR has_account IS NULL), 1) as guest_avg_visits
+       FROM (
+         SELECT c.id, c.has_account, COUNT(b.id) as visit_count
+         FROM clients c
+         JOIN bookings b ON c.id = b.client_id
+         WHERE b.status IN ('confirmed', 'completed')
+           AND b.deleted_at IS NULL
+           AND b.date >= CURRENT_DATE - INTERVAL '3 months'
+           AND c.deleted_at IS NULL
+         GROUP BY c.id, c.has_account
+       ) sub`
+    );
+
+    // Monthly member signups (last 6 months)
+    const monthlySignups = await db.query(
+      `SELECT TO_CHAR(created_at, 'YYYY-MM') as month,
+              COUNT(*) as signups
+       FROM clients
+       WHERE has_account = true AND deleted_at IS NULL
+         AND created_at >= CURRENT_DATE - INTERVAL '6 months'
+       GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+       ORDER BY month`
+    );
+
+    const c = counts.rows[0];
+    const r = revenueComparison.rows[0];
+    const a = avgSpend.rows[0];
+    const v = avgVisits.rows[0];
+
+    res.json({
+      total_clients: parseInt(c.total_clients),
+      total_members: parseInt(c.total_members),
+      conversion_rate: parseInt(c.total_clients) > 0
+        ? Math.round((parseInt(c.total_members) / parseInt(c.total_clients)) * 100)
+        : 0,
+      new_members_this_month: parseInt(newMembers.rows[0].count),
+      revenue: {
+        member: parseInt(r.member_revenue),
+        member_bookings: parseInt(r.member_bookings),
+        guest: parseInt(r.guest_revenue),
+        guest_bookings: parseInt(r.guest_bookings),
+      },
+      avg_spend: {
+        member: parseInt(a.member_avg) || 0,
+        guest: parseInt(a.guest_avg) || 0,
+      },
+      avg_visits: {
+        member: parseFloat(v.member_avg_visits) || 0,
+        guest: parseFloat(v.guest_avg_visits) || 0,
+      },
+      monthly_signups: monthlySignups.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
 // Helper: default "from" date based on period
 // ============================================
 function getDefaultFrom(period) {

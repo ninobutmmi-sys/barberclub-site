@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getCampaigns, getCampaignROI } from '../api';
+import useMobile from '../hooks/useMobile';
 
 function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
 }
 
 export default function Campaigns() {
+  const isMobile = useMobile();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedROI, setSelectedROI] = useState(null);
@@ -73,75 +75,104 @@ export default function Campaigns() {
             </div>
           </div>
         ) : (
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Campagne</th>
-                  <th>Type</th>
-                  <th>Date d'envoi</th>
-                  <th>Destinataires</th>
-                  <th>Coût</th>
-                  <th>Clics</th>
-                  <th>RDV générés</th>
-                  <th>CA généré</th>
-                  <th>ROI</th>
-                  <th style={{ width: 80 }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {campaigns.map((c) => {
-                  const roi = c.cost_cents > 0
-                    ? Math.round(((c.revenue_generated - c.cost_cents) / c.cost_cents) * 100)
-                    : 0;
-                  return (
-                    <tr key={c.id}>
-                      <td style={{ fontWeight: 600 }}>
+          isMobile ? (
+            <div className="mob-card-list">
+              {campaigns.map((c) => {
+                const roi = c.cost_cents > 0 ? Math.round(((c.revenue_generated - c.cost_cents) / c.cost_cents) * 100) : 0;
+                return (
+                  <div key={c.id} className="mob-card-item" onClick={() => viewROI(c)}>
+                    <div className="mob-card-left">
+                      <div className="mob-card-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         {c.name}
-                        {c.message_preview && (
-                          <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-secondary)', marginTop: 2, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {c.message_preview}
-                          </div>
-                        )}
-                      </td>
-                      <td>
                         <span style={{
-                          padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                          padding: '1px 6px', borderRadius: 4, fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
                           background: c.type === 'sms' ? 'rgba(59,130,246,0.12)' : 'rgba(168,85,247,0.12)',
                           color: c.type === 'sms' ? '#3b82f6' : '#a855f7',
-                        }}>
-                          {c.type}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: 12 }}>
-                        {new Date(c.sent_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                      </td>
-                      <td style={{ fontWeight: 600 }}>{c.recipients_count}</td>
-                      <td style={{ fontSize: 12 }}>{formatPrice(c.cost_cents)}</td>
-                      <td style={{ fontWeight: 600 }}>{c.clicks}</td>
-                      <td style={{ fontWeight: 600 }}>{c.bookings_generated}</td>
-                      <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>
-                        {formatPrice(c.revenue_generated)}
-                      </td>
-                      <td>
-                        <span style={{
-                          fontWeight: 700, fontSize: 13,
-                          color: roi > 0 ? '#22c55e' : roi < 0 ? '#ef4444' : 'var(--text-secondary)',
-                        }}>
-                          {roi > 0 ? '+' : ''}{roi}%
-                        </span>
-                      </td>
-                      <td>
-                        <button className="btn btn-ghost btn-sm" onClick={() => viewROI(c)}>
-                          Détails
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        }}>{c.type}</span>
+                      </div>
+                      <div className="mob-card-sub">{c.recipients_count} dest. · {c.bookings_generated} RDV · {c.clicks} clics</div>
+                    </div>
+                    <div className="mob-card-right">
+                      <div className="mob-card-value">{formatPrice(c.revenue_generated)}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: roi > 0 ? '#22c55e' : roi < 0 ? '#ef4444' : 'var(--text-secondary)' }}>
+                        {roi > 0 ? '+' : ''}{roi}%
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Campagne</th>
+                    <th>Type</th>
+                    <th>Date d'envoi</th>
+                    <th>Destinataires</th>
+                    <th>Coût</th>
+                    <th>Clics</th>
+                    <th>RDV générés</th>
+                    <th>CA généré</th>
+                    <th>ROI</th>
+                    <th style={{ width: 80 }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map((c) => {
+                    const roi = c.cost_cents > 0
+                      ? Math.round(((c.revenue_generated - c.cost_cents) / c.cost_cents) * 100)
+                      : 0;
+                    return (
+                      <tr key={c.id}>
+                        <td style={{ fontWeight: 600 }}>
+                          {c.name}
+                          {c.message_preview && (
+                            <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-secondary)', marginTop: 2, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {c.message_preview}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <span style={{
+                            padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                            background: c.type === 'sms' ? 'rgba(59,130,246,0.12)' : 'rgba(168,85,247,0.12)',
+                            color: c.type === 'sms' ? '#3b82f6' : '#a855f7',
+                          }}>
+                            {c.type}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: 12 }}>
+                          {new Date(c.sent_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        </td>
+                        <td style={{ fontWeight: 600 }}>{c.recipients_count}</td>
+                        <td style={{ fontSize: 12 }}>{formatPrice(c.cost_cents)}</td>
+                        <td style={{ fontWeight: 600 }}>{c.clicks}</td>
+                        <td style={{ fontWeight: 600 }}>{c.bookings_generated}</td>
+                        <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>
+                          {formatPrice(c.revenue_generated)}
+                        </td>
+                        <td>
+                          <span style={{
+                            fontWeight: 700, fontSize: 13,
+                            color: roi > 0 ? '#22c55e' : roi < 0 ? '#ef4444' : 'var(--text-secondary)',
+                          }}>
+                            {roi > 0 ? '+' : ''}{roi}%
+                          </span>
+                        </td>
+                        <td>
+                          <button className="btn btn-ghost btn-sm" onClick={() => viewROI(c)}>
+                            Détails
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
         )}
       </div>
 
@@ -156,7 +187,7 @@ export default function Campaigns() {
               </button>
             </div>
             <div className="modal-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 20 }}>
                 <ROICard label="Coût campagne" value={formatPrice(selectedROI.cost_cents)} />
                 <ROICard label="Clics" value={selectedROI.clicks} />
                 <ROICard label="RDV générés" value={selectedROI.bookings_count || selectedROI.bookings_generated} />

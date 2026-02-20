@@ -14,6 +14,7 @@ import Mailing from './pages/Mailing';
 import Boutique from './pages/Boutique';
 import Automation from './pages/Automation';
 import Campaigns from './pages/Campaigns';
+import Caisse from './pages/Caisse';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="boutique" element={<Boutique />} />
             <Route path="automation" element={<Automation />} />
             <Route path="campaigns" element={<Campaigns />} />
+            <Route path="caisse" element={<Caisse />} />
           </Route>
         </Routes>
       </BrowserRouter>

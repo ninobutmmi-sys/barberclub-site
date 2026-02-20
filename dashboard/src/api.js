@@ -226,6 +226,7 @@ export const getBarberStats = (params) => {
 };
 export const getClientStats = () => request('/admin/analytics/clients');
 export const getTrends = () => request('/admin/analytics/trends');
+export const getMemberStats = () => request('/admin/analytics/members');
 
 // ---- Admin: Products / Stock ----
 export const getProducts = (params) => {

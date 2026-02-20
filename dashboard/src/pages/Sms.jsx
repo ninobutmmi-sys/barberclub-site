@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getClients } from '../api';
+import useMobile from '../hooks/useMobile';
 
 // ============================================
 // SMS Page — Octopush integration ready
@@ -37,6 +38,7 @@ function SmsIcon() {
 }
 
 export default function Sms() {
+  const isMobile = useMobile();
   const [tab, setTab] = useState('send'); // 'send' | 'history' | 'settings'
   const [template, setTemplate] = useState(SMS_TEMPLATES[0]);
   const [message, setMessage] = useState(SMS_TEMPLATES[0].text);
@@ -177,6 +179,9 @@ export default function Sms() {
         @media (max-width: 1100px) {
           .sms-preview-col { display: none !important; }
           .sms-send-grid { grid-template-columns: 1fr 1fr !important; }
+        }
+        @media (max-width: 768px) {
+          .sms-send-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
       <div className="page-header">

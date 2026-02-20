@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getBookingsHistory, getBarbers } from '../api';
+import useMobile from '../hooks/useMobile';
 
 const LIMIT = 50;
 
@@ -68,6 +69,8 @@ function today() {
 
 export default function History() {
   const navigate = useNavigate();
+  const isMobile = useMobile();
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // -- Filters --
   const [from, setFrom] = useState(defaultFrom);
@@ -185,72 +188,118 @@ export default function History() {
 
       <div className="page-body">
         {/* -- Filters bar -- */}
-        <div style={{
-          display: 'flex',
-          gap: 12,
-          marginBottom: 20,
-          flexWrap: 'wrap',
-          alignItems: 'flex-end',
-        }}>
-          <div>
-            <label className="label">Du</label>
-            <input
-              type="date"
-              className="input"
-              value={from}
-              onChange={handleFilterChange(setFrom)}
-              style={{ width: 160 }}
-            />
-          </div>
-          <div>
-            <label className="label">Au</label>
-            <input
-              type="date"
-              className="input"
-              value={to}
-              onChange={handleFilterChange(setTo)}
-              style={{ width: 160 }}
-            />
-          </div>
-          <div>
-            <label className="label">Barber</label>
-            <select
-              className="input"
-              value={barberId}
-              onChange={handleFilterChange(setBarberId)}
-              style={{ width: 180 }}
+        {isMobile ? (
+          <>
+            <button
+              className={`mob-filters-toggle${filtersOpen ? ' open' : ''}`}
+              onClick={() => setFiltersOpen(v => !v)}
+              style={{ marginBottom: filtersOpen ? 12 : 20 }}
             >
-              <option value="">Tous</option>
-              {barbers.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              Filtres
+            </button>
+            {filtersOpen && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                <div>
+                  <label className="label">Du</label>
+                  <input type="date" className="input" value={from} onChange={handleFilterChange(setFrom)} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="label">Au</label>
+                  <input type="date" className="input" value={to} onChange={handleFilterChange(setTo)} style={{ width: '100%' }} />
+                </div>
+                <div>
+                  <label className="label">Barber</label>
+                  <select className="input" value={barberId} onChange={handleFilterChange(setBarberId)} style={{ width: '100%' }}>
+                    <option value="">Tous</option>
+                    {barbers.map((b) => (<option key={b.id} value={b.id}>{b.name}</option>))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Statut</label>
+                  <select className="input" value={status} onChange={handleFilterChange(setStatus)} style={{ width: '100%' }}>
+                    <option value="">Tous</option>
+                    <option value="confirmed">Confirme</option>
+                    <option value="completed">Termine</option>
+                    <option value="no_show">Absent</option>
+                    <option value="cancelled">Annule</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Recherche</label>
+                  <input className="input" placeholder="Nom, prenom ou telephone..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%' }} />
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{
+            display: 'flex',
+            gap: 12,
+            marginBottom: 20,
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+          }}>
+            <div>
+              <label className="label">Du</label>
+              <input
+                type="date"
+                className="input"
+                value={from}
+                onChange={handleFilterChange(setFrom)}
+                style={{ width: 160 }}
+              />
+            </div>
+            <div>
+              <label className="label">Au</label>
+              <input
+                type="date"
+                className="input"
+                value={to}
+                onChange={handleFilterChange(setTo)}
+                style={{ width: 160 }}
+              />
+            </div>
+            <div>
+              <label className="label">Barber</label>
+              <select
+                className="input"
+                value={barberId}
+                onChange={handleFilterChange(setBarberId)}
+                style={{ width: 180 }}
+              >
+                <option value="">Tous</option>
+                {barbers.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Statut</label>
+              <select
+                className="input"
+                value={status}
+                onChange={handleFilterChange(setStatus)}
+                style={{ width: 160 }}
+              >
+                <option value="">Tous</option>
+                <option value="confirmed">Confirme</option>
+                <option value="completed">Termine</option>
+                <option value="no_show">Absent</option>
+                <option value="cancelled">Annule</option>
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <label className="label">Recherche</label>
+              <input
+                className="input"
+                placeholder="Nom, prenom ou telephone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
-          <div>
-            <label className="label">Statut</label>
-            <select
-              className="input"
-              value={status}
-              onChange={handleFilterChange(setStatus)}
-              style={{ width: 160 }}
-            >
-              <option value="">Tous</option>
-              <option value="confirmed">Confirme</option>
-              <option value="completed">Termine</option>
-              <option value="no_show">Absent</option>
-              <option value="cancelled">Annule</option>
-            </select>
-          </div>
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <label className="label">Recherche</label>
-            <input
-              className="input"
-              placeholder="Nom, prenom ou telephone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
+        )}
 
         {/* -- Error banner -- */}
         {error && (
@@ -274,95 +323,112 @@ export default function History() {
           <div className="empty-state">Aucun rendez-vous trouve</div>
         ) : (
           <>
-            <div className="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th
-                      onClick={() => handleSort('date')}
-                      style={{ cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      Date {renderSortIcon('date')}
-                    </th>
-                    <th>Heure</th>
-                    <th
-                      onClick={() => handleSort('client_last_name')}
-                      style={{ cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      Client {renderSortIcon('client_last_name')}
-                    </th>
-                    <th>Prestation</th>
-                    <th
-                      onClick={() => handleSort('barber_name')}
-                      style={{ cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      Barber {renderSortIcon('barber_name')}
-                    </th>
-                    <th
-                      onClick={() => handleSort('price')}
-                      style={{ cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      Prix {renderSortIcon('price')}
-                    </th>
-                    <th
-                      onClick={() => handleSort('status')}
-                      style={{ cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      Statut {renderSortIcon('status')}
-                    </th>
-                    <th>Source</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.map((b) => (
-                    <tr
-                      key={b.id}
-                      onClick={() => setSelected(b)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <td style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
-                        {formatDateFR(b.date?.slice(0, 10))}
-                      </td>
-                      <td style={{
-                        fontFamily: 'var(--font-display)',
-                        fontWeight: 800,
-                        fontSize: 13,
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {formatTime(b.start_time)}
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>
-                          {b.client_first_name} {b.client_last_name}
-                        </div>
-                        {b.client_phone && (
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                            {b.client_phone}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ fontSize: 13 }}>{b.service_name}</td>
-                      <td style={{ fontSize: 13 }}>{b.barber_name}</td>
-                      <td style={{
-                        fontFamily: 'var(--font-display)',
-                        fontWeight: 800,
-                        fontSize: 13,
-                      }}>
-                        {formatPrice(b.price)}
-                      </td>
-                      <td>
-                        <span className={`badge badge-${b.status}`}>
-                          {STATUS_LABELS[b.status] || b.status}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                        {SOURCE_LABELS[b.source] || b.source}
-                      </td>
+            {isMobile ? (
+              <div className="mob-card-list">
+                {bookings.map((b) => (
+                  <div key={b.id} className="mob-card-item" onClick={() => setSelected(b)}>
+                    <div className="mob-card-left">
+                      <div className="mob-card-title">{b.client_first_name} {b.client_last_name}</div>
+                      <div className="mob-card-sub">{formatDateFR(b.date?.slice(0, 10))} · {formatTime(b.start_time)} — {b.service_name}</div>
+                    </div>
+                    <div className="mob-card-right">
+                      <div className="mob-card-value">{formatPrice(b.price)}</div>
+                      <div style={{ marginTop: 2 }}><span className={`badge badge-${b.status}`} style={{ fontSize: 9 }}>{STATUS_LABELS[b.status] || b.status}</span></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th
+                        onClick={() => handleSort('date')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Date {renderSortIcon('date')}
+                      </th>
+                      <th>Heure</th>
+                      <th
+                        onClick={() => handleSort('client_last_name')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Client {renderSortIcon('client_last_name')}
+                      </th>
+                      <th>Prestation</th>
+                      <th
+                        onClick={() => handleSort('barber_name')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Barber {renderSortIcon('barber_name')}
+                      </th>
+                      <th
+                        onClick={() => handleSort('price')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Prix {renderSortIcon('price')}
+                      </th>
+                      <th
+                        onClick={() => handleSort('status')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Statut {renderSortIcon('status')}
+                      </th>
+                      <th>Source</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {bookings.map((b) => (
+                      <tr
+                        key={b.id}
+                        onClick={() => setSelected(b)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <td style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                          {formatDateFR(b.date?.slice(0, 10))}
+                        </td>
+                        <td style={{
+                          fontFamily: 'var(--font-display)',
+                          fontWeight: 800,
+                          fontSize: 13,
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {formatTime(b.start_time)}
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>
+                            {b.client_first_name} {b.client_last_name}
+                          </div>
+                          {b.client_phone && (
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                              {b.client_phone}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ fontSize: 13 }}>{b.service_name}</td>
+                        <td style={{ fontSize: 13 }}>{b.barber_name}</td>
+                        <td style={{
+                          fontFamily: 'var(--font-display)',
+                          fontWeight: 800,
+                          fontSize: 13,
+                        }}>
+                          {formatPrice(b.price)}
+                        </td>
+                        <td>
+                          <span className={`badge badge-${b.status}`}>
+                            {STATUS_LABELS[b.status] || b.status}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                          {SOURCE_LABELS[b.source] || b.source}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {/* -- Pagination -- */}
             {totalPages > 1 && (
@@ -385,42 +451,46 @@ export default function History() {
                   >
                     Precedent
                   </button>
-                  {/* Page number buttons (show max 7 around current page) */}
-                  {Array.from({ length: totalPages }, (_, i) => i)
-                    .filter((i) => {
-                      if (totalPages <= 7) return true;
-                      if (i === 0 || i === totalPages - 1) return true;
-                      return Math.abs(i - page) <= 2;
-                    })
-                    .reduce((acc, i, idx, arr) => {
-                      if (idx > 0 && i - arr[idx - 1] > 1) {
-                        acc.push('ellipsis-' + i);
-                      }
-                      acc.push(i);
-                      return acc;
-                    }, [])
-                    .map((item) => {
-                      if (typeof item === 'string') {
-                        return (
-                          <span
-                            key={item}
-                            style={{ padding: '4px 6px', color: 'var(--text-muted)' }}
-                          >
-                            ...
-                          </span>
-                        );
-                      }
-                      return (
-                        <button
-                          key={item}
-                          className={`btn btn-sm ${item === page ? 'btn-primary' : 'btn-secondary'}`}
-                          onClick={() => setPage(item)}
-                          style={{ minWidth: 34 }}
-                        >
-                          {item + 1}
-                        </button>
-                      );
-                    })}
+                  {!isMobile && (
+                    <>
+                      {/* Page number buttons (show max 7 around current page) */}
+                      {Array.from({ length: totalPages }, (_, i) => i)
+                        .filter((i) => {
+                          if (totalPages <= 7) return true;
+                          if (i === 0 || i === totalPages - 1) return true;
+                          return Math.abs(i - page) <= 2;
+                        })
+                        .reduce((acc, i, idx, arr) => {
+                          if (idx > 0 && i - arr[idx - 1] > 1) {
+                            acc.push('ellipsis-' + i);
+                          }
+                          acc.push(i);
+                          return acc;
+                        }, [])
+                        .map((item) => {
+                          if (typeof item === 'string') {
+                            return (
+                              <span
+                                key={item}
+                                style={{ padding: '4px 6px', color: 'var(--text-muted)' }}
+                              >
+                                ...
+                              </span>
+                            );
+                          }
+                          return (
+                            <button
+                              key={item}
+                              className={`btn btn-sm ${item === page ? 'btn-primary' : 'btn-secondary'}`}
+                              onClick={() => setPage(item)}
+                              style={{ minWidth: 34 }}
+                            >
+                              {item + 1}
+                            </button>
+                          );
+                        })}
+                    </>
+                  )}
                   <button
                     className="btn btn-secondary btn-sm"
                     disabled={page >= totalPages - 1}
@@ -449,7 +519,7 @@ export default function History() {
               </button>
             </div>
             <div className="modal-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
                 <DetailField label="Date" value={formatDateFR(selected.date?.slice(0, 10))} />
                 <DetailField
                   label="Horaire"

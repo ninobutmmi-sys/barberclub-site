@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getClient, updateClient, deleteClient } from '../api';
+import useMobile from '../hooks/useMobile';
 
 function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
@@ -9,6 +10,7 @@ function formatPrice(cents) {
 export default function ClientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isMobile = useMobile();
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editNotes, setEditNotes] = useState(false);
@@ -65,21 +67,29 @@ export default function ClientDetail() {
   return (
     <>
       <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
           <button className="btn btn-ghost" onClick={() => navigate('/clients')}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           </button>
-          <div>
-            <h2 className="page-title">
+          <div style={{ minWidth: 0 }}>
+            <h2 className="page-title" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {client.first_name} {client.last_name}
               {client.visit_count >= 10 && <span className="badge-vip" style={{ marginLeft: 10, verticalAlign: 'middle' }}>VIP</span>}
             </h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{client.phone}</p>
           </div>
         </div>
-        <button className="btn btn-danger btn-sm" onClick={handleDelete}>
-          Supprimer (RGPD)
-        </button>
+        {isMobile ? (
+          <button className="btn btn-danger btn-sm" onClick={handleDelete} title="Supprimer (RGPD)" style={{ padding: 8 }}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        ) : (
+          <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+            Supprimer (RGPD)
+          </button>
+        )}
       </div>
 
       <div className="page-body">
@@ -132,7 +142,24 @@ export default function ClientDetail() {
         <label className="label" style={{ marginBottom: 12 }}>Historique des rendez-vous</label>
         {client.bookings?.length === 0 ? (
           <div className="empty-state">Aucun rendez-vous</div>
+        ) : isMobile ? (
+          /* ---- Mobile: Card list ---- */
+          <div className="mob-card-list">
+            {client.bookings?.map((b) => (
+              <div key={b.id} className="mob-card-item" style={{ cursor: 'default' }}>
+                <div className="mob-card-left">
+                  <div className="mob-card-title">{b.date} · {b.start_time?.slice(0, 5)}</div>
+                  <div className="mob-card-sub">{b.service_name} — {b.barber_name}</div>
+                </div>
+                <div className="mob-card-right">
+                  <div className="mob-card-value">{formatPrice(b.price)}</div>
+                  <div style={{ marginTop: 2 }}><span className={`badge badge-${b.status}`} style={{ fontSize: 9 }}>{b.status}</span></div>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
+          /* ---- Desktop: Table ---- */
           <div className="table-wrapper">
             <table>
               <thead>

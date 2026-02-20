@@ -4,6 +4,7 @@ import {
   getWaitlist, addToWaitlist, updateWaitlistEntry, deleteWaitlistEntry, getWaitlistCount,
   getBarbers, getServices,
 } from '../api';
+import useMobile from '../hooks/useMobile';
 
 const TRIGGER_LABELS = {
   review_sms: {
@@ -24,6 +25,7 @@ const TRIGGER_LABELS = {
 };
 
 export default function Automation() {
+  const isMobile = useMobile();
   const [tab, setTab] = useState('triggers'); // triggers | waitlist
   const [triggers, setTriggers] = useState([]);
   const [waitlist, setWaitlist] = useState([]);
@@ -174,58 +176,86 @@ export default function Automation() {
                   </button>
                 </div>
 
-                <div className="table-wrapper">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Client</th>
-                        <th>Téléphone</th>
-                        <th>Barber souhaité</th>
-                        <th>Prestation</th>
-                        <th>Date souhaitée</th>
-                        <th>Créneau</th>
-                        <th>Statut</th>
-                        <th style={{ width: 120 }}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {waitlist.map((w) => (
-                        <tr key={w.id}>
-                          <td style={{ fontWeight: 600 }}>{w.client_name}</td>
-                          <td style={{ fontSize: 12 }}>{w.client_phone}</td>
-                          <td style={{ fontSize: 12 }}>{w.barber_name || '–'}</td>
-                          <td style={{ fontSize: 12 }}>{w.service_name || '–'}</td>
-                          <td style={{ fontSize: 12 }}>
+                {isMobile ? (
+                  <div className="mob-card-list">
+                    {waitlist.map((w) => (
+                      <div key={w.id} className="mob-card-item" style={{ flexWrap: 'wrap' }}>
+                        <div className="mob-card-left">
+                          <div className="mob-card-title">{w.client_name}</div>
+                          <div className="mob-card-sub">
                             {new Date(w.preferred_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                          </td>
-                          <td style={{ fontSize: 12 }}>
-                            {w.preferred_time_start ? `${w.preferred_time_start.slice(0, 5)} – ${w.preferred_time_end?.slice(0, 5) || '?'}` : 'Toute la journée'}
-                          </td>
-                          <td>
-                            <span className={`badge badge-${w.status === 'waiting' ? 'active' : w.status === 'notified' ? 'inactive' : 'inactive'}`}>
-                              {w.status === 'waiting' ? 'En attente' : w.status === 'notified' ? 'Notifié' : w.status === 'booked' ? 'Réservé' : 'Expiré'}
-                            </span>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: 4 }}>
-                              {w.status === 'waiting' && (
-                                <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => handleMarkNotified(w)}>
-                                  Notifier
-                                </button>
-                              )}
-                              <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteWaitlist(w.id)}>
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
-                              </button>
-                            </div>
-                          </td>
+                            {w.preferred_time_start ? ` · ${w.preferred_time_start.slice(0, 5)}` : ''} — {w.service_name || '–'}
+                          </div>
+                        </div>
+                        <div className="mob-card-right" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span className={`badge badge-${w.status === 'waiting' ? 'active' : 'inactive'}`} style={{ fontSize: 9 }}>
+                            {w.status === 'waiting' ? 'En attente' : w.status === 'notified' ? 'Notifié' : w.status === 'booked' ? 'Réservé' : 'Expiré'}
+                          </span>
+                          {w.status === 'waiting' && (
+                            <button className="btn btn-primary btn-sm" style={{ fontSize: 10, padding: '3px 8px' }} onClick={(e) => { e.stopPropagation(); handleMarkNotified(w); }}>Notifier</button>
+                          )}
+                          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: 4 }} onClick={(e) => { e.stopPropagation(); handleDeleteWaitlist(w.id); }}>
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {waitlist.length === 0 && <div className="empty-state">Aucun client en liste d'attente</div>}
+                  </div>
+                ) : (
+                  <div className="table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Client</th>
+                          <th>Téléphone</th>
+                          <th>Barber souhaité</th>
+                          <th>Prestation</th>
+                          <th>Date souhaitée</th>
+                          <th>Créneau</th>
+                          <th>Statut</th>
+                          <th style={{ width: 120 }}></th>
                         </tr>
-                      ))}
-                      {waitlist.length === 0 && (
-                        <tr><td colSpan="8" style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucun client en liste d'attente</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {waitlist.map((w) => (
+                          <tr key={w.id}>
+                            <td style={{ fontWeight: 600 }}>{w.client_name}</td>
+                            <td style={{ fontSize: 12 }}>{w.client_phone}</td>
+                            <td style={{ fontSize: 12 }}>{w.barber_name || '–'}</td>
+                            <td style={{ fontSize: 12 }}>{w.service_name || '–'}</td>
+                            <td style={{ fontSize: 12 }}>
+                              {new Date(w.preferred_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                            </td>
+                            <td style={{ fontSize: 12 }}>
+                              {w.preferred_time_start ? `${w.preferred_time_start.slice(0, 5)} – ${w.preferred_time_end?.slice(0, 5) || '?'}` : 'Toute la journée'}
+                            </td>
+                            <td>
+                              <span className={`badge badge-${w.status === 'waiting' ? 'active' : w.status === 'notified' ? 'inactive' : 'inactive'}`}>
+                                {w.status === 'waiting' ? 'En attente' : w.status === 'notified' ? 'Notifié' : w.status === 'booked' ? 'Réservé' : 'Expiré'}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                {w.status === 'waiting' && (
+                                  <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => handleMarkNotified(w)}>
+                                    Notifier
+                                  </button>
+                                )}
+                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteWaitlist(w.id)}>
+                                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {waitlist.length === 0 && (
+                          <tr><td colSpan="8" style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucun client en liste d'attente</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </>
             )}
           </>

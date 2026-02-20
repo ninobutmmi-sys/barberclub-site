@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getDailyCash, recordPayment, deletePayment, closeRegister, updateBookingStatus } from '../api';
 import { format, addDays, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import useMobile from '../hooks/useMobile';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -165,6 +166,7 @@ function RecordPaymentModal({ bookings, onClose, onRecorded, isClosed }) {
 // ---------------------------------------------------------------------------
 
 export default function Caisse() {
+  const isMobile = useMobile();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -240,7 +242,7 @@ export default function Caisse() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button onClick={goPrev} style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid rgba(var(--overlay),0.08)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft /></button>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#fff', textTransform: 'capitalize', minWidth: 180, textAlign: 'center', userSelect: 'none' }}>
+            <span style={{ fontSize: isMobile ? 12 : 14, fontWeight: 600, color: '#fff', textTransform: 'capitalize', minWidth: isMobile ? 120 : 180, textAlign: 'center', userSelect: 'none' }}>
               {format(currentDate, 'EEEE d MMMM yyyy', { locale: fr })}
             </span>
             <button onClick={goNext} style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid rgba(var(--overlay),0.08)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight /></button>
