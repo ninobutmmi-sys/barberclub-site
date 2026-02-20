@@ -13,8 +13,16 @@ export default function ClientDetail() {
   const [loading, setLoading] = useState(true);
   const [editNotes, setEditNotes] = useState(false);
   const [notes, setNotes] = useState('');
+  const [toast, setToast] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => { loadClient(); }, [id]);
+
+  /** @param {'success'|'error'} type */
+  function showToast(message, type = 'success') {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  }
 
   async function loadClient() {
     setLoading(true);
@@ -29,13 +37,16 @@ export default function ClientDetail() {
   }
 
   async function saveNotes() {
+    setSaving(true);
     try {
       await updateClient(id, { notes });
       setEditNotes(false);
+      showToast('Notes enregistrees avec succes');
       loadClient();
     } catch (err) {
-      alert(err.message);
+      showToast(err.message, 'error');
     }
+    setSaving(false);
   }
 
   async function handleDelete() {
@@ -59,7 +70,10 @@ export default function ClientDetail() {
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
           </button>
           <div>
-            <h2 className="page-title">{client.first_name} {client.last_name}</h2>
+            <h2 className="page-title">
+              {client.first_name} {client.last_name}
+              {client.visit_count >= 10 && <span className="badge-vip" style={{ marginLeft: 10, verticalAlign: 'middle' }}>VIP</span>}
+            </h2>
             <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{client.phone}</p>
           </div>
         </div>
@@ -83,26 +97,32 @@ export default function ClientDetail() {
         <div className="card" style={{ marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <label className="label" style={{ margin: 0 }}>Notes internes</label>
-            {editNotes ? (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-primary btn-sm" onClick={saveNotes}>Enregistrer</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => { setEditNotes(false); setNotes(client.notes || ''); }}>Annuler</button>
-              </div>
-            ) : (
-              <button className="btn btn-secondary btn-sm" onClick={() => setEditNotes(true)}>Modifier</button>
-            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {editNotes ? (
+                <>
+                  <button className="btn btn-primary btn-sm" onClick={saveNotes} disabled={saving}>
+                    {saving ? 'Sauvegarde...' : 'Enregistrer'}
+                  </button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => { setEditNotes(false); setNotes(client.notes || ''); }} disabled={saving}>
+                    Annuler
+                  </button>
+                </>
+              ) : (
+                <button className="btn btn-secondary btn-sm" onClick={() => setEditNotes(true)}>Modifier</button>
+              )}
+            </div>
           </div>
           {editNotes ? (
             <textarea
               className="input"
-              rows={3}
+              rows={4}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Notes privées sur ce client..."
+              placeholder="Ajouter une note (ex: prefere degrade haut, allergie produit X...)"
               style={{ resize: 'vertical' }}
             />
           ) : (
-            <p style={{ fontSize: 13, color: notes ? 'var(--text-secondary)' : 'var(--text-muted)' }}>
+            <p style={{ fontSize: 13, color: notes ? 'var(--text-secondary)' : 'var(--text-muted)', whiteSpace: 'pre-wrap' }}>
               {notes || 'Aucune note'}
             </p>
           )}
@@ -141,6 +161,12 @@ export default function ClientDetail() {
           </div>
         )}
       </div>
+
+      {toast && (
+        <div className="toast-container">
+          <div className={`toast toast-${toast.type}`}>{toast.message}</div>
+        </div>
+      )}
     </>
   );
 }

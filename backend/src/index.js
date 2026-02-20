@@ -22,11 +22,19 @@ const adminServiceRoutes = require('./routes/admin/services');
 const adminBarberRoutes = require('./routes/admin/barbers');
 const adminClientRoutes = require('./routes/admin/clients');
 const adminAnalyticsRoutes = require('./routes/admin/analytics');
+const blockedSlotsRoutes = require('./routes/admin/blockedSlots');
+const paymentRoutes = require('./routes/admin/payments');
+const mailingRoutes = require('./routes/admin/mailing');
+const productRoutes = require('./routes/admin/products');
+const waitlistRoutes = require('./routes/admin/waitlist');
+const automationRoutes = require('./routes/admin/automation');
+const { adminRouter: campaignRoutes, publicRouter: campaignTrackRoutes } = require('./routes/admin/campaignTracking');
 
 // Cron job imports
 const { queueReminders } = require('./cron/reminders');
 const { queueReviewRequests } = require('./cron/reviews');
 const { processQueue, cleanupOldNotifications, cleanupExpiredTokens } = require('./cron/retryNotifications');
+const { processAutomationTriggers } = require('./cron/automationTriggers');
 
 // ============================================
 // Express app setup
@@ -103,7 +111,17 @@ adminRouter.use('/services', adminServiceRoutes);
 adminRouter.use('/barbers', adminBarberRoutes);
 adminRouter.use('/clients', adminClientRoutes);
 adminRouter.use('/analytics', adminAnalyticsRoutes);
+adminRouter.use('/blocked-slots', blockedSlotsRoutes);
+adminRouter.use('/payments', paymentRoutes);
+adminRouter.use('/mailing', mailingRoutes);
+adminRouter.use('/products', productRoutes);
+adminRouter.use('/waitlist', waitlistRoutes);
+adminRouter.use('/automation', automationRoutes);
+adminRouter.use('/campaigns', campaignRoutes);
 app.use('/api/admin', adminRouter);
+
+// Public campaign tracking (no auth)
+app.use('/api/track', campaignTrackRoutes);
 
 // ============================================
 // 404 handler
@@ -168,6 +186,9 @@ cron.schedule('0 3 * * *', cleanupOldNotifications);
 
 // Cleanup expired tokens every day at 03:30
 cron.schedule('30 3 * * *', cleanupExpiredTokens);
+
+// Process automation triggers every 10 minutes
+cron.schedule('*/10 * * * *', processAutomationTriggers);
 
 // ============================================
 // Start server

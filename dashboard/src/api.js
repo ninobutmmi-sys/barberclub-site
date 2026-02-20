@@ -2,7 +2,11 @@
 // BarberClub Dashboard — API Client
 // ============================================
 
-const API_BASE = 'http://localhost:3000/api';
+const API_PROD = 'https://barberclub-site-production.up.railway.app/api';
+const API_DEV = 'http://localhost:3000/api';
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? API_DEV
+  : API_PROD;
 
 function getTokens() {
   return {
@@ -126,8 +130,15 @@ export const updateBooking = (id, body) =>
   request(`/admin/bookings/${id}`, { method: 'PUT', body: JSON.stringify(body) });
 export const updateBookingStatus = (id, status) =>
   request(`/admin/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
-export const deleteBooking = (id) =>
-  request(`/admin/bookings/${id}`, { method: 'DELETE' });
+export const deleteBooking = (id, { notify = false } = {}) =>
+  request(`/admin/bookings/${id}?notify=${notify}`, { method: 'DELETE' });
+export const getBookingsHistory = (params) => {
+  const filtered = Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined)
+  );
+  const qs = new URLSearchParams(filtered).toString();
+  return request(`/admin/bookings/history?${qs}`);
+};
 
 // ---- Admin: Services ----
 export const getServices = () => request('/admin/services');
@@ -157,10 +168,35 @@ export const getClients = (params) => {
   return request(`/admin/clients?${qs}`);
 };
 export const getClient = (id) => request(`/admin/clients/${id}`);
+export const getInactiveClients = () => request('/admin/clients/inactive');
 export const updateClient = (id, body) =>
   request(`/admin/clients/${id}`, { method: 'PUT', body: JSON.stringify(body) });
 export const deleteClient = (id) =>
   request(`/admin/clients/${id}`, { method: 'DELETE' });
+
+// ---- Admin: Blocked Slots ----
+export const getBlockedSlots = (params) => {
+  const qs = new URLSearchParams(params).toString();
+  return request(`/admin/blocked-slots?${qs}`);
+};
+export const createBlockedSlot = (body) =>
+  request('/admin/blocked-slots', { method: 'POST', body: JSON.stringify(body) });
+export const deleteBlockedSlot = (id) =>
+  request(`/admin/blocked-slots/${id}`, { method: 'DELETE' });
+
+// ---- Admin: Payments / Caisse ----
+export const getDailyCash = (date) =>
+  request(`/admin/payments/daily?date=${date}`);
+export const recordPayment = (body) =>
+  request('/admin/payments', { method: 'POST', body: JSON.stringify(body) });
+export const deletePayment = (id) =>
+  request(`/admin/payments/${id}`, { method: 'DELETE' });
+export const closeRegister = (body) =>
+  request('/admin/payments/close', { method: 'POST', body: JSON.stringify(body) });
+export const getClosings = (params) => {
+  const qs = new URLSearchParams(params).toString();
+  return request(`/admin/payments/closings?${qs}`);
+};
 
 // ---- Admin: Analytics ----
 export const getDashboard = () => request('/admin/analytics/dashboard');
@@ -168,3 +204,75 @@ export const getRevenue = (params) => {
   const qs = new URLSearchParams(params).toString();
   return request(`/admin/analytics/revenue?${qs}`);
 };
+export const getBookingsCount = (params) => {
+  const qs = new URLSearchParams(params).toString();
+  return request(`/admin/analytics/bookings-count?${qs}`);
+};
+export const getPeakHours = (params) => {
+  const qs = new URLSearchParams(params).toString();
+  return request(`/admin/analytics/peak-hours?${qs}`);
+};
+export const getOccupancy = (params) => {
+  const qs = new URLSearchParams(params).toString();
+  return request(`/admin/analytics/occupancy?${qs}`);
+};
+export const getServiceStats = (params) => {
+  const qs = new URLSearchParams(params).toString();
+  return request(`/admin/analytics/services?${qs}`);
+};
+export const getBarberStats = (params) => {
+  const qs = new URLSearchParams(params).toString();
+  return request(`/admin/analytics/barbers?${qs}`);
+};
+export const getClientStats = () => request('/admin/analytics/clients');
+export const getTrends = () => request('/admin/analytics/trends');
+
+// ---- Admin: Products / Stock ----
+export const getProducts = (params) => {
+  const qs = params ? new URLSearchParams(params).toString() : '';
+  return request(`/admin/products${qs ? '?' + qs : ''}`);
+};
+export const createProduct = (body) =>
+  request('/admin/products', { method: 'POST', body: JSON.stringify(body) });
+export const updateProduct = (id, body) =>
+  request(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+export const deleteProduct = (id) =>
+  request(`/admin/products/${id}`, { method: 'DELETE' });
+export const recordProductSale = (id, body) =>
+  request(`/admin/products/${id}/sale`, { method: 'POST', body: JSON.stringify(body) });
+export const getProductSales = (params) => {
+  const qs = params ? new URLSearchParams(params).toString() : '';
+  return request(`/admin/products/sales${qs ? '?' + qs : ''}`);
+};
+export const getProductStats = () => request('/admin/products/stats');
+
+// ---- Admin: Gift Cards ----
+export const getGiftCards = () => request('/admin/products/gift-cards');
+export const createGiftCard = (body) =>
+  request('/admin/products/gift-cards', { method: 'POST', body: JSON.stringify(body) });
+export const updateGiftCard = (id, body) =>
+  request(`/admin/products/gift-cards/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+
+// ---- Admin: Waitlist ----
+export const getWaitlist = (params) => {
+  const qs = params ? new URLSearchParams(params).toString() : '';
+  return request(`/admin/waitlist${qs ? '?' + qs : ''}`);
+};
+export const addToWaitlist = (body) =>
+  request('/admin/waitlist', { method: 'POST', body: JSON.stringify(body) });
+export const updateWaitlistEntry = (id, body) =>
+  request(`/admin/waitlist/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+export const deleteWaitlistEntry = (id) =>
+  request(`/admin/waitlist/${id}`, { method: 'DELETE' });
+export const getWaitlistCount = () => request('/admin/waitlist/count');
+
+// ---- Admin: Automation Triggers ----
+export const getAutomationTriggers = () => request('/admin/automation');
+export const updateAutomationTrigger = (type, body) =>
+  request(`/admin/automation/${type}`, { method: 'PUT', body: JSON.stringify(body) });
+
+// ---- Admin: Campaign Tracking ----
+export const getCampaigns = () => request('/admin/campaigns');
+export const createCampaign = (body) =>
+  request('/admin/campaigns', { method: 'POST', body: JSON.stringify(body) });
+export const getCampaignROI = (id) => request(`/admin/campaigns/${id}/roi`);

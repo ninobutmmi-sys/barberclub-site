@@ -61,7 +61,7 @@ router.get('/',
 
       // Sort mapping
       const sortMap = {
-        name: 'c.last_name',
+        name: 'c.last_name, c.first_name',
         last_visit: 'last_visit',
         total_spent: 'total_spent',
         visit_count: 'visit_count',
@@ -104,6 +104,32 @@ router.get('/',
     }
   }
 );
+
+// ============================================
+// GET /api/admin/clients/inactive — Regular clients with no visit in 45+ days
+// ============================================
+router.get('/inactive', async (req, res, next) => {
+  try {
+    const result = await db.query(
+      `SELECT c.id, c.first_name, c.last_name, c.phone,
+              COUNT(b.id) FILTER (WHERE b.status = 'completed') AS visit_count,
+              MAX(b.date) FILTER (WHERE b.status = 'completed') AS last_visit,
+              CURRENT_DATE - MAX(b.date) FILTER (WHERE b.status = 'completed') AS days_since_visit
+       FROM clients c
+       JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL
+       WHERE c.deleted_at IS NULL
+       GROUP BY c.id
+       HAVING COUNT(b.id) FILTER (WHERE b.status = 'completed') >= 5
+          AND MAX(b.date) FILTER (WHERE b.status = 'completed') <= CURRENT_DATE - INTERVAL '45 days'
+       ORDER BY days_since_visit DESC
+       LIMIT 20`
+    );
+
+    res.json({ clients: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // ============================================
 // GET /api/admin/clients/:id — Client profile with full history

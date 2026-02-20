@@ -2,9 +2,10 @@
 -- BarberClub Meylan - Seed Data
 -- Run AFTER schema.sql in Supabase SQL Editor
 -- ============================================
--- Default password for barbers: "barberclub2026" (change after first login!)
--- bcrypt hash for "barberclub2026" with 12 rounds:
--- $2b$12$4OoC39X1AkQ.PPldLi7mqOkSzeB5mXPvM18AcWJXbWoICm6R1utN2
+-- TEST password for barbers: "admin" (email: admin@admin.com)
+-- TODO before production: create real accounts with proper credentials
+-- bcrypt hash for "admin" with 12 rounds:
+-- $2b$12$kdQPtqVIw89PVkip7SdOS.xp5CtD7uwWVoWso91IoQf0/.x4JIQOe
 
 -- ============================================
 -- BARBERS
@@ -15,8 +16,8 @@ INSERT INTO barbers (id, name, role, photo_url, email, password_hash, is_active,
     'Lucas',
     'Co-fondateur & Barber',
     '/assets/images/barbers/lucas.png',
-    'lucas@barberclub.fr',
-    '$2b$12$4OoC39X1AkQ.PPldLi7mqOkSzeB5mXPvM18AcWJXbWoICm6R1utN2',
+    'admin@admin.com',
+    '$2b$12$kdQPtqVIw89PVkip7SdOS.xp5CtD7uwWVoWso91IoQf0/.x4JIQOe',
     true,
     1
 ),
@@ -82,20 +83,21 @@ INSERT INTO barber_services (barber_id, service_id) VALUES
 -- SCHEDULES (default: 9h-19h every day for both barbers)
 -- day_of_week: 0=Monday, 1=Tuesday, ..., 6=Sunday
 -- ============================================
+-- day_of_week: 0=Lundi, 1=Mardi, 2=Mercredi, 3=Jeudi, 4=Vendredi, 5=Samedi, 6=Dimanche
 INSERT INTO schedules (barber_id, day_of_week, start_time, end_time, is_working) VALUES
--- Lucas: every day 9h-19h
-('b0000000-0000-0000-0000-000000000001', 0, '09:00', '19:00', true),
+-- Lucas: repos Lundi et Dimanche, bosse Mardi-Samedi
+('b0000000-0000-0000-0000-000000000001', 0, '09:00', '19:00', false),
 ('b0000000-0000-0000-0000-000000000001', 1, '09:00', '19:00', true),
 ('b0000000-0000-0000-0000-000000000001', 2, '09:00', '19:00', true),
 ('b0000000-0000-0000-0000-000000000001', 3, '09:00', '19:00', true),
 ('b0000000-0000-0000-0000-000000000001', 4, '09:00', '19:00', true),
 ('b0000000-0000-0000-0000-000000000001', 5, '09:00', '19:00', true),
-('b0000000-0000-0000-0000-000000000001', 6, '09:00', '19:00', true),
--- Julien: every day 9h-19h
+('b0000000-0000-0000-0000-000000000001', 6, '09:00', '19:00', false),
+-- Julien: repos Samedi et Dimanche, bosse Lundi-Vendredi
 ('b0000000-0000-0000-0000-000000000002', 0, '09:00', '19:00', true),
 ('b0000000-0000-0000-0000-000000000002', 1, '09:00', '19:00', true),
 ('b0000000-0000-0000-0000-000000000002', 2, '09:00', '19:00', true),
 ('b0000000-0000-0000-0000-000000000002', 3, '09:00', '19:00', true),
 ('b0000000-0000-0000-0000-000000000002', 4, '09:00', '19:00', true),
-('b0000000-0000-0000-0000-000000000002', 5, '09:00', '19:00', true),
-('b0000000-0000-0000-0000-000000000002', 6, '09:00', '19:00', true);
+('b0000000-0000-0000-0000-000000000002', 5, '09:00', '19:00', false),
+('b0000000-0000-0000-0000-000000000002', 6, '09:00', '19:00', false);

@@ -25,7 +25,20 @@ router.get('/barbers', publicLimiter, async (req, res, next) => {
        WHERE is_active = true AND deleted_at IS NULL
        ORDER BY sort_order`
     );
-    res.json(result.rows);
+    // Attach off-days for each barber (day_of_week where is_working=false)
+    const schedResult = await db.query(
+      `SELECT barber_id, day_of_week FROM schedules WHERE is_working = false`
+    );
+    const offMap = {};
+    for (const row of schedResult.rows) {
+      if (!offMap[row.barber_id]) offMap[row.barber_id] = [];
+      offMap[row.barber_id].push(row.day_of_week);
+    }
+    const barbers = result.rows.map((b) => ({
+      ...b,
+      off_days: offMap[b.id] || [],
+    }));
+    res.json(barbers);
   } catch (error) {
     next(error);
   }
@@ -128,19 +141,40 @@ router.post('/bookings',
     body('service_id').matches(uuidRegex).withMessage('Service ID invalide'),
     body('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide'),
     body('start_time').matches(/^\d{2}:\d{2}$/).withMessage('Heure invalide (format: HH:MM)'),
-    body('first_name').trim().notEmpty().withMessage('Prénom requis').isLength({ max: 100 }),
-    body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
-    body('phone').trim().notEmpty().withMessage('Téléphone requis')
+    // Client info only required for guest booking (not when authenticated as client)
+    body('first_name').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
+    body('last_name').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
+    body('phone').optional({ values: 'falsy' }).trim()
       .matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numéro de téléphone français invalide'),
-    body('email').trim().notEmpty().withMessage('Email requis').isEmail().withMessage('Email invalide').normalizeEmail(),
+    body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('Email invalide').normalizeEmail(),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
-      const booking = await bookingService.createBooking({
-        ...req.body,
-        source: 'online',
-      });
+      let bookingData = { ...req.body, source: 'online' };
+
+      if (req.user && req.user.type === 'client') {
+        // Authenticated client: get info from database
+        const clientResult = await db.query(
+          'SELECT id, first_name, last_name, phone, email FROM clients WHERE id = $1 AND deleted_at IS NULL',
+          [req.user.id]
+        );
+        if (clientResult.rows.length === 0) {
+          throw ApiError.notFound('Client introuvable');
+        }
+        const client = clientResult.rows[0];
+        bookingData.first_name = client.first_name;
+        bookingData.last_name = client.last_name;
+        bookingData.phone = client.phone;
+        bookingData.email = client.email;
+      } else {
+        // Guest booking: require client info fields
+        if (!bookingData.first_name || !bookingData.last_name || !bookingData.phone || !bookingData.email) {
+          throw ApiError.badRequest('Prénom, nom, téléphone et email sont requis pour une réservation en invité');
+        }
+      }
+
+      const booking = await bookingService.createBooking(bookingData);
 
       res.status(201).json(booking);
     } catch (error) {

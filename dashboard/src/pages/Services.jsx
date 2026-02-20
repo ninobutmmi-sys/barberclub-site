@@ -5,6 +5,13 @@ function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
 }
 
+const COLOR_PALETTE = [
+  '#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899',
+  '#14b8a6', '#ef4444', '#6366f1', '#06b6d4', '#d946ef',
+  '#84cc16', '#f97316', '#a855f7', '#0ea5e9', '#e11d48',
+  '#10b981', '#eab308', '#8b5cf6', '#64748b', '#f43f5e',
+];
+
 export default function Services() {
   const [services, setServices] = useState([]);
   const [barbers, setBarbers] = useState([]);
@@ -64,7 +71,17 @@ export default function Services() {
               <tbody>
                 {services.map((s) => (
                   <tr key={s.id}>
-                    <td style={{ fontWeight: 600 }}>{s.name}</td>
+                    <td style={{ fontWeight: 600 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 14, height: 14, borderRadius: 4, background: s.color || '#22c55e', flexShrink: 0, border: '1px solid rgba(var(--overlay),0.1)' }} />
+                        <div>
+                          {s.name}
+                          {s.description && (
+                            <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)', marginTop: 1, lineHeight: 1.3 }}>{s.description}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
                     <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{formatPrice(s.price)}</td>
                     <td>{s.duration} min</td>
                     <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -108,8 +125,10 @@ export default function Services() {
 function ServiceModal({ service, barbers, onClose, onSaved }) {
   const isEdit = !!service;
   const [name, setName] = useState(service?.name || '');
+  const [description, setDescription] = useState(service?.description || '');
   const [price, setPrice] = useState(service ? (service.price / 100).toFixed(2) : '');
   const [duration, setDuration] = useState(service?.duration || 30);
+  const [color, setColor] = useState(service?.color || '#22c55e');
   const [isActive, setIsActive] = useState(service?.is_active ?? true);
   const [selectedBarbers, setSelectedBarbers] = useState(
     service?.barbers?.map((b) => b.id) || barbers.map((b) => b.id)
@@ -130,8 +149,10 @@ function ServiceModal({ service, barbers, onClose, onSaved }) {
 
     const body = {
       name,
+      description: description || undefined,
       price: Math.round(parseFloat(price) * 100),
       duration: parseInt(duration),
+      color,
       is_active: isActive,
       barber_ids: selectedBarbers,
     };
@@ -167,6 +188,18 @@ function ServiceModal({ service, barbers, onClose, onSaved }) {
               <input className="input" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
 
+            <div className="form-group">
+              <label className="label">Description (optionnel)</label>
+              <textarea
+                className="input"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ex: Coupe ciseaux + tondeuse, shampoing inclus..."
+                rows={2}
+                style={{ resize: 'vertical', minHeight: 48, fontFamily: 'inherit' }}
+              />
+            </div>
+
             <div className="input-row">
               <div className="form-group">
                 <label className="label">Prix (euros)</label>
@@ -175,6 +208,31 @@ function ServiceModal({ service, barbers, onClose, onSaved }) {
               <div className="form-group">
                 <label className="label">Durée (min)</label>
                 <input className="input" type="number" min="5" max="480" value={duration} onChange={(e) => setDuration(e.target.value)} required />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="label">Couleur dans le planning</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                {COLOR_PALETTE.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 6,
+                      background: c,
+                      border: color === c ? '2px solid #fff' : '2px solid transparent',
+                      cursor: 'pointer',
+                      transition: 'all 0.12s',
+                      outline: color === c ? '2px solid rgba(var(--overlay),0.3)' : 'none',
+                      outlineOffset: 1,
+                    }}
+                    title={c}
+                  />
+                ))}
               </div>
             </div>
 

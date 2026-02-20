@@ -1,6 +1,11 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 const config = require('./env');
 const logger = require('../utils/logger');
+
+// Return DATE columns as plain strings ('YYYY-MM-DD') instead of JS Date objects.
+// Default pg behavior creates Date at local midnight, which JSON-serializes to the
+// previous day in UTC for UTC+ timezones (e.g. '2026-02-18T23:00:00.000Z' for Feb 19 CET).
+types.setTypeParser(1082, (val) => val);
 
 const pool = new Pool({
   connectionString: config.databaseUrl,

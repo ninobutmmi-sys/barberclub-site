@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { body } = require('express-validator');
 const db = require('../config/database');
@@ -7,6 +8,7 @@ const { handleValidation } = require('../middleware/validate');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { requireAuth, generateAccessToken, generateRefreshToken } = require('../middleware/auth');
 const { ApiError } = require('../utils/errors');
+const { sendResetPasswordEmail } = require('../services/notification');
 const logger = require('../utils/logger');
 
 const router = Router();
@@ -34,7 +36,7 @@ router.post('/login',
       // Find user by email
       const result = await db.query(
         `SELECT id, email, password_hash, failed_login_attempts, locked_until,
-                ${type === 'barber' ? 'name' : 'first_name || \' \' || last_name as name'}
+                ${type === 'barber' ? 'name, photo_url' : 'first_name || \' \' || last_name as name, NULL as photo_url'}
          FROM ${table}
          WHERE email = $1 AND deleted_at IS NULL`,
         [email]
@@ -89,7 +91,7 @@ router.post('/login',
       );
 
       // Generate tokens
-      const tokenPayload = { id: user.id, type, email: user.email, name: user.name };
+      const tokenPayload = { id: user.id, type, email: user.email, name: user.name, photo_url: user.photo_url || null };
       const accessToken = generateAccessToken(tokenPayload);
       const refreshToken = generateRefreshToken(tokenPayload);
 
@@ -111,6 +113,7 @@ router.post('/login',
           type,
           email: user.email,
           name: user.name,
+          photo_url: user.photo_url || null,
         },
       });
     } catch (error) {
@@ -235,7 +238,7 @@ router.post('/refresh', async (req, res, next) => {
 
     // Get current user info
     const table = decoded.type === 'barber' ? 'barbers' : 'clients';
-    const nameCol = decoded.type === 'barber' ? 'name' : "first_name || ' ' || last_name as name";
+    const nameCol = decoded.type === 'barber' ? 'name, photo_url' : "first_name || ' ' || last_name as name, NULL as photo_url";
     const userResult = await db.query(
       `SELECT id, email, ${nameCol} FROM ${table} WHERE id = $1 AND deleted_at IS NULL`,
       [decoded.id]
@@ -246,7 +249,7 @@ router.post('/refresh', async (req, res, next) => {
     }
 
     const user = userResult.rows[0];
-    const tokenPayload = { id: user.id, type: decoded.type, email: user.email, name: user.name };
+    const tokenPayload = { id: user.id, type: decoded.type, email: user.email, name: user.name, photo_url: user.photo_url || null };
 
     // Delete old refresh token
     await db.query('DELETE FROM refresh_tokens WHERE token = $1', [refresh_token]);
@@ -293,5 +296,130 @@ router.post('/logout', requireAuth, async (req, res, next) => {
     next(error);
   }
 });
+
+// ============================================
+// POST /api/auth/forgot-password
+// ============================================
+router.post('/forgot-password',
+  authLimiter,
+  [
+    body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { email } = req.body;
+
+      // Always return success to prevent email enumeration
+      const successMsg = 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.';
+
+      const result = await db.query(
+        'SELECT id, first_name, email FROM clients WHERE email = $1 AND has_account = true AND deleted_at IS NULL',
+        [email]
+      );
+
+      if (result.rows.length === 0) {
+        return res.json({ message: successMsg });
+      }
+
+      const client = result.rows[0];
+
+      // Generate reset token (UUID)
+      const resetToken = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await db.query(
+        'UPDATE clients SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
+        [resetToken, expiresAt, client.id]
+      );
+
+      // Build reset URL
+      const resetUrl = `${config.siteUrl}/pages/meylan/reset-password.html?token=${resetToken}`;
+
+      // Send email (async, don't block response)
+      sendResetPasswordEmail({
+        email: client.email,
+        first_name: client.first_name,
+        resetUrl,
+      }).catch((err) => {
+        logger.error('Failed to send reset password email', { email, error: err.message });
+      });
+
+      logger.info('Password reset requested', { clientId: client.id });
+
+      res.json({ message: successMsg });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// POST /api/auth/reset-password
+// ============================================
+router.post('/reset-password',
+  authLimiter,
+  [
+    body('token').notEmpty().withMessage('Token requis'),
+    body('password').isLength({ min: 8 }).withMessage('Le mot de passe doit faire au moins 8 caractères'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { token, password } = req.body;
+
+      const result = await db.query(
+        `SELECT id, email, first_name || ' ' || last_name as name
+         FROM clients
+         WHERE reset_token = $1 AND reset_token_expires > NOW() AND deleted_at IS NULL`,
+        [token]
+      );
+
+      if (result.rows.length === 0) {
+        throw ApiError.badRequest('Lien de réinitialisation invalide ou expiré');
+      }
+
+      const client = result.rows[0];
+
+      // Hash new password
+      const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+      // Update password and clear reset token
+      await db.query(
+        `UPDATE clients SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL,
+         failed_login_attempts = 0, locked_until = NULL WHERE id = $2`,
+        [passwordHash, client.id]
+      );
+
+      // Invalidate all existing refresh tokens for this client
+      await db.query(
+        'DELETE FROM refresh_tokens WHERE user_id = $1 AND user_type = $2',
+        [client.id, 'client']
+      );
+
+      // Generate fresh tokens so user is logged in
+      const tokenPayload = { id: client.id, type: 'client', email: client.email, name: client.name };
+      const accessToken = generateAccessToken(tokenPayload);
+      const refreshToken = generateRefreshToken(tokenPayload);
+
+      const expiresAt = new Date(Date.now() + config.jwt.refreshExpiresMs);
+      await db.query(
+        'INSERT INTO refresh_tokens (user_id, user_type, token, expires_at) VALUES ($1, $2, $3, $4)',
+        [client.id, 'client', refreshToken, expiresAt]
+      );
+
+      logger.info('Password reset completed', { clientId: client.id });
+
+      res.json({
+        message: 'Mot de passe réinitialisé avec succès',
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        user: tokenPayload,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 module.exports = router;

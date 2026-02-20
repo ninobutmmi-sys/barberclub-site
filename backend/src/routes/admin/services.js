@@ -13,7 +13,7 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 router.get('/', async (req, res, next) => {
   try {
     const result = await db.query(
-      `SELECT s.id, s.name, s.price, s.duration, s.is_active, s.sort_order,
+      `SELECT s.id, s.name, s.description, s.price, s.duration, s.is_active, s.sort_order, s.color,
               COALESCE(
                 json_agg(json_build_object('id', b.id, 'name', b.name))
                 FILTER (WHERE b.id IS NOT NULL), '[]'
@@ -37,15 +37,17 @@ router.get('/', async (req, res, next) => {
 router.post('/',
   [
     body('name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 200 }),
+    body('description').optional({ values: 'falsy' }).trim().isLength({ max: 1000 }),
     body('price').isInt({ min: 0 }).withMessage('Prix invalide (en centimes)'),
     body('duration').isInt({ min: 5, max: 480 }).withMessage('Durée invalide (5-480 minutes)'),
+    body('color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide (format #RRGGBB)'),
     body('barber_ids').optional().isArray(),
     body('barber_ids.*').optional().matches(uuidRegex),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
-      const { name, price, duration, barber_ids } = req.body;
+      const { name, description, price, duration, color, barber_ids } = req.body;
 
       // Get max sort order
       const maxOrder = await db.query(
@@ -53,9 +55,9 @@ router.post('/',
       );
 
       const result = await db.query(
-        `INSERT INTO services (name, price, duration, sort_order)
-         VALUES ($1, $2, $3, $4) RETURNING *`,
-        [name, price, duration, maxOrder.rows[0].next]
+        `INSERT INTO services (name, description, price, duration, sort_order, color)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [name, description || null, price, duration, maxOrder.rows[0].next, color || '#22c55e']
       );
 
       const service = result.rows[0];
@@ -84,10 +86,12 @@ router.put('/:id',
   [
     param('id').matches(uuidRegex),
     body('name').optional().trim().notEmpty().isLength({ max: 200 }),
+    body('description').optional({ values: 'falsy' }).trim().isLength({ max: 1000 }),
     body('price').optional().isInt({ min: 0 }),
     body('duration').optional().isInt({ min: 5, max: 480 }),
     body('is_active').optional().isBoolean(),
     body('sort_order').optional().isInt({ min: 0 }),
+    body('color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide (format #RRGGBB)'),
     body('barber_ids').optional().isArray(),
     body('barber_ids.*').optional().matches(uuidRegex),
   ],
@@ -95,17 +99,19 @@ router.put('/:id',
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { name, price, duration, is_active, sort_order, barber_ids } = req.body;
+      const { name, description, price, duration, is_active, sort_order, color, barber_ids } = req.body;
 
       const fields = [];
       const values = [];
       let paramIndex = 1;
 
       if (name !== undefined) { fields.push(`name = $${paramIndex++}`); values.push(name); }
+      if (description !== undefined) { fields.push(`description = $${paramIndex++}`); values.push(description || null); }
       if (price !== undefined) { fields.push(`price = $${paramIndex++}`); values.push(price); }
       if (duration !== undefined) { fields.push(`duration = $${paramIndex++}`); values.push(duration); }
       if (is_active !== undefined) { fields.push(`is_active = $${paramIndex++}`); values.push(is_active); }
       if (sort_order !== undefined) { fields.push(`sort_order = $${paramIndex++}`); values.push(sort_order); }
+      if (color !== undefined) { fields.push(`color = $${paramIndex++}`); values.push(color); }
 
       if (fields.length > 0) {
         values.push(id);

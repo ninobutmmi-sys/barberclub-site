@@ -112,8 +112,6 @@ router.put('/:id/schedule',
     param('id').matches(uuidRegex),
     body('schedules').isArray().withMessage('Tableau d\'horaires requis'),
     body('schedules.*.day_of_week').isInt({ min: 0, max: 6 }),
-    body('schedules.*.start_time').matches(/^\d{2}:\d{2}$/),
-    body('schedules.*.end_time').matches(/^\d{2}:\d{2}$/),
     body('schedules.*.is_working').isBoolean(),
   ],
   handleValidation,
@@ -126,10 +124,13 @@ router.put('/:id/schedule',
       await db.query('DELETE FROM schedules WHERE barber_id = $1', [id]);
 
       for (const schedule of schedules) {
+        // Normalize times: strip seconds if present, default to 09:00/19:00 for rest days
+        const startTime = schedule.is_working ? (schedule.start_time || '09:00').slice(0, 5) : '09:00';
+        const endTime = schedule.is_working ? (schedule.end_time || '19:00').slice(0, 5) : '19:00';
         await db.query(
           `INSERT INTO schedules (barber_id, day_of_week, start_time, end_time, is_working)
            VALUES ($1, $2, $3, $4, $5)`,
-          [id, schedule.day_of_week, schedule.start_time, schedule.end_time, schedule.is_working]
+          [id, schedule.day_of_week, startTime, endTime, schedule.is_working]
         );
       }
 

@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
  * @param {string} date - Date string YYYY-MM-DD
  * @returns {Array} Available slots: [{ time: "09:00", barber_id, barber_name }]
  */
-async function getAvailableSlots(barberId, serviceId, date) {
+async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   // 1. Get service duration
   const serviceResult = await db.query(
     'SELECT duration FROM services WHERE id = $1 AND deleted_at IS NULL',
@@ -46,7 +46,7 @@ async function getAvailableSlots(barberId, serviceId, date) {
   const allSlots = [];
 
   for (const bId of barberIds) {
-    const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration);
+    const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration, options);
     allSlots.push(...slots);
   }
 
@@ -59,7 +59,7 @@ async function getAvailableSlots(barberId, serviceId, date) {
 /**
  * Get available slots for a single barber on a date
  */
-async function getSlotsForBarber(barberId, date, dayOfWeek, duration) {
+async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = {}) {
   // Check for schedule override first
   const overrideResult = await db.query(
     `SELECT start_time, end_time, is_day_off
@@ -106,6 +106,19 @@ async function getSlotsForBarber(barberId, date, dayOfWeek, duration) {
     end: timeToMinutes(b.end_time),
   }));
 
+  // Get blocked slots for this barber on this date
+  const blockedResult = await db.query(
+    `SELECT start_time, end_time FROM blocked_slots
+     WHERE barber_id = $1 AND date = $2
+     ORDER BY start_time`,
+    [barberId, date]
+  );
+
+  const blockedSlots = blockedResult.rows.map((b) => ({
+    start: timeToMinutes(b.start_time),
+    end: timeToMinutes(b.end_time),
+  }));
+
   // Get barber name for the response
   const barberResult = await db.query(
     'SELECT name FROM barbers WHERE id = $1',
@@ -118,15 +131,20 @@ async function getSlotsForBarber(barberId, date, dayOfWeek, duration) {
   const endMin = timeToMinutes(endTime);
   const slots = [];
 
-  for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += 10) {
+  // Slots every 30 min for clients (public API), every 5 min for admin
+  const step = options.adminMode ? 5 : 30;
+  for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
     const slotEnd = slotStart + duration;
 
-    // Check if slot overlaps with any existing booking
-    const overlaps = existingBookings.some(
+    // Check if slot overlaps with any existing booking or blocked slot
+    const overlapsBooking = existingBookings.some(
       (booking) => slotStart < booking.end && slotEnd > booking.start
     );
+    const overlapsBlocked = blockedSlots.some(
+      (blocked) => slotStart < blocked.end && slotEnd > blocked.start
+    );
 
-    if (!overlaps) {
+    if (!overlapsBooking && !overlapsBlocked) {
       slots.push({
         time: minutesToTime(slotStart),
         barber_id: barberId,

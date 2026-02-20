@@ -98,7 +98,7 @@ async function sendConfirmationEmail(data) {
     return;
   }
 
-  const cancelUrl = `${config.corsOrigins[0]}/pages/meylan/annuler.html?id=${data.booking_id}&token=${data.cancel_token}`;
+  const cancelUrl = `${config.siteUrl}/pages/meylan/annuler.html?id=${data.booking_id}&token=${data.cancel_token}`;
 
   const dateFormatted = formatDateFR(data.date);
   const timeFormatted = formatTime(data.start_time);
@@ -151,10 +151,11 @@ async function sendReminderSMS(data) {
     return;
   }
 
-  const cancelUrl = `${config.corsOrigins[0]}/pages/meylan/annuler.html?id=${data.booking_id}&token=${data.cancel_token}`;
+  const cancelUrl = `${config.siteUrl}/pages/meylan/annuler.html?id=${data.booking_id}&token=${data.cancel_token}`;
   const timeFormatted = formatTime(data.start_time);
+  const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `Rappel : votre RDV chez ${config.salon.name} demain à ${timeFormatted} avec ${data.barber_name}. Pour annuler : ${cancelUrl}`;
+  const message = `Bonjour ${data.first_name}, rappel de votre RDV chez BarberClub le ${dateFR} a ${timeFormatted}. 26 Av. du Gresivaudan, Corenc. A bientot ! Pour annuler : ${cancelUrl}`;
 
   // Format phone to international
   const phone = formatPhoneInternational(data.phone);
@@ -264,9 +265,12 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
     </div>
 
     <div style="text-align:center;margin-bottom:32px;">
-      <a href="${cancelUrl}" style="color:rgba(255,255,255,0.4);font-size:13px;text-decoration:underline;">
+      <a href="${cancelUrl}" style="display:inline-block;background:rgba(239,68,68,0.1);color:rgba(239,68,68,0.8);padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;border:1px solid rgba(239,68,68,0.2);">
         Annuler ce rendez-vous
       </a>
+      <p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:8px;">
+        Annulation gratuite jusqu'à 12h avant le rendez-vous
+      </p>
     </div>
 
     <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;">
@@ -354,10 +358,243 @@ function getNextRetryTime(attempts) {
   return next;
 }
 
+/**
+ * Send cancellation email directly (admin-triggered, not queued)
+ */
+async function sendCancellationEmail({ email, first_name, service_name, barber_name, date, start_time, price }) {
+  if (!config.resend.apiKey || !email) {
+    logger.warn('Resend not configured or no email, skipping cancellation email');
+    return;
+  }
+
+  const dateFormatted = formatDateFR(date);
+  const timeFormatted = formatTime(start_time);
+  const priceFormatted = (price / 100).toFixed(2).replace('.', ',');
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#000;font-family:'Inter',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <h1 style="font-family:'Orbitron',monospace;font-size:24px;font-weight:800;margin:0;letter-spacing:0.05em;">
+        BARBERCLUB
+      </h1>
+      <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:4px 0 0;">Meylan</p>
+    </div>
+
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.15);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:28px;">✕</span>
+      </div>
+      <h2 style="font-size:20px;font-weight:600;margin:0;">Rendez-vous annulé</h2>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="margin:0 0 12px;color:rgba(255,255,255,0.6);font-size:13px;">VOTRE RDV SUIVANT A ÉTÉ ANNULÉ</p>
+      <p style="margin:0 0 8px;font-size:16px;font-weight:600;">${service_name}</p>
+      <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);">avec ${barber_name}</p>
+      <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);">${dateFormatted} à ${timeFormatted}</p>
+      <p style="margin:0;font-size:16px;font-weight:600;">${priceFormatted} €</p>
+    </div>
+
+    <div style="text-align:center;margin-bottom:24px;">
+      <p style="color:rgba(255,255,255,0.6);font-size:14px;margin:0 0 16px;">
+        N'hésitez pas à reprendre rendez-vous en ligne.
+      </p>
+    </div>
+
+    <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;">
+      <p>BarberClub Meylan — ${config.salon.address}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${config.resend.apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: config.resend.from,
+      to: [email],
+      subject: `RDV annulé - ${service_name} le ${dateFormatted}`,
+      html,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    logger.error('Cancellation email failed', { error: errorBody });
+  } else {
+    logger.info('Cancellation email sent', { email });
+  }
+}
+
+/**
+ * Send reschedule email directly (admin-triggered, not queued)
+ */
+async function sendRescheduleEmail({ email, first_name, service_name, barber_name, old_date, old_time, new_date, new_time, new_barber_name, price }) {
+  if (!config.resend.apiKey || !email) {
+    logger.warn('Resend not configured or no email, skipping reschedule email');
+    return;
+  }
+
+  const oldDateFormatted = formatDateFR(old_date);
+  const oldTimeFormatted = formatTime(old_time);
+  const newDateFormatted = formatDateFR(new_date);
+  const newTimeFormatted = formatTime(new_time);
+  const priceFormatted = (price / 100).toFixed(2).replace('.', ',');
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#000;font-family:'Inter',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <h1 style="font-family:'Orbitron',monospace;font-size:24px;font-weight:800;margin:0;letter-spacing:0.05em;">
+        BARBERCLUB
+      </h1>
+      <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:4px 0 0;">Meylan</p>
+    </div>
+
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(59,130,246,0.15);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:28px;">🔄</span>
+      </div>
+      <h2 style="font-size:20px;font-weight:600;margin:0;">Rendez-vous déplacé</h2>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;margin-bottom:16px;">
+      <p style="margin:0 0 12px;color:rgba(239,68,68,0.7);font-size:13px;text-decoration:line-through;">ANCIEN CRÉNEAU</p>
+      <p style="margin:0 0 4px;color:rgba(255,255,255,0.5);text-decoration:line-through;">${oldDateFormatted} à ${oldTimeFormatted}</p>
+      ${old_date !== new_date || barber_name !== new_barber_name ? `<p style="margin:0;color:rgba(255,255,255,0.4);text-decoration:line-through;">avec ${barber_name}</p>` : ''}
+    </div>
+
+    <div style="background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="margin:0 0 12px;color:rgba(34,197,94,0.8);font-size:13px;">NOUVEAU CRÉNEAU</p>
+      <p style="margin:0 0 8px;font-size:16px;font-weight:600;">${service_name}</p>
+      <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);">avec ${new_barber_name || barber_name}</p>
+      <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);">${newDateFormatted} à ${newTimeFormatted}</p>
+      <p style="margin:0;font-size:16px;font-weight:600;">${priceFormatted} €</p>
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:16px 0;">
+      <p style="margin:0;color:rgba(255,255,255,0.5);font-size:13px;">📍 ${config.salon.address}</p>
+    </div>
+
+    <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;">
+      <p>Paiement sur place uniquement</p>
+      <p>BarberClub Meylan — ${config.salon.address}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${config.resend.apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: config.resend.from,
+      to: [email],
+      subject: `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`,
+      html,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    logger.error('Reschedule email failed', { error: errorBody });
+  } else {
+    logger.info('Reschedule email sent', { email });
+  }
+}
+
+/**
+ * Send password reset email directly (not queued)
+ */
+async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
+  if (!config.resend.apiKey) {
+    logger.warn('Resend API key not configured, logging reset URL instead');
+    logger.info('Password reset URL', { email, resetUrl });
+    return;
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#000;font-family:'Inter',Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 24px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <h1 style="font-family:'Orbitron',monospace;font-size:24px;font-weight:800;margin:0;letter-spacing:0.05em;">
+        BARBERCLUB
+      </h1>
+      <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:4px 0 0;">Meylan</p>
+    </div>
+
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(59,130,246,0.15);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:28px;">🔑</span>
+      </div>
+      <h2 style="font-size:20px;font-weight:600;margin:0;">Réinitialiser votre mot de passe</h2>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="margin:0 0 16px;color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6;">
+        Bonjour${first_name ? ` ${first_name}` : ''},<br><br>
+        Vous avez demandé la réinitialisation de votre mot de passe BarberClub. Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
+      </p>
+      <div style="text-align:center;">
+        <a href="${resetUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
+          Nouveau mot de passe
+        </a>
+      </div>
+    </div>
+
+    <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;line-height:1.6;">
+      <p>Ce lien expire dans 1 heure.</p>
+      <p>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
+      <p style="margin-top:16px;">BarberClub Meylan — ${config.salon.address}</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${config.resend.apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: config.resend.from,
+      to: [email],
+      subject: 'Réinitialisation de votre mot de passe BarberClub',
+      html,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Resend API error ${response.status}: ${errorBody}`);
+  }
+
+  logger.info('Reset password email sent', { email });
+}
+
 module.exports = {
   queueNotification,
   processPendingNotifications,
   sendNotification,
+  sendCancellationEmail,
+  sendRescheduleEmail,
+  sendResetPasswordEmail,
   formatDateFR,
   formatTime,
 };

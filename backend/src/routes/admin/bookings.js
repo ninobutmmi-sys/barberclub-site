@@ -2,6 +2,7 @@ const { Router } = require('express');
 const { body, param, query } = require('express-validator');
 const { handleValidation } = require('../../middleware/validate');
 const bookingService = require('../../services/booking');
+const { sendCancellationEmail, sendRescheduleEmail } = require('../../services/notification');
 const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
 
@@ -55,11 +56,12 @@ router.get('/',
 
       const result = await db.query(
         `SELECT b.id, b.date, b.start_time, b.end_time, b.status, b.price, b.source,
-                b.created_at,
-                s.name as service_name, s.duration as service_duration,
+                b.created_at, b.service_id, b.is_first_visit,
+                s.name as service_name, s.duration as service_duration, s.color as service_color,
                 br.id as barber_id, br.name as barber_name,
                 c.id as client_id, c.first_name as client_first_name,
-                c.last_name as client_last_name, c.phone as client_phone
+                c.last_name as client_last_name, c.phone as client_phone,
+                c.email as client_email, c.notes as client_notes
          FROM bookings b
          JOIN services s ON b.service_id = s.id
          JOIN barbers br ON b.barber_id = br.id
@@ -71,6 +73,125 @@ router.get('/',
       );
 
       res.json(result.rows);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /api/admin/bookings/history — Full history with filters & pagination
+// ============================================
+router.get('/history',
+  [
+    query('from').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
+    query('to').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
+    query('barber_id').optional().matches(uuidRegex),
+    query('status').optional().isIn(['confirmed', 'completed', 'no_show', 'cancelled']),
+    query('search').optional().isString().trim(),
+    query('limit').optional().isInt({ min: 1, max: 200 }).toInt(),
+    query('offset').optional().isInt({ min: 0 }).toInt(),
+    query('sort').optional().isIn(['date', 'price', 'client_last_name', 'barber_name', 'status']),
+    query('order').optional().isIn(['asc', 'desc']),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const {
+        from, to, barber_id, status, search,
+        limit = 50, offset = 0,
+        sort = 'date', order = 'desc',
+      } = req.query;
+
+      const conditions = ['b.deleted_at IS NULL'];
+      const params = [];
+      let paramIndex = 1;
+
+      if (from) {
+        conditions.push(`b.date >= $${paramIndex}`);
+        params.push(from);
+        paramIndex++;
+      }
+
+      if (to) {
+        conditions.push(`b.date <= $${paramIndex}`);
+        params.push(to);
+        paramIndex++;
+      }
+
+      if (barber_id) {
+        conditions.push(`b.barber_id = $${paramIndex}`);
+        params.push(barber_id);
+        paramIndex++;
+      }
+
+      if (status) {
+        conditions.push(`b.status = $${paramIndex}`);
+        params.push(status);
+        paramIndex++;
+      }
+
+      if (search) {
+        conditions.push(
+          `(LOWER(c.first_name) LIKE $${paramIndex}
+            OR LOWER(c.last_name) LIKE $${paramIndex}
+            OR c.phone LIKE $${paramIndex})`
+        );
+        params.push(`%${search.toLowerCase()}%`);
+        paramIndex++;
+      }
+
+      const whereClause = conditions.length > 0
+        ? 'WHERE ' + conditions.join(' AND ')
+        : '';
+
+      // Mapping for sort columns
+      const sortMap = {
+        date: 'b.date DESC, b.start_time',
+        price: 'b.price',
+        client_last_name: 'c.last_name',
+        barber_name: 'br.name',
+        status: 'b.status',
+      };
+      const sortCol = sortMap[sort] || 'b.date DESC, b.start_time';
+      const sortOrder = order === 'asc' ? 'ASC' : 'DESC';
+
+      // Count query
+      const countResult = await db.query(
+        `SELECT COUNT(*) as total
+         FROM bookings b
+         JOIN clients c ON b.client_id = c.id
+         JOIN barbers br ON b.barber_id = br.id
+         JOIN services s ON b.service_id = s.id
+         ${whereClause}`,
+        params
+      );
+
+      // Data query
+      const dataResult = await db.query(
+        `SELECT b.id, b.date, b.start_time, b.end_time, b.status, b.price, b.source,
+                b.created_at,
+                s.id as service_id, s.name as service_name, s.duration as service_duration,
+                br.id as barber_id, br.name as barber_name,
+                c.id as client_id, c.first_name as client_first_name,
+                c.last_name as client_last_name, c.phone as client_phone,
+                c.email as client_email
+         FROM bookings b
+         JOIN services s ON b.service_id = s.id
+         JOIN barbers br ON b.barber_id = br.id
+         JOIN clients c ON b.client_id = c.id
+         ${whereClause}
+         ORDER BY ${sortCol} ${sortOrder}
+         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+        [...params, limit, offset]
+      );
+
+      res.json({
+        bookings: dataResult.rows,
+        total: parseInt(countResult.rows[0].total, 10),
+        limit,
+        offset,
+      });
     } catch (error) {
       next(error);
     }
@@ -91,15 +212,30 @@ router.post('/',
     body('phone').trim().notEmpty().withMessage('Téléphone requis')
       .matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numéro invalide'),
     body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('recurrence').optional().isObject(),
+    body('recurrence.type').optional().isIn(['weekly', 'biweekly', 'monthly']),
+    body('recurrence.end_type').optional().isIn(['occurrences', 'end_date']),
+    body('recurrence.occurrences').optional().isInt({ min: 2, max: 52 }).toInt(),
+    body('recurrence.end_date').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
-      const booking = await bookingService.createBooking({
-        ...req.body,
-        source: 'manual',
-      });
-      res.status(201).json(booking);
+      const { recurrence, ...bookingData } = req.body;
+
+      if (recurrence && recurrence.type) {
+        const result = await bookingService.createRecurringBookings(
+          { ...bookingData, source: 'manual' },
+          recurrence
+        );
+        res.status(201).json(result);
+      } else {
+        const booking = await bookingService.createBooking({
+          ...bookingData,
+          source: 'manual',
+        });
+        res.status(201).json(booking);
+      }
     } catch (error) {
       next(error);
     }
@@ -116,16 +252,23 @@ router.put('/:id',
     body('start_time').optional().matches(/^\d{2}:\d{2}$/),
     body('barber_id').optional().matches(uuidRegex),
     body('service_id').optional().matches(uuidRegex),
+    body('notify_client').optional().isBoolean(),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { date, start_time, barber_id, service_id } = req.body;
+      const { date, start_time, barber_id, service_id, notify_client } = req.body;
 
-      // Get current booking
+      // Get current booking with client info
       const current = await db.query(
-        'SELECT * FROM bookings WHERE id = $1 AND deleted_at IS NULL',
+        `SELECT b.*, c.first_name, c.last_name, c.email, c.phone,
+                s.name as service_name, br.name as barber_name
+         FROM bookings b
+         JOIN clients c ON b.client_id = c.id
+         JOIN services s ON b.service_id = s.id
+         JOIN barbers br ON b.barber_id = br.id
+         WHERE b.id = $1 AND b.deleted_at IS NULL`,
         [id]
       );
       if (current.rows.length === 0) {
@@ -133,18 +276,29 @@ router.put('/:id',
       }
 
       const booking = current.rows[0];
-      const newDate = date || booking.date;
+      const oldDate = typeof booking.date === 'string' ? booking.date.slice(0, 10) : booking.date;
+      const oldTime = booking.start_time;
+      const oldBarberName = booking.barber_name;
+
+      const newDate = date || oldDate;
       const newStartTime = start_time || booking.start_time;
       const newBarberId = barber_id || booking.barber_id;
       const newServiceId = service_id || booking.service_id;
 
       // Get service duration
-      const serviceResult = await db.query('SELECT duration, price FROM services WHERE id = $1', [newServiceId]);
+      const serviceResult = await db.query('SELECT duration, price, name FROM services WHERE id = $1', [newServiceId]);
       if (serviceResult.rows.length === 0) throw ApiError.badRequest('Service introuvable');
 
       const { duration, price } = serviceResult.rows[0];
       const { addMinutesToTime } = require('../../services/availability');
       const newEndTime = addMinutesToTime(newStartTime, duration);
+
+      // Get new barber name if barber changed
+      let newBarberName = oldBarberName;
+      if (barber_id && barber_id !== booking.barber_id) {
+        const brResult = await db.query('SELECT name FROM barbers WHERE id = $1', [barber_id]);
+        if (brResult.rows.length > 0) newBarberName = brResult.rows[0].name;
+      }
 
       // Check for conflicts (excluding current booking)
       const conflictCheck = await db.query(
@@ -166,6 +320,22 @@ router.put('/:id',
          WHERE id = $7 RETURNING *`,
         [newDate, newStartTime, newEndTime, newBarberId, newServiceId, price, id]
       );
+
+      // Send reschedule email if requested (non-blocking)
+      if (notify_client && booking.email) {
+        sendRescheduleEmail({
+          email: booking.email,
+          first_name: booking.first_name,
+          service_name: serviceResult.rows[0].name,
+          barber_name: oldBarberName,
+          old_date: oldDate,
+          old_time: oldTime,
+          new_date: newDate,
+          new_time: newStartTime,
+          new_barber_name: newBarberName,
+          price,
+        }).catch(() => {}); // Don't block the response
+      }
 
       res.json(result.rows[0]);
     } catch (error) {
@@ -201,6 +371,25 @@ router.delete('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const notify = req.query.notify === 'true';
+
+      // If notify, fetch booking + client info before deleting
+      let bookingInfo = null;
+      if (notify) {
+        const infoResult = await db.query(
+          `SELECT b.date, b.start_time, b.price,
+                  s.name as service_name, br.name as barber_name,
+                  c.first_name, c.email
+           FROM bookings b
+           JOIN services s ON b.service_id = s.id
+           JOIN barbers br ON b.barber_id = br.id
+           JOIN clients c ON b.client_id = c.id
+           WHERE b.id = $1 AND b.deleted_at IS NULL`,
+          [req.params.id]
+        );
+        if (infoResult.rows.length > 0) bookingInfo = infoResult.rows[0];
+      }
+
       const result = await db.query(
         `UPDATE bookings SET deleted_at = NOW(), status = 'cancelled'
          WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
@@ -209,6 +398,21 @@ router.delete('/:id',
 
       if (result.rows.length === 0) {
         throw ApiError.notFound('RDV introuvable');
+      }
+
+      // Send cancellation email if requested (non-blocking)
+      if (notify && bookingInfo && bookingInfo.email) {
+        const dateStr = typeof bookingInfo.date === 'string'
+          ? bookingInfo.date.slice(0, 10) : bookingInfo.date;
+        sendCancellationEmail({
+          email: bookingInfo.email,
+          first_name: bookingInfo.first_name,
+          service_name: bookingInfo.service_name,
+          barber_name: bookingInfo.barber_name,
+          date: dateStr,
+          start_time: bookingInfo.start_time,
+          price: bookingInfo.price,
+        }).catch(() => {}); // Don't block the response
       }
 
       res.json({ message: 'RDV supprimé' });

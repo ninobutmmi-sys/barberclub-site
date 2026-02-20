@@ -22,10 +22,10 @@ module.exports = {
     secret: process.env.JWT_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
     accessExpiresIn: '15m',
-    refreshExpiresIn: '7d',
-    refreshExpiresMs: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+    refreshExpiresIn: '90d',
+    refreshExpiresMs: 90 * 24 * 60 * 60 * 1000, // 90 days in ms
   },
-  corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5500')
+  corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5500,http://localhost:5174')
     .split(',')
     .map((s) => s.trim()),
   resend: {
@@ -37,6 +37,7 @@ module.exports = {
     authToken: process.env.TWILIO_AUTH_TOKEN || '',
     phoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
   },
+  siteUrl: process.env.SITE_URL || 'https://barberclub-grenoble.fr',
   salon: {
     name: process.env.SALON_NAME || 'BarberClub Meylan',
     address: process.env.SALON_ADDRESS || '26 Av. du Grésivaudan, 38700 Corenc',
