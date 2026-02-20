@@ -76,10 +76,20 @@ router.post(
   }
 );
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function replaceVars(text, recipient) {
   return text
-    .replace(/\{prenom\}/gi, recipient.first_name || '')
-    .replace(/\{nom\}/gi, recipient.last_name || '');
+    .replace(/\{prenom\}/gi, escapeHtml(recipient.first_name || ''))
+    .replace(/\{nom\}/gi, escapeHtml(recipient.last_name || ''));
 }
 
 function buildCampaignHTML(bodyText) {

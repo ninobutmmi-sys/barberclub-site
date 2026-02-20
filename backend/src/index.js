@@ -41,6 +41,9 @@ const { processAutomationTriggers } = require('./cron/automationTriggers');
 // ============================================
 const app = express();
 
+// Trust Railway's reverse proxy (fixes rate limiter IP detection + req.protocol)
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet({
   contentSecurityPolicy: {
@@ -98,7 +101,7 @@ app.use((req, res, next) => {
 // Public routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api', publicLimiter, bookingRoutes);
+app.use('/api', bookingRoutes); // publicLimiter already applied per-route in bookingRoutes
 
 // Client routes (authenticated)
 app.use('/api/client', clientRoutes);
@@ -194,18 +197,22 @@ cron.schedule('*/10 * * * *', processAutomationTriggers);
 // Start server
 // ============================================
 const PORT = config.port;
+const { pool } = require('./config/database');
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`BarberClub API running on port ${PORT}`, {
     env: config.nodeEnv,
     cors: config.corsOrigins,
   });
 });
 
-// Graceful shutdown
+// Graceful shutdown — finish in-flight requests + close DB pool
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  process.exit(0);
+  server.close(() => {
+    pool.end().then(() => process.exit(0));
+  });
+  setTimeout(() => process.exit(1), 10000); // Force exit after 10s
 });
 
 process.on('unhandledRejection', (reason) => {

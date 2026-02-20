@@ -47,7 +47,10 @@ router.get('/barbers', publicLimiter, async (req, res, next) => {
 // ============================================
 // GET /api/services — List services (optionally filtered by barber)
 // ============================================
-router.get('/services', publicLimiter, async (req, res, next) => {
+router.get('/services', publicLimiter,
+  [query('barber_id').optional().custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide')],
+  handleValidation,
+  async (req, res, next) => {
   try {
     const { barber_id } = req.query;
 
@@ -87,7 +90,8 @@ router.get('/availability',
   publicLimiter,
   [
     query('service_id').matches(uuidRegex).withMessage('Service ID invalide'),
-    query('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide (format: YYYY-MM-DD)'),
+    query('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide (format: YYYY-MM-DD)')
+      .custom((val) => !isNaN(new Date(val + 'T00:00:00').getTime())).withMessage('Date invalide'),
     query('barber_id').optional(),
   ],
   handleValidation,
@@ -137,10 +141,12 @@ router.post('/bookings',
   publicLimiter,
   optionalAuth,
   [
-    body('barber_id').notEmpty().withMessage('Barber requis'),
+    body('barber_id').notEmpty().withMessage('Barber requis')
+      .custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide'),
     body('service_id').matches(uuidRegex).withMessage('Service ID invalide'),
-    body('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide'),
-    body('start_time').matches(/^\d{2}:\d{2}$/).withMessage('Heure invalide (format: HH:MM)'),
+    body('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide')
+      .custom((val) => !isNaN(new Date(val + 'T00:00:00').getTime())).withMessage('Date invalide'),
+    body('start_time').matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure invalide (format: HH:MM)'),
     // Client info only required for guest booking (not when authenticated as client)
     body('first_name').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
     body('last_name').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),

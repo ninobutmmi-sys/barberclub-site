@@ -54,9 +54,11 @@ router.get('/',
             WHERE b2.client_id = c.id
               AND b2.status IN ('confirmed', 'completed')
               AND b2.deleted_at IS NULL
-              AND b2.date >= CURRENT_DATE - INTERVAL '${parseInt(inactive_weeks)} weeks'
+              AND b2.date >= CURRENT_DATE - ($${paramIndex} || ' weeks')::INTERVAL
           )`
         );
+        params.push(parseInt(inactive_weeks));
+        paramIndex++;
       }
 
       // Sort mapping
@@ -268,7 +270,7 @@ router.delete('/:id',
       const result = await db.query(
         `UPDATE clients SET deleted_at = NOW(), email = NULL, phone = 'DELETED',
          first_name = 'Client', last_name = 'supprimé', password_hash = NULL,
-         has_account = false
+         has_account = false, reset_token = NULL, reset_token_expires = NULL
          WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
         [req.params.id]
       );
@@ -276,6 +278,12 @@ router.delete('/:id',
       if (result.rows.length === 0) {
         throw ApiError.notFound('Client introuvable');
       }
+
+      // Invalidate all refresh tokens for this client
+      await db.query(
+        'DELETE FROM refresh_tokens WHERE user_id = $1 AND user_type = $2',
+        [req.params.id, 'client']
+      );
 
       res.json({ message: 'Données client supprimées (RGPD)' });
     } catch (error) {

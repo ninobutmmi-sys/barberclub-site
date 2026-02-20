@@ -17,6 +17,9 @@ const BCRYPT_ROUNDS = 12;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 15;
 
+// Safe table mapping (prevents SQL injection via dynamic table names)
+const TABLE_MAP = { barber: 'barbers', client: 'clients' };
+
 // ============================================
 // POST /api/auth/login
 // ============================================
@@ -31,7 +34,8 @@ router.post('/login',
   async (req, res, next) => {
     try {
       const { email, password, type } = req.body;
-      const table = type === 'barber' ? 'barbers' : 'clients';
+      const table = TABLE_MAP[type];
+      if (!table) throw ApiError.badRequest('Type invalide');
 
       // Find user by email
       const result = await db.query(
@@ -140,31 +144,31 @@ router.post('/register',
     try {
       const { first_name, last_name, phone, email, password } = req.body;
 
-      // Check if email already used
+      // Check if email already used (any account, not just has_account=true)
       const emailCheck = await db.query(
-        'SELECT id FROM clients WHERE email = $1 AND has_account = true AND deleted_at IS NULL',
+        'SELECT id, has_account FROM clients WHERE email = $1 AND deleted_at IS NULL',
         [email]
       );
-      if (emailCheck.rows.length > 0) {
+      if (emailCheck.rows.length > 0 && emailCheck.rows[0].has_account) {
         throw ApiError.conflict('Un compte existe déjà avec cet email');
       }
 
       const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-      // Check if client already exists by phone (from previous bookings without account)
-      const phoneCheck = await db.query(
-        'SELECT id FROM clients WHERE phone = $1 AND deleted_at IS NULL',
-        [phone]
+      // Check if client already exists by phone OR email (from previous bookings without account)
+      const existingCheck = await db.query(
+        'SELECT id FROM clients WHERE (phone = $1 OR email = $2) AND deleted_at IS NULL LIMIT 1',
+        [phone, email]
       );
 
       let clientId;
-      if (phoneCheck.rows.length > 0) {
+      if (existingCheck.rows.length > 0) {
         // Upgrade existing client to account
-        clientId = phoneCheck.rows[0].id;
+        clientId = existingCheck.rows[0].id;
         await db.query(
-          `UPDATE clients SET first_name = $1, last_name = $2, email = $3,
-           password_hash = $4, has_account = true WHERE id = $5`,
-          [first_name, last_name, email, passwordHash, clientId]
+          `UPDATE clients SET first_name = $1, last_name = $2, email = $3, phone = $4,
+           password_hash = $5, has_account = true WHERE id = $6`,
+          [first_name, last_name, email, phone, passwordHash, clientId]
         );
       } else {
         // Create new client with account
@@ -210,7 +214,7 @@ router.post('/register',
 // ============================================
 // POST /api/auth/refresh
 // ============================================
-router.post('/refresh', async (req, res, next) => {
+router.post('/refresh', authLimiter, async (req, res, next) => {
   try {
     const { refresh_token } = req.body;
     if (!refresh_token) {

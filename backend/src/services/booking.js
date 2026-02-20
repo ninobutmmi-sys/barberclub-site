@@ -22,7 +22,30 @@ const logger = require('../utils/logger');
  * @returns {object} Created booking with details
  */
 async function createBooking(data) {
-  return db.transaction(async (client) => {
+  const isAdmin = data.source === 'manual';
+
+  const result = await db.transaction(async (client) => {
+    // 0. Validate date/time is not in the past and not too far in the future (client bookings only)
+    if (!isAdmin) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const requestedDate = new Date(data.date + 'T00:00:00');
+      if (requestedDate < today) {
+        throw ApiError.badRequest('Impossible de réserver dans le passé');
+      }
+      // Reject same-day bookings for past time slots
+      const now = new Date();
+      const requestedDateTime = new Date(`${data.date}T${data.start_time}:00`);
+      if (requestedDateTime < now) {
+        throw ApiError.badRequest('Impossible de réserver un créneau déjà passé');
+      }
+      const maxDate = new Date(today);
+      maxDate.setMonth(maxDate.getMonth() + 6);
+      if (requestedDate > maxDate) {
+        throw ApiError.badRequest('Impossible de réserver plus de 6 mois à l\'avance');
+      }
+    }
+
     // 1. Get service details (price, duration)
     const serviceResult = await client.query(
       'SELECT id, name, price, duration FROM services WHERE id = $1 AND is_active = true AND deleted_at IS NULL',
@@ -66,6 +89,66 @@ async function createBooking(data) {
 
     // 3. Calculate end time
     const endTime = availability.addMinutesToTime(data.start_time, service.duration);
+
+    // 3b. Validate barber schedule (client bookings only — admin can override)
+    if (!isAdmin) {
+      const dateObj = new Date(data.date + 'T00:00:00');
+      const jsDay = dateObj.getDay();
+      const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
+
+      // Check schedule override first
+      const overrideCheck = await client.query(
+        'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
+        [barberId, data.date]
+      );
+
+      if (overrideCheck.rows.length > 0) {
+        const ov = overrideCheck.rows[0];
+        if (ov.is_day_off) {
+          throw ApiError.badRequest('Ce barber ne travaille pas ce jour');
+        }
+        // Check time is within override hours
+        if (data.start_time < ov.start_time.slice(0, 5) || endTime > ov.end_time.slice(0, 5)) {
+          throw ApiError.badRequest('Horaire en dehors des heures de travail');
+        }
+      } else {
+        // Check default schedule
+        const scheduleCheck = await client.query(
+          'SELECT is_working, start_time, end_time FROM schedules WHERE barber_id = $1 AND day_of_week = $2',
+          [barberId, dayOfWeek]
+        );
+        if (scheduleCheck.rows.length === 0 || !scheduleCheck.rows[0].is_working) {
+          throw ApiError.badRequest('Ce barber ne travaille pas ce jour');
+        }
+        const sched = scheduleCheck.rows[0];
+        if (data.start_time < sched.start_time.slice(0, 5) || endTime > sched.end_time.slice(0, 5)) {
+          throw ApiError.badRequest('Horaire en dehors des heures de travail');
+        }
+      }
+
+      // Check blocked slots
+      const blockedCheck = await client.query(
+        `SELECT id FROM blocked_slots
+         WHERE barber_id = $1 AND date = $2
+           AND start_time < $3 AND end_time > $4`,
+        [barberId, data.date, endTime, data.start_time]
+      );
+      if (blockedCheck.rows.length > 0) {
+        throw ApiError.badRequest('Ce créneau est bloqué');
+      }
+
+      // Prevent client double-booking (same client, overlapping time, same day)
+      const clientDoubleCheck = await client.query(
+        `SELECT id FROM bookings
+         WHERE date = $1 AND status = 'confirmed' AND deleted_at IS NULL
+           AND start_time < $2 AND end_time > $3
+           AND client_id IN (SELECT id FROM clients WHERE phone = $4 AND deleted_at IS NULL)`,
+        [data.date, endTime, data.start_time, data.phone]
+      );
+      if (clientDoubleCheck.rows.length > 0) {
+        throw ApiError.conflict('Vous avez déjà un rendez-vous sur ce créneau');
+      }
+    }
 
     // 4. Check slot is still free (with row lock)
     const slotFree = await availability.isSlotAvailable(
@@ -128,15 +211,7 @@ async function createBooking(data) {
       source: data.source || 'online',
     });
 
-    // 7. Queue confirmation email (async — don't block the booking)
-    try {
-      await notification.queueNotification(booking.id, 'confirmation_email');
-    } catch (err) {
-      logger.error('Failed to queue confirmation email', { bookingId: booking.id, error: err.message });
-      // Don't throw — booking is confirmed regardless
-    }
-
-    // Return full booking details
+    // Return full booking details (notification queued after commit)
     return {
       id: booking.id,
       client_id: clientId,
@@ -154,6 +229,15 @@ async function createBooking(data) {
       created_at: booking.created_at,
     };
   });
+
+  // Queue confirmation email AFTER transaction commit (so booking_id exists in DB)
+  try {
+    await notification.queueNotification(result.id, 'confirmation_email');
+  } catch (err) {
+    logger.error('Failed to queue confirmation email', { bookingId: result.id, error: err.message });
+  }
+
+  return result;
 }
 
 /**

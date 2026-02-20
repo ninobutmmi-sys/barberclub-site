@@ -183,7 +183,16 @@ async function isSlotAvailable(barberId, date, startTime, duration, client = nul
          AND start_time < $3 AND end_time > $4`;
 
   const result = await queryFn(lockQuery, [barberId, date, endTime, startTime]);
-  return result.rows.length === 0;
+  if (result.rows.length > 0) return false;
+
+  // Also check blocked slots
+  const blockedCheck = await queryFn(
+    `SELECT id FROM blocked_slots
+     WHERE barber_id = $1 AND date = $2
+       AND start_time < $3 AND end_time > $4`,
+    [barberId, date, endTime, startTime]
+  );
+  return blockedCheck.rows.length === 0;
 }
 
 /**

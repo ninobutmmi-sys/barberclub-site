@@ -233,7 +233,24 @@ async function sendReviewEmail(data) {
 // Email HTML templates
 // ============================================
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, time, price, cancelUrl, address }) {
+  firstName = escapeHtml(firstName);
+  serviceName = escapeHtml(serviceName);
+  barberName = escapeHtml(barberName);
+  date = escapeHtml(date);
+  time = escapeHtml(time);
+  price = escapeHtml(price);
+  address = escapeHtml(address);
   return `
 <!DOCTYPE html>
 <html>
@@ -283,6 +300,8 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
 }
 
 function buildReviewEmailHTML({ firstName, barberName, reviewUrl }) {
+  firstName = escapeHtml(firstName);
+  barberName = escapeHtml(barberName);
   return `
 <!DOCTYPE html>
 <html>
@@ -367,9 +386,11 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
     return;
   }
 
-  const dateFormatted = formatDateFR(date);
-  const timeFormatted = formatTime(start_time);
-  const priceFormatted = (price / 100).toFixed(2).replace('.', ',');
+  const dateFormatted = escapeHtml(formatDateFR(date));
+  const timeFormatted = escapeHtml(formatTime(start_time));
+  const priceFormatted = escapeHtml((price / 100).toFixed(2).replace('.', ','));
+  service_name = escapeHtml(service_name);
+  barber_name = escapeHtml(barber_name);
 
   const html = `
 <!DOCTYPE html>
@@ -443,11 +464,14 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
     return;
   }
 
-  const oldDateFormatted = formatDateFR(old_date);
-  const oldTimeFormatted = formatTime(old_time);
-  const newDateFormatted = formatDateFR(new_date);
-  const newTimeFormatted = formatTime(new_time);
-  const priceFormatted = (price / 100).toFixed(2).replace('.', ',');
+  const oldDateFormatted = escapeHtml(formatDateFR(old_date));
+  const oldTimeFormatted = escapeHtml(formatTime(old_time));
+  const newDateFormatted = escapeHtml(formatDateFR(new_date));
+  const newTimeFormatted = escapeHtml(formatTime(new_time));
+  const priceFormatted = escapeHtml((price / 100).toFixed(2).replace('.', ','));
+  service_name = escapeHtml(service_name);
+  barber_name = escapeHtml(barber_name);
+  new_barber_name = escapeHtml(new_barber_name);
 
   const html = `
 <!DOCTYPE html>
@@ -524,6 +548,8 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
     logger.info('Password reset URL', { email, resetUrl });
     return;
   }
+
+  first_name = escapeHtml(first_name);
 
   const html = `
 <!DOCTYPE html>
