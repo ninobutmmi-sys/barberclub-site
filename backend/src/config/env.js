@@ -28,14 +28,11 @@ module.exports = {
   corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5500,http://localhost:5174')
     .split(',')
     .map((s) => s.trim()),
-  resend: {
-    apiKey: process.env.RESEND_API_KEY || '',
-    from: process.env.EMAIL_FROM || 'BarberClub <noreply@barberclub.fr>',
-  },
-  twilio: {
-    accountSid: process.env.TWILIO_ACCOUNT_SID || '',
-    authToken: process.env.TWILIO_AUTH_TOKEN || '',
-    phoneNumber: process.env.TWILIO_PHONE_NUMBER || '',
+  brevo: {
+    apiKey: process.env.BREVO_API_KEY || '',
+    senderEmail: process.env.BREVO_SENDER_EMAIL || 'noreply@barberclub-grenoble.fr',
+    senderName: process.env.BREVO_SENDER_NAME || 'BarberClub Meylan',
+    smsSender: process.env.BREVO_SMS_SENDER || 'BARBERCLUB',
   },
   siteUrl: process.env.SITE_URL || 'https://barberclub-grenoble.fr',
   salon: {

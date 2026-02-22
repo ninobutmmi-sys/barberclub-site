@@ -23,6 +23,7 @@ assets/images/barbers/*.jpg
 # !assets/images/common/
 
 # Build artifacts
+dashboard/dist/
 *.tmp
 *.bak
 

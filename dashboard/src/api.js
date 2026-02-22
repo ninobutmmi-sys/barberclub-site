@@ -272,6 +272,21 @@ export const getAutomationTriggers = () => request('/admin/automation');
 export const updateAutomationTrigger = (type, body) =>
   request(`/admin/automation/${type}`, { method: 'PUT', body: JSON.stringify(body) });
 
+// ---- Admin: SMS ----
+export const sendSms = (body) =>
+  request('/admin/sms/send', { method: 'POST', body: JSON.stringify(body) });
+
+// ---- Admin: Notifications ----
+export const getNotificationLogs = (params) => {
+  const filtered = Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined)
+  );
+  const qs = new URLSearchParams(filtered).toString();
+  return request(`/admin/notifications/logs?${qs}`);
+};
+export const getNotificationStats = () => request('/admin/notifications/stats');
+export const getBrevoStatus = () => request('/admin/notifications/brevo-status');
+
 // ---- Admin: Campaign Tracking ----
 export const getCampaigns = () => request('/admin/campaigns');
 export const createCampaign = (body) =>

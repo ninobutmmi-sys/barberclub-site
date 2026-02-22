@@ -7,16 +7,18 @@ const router = express.Router();
 
 /**
  * POST /api/admin/mailing/send
- * Send a campaign email to selected clients via Resend
+ * Send a campaign email to selected clients via Brevo
  */
 router.post(
   '/send',
   [
-    body('recipients').isArray({ min: 1 }).withMessage('Au moins un destinataire requis'),
-    body('recipients.*.email').isEmail(),
-    body('subject').notEmpty().withMessage('Sujet requis'),
-    body('body').notEmpty().withMessage('Contenu requis'),
-    body('from_name').optional().isString(),
+    body('recipients').isArray({ min: 1, max: 500 }).withMessage('Entre 1 et 500 destinataires'),
+    body('recipients.*.email').isEmail().withMessage('Email invalide'),
+    body('recipients.*.first_name').optional().trim().isLength({ max: 100 }),
+    body('recipients.*.last_name').optional().trim().isLength({ max: 100 }),
+    body('subject').notEmpty().isLength({ max: 200 }).withMessage('Sujet requis (max 200 car.)'),
+    body('body').notEmpty().isLength({ max: 10000 }).withMessage('Contenu requis (max 10000 car.)'),
+    body('from_name').optional().isString().isLength({ max: 100 }),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -24,14 +26,12 @@ router.post(
       return res.status(400).json({ error: errors.array()[0].msg });
     }
 
-    if (!config.resend.apiKey) {
-      return res.status(500).json({ error: 'Resend API key non configuree' });
+    if (!config.brevo.apiKey) {
+      return res.status(500).json({ error: 'Brevo API key non configuree' });
     }
 
     const { recipients, subject, body: emailBody, from_name } = req.body;
-    const fromField = from_name
-      ? `${from_name} <${config.resend.from.match(/<(.+)>/)?.[1] || 'noreply@barberclub.fr'}>`
-      : config.resend.from;
+    const senderName = from_name || config.brevo.senderName;
 
     let sent = 0;
     let failed = 0;
@@ -44,17 +44,17 @@ router.post(
 
         const html = buildCampaignHTML(personalBody);
 
-        const response = await fetch('https://api.resend.com/emails', {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${config.resend.apiKey}`,
+            'api-key': config.brevo.apiKey,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: fromField,
-            to: [recipient.email],
+            sender: { email: config.brevo.senderEmail, name: senderName },
+            to: [{ email: recipient.email }],
             subject: personalSubject,
-            html,
+            htmlContent: html,
           }),
         });
 

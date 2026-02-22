@@ -2,6 +2,42 @@ const db = require('../config/database');
 const config = require('../config/env');
 const logger = require('../utils/logger');
 
+function formatPhoneInternational(phone) {
+  let cleaned = phone.replace(/[\s.-]/g, '');
+  if (cleaned.startsWith('0')) {
+    cleaned = '+33' + cleaned.substring(1);
+  }
+  if (!cleaned.startsWith('+')) {
+    cleaned = '+33' + cleaned;
+  }
+  return cleaned;
+}
+
+async function brevoSMS(phone, content) {
+  if (!config.brevo.apiKey) {
+    logger.warn('Brevo API key not configured, skipping SMS');
+    return;
+  }
+  const recipient = formatPhoneInternational(phone);
+  const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
+    method: 'POST',
+    headers: {
+      'api-key': config.brevo.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: config.brevo.smsSender,
+      recipient,
+      content,
+      type: 'transactional',
+    }),
+  });
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
+  }
+}
+
 /**
  * Process automation triggers (runs every 10 minutes)
  * Checks each trigger type if active and processes accordingly
@@ -69,17 +105,15 @@ async function processReviewSms(triggerConfig) {
       .replace(/\{nom\}/gi, booking.last_name || '')
       .replace(/\{lien_avis\}/gi, googleReviewUrl);
 
-    logger.info('Review SMS trigger', {
-      bookingId: booking.id,
-      phone: booking.phone,
-      message: personalMessage.substring(0, 50) + '...',
-    });
+    try {
+      await brevoSMS(booking.phone, personalMessage);
+      logger.info('Review SMS sent', { bookingId: booking.id, phone: booking.phone });
+    } catch (err) {
+      logger.error('Review SMS failed', { bookingId: booking.id, error: err.message });
+    }
 
     // Mark as processed to avoid re-sending
     await db.query('UPDATE bookings SET review_email_sent = true WHERE id = $1', [booking.id]);
-
-    // Note: Actual SMS sending will use Octopush when configured
-    // For now, just log and mark processed
   }
 
   if (result.rows.length > 0) {
@@ -120,11 +154,12 @@ async function processReactivationSms(triggerConfig) {
       .replace(/\{nom\}/gi, client.last_name || '')
       .replace(/\{lien_reservation\}/gi, 'https://barberclub-grenoble.fr/pages/meylan/reserver.html');
 
-    logger.info('Reactivation SMS trigger', {
-      clientId: client.id,
-      phone: client.phone,
-      lastVisit: client.last_visit,
-    });
+    try {
+      await brevoSMS(client.phone, personalMessage);
+      logger.info('Reactivation SMS sent', { clientId: client.id, phone: client.phone });
+    } catch (err) {
+      logger.error('Reactivation SMS failed', { clientId: client.id, error: err.message });
+    }
   }
 
   if (result.rows.length > 0) {
@@ -154,9 +189,23 @@ async function processWaitlistNotify(triggerConfig) {
      LIMIT 10`
   );
 
-  // Just log for now — actual notification happens when a cancellation is detected
+  for (const entry of result.rows) {
+    const personalMessage = message
+      .replace(/\{prenom\}/gi, entry.client_name || '')
+      .replace(/\{barbier\}/gi, entry.barber_name || '')
+      .replace(/\{prestation\}/gi, entry.service_name || '');
+
+    try {
+      await brevoSMS(entry.client_phone, personalMessage);
+      logger.info('Waitlist SMS sent', { waitlistId: entry.id, phone: entry.client_phone });
+      await db.query("UPDATE waitlist SET status = 'notified' WHERE id = $1", [entry.id]);
+    } catch (err) {
+      logger.error('Waitlist SMS failed', { waitlistId: entry.id, error: err.message });
+    }
+  }
+
   if (result.rows.length > 0) {
-    logger.info(`Waitlist: ${result.rows.length} clients waiting for slots`);
+    logger.info(`Waitlist: notified ${result.rows.length} clients`);
   }
 }
 

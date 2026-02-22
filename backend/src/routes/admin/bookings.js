@@ -4,6 +4,7 @@ const { handleValidation } = require('../../middleware/validate');
 const bookingService = require('../../services/booking');
 const { sendCancellationEmail, sendRescheduleEmail } = require('../../services/notification');
 const { ApiError } = require('../../utils/errors');
+const logger = require('../../utils/logger');
 const db = require('../../config/database');
 
 const router = Router();
@@ -345,7 +346,7 @@ router.put('/:id',
           new_time: newStartTime,
           new_barber_name: newBarberName,
           price,
-        }).catch(() => {}); // Don't block the response
+        }).catch((err) => logger.error('Email notification failed', { error: err.message }));
       }
 
       res.json(result.rows[0]);
@@ -423,7 +424,7 @@ router.delete('/:id',
           date: dateStr,
           start_time: bookingInfo.start_time,
           price: bookingInfo.price,
-        }).catch(() => {}); // Don't block the response
+        }).catch((err) => logger.error('Email notification failed', { error: err.message }));
       }
 
       res.json({ message: 'RDV supprimé' });

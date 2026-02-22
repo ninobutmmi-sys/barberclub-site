@@ -3,6 +3,7 @@ import {
   getAutomationTriggers, updateAutomationTrigger,
   getWaitlist, addToWaitlist, updateWaitlistEntry, deleteWaitlistEntry, getWaitlistCount,
   getBarbers, getServices,
+  getNotificationStats, getNotificationLogs,
 } from '../api';
 import useMobile from '../hooks/useMobile';
 
@@ -26,7 +27,7 @@ const TRIGGER_LABELS = {
 
 export default function Automation() {
   const isMobile = useMobile();
-  const [tab, setTab] = useState('triggers'); // triggers | waitlist
+  const [tab, setTab] = useState('monitoring'); // monitoring | triggers | waitlist
   const [triggers, setTriggers] = useState([]);
   const [waitlist, setWaitlist] = useState([]);
   const [waitlistCount, setWaitlistCount] = useState(0);
@@ -36,7 +37,29 @@ export default function Automation() {
   const [editTrigger, setEditTrigger] = useState(null);
   const [addWlModal, setAddWlModal] = useState(false);
 
+  // Monitoring
+  const [stats, setStats] = useState(null);
+  const [recentLogs, setRecentLogs] = useState([]);
+  const [statsLoading, setStatsLoading] = useState(false);
+
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    if (tab === 'monitoring') loadMonitoring();
+  }, [tab]);
+
+  async function loadMonitoring() {
+    setStatsLoading(true);
+    try {
+      const [s, l] = await Promise.all([
+        getNotificationStats(),
+        getNotificationLogs({ limit: 15, offset: 0 }),
+      ]);
+      setStats(s);
+      setRecentLogs(l.notifications || []);
+    } catch (err) { console.error(err); }
+    setStatsLoading(false);
+  }
 
   async function loadData() {
     setLoading(true);
@@ -94,6 +117,7 @@ export default function Automation() {
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '1px solid rgba(var(--overlay),0.08)' }}>
           {[
+            { id: 'monitoring', label: 'Monitoring' },
             { id: 'triggers', label: 'Triggers' },
             { id: 'waitlist', label: 'Liste d\'attente' },
           ].map((t) => (
@@ -121,6 +145,80 @@ export default function Automation() {
           <div className="empty-state">Chargement...</div>
         ) : (
           <>
+            {/* ====== MONITORING TAB ====== */}
+            {tab === 'monitoring' && (
+              <div>
+                {statsLoading ? (
+                  <div className="empty-state">Chargement...</div>
+                ) : stats ? (
+                  <>
+                    {/* Stats cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
+                      <StatCard label="SMS envoyes" value={stats.sms_sent} icon="💬" color="#22c55e" />
+                      <StatCard label="Emails envoyes" value={stats.emails_sent} icon="📧" color="#3b82f6" />
+                      <StatCard label="En attente" value={stats.pending} icon="⏳" color="#f59e0b" />
+                      <StatCard label="Echecs" value={stats.sms_failed + stats.emails_failed} icon="⚠" color="#ef4444" />
+                      <StatCard label="Cout SMS estime" value={`${stats.estimated_cost} €`} icon="💰" color="#a855f7" />
+                    </div>
+
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.06em' }}>
+                      Activite recente
+                    </div>
+
+                    {recentLogs.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-secondary)', fontSize: 13 }}>
+                        Aucune notification envoyee pour le moment
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {recentLogs.map((log) => {
+                          const typeMap = {
+                            reminder_sms: { label: 'Rappel SMS', color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
+                            confirmation_email: { label: 'Confirmation', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+                            review_email: { label: 'Avis', color: '#a855f7', bg: 'rgba(168,85,247,0.1)' },
+                          };
+                          const t = typeMap[log.type] || { label: log.type, color: '#888', bg: 'rgba(136,136,136,0.1)' };
+                          const statusColor = log.status === 'sent' ? '#22c55e' : log.status === 'failed' ? '#ef4444' : '#f59e0b';
+
+                          return (
+                            <div key={log.id} style={{
+                              display: 'flex', alignItems: 'center', gap: 12,
+                              padding: '10px 14px', borderRadius: 8,
+                              background: 'rgba(var(--overlay),0.02)',
+                              border: '1px solid rgba(var(--overlay),0.04)',
+                            }}>
+                              <div style={{
+                                width: 8, height: 8, borderRadius: '50%',
+                                background: statusColor, flexShrink: 0,
+                              }} />
+                              <span style={{
+                                display: 'inline-block', padding: '2px 8px', borderRadius: 10,
+                                fontSize: 10, fontWeight: 700, background: t.bg, color: t.color,
+                                flexShrink: 0,
+                              }}>
+                                {t.label}
+                              </span>
+                              <span style={{ fontSize: 13, fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {log.first_name} {log.last_name}
+                              </span>
+                              <span style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0 }}>
+                                {log.phone || log.email}
+                              </span>
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0, minWidth: 90, textAlign: 'right' }}>
+                                {new Date(log.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                                {' '}
+                                {new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                ) : null}
+              </div>
+            )}
+
             {/* ====== TRIGGERS TAB ====== */}
             {tab === 'triggers' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -281,6 +379,21 @@ export default function Automation() {
         />
       )}
     </>
+  );
+}
+
+function StatCard({ label, value, icon, color }) {
+  return (
+    <div style={{
+      padding: '16px 18px', borderRadius: 12,
+      background: 'rgba(var(--overlay),0.02)', border: '1px solid rgba(var(--overlay),0.06)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>{label}</span>
+        <span style={{ fontSize: 18 }}>{icon}</span>
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 800, color, letterSpacing: '-0.02em' }}>{value}</div>
+    </div>
   );
 }
 

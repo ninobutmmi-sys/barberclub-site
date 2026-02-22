@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { getClients } from '../api';
+import { getClients, getNotificationLogs, getBrevoStatus } from '../api';
 import useMobile from '../hooks/useMobile';
 
 // ============================================
-// Mailing Page — Email campaigns
+// Mailing Page — Email campaigns via Brevo
 // ============================================
 
 const EMAIL_TEMPLATES = [
@@ -67,7 +67,7 @@ function MailIcon() {
 
 export default function Mailing() {
   const isMobile = useMobile();
-  const [tab, setTab] = useState('compose'); // 'compose' | 'settings'
+  const [tab, setTab] = useState('compose'); // 'compose' | 'history' | 'settings'
   const [template, setTemplate] = useState(EMAIL_TEMPLATES[0]);
   const [subject, setSubject] = useState(EMAIL_TEMPLATES[0].subject);
   const [body, setBody] = useState(EMAIL_TEMPLATES[0].body);
@@ -76,20 +76,24 @@ export default function Mailing() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
 
-  // Settings — Resend (already configured in backend) or SMTP
-  const [smtpHost, setSmtpHost] = useState(localStorage.getItem('mail_smtp_host') || '');
-  const [smtpPort, setSmtpPort] = useState(localStorage.getItem('mail_smtp_port') || '587');
-  const [smtpUser, setSmtpUser] = useState(localStorage.getItem('mail_smtp_user') || '');
-  const [smtpPass, setSmtpPass] = useState(localStorage.getItem('mail_smtp_pass') || '');
-  const [fromEmail, setFromEmail] = useState(localStorage.getItem('mail_from') || 'noreply@barberclub.fr');
-  const [fromName, setFromName] = useState(localStorage.getItem('mail_from_name') || 'BarberClub');
+  // Brevo status
+  const [brevoStatus, setBrevoStatus] = useState(null);
 
   // Client search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
   const [allClients, setAllClients] = useState([]);
   const [loadingAll, setLoadingAll] = useState(false);
+
+  // History
+  const [logs, setLogs] = useState([]);
+  const [logsTotal, setLogsTotal] = useState(0);
+  const [logsPage, setLogsPage] = useState(0);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  useEffect(() => {
+    getBrevoStatus().then(setBrevoStatus).catch(() => {});
+  }, []);
 
   function handleTemplateChange(id) {
     const tpl = EMAIL_TEMPLATES.find((t) => t.id === id) || EMAIL_TEMPLATES[0];
@@ -103,12 +107,10 @@ export default function Mailing() {
   async function handleSearch(value) {
     setSearchQuery(value);
     if (!value || value.trim().length < 2) { setSearchResults([]); return; }
-    setSearchLoading(true);
     try {
       const data = await getClients({ search: value.trim(), limit: 10 });
       setSearchResults((data.clients || []).filter((c) => c.email));
     } catch { setSearchResults([]); }
-    setSearchLoading(false);
   }
 
   async function loadAllClients() {
@@ -145,28 +147,28 @@ export default function Mailing() {
     setSending(true);
     setResult(null);
 
-    // For now, send via backend endpoint (uses Resend already configured)
     try {
-      const res = await fetch(
-        (window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://barberclub-site-production.up.railway.app') + '/api/admin/mailing/send',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('bc_access_token')}`,
-          },
-          body: JSON.stringify({
-            recipients: recipients.map((c) => ({
-              email: c.email,
-              first_name: c.first_name,
-              last_name: c.last_name,
-            })),
-            subject,
-            body,
-            from_name: fromName,
-          }),
-        }
-      );
+      const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000/api'
+        : 'https://barberclub-site-production.up.railway.app/api';
+
+      const res = await fetch(`${API_BASE}/admin/mailing/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('bc_access_token')}`,
+        },
+        body: JSON.stringify({
+          recipients: recipients.map((c) => ({
+            email: c.email,
+            first_name: c.first_name,
+            last_name: c.last_name,
+          })),
+          subject,
+          body,
+          from_name: brevoStatus?.senderName || 'BarberClub Meylan',
+        }),
+      });
 
       const data = await res.json();
       if (!res.ok) {
@@ -184,16 +186,30 @@ export default function Mailing() {
     setSending(false);
   }
 
-  function handleSaveSettings() {
-    localStorage.setItem('mail_smtp_host', smtpHost);
-    localStorage.setItem('mail_smtp_port', smtpPort);
-    localStorage.setItem('mail_smtp_user', smtpUser);
-    localStorage.setItem('mail_smtp_pass', smtpPass);
-    localStorage.setItem('mail_from', fromEmail);
-    localStorage.setItem('mail_from_name', fromName);
-    setResult({ success: true, message: 'Parametres sauvegardes.' });
-    setTimeout(() => setResult(null), 3000);
+  async function loadLogs(page = 0) {
+    setLogsLoading(true);
+    try {
+      const data = await getNotificationLogs({
+        type: 'confirmation_email',
+        limit: 25,
+        offset: page * 25,
+      });
+      setLogs(data.notifications || []);
+      setLogsTotal(data.total || 0);
+      setLogsPage(page);
+    } catch { /* silent */ }
+    setLogsLoading(false);
   }
+
+  useEffect(() => {
+    if (tab === 'history') loadLogs(0);
+  }, [tab]);
+
+  const statusLabel = (s) => {
+    if (s === 'sent') return { text: 'Envoye', color: '#22c55e' };
+    if (s === 'failed') return { text: 'Echec', color: '#ef4444' };
+    return { text: 'En attente', color: '#f59e0b' };
+  };
 
   return (
     <>
@@ -210,7 +226,7 @@ export default function Mailing() {
         <div>
           <h2 className="page-title">Mailing</h2>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            Campagnes email vers vos clients
+            Campagnes email via Brevo
           </p>
         </div>
       </div>
@@ -220,6 +236,7 @@ export default function Mailing() {
         <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '1px solid rgba(var(--overlay),0.08)' }}>
           {[
             { id: 'compose', label: 'Composer' },
+            { id: 'history', label: 'Historique' },
             { id: 'settings', label: 'Parametres' },
           ].map((t) => (
             <button
@@ -386,7 +403,7 @@ export default function Mailing() {
                   border: `1px solid ${result.error ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.25)'}`,
                   color: result.error ? '#ef4444' : '#22c55e',
                 }}>
-                  {result.error || result.message || (
+                  {result.error || (
                     <>
                       <div style={{ fontWeight: 700, marginBottom: 4 }}>Emails envoyes !</div>
                       <div style={{ color: 'var(--text-secondary)' }}>
@@ -411,7 +428,7 @@ export default function Mailing() {
 
             {/* iPhone Email Preview */}
             <div className="mailing-preview-col" style={{ position: 'sticky', top: 20 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 12, textAlign: 'center' }}>Aperçu</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 12, textAlign: 'center' }}>Apercu</div>
               <div style={{
                 width: 260, margin: '0 auto', background: '#000', borderRadius: 36, padding: '12px 10px',
                 border: '3px solid #333', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -425,7 +442,7 @@ export default function Mailing() {
                 }}>
                   {/* Email header area */}
                   <div style={{ marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid #2a2a2a' }}>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>De: {fromName || 'BarberClub'}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>De: {brevoStatus?.senderName || 'BarberClub Meylan'}</div>
                     <div style={{
                       fontSize: 13, fontWeight: 700, color: '#e0e0e0', lineHeight: 1.3,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -443,7 +460,7 @@ export default function Mailing() {
                   </div>
                   {/* Footer */}
                   <div style={{ marginTop: 'auto', textAlign: 'center', fontSize: 9, color: '#444', paddingTop: 12, borderTop: '1px solid #2a2a2a' }}>
-                    {body.length} caractères
+                    {body.length} caracteres
                   </div>
                 </div>
               </div>
@@ -451,36 +468,133 @@ export default function Mailing() {
           </div>
         )}
 
+        {/* ---- HISTORY TAB ---- */}
+        {tab === 'history' && (
+          <div>
+            {logsLoading ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Chargement...</div>
+            ) : logs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucun email dans l'historique</div>
+            ) : (
+              <>
+                <div className="card" style={{ overflow: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(var(--overlay),0.1)' }}>
+                        <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Date</th>
+                        <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Destinataire</th>
+                        <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Type</th>
+                        <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Statut</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.map((log) => {
+                        const st = statusLabel(log.status);
+                        const typeLabel = {
+                          confirmation_email: 'Confirmation',
+                          review_email: 'Avis',
+                        };
+                        return (
+                          <tr key={log.id} style={{ borderBottom: '1px solid rgba(var(--overlay),0.04)' }}>
+                            <td style={{ padding: '10px 12px' }}>
+                              {new Date(log.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                              {' '}
+                              <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
+                                {new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 12px' }}>
+                              <span style={{ fontWeight: 600 }}>{log.first_name} {log.last_name}</span>
+                              <br />
+                              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{log.email}</span>
+                            </td>
+                            <td style={{ padding: '10px 12px' }}>
+                              <span style={{
+                                display: 'inline-block', padding: '2px 8px', borderRadius: 10,
+                                fontSize: 11, fontWeight: 600,
+                                background: 'rgba(168,85,247,0.1)', color: '#a855f7',
+                              }}>
+                                {typeLabel[log.type] || log.type}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 12px' }}>
+                              <span style={{ color: st.color, fontWeight: 600, fontSize: 12 }}>{st.text}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {logsTotal > 25 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      disabled={logsPage === 0}
+                      onClick={() => loadLogs(logsPage - 1)}
+                    >
+                      Precedent
+                    </button>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '6px 8px' }}>
+                      Page {logsPage + 1} / {Math.ceil(logsTotal / 25)}
+                    </span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      disabled={(logsPage + 1) * 25 >= logsTotal}
+                      onClick={() => loadLogs(logsPage + 1)}
+                    >
+                      Suivant
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* ---- SETTINGS TAB ---- */}
         {tab === 'settings' && (
           <div style={{ maxWidth: 520 }}>
             <div className="card">
-              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Configuration email</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Configuration Brevo Email</h3>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 20 }}>
-                Les emails utilisent Resend (deja configure dans le backend).
-                Modifiez ici les informations d'expediteur.
+                Les emails sont envoyes via Brevo (configure cote serveur).
               </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div className="form-group">
-                  <label className="label">Nom expediteur</label>
-                  <input className="input" value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="BarberClub" />
-                </div>
-                <div className="form-group">
-                  <label className="label">Email expediteur</label>
-                  <input className="input" type="email" value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} placeholder="noreply@barberclub.fr" />
-                </div>
-              </div>
-
-              {result?.message && (
-                <div style={{ padding: '8px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, color: '#22c55e', fontSize: 13, marginBottom: 12 }}>
-                  {result.message}
+              {brevoStatus && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Statut</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: brevoStatus.configured ? '#22c55e' : '#ef4444' }}>
+                      {brevoStatus.configured ? (brevoStatus.connected !== false ? 'Connecte' : brevoStatus.error || 'Erreur') : 'Non configure'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Email expediteur</span>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.senderEmail || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Nom expediteur</span>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.senderName || '—'}</span>
+                  </div>
+                  {brevoStatus.accountEmail && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Compte Brevo</span>
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.accountEmail}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <button className="btn btn-primary btn-sm" onClick={handleSaveSettings}>
-                Sauvegarder
-              </button>
+              <div style={{ padding: '14px 16px', background: 'rgba(var(--overlay),0.02)', border: '1px solid rgba(var(--overlay),0.06)', borderRadius: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 8 }}>Configuration</div>
+                <p style={{ fontSize: 12, color: '#aaa', lineHeight: 1.8, margin: 0 }}>
+                  La configuration Brevo se fait via les variables d'environnement du serveur
+                  (<code style={{ color: '#3b82f6' }}>BREVO_API_KEY</code>, <code style={{ color: '#3b82f6' }}>BREVO_SENDER_EMAIL</code>, <code style={{ color: '#3b82f6' }}>BREVO_SENDER_NAME</code>).
+                  Contactez l'administrateur pour modifier ces parametres.
+                </p>
+              </div>
             </div>
           </div>
         )}

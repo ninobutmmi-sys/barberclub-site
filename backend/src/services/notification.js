@@ -89,12 +89,59 @@ async function sendNotification(notification) {
   }
 }
 
+// ============================================
+// Brevo API helpers
+// ============================================
+
+async function brevoEmail(to, subject, htmlContent) {
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': config.brevo.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { email: config.brevo.senderEmail, name: config.brevo.senderName },
+      to: [{ email: to }],
+      subject,
+      htmlContent,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Brevo email API error ${response.status}: ${errorBody}`);
+  }
+}
+
+async function brevoSMS(phone, content) {
+  const recipient = formatPhoneInternational(phone);
+  const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
+    method: 'POST',
+    headers: {
+      'api-key': config.brevo.apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: config.brevo.smsSender,
+      recipient,
+      content,
+      type: 'transactional',
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
+  }
+}
+
 /**
- * Send confirmation email via Resend
+ * Send confirmation email via Brevo
  */
 async function sendConfirmationEmail(data) {
-  if (!config.resend.apiKey) {
-    logger.warn('Resend API key not configured, skipping email');
+  if (!config.brevo.apiKey) {
+    logger.warn('Brevo API key not configured, skipping email');
     return;
   }
 
@@ -115,25 +162,7 @@ async function sendConfirmationEmail(data) {
     address: config.salon.address,
   });
 
-  // Send via Resend API
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${config.resend.apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: config.resend.from,
-      to: [data.email],
-      subject: `Confirmation RDV - ${data.service_name} le ${dateFormatted}`,
-      html,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Resend API error ${response.status}: ${errorBody}`);
-  }
+  await brevoEmail(data.email, `Confirmation RDV - ${data.service_name} le ${dateFormatted}`, html);
 
   // Update booking email tracking
   await db.query(
@@ -143,11 +172,11 @@ async function sendConfirmationEmail(data) {
 }
 
 /**
- * Send SMS reminder via Twilio
+ * Send SMS reminder via Brevo
  */
 async function sendReminderSMS(data) {
-  if (!config.twilio.accountSid || !config.twilio.authToken) {
-    logger.warn('Twilio not configured, skipping SMS');
+  if (!config.brevo.apiKey) {
+    logger.warn('Brevo not configured, skipping SMS');
     return;
   }
 
@@ -157,30 +186,7 @@ async function sendReminderSMS(data) {
 
   const message = `Bonjour ${data.first_name}, rappel de votre RDV chez BarberClub le ${dateFR} a ${timeFormatted}. 26 Av. du Gresivaudan, Corenc. A bientot ! Pour annuler : ${cancelUrl}`;
 
-  // Format phone to international
-  const phone = formatPhoneInternational(data.phone);
-
-  // Send via Twilio API
-  const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${config.twilio.accountSid}/Messages.json`;
-  const auth = Buffer.from(`${config.twilio.accountSid}:${config.twilio.authToken}`).toString('base64');
-
-  const response = await fetch(twilioUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      From: config.twilio.phoneNumber,
-      To: phone,
-      Body: message,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Twilio API error ${response.status}: ${errorBody}`);
-  }
+  await brevoSMS(data.phone, message);
 
   // Mark reminder as sent on the booking
   await db.query(
@@ -190,11 +196,11 @@ async function sendReminderSMS(data) {
 }
 
 /**
- * Send Google review request email
+ * Send Google review request email via Brevo
  */
 async function sendReviewEmail(data) {
-  if (!config.resend.apiKey || !data.email) {
-    logger.warn('Resend not configured or no email, skipping review email');
+  if (!config.brevo.apiKey || !data.email) {
+    logger.warn('Brevo not configured or no email, skipping review email');
     return;
   }
 
@@ -204,24 +210,7 @@ async function sendReviewEmail(data) {
     reviewUrl: config.salon.googleReviewUrl,
   });
 
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${config.resend.apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: config.resend.from,
-      to: [data.email],
-      subject: 'Merci pour votre visite chez BarberClub !',
-      html,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Resend API error ${response.status}: ${errorBody}`);
-  }
+  await brevoEmail(data.email, 'Merci pour votre visite chez BarberClub !', html);
 
   await db.query(
     'UPDATE bookings SET review_email_sent = true WHERE id = $1',
@@ -381,8 +370,8 @@ function getNextRetryTime(attempts) {
  * Send cancellation email directly (admin-triggered, not queued)
  */
 async function sendCancellationEmail({ email, first_name, service_name, barber_name, date, start_time, price }) {
-  if (!config.resend.apiKey || !email) {
-    logger.warn('Resend not configured or no email, skipping cancellation email');
+  if (!config.brevo.apiKey || !email) {
+    logger.warn('Brevo not configured or no email, skipping cancellation email');
     return;
   }
 
@@ -433,25 +422,11 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
 </body>
 </html>`;
 
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${config.resend.apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: config.resend.from,
-      to: [email],
-      subject: `RDV annulé - ${service_name} le ${dateFormatted}`,
-      html,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    logger.error('Cancellation email failed', { error: errorBody });
-  } else {
+  try {
+    await brevoEmail(email, `RDV annulé - ${service_name} le ${dateFormatted}`, html);
     logger.info('Cancellation email sent', { email });
+  } catch (err) {
+    logger.error('Cancellation email failed', { error: err.message });
   }
 }
 
@@ -459,8 +434,8 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
  * Send reschedule email directly (admin-triggered, not queued)
  */
 async function sendRescheduleEmail({ email, first_name, service_name, barber_name, old_date, old_time, new_date, new_time, new_barber_name, price }) {
-  if (!config.resend.apiKey || !email) {
-    logger.warn('Resend not configured or no email, skipping reschedule email');
+  if (!config.brevo.apiKey || !email) {
+    logger.warn('Brevo not configured or no email, skipping reschedule email');
     return;
   }
 
@@ -517,25 +492,11 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
 </body>
 </html>`;
 
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${config.resend.apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: config.resend.from,
-      to: [email],
-      subject: `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`,
-      html,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    logger.error('Reschedule email failed', { error: errorBody });
-  } else {
+  try {
+    await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html);
     logger.info('Reschedule email sent', { email });
+  } catch (err) {
+    logger.error('Reschedule email failed', { error: err.message });
   }
 }
 
@@ -543,8 +504,8 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
  * Send password reset email directly (not queued)
  */
 async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
-  if (!config.resend.apiKey) {
-    logger.warn('Resend API key not configured, logging reset URL instead');
+  if (!config.brevo.apiKey) {
+    logger.warn('Brevo API key not configured, logging reset URL instead');
     logger.info('Password reset URL', { email, resetUrl });
     return;
   }
@@ -592,25 +553,7 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
 </body>
 </html>`;
 
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${config.resend.apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: config.resend.from,
-      to: [email],
-      subject: 'Réinitialisation de votre mot de passe BarberClub',
-      html,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Resend API error ${response.status}: ${errorBody}`);
-  }
-
+  await brevoEmail(email, 'Réinitialisation de votre mot de passe BarberClub', html);
   logger.info('Reset password email sent', { email });
 }
 
@@ -623,4 +566,7 @@ module.exports = {
   sendResetPasswordEmail,
   formatDateFR,
   formatTime,
+  brevoSMS,
+  brevoEmail,
+  formatPhoneInternational,
 };

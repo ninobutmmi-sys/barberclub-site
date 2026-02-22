@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { getClients } from '../api';
+import { getClients, sendSms, getNotificationLogs, getBrevoStatus } from '../api';
 import useMobile from '../hooks/useMobile';
 
 // ============================================
-// SMS Page — Octopush integration ready
+// SMS Page — Brevo integration (server-side)
 // ============================================
 
 const SMS_TEMPLATES = [
@@ -42,24 +42,36 @@ export default function Sms() {
   const [tab, setTab] = useState('send'); // 'send' | 'history' | 'settings'
   const [template, setTemplate] = useState(SMS_TEMPLATES[0]);
   const [message, setMessage] = useState(SMS_TEMPLATES[0].text);
-  const [sender, setSender] = useState('BarberClub');
-  const [recipientMode, setRecipientMode] = useState('manual'); // 'manual' | 'clients' | 'all'
+  const [sender, setSender] = useState('BARBERCLUB');
+  const [recipientMode, setRecipientMode] = useState('manual'); // 'manual' | 'clients'
   const [manualNumbers, setManualNumbers] = useState('');
   const [selectedClients, setSelectedClients] = useState([]);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
 
-  // Client search for recipient selection
+  // Client search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
   const searchTimer = useRef(null);
 
-  // Settings
-  const [apiKey, setApiKey] = useState(localStorage.getItem('octopush_api_key') || '');
-  const [apiLogin, setApiLogin] = useState(localStorage.getItem('octopush_api_login') || '');
+  // Brevo status
+  const [brevoStatus, setBrevoStatus] = useState(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
 
-  const isConfigured = apiKey && apiLogin;
+  // History
+  const [logs, setLogs] = useState([]);
+  const [logsTotal, setLogsTotal] = useState(0);
+  const [logsPage, setLogsPage] = useState(0);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  useEffect(() => {
+    getBrevoStatus()
+      .then(setBrevoStatus)
+      .catch(() => setBrevoStatus({ configured: false }))
+      .finally(() => setLoadingStatus(false));
+  }, []);
+
+  const isConfigured = brevoStatus?.configured && brevoStatus?.connected !== false;
   const charCount = message.length;
   const smsCount = Math.ceil(charCount / 160) || 1;
 
@@ -74,12 +86,10 @@ export default function Sms() {
     if (searchTimer.current) clearTimeout(searchTimer.current);
     if (!value || value.trim().length < 2) { setSearchResults([]); return; }
     searchTimer.current = setTimeout(async () => {
-      setSearchLoading(true);
       try {
         const data = await getClients({ search: value.trim(), limit: 10 });
-        setSearchResults(data.clients || []);
+        setSearchResults((data.clients || []).filter((c) => c.phone));
       } catch { setSearchResults([]); }
-      setSearchLoading(false);
     }, 300);
   }
 
@@ -95,23 +105,23 @@ export default function Sms() {
     if (recipientMode === 'manual') {
       return manualNumbers.split('\n').filter((n) => n.trim()).length;
     }
-    if (recipientMode === 'clients') return selectedClients.length;
-    return '?';
+    return selectedClients.length;
   }
 
   async function handleSend() {
     if (!isConfigured) {
-      setResult({ error: 'Configurez vos identifiants Octopush dans l\'onglet Parametres.' });
+      setResult({ error: 'Brevo non configure. Verifiez la configuration dans l\'onglet Parametres.' });
       return;
     }
 
     let recipients = [];
     if (recipientMode === 'manual') {
-      recipients = manualNumbers.split('\n').filter((n) => n.trim()).map((n) => ({ phone_number: n.trim() }));
-    } else if (recipientMode === 'clients') {
+      recipients = manualNumbers.split('\n').filter((n) => n.trim()).map((n) => ({ phone: n.trim() }));
+    } else {
       recipients = selectedClients.filter((c) => c.phone).map((c) => ({
-        phone_number: c.phone.startsWith('+') ? c.phone : '+33' + c.phone.replace(/^0/, ''),
-        param1: c.first_name,
+        phone: c.phone,
+        first_name: c.first_name,
+        last_name: c.last_name,
       }));
     }
 
@@ -128,50 +138,42 @@ export default function Sms() {
     setResult(null);
 
     try {
-      const res = await fetch('https://api.octopush.com/v1/public/sms-campaign/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': apiKey,
-          'api-login': apiLogin,
-          'cache-control': 'no-cache',
-        },
-        body: JSON.stringify({
-          recipients,
-          text: message,
-          type: 'sms_premium',
-          purpose: 'wholesale',
-          sender: sender || 'BarberClub',
-        }),
+      const data = await sendSms({ recipients, message, sender });
+      setResult({
+        success: true,
+        sent: data.sent,
+        failed: data.failed,
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setResult({ error: data.message || data.error_code || `Erreur ${res.status}` });
-      } else {
-        setResult({
-          success: true,
-          ticket: data.sms_ticket,
-          contacts: data.number_of_contacts,
-          smsCount: data.number_of_sms_needed,
-          cost: data.total_cost,
-          credit: data.residual_credit,
-        });
-      }
     } catch (err) {
       setResult({ error: err.message });
     }
     setSending(false);
   }
 
-  function handleSaveSettings() {
-    localStorage.setItem('octopush_api_key', apiKey);
-    localStorage.setItem('octopush_api_login', apiLogin);
-    setResult({ success: true, message: 'Identifiants sauvegardes.' });
-    setTimeout(() => setResult(null), 3000);
+  async function loadLogs(page = 0) {
+    setLogsLoading(true);
+    try {
+      const data = await getNotificationLogs({
+        type: 'reminder_sms',
+        limit: 25,
+        offset: page * 25,
+      });
+      setLogs(data.notifications || []);
+      setLogsTotal(data.total || 0);
+      setLogsPage(page);
+    } catch { /* silent */ }
+    setLogsLoading(false);
   }
 
-  const formRow = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 };
+  useEffect(() => {
+    if (tab === 'history') loadLogs(0);
+  }, [tab]);
+
+  const statusLabel = (s) => {
+    if (s === 'sent') return { text: 'Envoye', color: '#22c55e' };
+    if (s === 'failed') return { text: 'Echec', color: '#ef4444' };
+    return { text: 'En attente', color: '#f59e0b' };
+  };
 
   return (
     <>
@@ -188,17 +190,23 @@ export default function Sms() {
         <div>
           <h2 className="page-title">SMS</h2>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            Envoi de SMS via Octopush
+            Envoi de SMS via Brevo
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{
-            width: 8, height: 8, borderRadius: '50%',
-            background: isConfigured ? '#22c55e' : '#ef4444',
-          }} />
-          <span style={{ fontSize: 12, color: isConfigured ? '#22c55e' : '#ef4444' }}>
-            {isConfigured ? 'Octopush connecte' : 'Non configure'}
-          </span>
+          {loadingStatus ? (
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Verification...</span>
+          ) : (
+            <>
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: isConfigured ? '#22c55e' : '#ef4444',
+              }} />
+              <span style={{ fontSize: 12, color: isConfigured ? '#22c55e' : '#ef4444' }}>
+                {isConfigured ? 'Brevo connecte' : 'Non configure'}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -207,6 +215,7 @@ export default function Sms() {
         <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '1px solid rgba(var(--overlay),0.08)' }}>
           {[
             { id: 'send', label: 'Envoyer' },
+            { id: 'history', label: 'Historique' },
             { id: 'settings', label: 'Parametres' },
           ].map((t) => (
             <button
@@ -258,12 +267,12 @@ export default function Sms() {
 
               <div className="form-group">
                 <label className="label">Expediteur</label>
-                <input className="input" value={sender} onChange={(e) => setSender(e.target.value)} maxLength={11} placeholder="BarberClub" />
+                <input className="input" value={sender} onChange={(e) => setSender(e.target.value)} maxLength={11} placeholder="BARBERCLUB" />
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>Max 11 caracteres, pas de numeros</div>
               </div>
 
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, padding: '8px 10px', background: 'rgba(var(--overlay),0.02)', borderRadius: 6, border: '1px solid rgba(var(--overlay),0.06)' }}>
-                Variables disponibles : <code style={{ color: '#3b82f6' }}>{'{prenom}'}</code> <code style={{ color: '#3b82f6' }}>{'{nom}'}</code> <code style={{ color: '#3b82f6' }}>{'{date}'}</code> <code style={{ color: '#3b82f6' }}>{'{heure}'}</code>
+                Variables disponibles : <code style={{ color: '#3b82f6' }}>{'{prenom}'}</code> <code style={{ color: '#3b82f6' }}>{'{nom}'}</code>
               </div>
             </div>
 
@@ -289,14 +298,14 @@ export default function Sms() {
 
                 {recipientMode === 'manual' && (
                   <div className="form-group">
-                    <label className="label">Numeros (un par ligne, format +33...)</label>
+                    <label className="label">Numeros (un par ligne, format +33... ou 06...)</label>
                     <textarea
                       className="input"
                       value={manualNumbers}
                       onChange={(e) => setManualNumbers(e.target.value)}
                       rows={5}
                       style={{ resize: 'vertical', fontFamily: 'monospace', fontSize: 13 }}
-                      placeholder={"+33612345678\n+33698765432"}
+                      placeholder={"+33612345678\n0698765432"}
                     />
                   </div>
                 )}
@@ -372,9 +381,10 @@ export default function Sms() {
                 }}>
                   {result.error ? result.error : (
                     <>
-                      <div style={{ fontWeight: 700, marginBottom: 4 }}>SMS envoye !</div>
+                      <div style={{ fontWeight: 700, marginBottom: 4 }}>SMS envoyes !</div>
                       <div style={{ color: 'var(--text-secondary)' }}>
-                        {result.contacts} contact{result.contacts > 1 ? 's' : ''} &bull; {result.smsCount} SMS &bull; Credit restant : {result.credit?.toFixed(2)}
+                        {result.sent} envoye{result.sent > 1 ? 's' : ''}
+                        {result.failed > 0 && ` — ${result.failed} echec(s)`}
                       </div>
                     </>
                   )}
@@ -394,7 +404,7 @@ export default function Sms() {
 
             {/* iPhone Preview */}
             <div className="sms-preview-col" style={{ position: 'sticky', top: 20 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 12, textAlign: 'center' }}>Aperçu</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 12, textAlign: 'center' }}>Apercu</div>
               <div style={{
                 width: 260, margin: '0 auto', background: '#000', borderRadius: 36, padding: '12px 10px',
                 border: '3px solid #333', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -409,7 +419,7 @@ export default function Sms() {
                   {/* Header */}
                   <div style={{ textAlign: 'center', marginBottom: 16 }}>
                     <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#333', margin: '0 auto 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff' }}>BC</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{sender || 'BarberClub'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{sender || 'BARBERCLUB'}</div>
                   </div>
                   {/* Message bubble */}
                   {message.trim() && (
@@ -423,7 +433,7 @@ export default function Sms() {
                   )}
                   {/* Character count */}
                   <div style={{ marginTop: 'auto', textAlign: 'center', fontSize: 10, color: '#555', paddingTop: 16 }}>
-                    {message.length} caractères · {Math.ceil(message.length / 160) || 1} SMS
+                    {message.length} caracteres · {Math.ceil(message.length / 160) || 1} SMS
                   </div>
                 </div>
               </div>
@@ -431,58 +441,140 @@ export default function Sms() {
           </div>
         )}
 
+        {/* ---- HISTORY TAB ---- */}
+        {tab === 'history' && (
+          <div>
+            {logsLoading ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Chargement...</div>
+            ) : logs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucun SMS dans l'historique</div>
+            ) : (
+              <>
+                <div className="card" style={{ overflow: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(var(--overlay),0.1)' }}>
+                        <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Date</th>
+                        <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Destinataire</th>
+                        <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Type</th>
+                        <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Statut</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.map((log) => {
+                        const st = statusLabel(log.status);
+                        return (
+                          <tr key={log.id} style={{ borderBottom: '1px solid rgba(var(--overlay),0.04)' }}>
+                            <td style={{ padding: '10px 12px' }}>
+                              {new Date(log.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                              {' '}
+                              <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
+                                {new Date(log.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 12px' }}>
+                              <span style={{ fontWeight: 600 }}>{log.first_name} {log.last_name}</span>
+                              <br />
+                              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{log.phone}</span>
+                            </td>
+                            <td style={{ padding: '10px 12px' }}>
+                              <span style={{
+                                display: 'inline-block', padding: '2px 8px', borderRadius: 10,
+                                fontSize: 11, fontWeight: 600,
+                                background: 'rgba(59,130,246,0.1)', color: '#3b82f6',
+                              }}>
+                                {log.type === 'reminder_sms' ? 'Rappel' : log.type}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px 12px' }}>
+                              <span style={{ color: st.color, fontWeight: 600, fontSize: 12 }}>{st.text}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {logsTotal > 25 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      disabled={logsPage === 0}
+                      onClick={() => loadLogs(logsPage - 1)}
+                    >
+                      Precedent
+                    </button>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '6px 8px' }}>
+                      Page {logsPage + 1} / {Math.ceil(logsTotal / 25)}
+                    </span>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      disabled={(logsPage + 1) * 25 >= logsTotal}
+                      onClick={() => loadLogs(logsPage + 1)}
+                    >
+                      Suivant
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {/* ---- SETTINGS TAB ---- */}
         {tab === 'settings' && (
           <div style={{ maxWidth: 520 }}>
             <div className="card">
-              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Configuration Octopush</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Configuration Brevo SMS</h3>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 20 }}>
-                Connectez votre compte Octopush pour envoyer des SMS. Creez un compte sur{' '}
-                <a href="https://www.octopush.com" target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6' }}>octopush.com</a>
-                {' '}puis recuperez vos identifiants API.
+                Les SMS sont envoyes via Brevo (configure cote serveur).
+                La cle API est stockee de maniere securisee dans le backend.
               </p>
 
-              <div className="form-group">
-                <label className="label">Email du compte (api-login)</label>
-                <input
-                  className="input"
-                  type="email"
-                  value={apiLogin}
-                  onChange={(e) => setApiLogin(e.target.value)}
-                  placeholder="votre@email.com"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="label">Cle API (api-key)</label>
-                <input
-                  className="input"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Votre cle API Octopush"
-                />
-              </div>
-
-              {result?.message && (
-                <div style={{ padding: '8px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, color: '#22c55e', fontSize: 13, marginBottom: 12 }}>
-                  {result.message}
+              {brevoStatus && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Statut</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: isConfigured ? '#22c55e' : '#ef4444' }}>
+                      {isConfigured ? 'Connecte' : brevoStatus.error || 'Non configure'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Expediteur SMS</span>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.smsSender || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Email expediteur</span>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.senderEmail || '—'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Nom expediteur</span>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.senderName || '—'}</span>
+                  </div>
+                  {brevoStatus.accountEmail && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Compte Brevo</span>
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.accountEmail}</span>
+                    </div>
+                  )}
+                  {brevoStatus.plan && brevoStatus.plan !== 'unknown' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Plan</span>
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.plan}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <button className="btn btn-primary btn-sm" onClick={handleSaveSettings}>
-                Sauvegarder
-              </button>
-
-              <div style={{ marginTop: 24, padding: '14px 16px', background: 'rgba(var(--overlay),0.02)', border: '1px solid rgba(var(--overlay),0.06)', borderRadius: 8 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 8 }}>Comment ca marche</div>
-                <ol style={{ fontSize: 12, color: '#aaa', lineHeight: 1.8, paddingLeft: 16, margin: 0 }}>
-                  <li>Creez un compte sur <strong>octopush.com</strong></li>
-                  <li>Allez dans Parametres &gt; API et copiez votre cle</li>
-                  <li>Collez votre email et cle API ci-dessus</li>
-                  <li>Rechargez votre credit SMS sur Octopush</li>
-                  <li>Envoyez des SMS directement depuis ce dashboard</li>
-                </ol>
+              <div style={{ padding: '14px 16px', background: 'rgba(var(--overlay),0.02)', border: '1px solid rgba(var(--overlay),0.06)', borderRadius: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 8 }}>Configuration</div>
+                <p style={{ fontSize: 12, color: '#aaa', lineHeight: 1.8, margin: 0 }}>
+                  La configuration Brevo se fait via les variables d'environnement du serveur
+                  (<code style={{ color: '#3b82f6' }}>BREVO_API_KEY</code>, <code style={{ color: '#3b82f6' }}>BREVO_SMS_SENDER</code>).
+                  Contactez l'administrateur pour modifier ces parametres.
+                </p>
               </div>
             </div>
           </div>

@@ -280,4 +280,82 @@ router.get('/bookings/:id/ics',
   }
 );
 
+// ============================================
+// POST /api/waitlist — Public: join waitlist when no slots available
+// ============================================
+router.post('/waitlist',
+  publicLimiter,
+  optionalAuth,
+  [
+    body('barber_id').matches(uuidRegex).withMessage('Barber ID invalide'),
+    body('service_id').matches(uuidRegex).withMessage('Service ID invalide'),
+    body('preferred_date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide'),
+    body('client_name').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
+    body('client_phone').optional({ values: 'falsy' }).trim()
+      .matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numero de telephone francais invalide'),
+    body('preferred_time_start').optional({ values: 'falsy' }).matches(/^([01]\d|2[0-3]):[0-5]\d$/),
+    body('preferred_time_end').optional({ values: 'falsy' }).matches(/^([01]\d|2[0-3]):[0-5]\d$/),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { barber_id, service_id, preferred_date, preferred_time_start, preferred_time_end } = req.body;
+      let { client_name, client_phone } = req.body;
+
+      // Resolve client info: authenticated client → fetch from DB
+      let clientId = null;
+      if (req.user && req.user.type === 'client') {
+        const clientResult = await db.query(
+          'SELECT id, first_name, last_name, phone FROM clients WHERE id = $1 AND deleted_at IS NULL',
+          [req.user.id]
+        );
+        if (clientResult.rows.length === 0) {
+          throw ApiError.notFound('Client introuvable');
+        }
+        const client = clientResult.rows[0];
+        clientId = client.id;
+        client_name = `${client.first_name} ${client.last_name}`;
+        client_phone = client.phone;
+      } else {
+        // Guest: require name + phone
+        if (!client_name || !client_phone) {
+          throw ApiError.badRequest('Nom et telephone requis pour les invites');
+        }
+      }
+
+      // Validate date is not in the past
+      const reqDate = new Date(preferred_date + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (reqDate < today) {
+        throw ApiError.badRequest('La date ne peut pas etre dans le passe');
+      }
+
+      // Check for duplicate: same phone + barber + date already waiting
+      const existing = await db.query(
+        `SELECT id FROM waitlist
+         WHERE client_phone = $1 AND barber_id = $2 AND preferred_date = $3 AND status = 'waiting'`,
+        [client_phone, barber_id, preferred_date]
+      );
+      if (existing.rows.length > 0) {
+        return res.status(409).json({ error: 'Vous etes deja en liste d\'attente pour ce barber a cette date.' });
+      }
+
+      const result = await db.query(
+        `INSERT INTO waitlist (client_id, client_name, client_phone, barber_id, service_id, preferred_date, preferred_time_start, preferred_time_end)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id, status, created_at`,
+        [clientId, client_name, client_phone, barber_id, service_id, preferred_date, preferred_time_start || null, preferred_time_end || null]
+      );
+
+      res.status(201).json({
+        message: 'Vous serez prevenu par SMS si une place se libere.',
+        waitlist_id: result.rows[0].id,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 module.exports = router;
