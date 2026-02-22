@@ -210,15 +210,23 @@ async function findBestBarber(serviceId, date, startTime, duration) {
   );
 
   const endTime = addMinutesToTime(startTime, duration);
+  const dateObj = new Date(date + 'T00:00:00');
+  const jsDay = dateObj.getDay();
+  const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
+
   let bestBarber = null;
   let fewestBookings = Infinity;
 
   for (const barber of barbersResult.rows) {
-    // Check if this barber is available at this time
+    // Check if barber works at this time (schedule/overrides)
+    const worksAtTime = await barberWorksAtTime(barber.id, date, dayOfWeek, startTime, endTime);
+    if (!worksAtTime) continue;
+
+    // Check if this barber is available at this time (no conflicting bookings/blocks)
     const available = await isSlotAvailable(barber.id, date, startTime, duration);
     if (!available) continue;
 
-    // Count their bookings for the day
+    // Count their bookings for the day (load balancing)
     const countResult = await db.query(
       `SELECT COUNT(*) as count FROM bookings
        WHERE barber_id = $1 AND date = $2
@@ -234,6 +242,34 @@ async function findBestBarber(serviceId, date, startTime, duration) {
   }
 
   return bestBarber;
+}
+
+/**
+ * Check if a barber works at the given time on a given date
+ */
+async function barberWorksAtTime(barberId, date, dayOfWeek, startTime, endTime) {
+  // Check schedule override first
+  const overrideResult = await db.query(
+    'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
+    [barberId, date]
+  );
+
+  if (overrideResult.rows.length > 0) {
+    const ov = overrideResult.rows[0];
+    if (ov.is_day_off) return false;
+    return startTime >= ov.start_time.slice(0, 5) && endTime <= ov.end_time.slice(0, 5);
+  }
+
+  // Check default schedule
+  const scheduleResult = await db.query(
+    'SELECT start_time, end_time, is_working FROM schedules WHERE barber_id = $1 AND day_of_week = $2',
+    [barberId, dayOfWeek]
+  );
+
+  if (scheduleResult.rows.length === 0 || !scheduleResult.rows[0].is_working) return false;
+
+  const sched = scheduleResult.rows[0];
+  return startTime >= sched.start_time.slice(0, 5) && endTime <= sched.end_time.slice(0, 5);
 }
 
 // ============================================

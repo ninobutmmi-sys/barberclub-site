@@ -282,19 +282,29 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
 // ============================================
 // POST /api/auth/logout
 // ============================================
-router.post('/logout', requireAuth, async (req, res, next) => {
+router.post('/logout', async (req, res, next) => {
   try {
     const { refresh_token } = req.body;
-    if (refresh_token) {
-      await db.query('DELETE FROM refresh_tokens WHERE token = $1', [refresh_token]);
+    if (!refresh_token) {
+      throw ApiError.badRequest('Refresh token manquant');
     }
-    // Also clean up all expired tokens for this user
-    await db.query(
-      'DELETE FROM refresh_tokens WHERE user_id = $1 AND user_type = $2 AND expires_at < NOW()',
-      [req.user.id, req.user.type]
+
+    // Delete the refresh token (this IS the logout action)
+    const result = await db.query(
+      'DELETE FROM refresh_tokens WHERE token = $1 RETURNING user_id, user_type',
+      [refresh_token]
     );
 
-    logger.info('User logged out', { userId: req.user.id, type: req.user.type });
+    if (result.rows.length > 0) {
+      const { user_id, user_type } = result.rows[0];
+      // Clean up expired tokens for this user
+      await db.query(
+        'DELETE FROM refresh_tokens WHERE user_id = $1 AND user_type = $2 AND expires_at < NOW()',
+        [user_id, user_type]
+      );
+      logger.info('User logged out', { userId: user_id, type: user_type });
+    }
+
     res.json({ message: 'Déconnecté avec succès' });
   } catch (error) {
     next(error);
