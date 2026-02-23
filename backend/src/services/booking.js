@@ -350,10 +350,12 @@ async function createRecurringBookings(data, recurrence) {
 async function cancelBooking(bookingId, cancelToken) {
   // Find the booking
   const result = await db.query(
-    `SELECT b.*, s.name as service_name, br.name as barber_name
+    `SELECT b.*, s.name as service_name, br.name as barber_name,
+            c.first_name, c.email as client_email
      FROM bookings b
      JOIN services s ON b.service_id = s.id
      JOIN barbers br ON b.barber_id = br.id
+     JOIN clients c ON b.client_id = c.id
      WHERE b.id = $1 AND b.cancel_token = $2 AND b.deleted_at IS NULL`,
     [bookingId, cancelToken]
   );
@@ -391,6 +393,21 @@ async function cancelBooking(bookingId, cancelToken) {
   );
 
   logger.info('Booking cancelled', { bookingId, date: booking.date, time: booking.start_time });
+
+  // Send cancellation email
+  try {
+    await notification.sendCancellationEmail({
+      email: booking.client_email,
+      first_name: booking.first_name,
+      service_name: booking.service_name,
+      barber_name: booking.barber_name,
+      date: booking.date,
+      start_time: booking.start_time,
+      price: booking.price,
+    });
+  } catch (err) {
+    logger.error('Failed to send cancellation email', { error: err.message });
+  }
 
   // Check waitlist — notify clients waiting for this barber/date
   try {

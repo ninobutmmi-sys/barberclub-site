@@ -254,9 +254,6 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
     </div>
 
     <div style="text-align:center;margin-bottom:32px;">
-      <div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.1);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
-        <span style="font-size:28px;">✓</span>
-      </div>
       <h2 style="font-size:20px;font-weight:600;margin:0;">Rendez-vous confirmé</h2>
     </div>
 
@@ -395,9 +392,6 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
     </div>
 
     <div style="text-align:center;margin-bottom:32px;">
-      <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.15);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
-        <span style="font-size:28px;">✕</span>
-      </div>
       <h2 style="font-size:20px;font-weight:600;margin:0;">Rendez-vous annulé</h2>
     </div>
 
@@ -462,9 +456,6 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
     </div>
 
     <div style="text-align:center;margin-bottom:32px;">
-      <div style="width:56px;height:56px;border-radius:50%;background:rgba(59,130,246,0.15);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
-        <span style="font-size:28px;">🔄</span>
-      </div>
       <h2 style="font-size:20px;font-weight:600;margin:0;">Rendez-vous déplacé</h2>
     </div>
 

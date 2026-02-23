@@ -387,20 +387,51 @@ SITE_URL=https://barberclub-grenoble.fr
 | XSS dans emails | `escapeHtml()` sur tous les champs clients | `notification.js` |
 | Race condition double-booking | `SELECT...FOR UPDATE` row lock en transaction | `booking.js` |
 | Notification queue retry explosif | Exponential backoff (5→15→60 min), max 3 attempts | `notification.js` |
+| Rate limiter auth bypassable via X-Forwarded-For | `keyGenerator` par IP+email dans `authLimiter` | `rateLimiter.js` |
+| Availability acceptait dates passées et >6 mois | Validation 400 avec `ApiError` | `bookings.js` |
 
 ---
 
-## TODO / En attente
+## Roadmap déploiement (3 phases)
 
+### Phase 1 — Test Brevo (en attente rechargement 100 SMS/emails)
+- [ ] Recharger compte Brevo (100 SMS/emails)
+- [ ] Tester email confirmation réservation (récap + lien annulation/modif + .ics)
+- [ ] Tester SMS rappel J-1 (cron 18h)
+- [ ] Tester email avis Google (cron 10h, nouveau numéro uniquement)
+- [ ] Tester email relance inactif (45j+, 3+ visites)
+- [ ] Tester email annulation (via lien client + via admin)
+- [ ] Tester email modification (reschedule, 1 seule fois)
+- [ ] Tester retry queue (notification échouée → 3 tentatives backoff)
+
+### Phase 2 — Migration Railway
+- [ ] Créer projet Railway (plan Hobby ~€5/mois)
+- [ ] Migrer BDD Supabase → PostgreSQL Railway
+- [ ] Exécuter migrations 009 + 010 en prod
+- [ ] Deploy backend sur Railway
+- [ ] Configurer variables d'environnement (.env prod)
 - [ ] Configurer DNS SPF/DKIM pour barberclub-grenoble.fr
-- [ ] Deploy sur Railway + Cloudflare Pages
+- [ ] Ajouter `BREVO_API_KEY` dans `.env` prod
+- [ ] Tester toutes les routes API en prod
+
+### Phase 3 — Deploy test Cloudflare Pages
+- [ ] Deploy site vitrine sur Cloudflare Pages (`*.pages.dev`)
+- [ ] Deploy dashboard sur Cloudflare Pages (`*.pages.dev`)
+- [ ] Tester réservation complète (flow client) sur URL pages.dev
+- [ ] Tester dashboard admin sur URL pages.dev
+- [ ] Valider CORS avec les nouvelles origines pages.dev
+- [ ] Si tout OK → bascule DNS vers `barberclub-grenoble.fr` + `gestion.barberclub-grenoble.fr`
+
+---
+
+## TODO / Divers
+
 - [x] Ajouter `review_requested` flag pour SMS avis unique (migration 009)
 - [x] Créer page "Mes Réservations" frontend client (`pages/meylan/mon-rdv.html`)
 - [x] Responsive tablette dashboard (breakpoint 1024px, bottom nav + modals centrés)
-- [ ] Ajouter `BREVO_API_KEY` dans `.env` prod
+- [x] Fix audit sécurité (rate limiter, validation dates, manifest, console.log)
 - [ ] Salon Grenoble : pas encore de booking custom (utilise Timify)
 - [ ] Pages barber detail (`/pages/barbers/barber-*.html`) : améliorations possibles
-- [ ] Exécuter migrations 009 + 010 en prod
 
 ---
 
