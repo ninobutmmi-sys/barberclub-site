@@ -35,6 +35,7 @@ module.exports = {
     smsSender: process.env.BREVO_SMS_SENDER || 'BARBERCLUB',
   },
   siteUrl: process.env.SITE_URL || 'https://barberclub-grenoble.fr',
+  apiUrl: process.env.API_URL || `http://localhost:${parseInt(process.env.PORT, 10) || 3000}`,
   salon: {
     name: process.env.SALON_NAME || 'BarberClub Meylan',
     address: process.env.SALON_ADDRESS || '26 Av. du Grésivaudan, 38700 Corenc',

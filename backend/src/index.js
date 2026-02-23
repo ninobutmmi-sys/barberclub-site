@@ -163,6 +163,17 @@ app.use('/api/admin', adminRouter);
 app.use('/api/track', campaignTrackRoutes);
 
 // ============================================
+// Short redirect URLs (for SMS links)
+// ============================================
+app.get('/r/avis', (req, res) => {
+  res.redirect(302, config.salon.googleReviewUrl || 'https://barberclub-grenoble.fr');
+});
+
+app.get('/r/rdv/:id/:token', (req, res) => {
+  res.redirect(302, `${config.siteUrl}/pages/meylan/mon-rdv.html?id=${req.params.id}&token=${req.params.token}`);
+});
+
+// ============================================
 // 404 handler
 // ============================================
 app.use((req, res) => {

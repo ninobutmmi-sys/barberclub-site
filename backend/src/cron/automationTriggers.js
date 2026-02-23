@@ -44,6 +44,19 @@ async function brevoSMS(phone, content) {
  */
 async function processAutomationTriggers() {
   try {
+    // Auto-complete past bookings (confirmed + end_time passed today)
+    const autoCompleted = await db.query(
+      `UPDATE bookings SET status = 'completed'
+       WHERE status = 'confirmed'
+         AND deleted_at IS NULL
+         AND date = (NOW() AT TIME ZONE 'Europe/Paris')::date
+         AND end_time::time < (NOW() AT TIME ZONE 'Europe/Paris')::time
+       RETURNING id`
+    );
+    if (autoCompleted.rowCount > 0) {
+      logger.info(`Auto-completed ${autoCompleted.rowCount} past bookings`);
+    }
+
     const triggers = await db.query('SELECT * FROM automation_triggers WHERE is_active = true');
 
     for (const trigger of triggers.rows) {
@@ -91,8 +104,8 @@ async function processReviewSms(triggerConfig) {
        AND b.review_email_sent = false
        AND c.phone IS NOT NULL
        AND c.review_requested = false
-       AND b.date = CURRENT_DATE
-       AND (b.end_time::time + ($1 || ' minutes')::interval) <= CURRENT_TIME
+       AND b.date = (NOW() AT TIME ZONE 'Europe/Paris')::date
+       AND (b.end_time::time + ($1 || ' minutes')::interval) <= (NOW() AT TIME ZONE 'Europe/Paris')::time
        AND NOT EXISTS (
          SELECT 1 FROM notification_queue nq
          WHERE nq.booking_id = b.id AND nq.type = 'review_email'
@@ -101,11 +114,14 @@ async function processReviewSms(triggerConfig) {
     [delayMinutes]
   );
 
+  const apiUrl = config.apiUrl || 'https://barberclub-grenoble.fr';
+  const reviewLink = apiUrl + '/r/avis';
+
   for (const booking of result.rows) {
     const personalMessage = message
       .replace(/\{prenom\}/gi, booking.first_name || '')
       .replace(/\{nom\}/gi, booking.last_name || '')
-      .replace(/\{lien_avis\}/gi, googleReviewUrl);
+      .replace(/\{lien_avis\}/gi, reviewLink);
 
     try {
       await brevoSMS(booking.phone, personalMessage);

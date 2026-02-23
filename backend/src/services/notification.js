@@ -180,11 +180,11 @@ async function sendReminderSMS(data) {
     return;
   }
 
-  const cancelUrl = `${config.siteUrl}/pages/meylan/mon-rdv.html?id=${data.booking_id}&token=${data.cancel_token}`;
+  const rdvUrl = `${config.apiUrl}/r/rdv/${data.booking_id}/${data.cancel_token}`;
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `Bonjour ${data.first_name}, rappel de votre RDV chez BarberClub le ${dateFR} a ${timeFormatted}. 26 Av. du Gresivaudan, Corenc. A bientot ! Pour annuler : ${cancelUrl}`;
+  const message = `BarberClub Meylan - Rappel de votre RDV le ${dateFR} a ${timeFormatted} au 26 Av. du Gresivaudan, Corenc. Gerer votre RDV : ${rdvUrl}`;
 
   await brevoSMS(data.phone, message);
 
