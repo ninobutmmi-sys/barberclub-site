@@ -64,7 +64,7 @@
             "name": "Réserver Grenoble",
             "short_name": "Grenoble",
             "description": "Prendre rendez-vous au salon de Grenoble",
-            "url": "https://www.planity.com/barber-club-38000-grenoble",
+            "url": "/pages/grenoble/reserver.html",
             "icons": [{ "src": "/assets/icons/icon-96x96.png", "sizes": "96x96" }]
         },
         {
@@ -75,13 +75,5 @@
             "icons": [{ "src": "/assets/icons/icon-96x96.png", "sizes": "96x96" }]
         }
     ],
-    "categories": ["lifestyle", "shopping"],
-    "screenshots": [
-        {
-            "src": "/assets/images/screenshot-mobile.jpg",
-            "sizes": "390x844",
-            "type": "image/jpeg",
-            "form_factor": "narrow"
-        }
-    ]
+    "categories": ["lifestyle", "shopping"]
 }

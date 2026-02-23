@@ -105,7 +105,14 @@ router.get('/availability',
       today.setHours(0, 0, 0, 0);
 
       if (requestedDate < today) {
-        return res.json([]);
+        throw new ApiError(400, 'La date doit être aujourd\'hui ou dans le futur');
+      }
+
+      // Validate date is not more than 6 months in the future
+      const maxDate = new Date(today);
+      maxDate.setMonth(maxDate.getMonth() + 6);
+      if (requestedDate > maxDate) {
+        throw new ApiError(400, 'Réservation possible jusqu\'à 6 mois à l\'avance maximum');
       }
 
       // If date is today, filter out past slots

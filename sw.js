@@ -23,7 +23,6 @@ self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('Caching core assets');
                 return cache.addAll(PRECACHE_ASSETS);
             })
             .then(() => self.skipWaiting())

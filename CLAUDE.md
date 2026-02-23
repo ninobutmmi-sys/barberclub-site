@@ -29,7 +29,7 @@ BarberClub Site/
 │   ├── meylan/                    # Salon Meylan (réservation custom)
 │   │   ├── index.html             # Hub navigation salon
 │   │   ├── reserver.html          # ★ Interface réservation 4 étapes
-│   │   ├── annuler.html           # Annulation via lien email
+│   │   ├── mon-rdv.html           # Mes réservations client (consulter/annuler)
 │   │   ├── reset-password.html    # Reset mot de passe client
 │   │   ├── barbers.html           # Équipe (Lucas, Julien)
 │   │   ├── prestations.html       # Services & tarifs
@@ -38,7 +38,7 @@ BarberClub Site/
 │   │
 │   ├── grenoble/                  # Salon Grenoble (vitrine, pas de booking custom)
 │   │   ├── index.html             # Hub salon
-│   │   ├── reserver.html          # Redirige vers Planity
+│   │   ├── reserver.html          # Iframe Timify (booking externe)
 │   │   ├── barbers.html           # Équipe (Tom, Alan, Nathan, Clément)
 │   │   ├── prestations.html       # Services & tarifs
 │   │   ├── galerie.html           # Photos salon
@@ -51,6 +51,8 @@ BarberClub Site/
 │   │   ├── barber-alan.html       # Alan — Grenoble
 │   │   ├── barber-nathan.html     # Nathan — Grenoble
 │   │   └── barber-clement.html    # Clément — Grenoble
+│   │
+│   ├── 404.html                   # Page 404 personnalisée
 │   │
 │   └── legal/                     # Pages légales (100% français, obligation légale)
 │       ├── cgu.html
@@ -84,7 +86,9 @@ BarberClub Site/
 │   │       ├── 005_service_colors.sql
 │   │       ├── 006_recurrence.sql       # recurrence_group_id
 │   │       ├── 007_stocks_and_features.sql  # products, gift_cards, waitlist, campaigns, automation_triggers
-│   │       └── 008_reset_token.sql
+│   │       ├── 008_reset_token.sql
+│   │       ├── 009_review_requested.sql    # Flag review_requested sur bookings
+│   │       └── 010_rescheduled_flag.sql    # Flag rescheduled sur bookings
 │   └── src/
 │       ├── index.js               # Entry — routes, CORS, helmet, cron, logging
 │       ├── config/
@@ -113,7 +117,8 @@ BarberClub Site/
 │       │       ├── products.js    # Boutique (CRUD, ventes, gift cards)
 │       │       ├── waitlist.js    # Liste d'attente
 │       │       ├── automation.js  # Triggers auto (review SMS, reactivation, waitlist)
-│       │       └── campaignTracking.js
+│       │       ├── campaignTracking.js
+│       │       └── systemHealth.js  # Monitoring système (DB, Brevo, crons)
 │       ├── services/
 │       │   ├── availability.js    # Calcul créneaux (30min public, 5min admin)
 │       │   ├── booking.js         # Création atomique, annulation, récurrence
@@ -140,7 +145,7 @@ BarberClub Site/
         │   ├── Layout.jsx         # Sidebar + bottom nav mobile + notifications bell + theme toggle
         │   └── SearchBar.jsx
         ├── hooks/
-        │   ├── useMobile.js       # Breakpoint 768px
+        │   ├── useMobile.js       # Breakpoint 1024px (mobile+tablette)
         │   └── useNotifications.js
         └── pages/
             ├── Login.jsx          # Email/password → type: 'barber'
@@ -155,8 +160,8 @@ BarberClub Site/
             ├── Sms.jsx            # Envoi SMS (templates, sélection clients, compteur caractères)
             ├── Mailing.jsx        # Campagnes email (templates, sélection, historique)
             ├── Automation.jsx     # Monitoring + triggers + waitlist
-            ├── Boutique.jsx       # Produits, ventes, gift cards
-            └── Campaigns.jsx      # Suivi campagnes ROI
+            ├── Campaigns.jsx      # Suivi campagnes ROI
+            └── SystemHealth.jsx   # Monitoring système (DB, Brevo, crons)
 ```
 
 ---
@@ -243,11 +248,11 @@ BarberClub Site/
 | CRUD | `/api/admin/clients` | Gestion clients + RGPD delete |
 | GET | `/api/admin/clients/inactive` | Clients inactifs 45j+ |
 | GET | `/api/admin/analytics/*` | Dashboard, revenue, peak, occupancy, trends, members |
-| GET/POST/DELETE | `/api/admin/payments/*` | Caisse, clôtures |
+| GET/POST/DELETE | `/api/admin/payments/daily`, `/api/admin/payments/*` | Caisse, clôtures |
 | GET/POST/DELETE | `/api/admin/blocked-slots` | Créneaux bloqués |
 | POST | `/api/admin/mailing/send` | Campagne email Brevo |
 | POST | `/api/admin/sms/send` | SMS Brevo |
-| GET | `/api/admin/notifications/*` | Logs, stats, statut Brevo |
+| GET | `/api/admin/notifications/stats`, `/api/admin/notifications/brevo-status` | Logs, stats, statut Brevo |
 | CRUD | `/api/admin/products/*` | Boutique, ventes, gift cards |
 | CRUD | `/api/admin/waitlist` | Liste d'attente |
 | GET/PUT | `/api/admin/automation` | Triggers automatiques |
@@ -310,13 +315,16 @@ BarberClub Site/
 - **Bordures** : `rgba(255,255,255,0.06-0.15)`
 - **Active** : `scale(0.95-0.97)`
 - **Transitions** : `0.3s cubic-bezier(0.4, 0, 0.2, 1)`
-- **Breakpoint mobile** : 768px
+- **Breakpoint mobile** : 768px (site vitrine)
 - **CSS inline** dans chaque page (pas de fichier CSS externe partagé)
 
 ### Dashboard
 - **Thème dark** : `--bg: #0a0a0a`, `--bg-card: #111113`
 - **Thème light** : toggle disponible
-- **Sidebar** : 240px (collapsible → 64px), bottom nav sur mobile
+- **Sidebar** : 240px (collapsible → 64px), bottom nav sur mobile/tablette
+- **Breakpoints dashboard** : desktop ≥1024px (sidebar), tablette 768-1023px (bottom nav + modals centrés + grille 2 colonnes), mobile <768px (bottom nav + modals plein écran)
+- **`useMobile()` hook** : breakpoint 1024px (retourne `true` pour tablette + mobile)
+- **Anti-zoom iOS** : `font-size: 16px !important` sur inputs/selects/textareas (<1024px)
 - **State** : React hooks (useState, useContext) — pas de Redux
 - **100+ CSS custom properties** dans `index.css`
 
@@ -386,11 +394,13 @@ SITE_URL=https://barberclub-grenoble.fr
 
 - [ ] Configurer DNS SPF/DKIM pour barberclub-grenoble.fr
 - [ ] Deploy sur Railway + Cloudflare Pages
-- [ ] Ajouter `review_requested` flag pour SMS avis unique
-- [ ] Créer page "Mes Réservations" frontend client
+- [x] Ajouter `review_requested` flag pour SMS avis unique (migration 009)
+- [x] Créer page "Mes Réservations" frontend client (`pages/meylan/mon-rdv.html`)
+- [x] Responsive tablette dashboard (breakpoint 1024px, bottom nav + modals centrés)
 - [ ] Ajouter `BREVO_API_KEY` dans `.env` prod
-- [ ] Salon Grenoble : pas encore de booking custom (utilise Planity)
+- [ ] Salon Grenoble : pas encore de booking custom (utilise Timify)
 - [ ] Pages barber detail (`/pages/barbers/barber-*.html`) : améliorations possibles
+- [ ] Exécuter migrations 009 + 010 en prod
 
 ---
 
@@ -401,7 +411,7 @@ SITE_URL=https://barberclub-grenoble.fr
 3. **UUIDs seed non-standards** — Toujours `.matches(uuidRegex)`, JAMAIS `.isUUID()`
 4. **day_of_week** — 0=Lundi en BDD, PAS 0=Dimanche comme JS
 5. **CSS inline** — Chaque page HTML a son `<style>` intégré, pas de CSS externe partagé
-6. **Grenoble** — Vitrine seulement, réservation via Planity (externe)
+6. **Grenoble** — Vitrine seulement, réservation via Timify (externe)
 7. **Meylan** — Système complet (réservation + dashboard + backend)
 8. **Backend `--watch`** — Modifications auto-rechargées en dev
 9. **Pages légales** — 100% français obligatoire (obligation légale)

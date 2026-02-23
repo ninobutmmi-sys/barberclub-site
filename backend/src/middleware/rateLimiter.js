@@ -16,13 +16,18 @@ const publicLimiter = rateLimit({
 
 /**
  * Rate limiter for auth routes (login, register)
- * 10 attempts per 15 minutes per IP
+ * 10 attempts per 15 minutes per IP+email
+ * Uses IP + target email to prevent X-Forwarded-For bypass
  */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    const email = req.body?.email || 'unknown';
+    return `${req.ip}-${email}`;
+  },
   message: {
     error: 'Trop de tentatives de connexion, réessayez dans 15 minutes.',
   },
