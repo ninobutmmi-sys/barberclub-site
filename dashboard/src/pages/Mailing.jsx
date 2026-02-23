@@ -218,7 +218,7 @@ export default function Mailing() {
           .mailing-preview-col { display: none !important; }
           .mailing-compose-grid { grid-template-columns: 1.2fr 0.8fr !important; }
         }
-        @media (max-width: 768px) {
+        @media (max-width: 1023px) {
           .mailing-compose-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>

@@ -1733,7 +1733,7 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
 export default function Planning() {
   const isMobile = useMobile();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState(window.innerWidth < 768 ? 'day' : 'week');
+  const [view, setView] = useState(window.innerWidth < 1024 ? 'day' : 'week');
   const [bookings, setBookings] = useState([]);
   const [barbers, setBarbers] = useState([]);
   const [services, setServices] = useState([]);

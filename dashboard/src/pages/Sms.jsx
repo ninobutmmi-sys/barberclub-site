@@ -182,7 +182,7 @@ export default function Sms() {
           .sms-preview-col { display: none !important; }
           .sms-send-grid { grid-template-columns: 1fr 1fr !important; }
         }
-        @media (max-width: 768px) {
+        @media (max-width: 1023px) {
           .sms-send-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>

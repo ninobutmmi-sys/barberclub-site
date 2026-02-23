@@ -227,7 +227,7 @@ export default function Caisse() {
   return (
     <>
       {/* Header */}
-      <div className="page-header">
+      <div className="page-header" style={isMobile ? { flexDirection: 'column', alignItems: 'stretch', gap: 10 } : undefined}>
         <div>
           <h2 className="page-title">Caisse du jour</h2>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
@@ -239,16 +239,18 @@ export default function Caisse() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: isMobile ? 'space-between' : undefined }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button onClick={goPrev} style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid rgba(var(--overlay),0.08)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft /></button>
-            <span style={{ fontSize: isMobile ? 12 : 14, fontWeight: 600, color: '#fff', textTransform: 'capitalize', minWidth: isMobile ? 120 : 180, textAlign: 'center', userSelect: 'none' }}>
-              {format(currentDate, 'EEEE d MMMM yyyy', { locale: fr })}
+            <span style={{ fontSize: isMobile ? 12 : 14, fontWeight: 600, color: '#fff', textTransform: 'capitalize', minWidth: isMobile ? 100 : 180, textAlign: 'center', userSelect: 'none' }}>
+              {format(currentDate, isMobile ? 'EEE d MMM' : 'EEEE d MMMM yyyy', { locale: fr })}
             </span>
             <button onClick={goNext} style={{ width: 32, height: 32, borderRadius: 6, border: '1px solid rgba(var(--overlay),0.08)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight /></button>
           </div>
-          {!isToday && <button className="btn btn-secondary btn-sm" onClick={goToday}>Aujourd&apos;hui</button>}
-          {!isClosed && <button className="btn btn-primary btn-sm" onClick={() => setShowPayModal(true)}>Encaisser</button>}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {!isToday && <button className="btn btn-secondary btn-sm" onClick={goToday}>Aujourd&apos;hui</button>}
+            {!isClosed && <button className="btn btn-primary btn-sm" onClick={() => setShowPayModal(true)}>Encaisser</button>}
+          </div>
         </div>
       </div>
 

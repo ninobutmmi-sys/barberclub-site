@@ -1848,7 +1848,7 @@ select.input {
 }
 
 /* ---- RESPONSIVE ---- */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .sidebar { display: none; }
   .main-content, .main-content.sidebar-is-collapsed { margin-left: 0; padding-bottom: 72px; }
   .page-header { padding: 14px 16px; }
@@ -2113,4 +2113,24 @@ select.input {
 
   /* ---- ANALYTICS MOBILE ---- */
   .a-kpi { min-width: unset; flex: 0 0 calc(50% - 8px); }
+
+  /* ---- ANTI-ZOOM iOS ---- */
+  input, select, textarea { font-size: 16px !important; }
+}
+
+/* ---- TABLET (768-1023px) ---- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .page-header { padding: 16px 24px; }
+  .page-body { padding: 16px 24px; }
+  .page-title { font-size: 18px; }
+  .mob-card-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .a-kpi { flex: 0 0 calc(25% - 12px); }
+  .modal, .bk-modal {
+    max-width: 560px;
+    max-height: 85vh;
+    height: auto;
+    border-radius: 16px;
+    margin: auto;
+  }
+  .modal-backdrop { align-items: center; padding: 20px; }
 }
