@@ -1,0 +1,316 @@
+import { useState, useEffect, useCallback } from 'react';
+import { getSystemHealth } from '../api';
+import useMobile from '../hooks/useMobile';
+
+function formatUptime(seconds) {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const parts = [];
+  if (d > 0) parts.push(`${d}j`);
+  if (h > 0) parts.push(`${h}h`);
+  parts.push(`${m}m`);
+  return parts.join(' ');
+}
+
+function timeAgo(iso) {
+  if (!iso) return 'Jamais';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return 'Il y a quelques secondes';
+  if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
+  return `Il y a ${Math.floor(diff / 86400)}j`;
+}
+
+function StatusDot({ status }) {
+  const colors = { ok: '#22c55e', running: '#3b82f6', error: '#ef4444', idle: '#6b7280' };
+  return (
+    <span style={{
+      display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+      background: colors[status] || '#6b7280', marginRight: 6, flexShrink: 0,
+    }} />
+  );
+}
+
+export default function SystemHealth() {
+  const isMobile = useMobile();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [lastUpdate, setLastUpdate] = useState(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await getSystemHealth();
+      setData(res);
+      setError('');
+      setLastUpdate(new Date());
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
+  }, [load]);
+
+  if (loading && !data) {
+    return <div className="empty-state">Chargement...</div>;
+  }
+
+  const api = data?.api || {};
+  const db = data?.database || {};
+  const mem = data?.memory || {};
+  const notifs = data?.notifications || {};
+  const crons = data?.crons || {};
+  const errors = data?.recent_errors || [];
+
+  return (
+    <>
+      <div className="page-header">
+        <div>
+          <h2 className="page-title">Santé Système</h2>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+            Monitoring API, base de données, notifications & cron jobs
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {lastUpdate && (
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              MAJ {lastUpdate.toLocaleTimeString('fr-FR')}
+            </span>
+          )}
+          <button className="btn btn-secondary btn-sm" onClick={load} disabled={loading}>
+            {loading ? 'Chargement...' : 'Actualiser'}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ padding: '12px 16px', marginBottom: 16, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, color: '#ef4444', fontSize: 13 }}>
+          {error}
+        </div>
+      )}
+
+      <div className="page-body">
+        {/* ====== OVERVIEW KPIs ====== */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+          <KpiCard
+            label="API"
+            value={api.status === 'up' ? 'En ligne' : 'Hors ligne'}
+            color={api.status === 'up' ? '#22c55e' : '#ef4444'}
+            sub={api.env || ''}
+          />
+          <KpiCard
+            label="Base de données"
+            value={db.status === 'connected' ? 'Connectée' : 'Erreur'}
+            color={db.status === 'connected' ? '#22c55e' : '#ef4444'}
+            sub={db.error || ''}
+          />
+          <KpiCard
+            label="Uptime"
+            value={formatUptime(api.uptime || 0)}
+            color="var(--text)"
+            sub={api.nodeVersion || ''}
+          />
+          <KpiCard
+            label="Mémoire"
+            value={`${mem.heapUsedMB || 0} MB`}
+            color={mem.heapUsedMB > 200 ? '#f59e0b' : 'var(--text)'}
+            sub={`/ ${mem.heapTotalMB || 0} MB heap`}
+          />
+        </div>
+
+        {/* ====== NOTIFICATIONS ====== */}
+        <div className="a-card" style={{ marginBottom: 24 }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(var(--overlay), 0.06)' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Notifications ce mois</h3>
+          </div>
+          <div style={{ padding: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+              <MiniStat label="SMS envoyés" value={notifs.sms_sent} />
+              <MiniStat label="SMS échoués" value={notifs.sms_failed} alert={notifs.sms_failed > 0} />
+              <MiniStat label="Emails envoyés" value={notifs.email_sent} />
+              <MiniStat label="Emails échoués" value={notifs.email_failed} alert={notifs.email_failed > 0} />
+              <MiniStat label="En attente" value={notifs.pending} alert={notifs.pending > 5} />
+              <MiniStat label="Coût SMS estimé" value={`${(notifs.sms_cost_estimate || 0).toFixed(2)} €`} />
+            </div>
+            {notifs.brevo_sender && (
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <span>Email: {notifs.brevo_sender}</span>
+                <span>SMS: {notifs.brevo_sms_sender}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ====== CRON JOBS ====== */}
+        <div className="a-card" style={{ marginBottom: 24 }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(var(--overlay), 0.06)' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Cron Jobs</h3>
+          </div>
+          {isMobile ? (
+            <div style={{ padding: '8px 0' }}>
+              {Object.entries(crons).map(([key, cron]) => (
+                <div key={key} style={{ padding: '12px 20px', borderBottom: '1px solid rgba(var(--overlay), 0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                      <StatusDot status={cron.status} />
+                      {cron.label}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                      {cron.schedule} &middot; {timeAgo(cron.lastRun)}
+                    </div>
+                  </div>
+                  {cron.error && (
+                    <span style={{ fontSize: 10, color: '#ef4444', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {cron.error}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Job</th>
+                    <th>Schedule</th>
+                    <th>Dernier run</th>
+                    <th>Statut</th>
+                    <th>Erreur</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(crons).map(([key, cron]) => (
+                    <tr key={key}>
+                      <td style={{ fontWeight: 600, fontSize: 13 }}>{cron.label}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-secondary)' }}>{cron.schedule}</td>
+                      <td style={{ fontSize: 12 }}>{timeAgo(cron.lastRun)}</td>
+                      <td>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 12 }}>
+                          <StatusDot status={cron.status} />
+                          {cron.status}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: 11, color: '#ef4444', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {cron.error || '–'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* ====== RECENT ERRORS ====== */}
+        <div className="a-card">
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(var(--overlay), 0.06)' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>
+              Erreurs récentes
+              {errors.length > 0 && (
+                <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: 10 }}>
+                  {errors.length}
+                </span>
+              )}
+            </h3>
+          </div>
+          {errors.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>
+              Aucune erreur récente
+            </div>
+          ) : isMobile ? (
+            <div style={{ padding: '8px 0' }}>
+              {errors.map((e) => (
+                <div key={e.id} style={{ padding: '12px 20px', borderBottom: '1px solid rgba(var(--overlay), 0.04)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: e.type === 'sms' ? '#8b5cf6' : '#3b82f6' }}>{e.type}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{new Date(e.created_at).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>{e.client_name || '–'}</div>
+                  <div style={{ fontSize: 11, color: '#ef4444', marginTop: 2 }}>{e.last_error}</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>{e.attempts} tentative(s)</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Client</th>
+                    <th>Erreur</th>
+                    <th>Tentatives</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {errors.map((e) => (
+                    <tr key={e.id}>
+                      <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                        {new Date(e.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td>
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, textTransform: 'uppercase', padding: '2px 8px', borderRadius: 4,
+                          background: e.type === 'sms' ? 'rgba(139,92,246,0.1)' : 'rgba(59,130,246,0.1)',
+                          color: e.type === 'sms' ? '#8b5cf6' : '#3b82f6',
+                        }}>
+                          {e.type}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: 12 }}>{e.client_name || '–'}</td>
+                      <td style={{ fontSize: 11, color: '#ef4444', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {e.last_error}
+                      </td>
+                      <td style={{ fontSize: 12, textAlign: 'center' }}>{e.attempts}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function KpiCard({ label, value, color, sub }) {
+  return (
+    <div style={{
+      padding: '16px 20px', borderRadius: 10,
+      background: 'rgba(var(--overlay), 0.03)',
+      border: '1px solid rgba(var(--overlay), 0.06)',
+    }}>
+      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-display)', color }}>
+        {value}
+      </div>
+      {sub && (
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{sub}</div>
+      )}
+    </div>
+  );
+}
+
+function MiniStat({ label, value, alert }) {
+  return (
+    <div style={{
+      padding: '12px 16px', borderRadius: 8,
+      background: alert ? 'rgba(239,68,68,0.06)' : 'rgba(var(--overlay), 0.02)',
+      border: `1px solid ${alert ? 'rgba(239,68,68,0.2)' : 'rgba(var(--overlay), 0.04)'}`,
+    }}>
+      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.3 }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 800, fontFamily: 'var(--font-display)', color: alert ? '#ef4444' : 'var(--text)' }}>{value}</div>
+    </div>
+  );
+}

@@ -11,7 +11,7 @@ import ClientDetail from './pages/ClientDetail';
 import History from './pages/History';
 import Sms from './pages/Sms';
 import Mailing from './pages/Mailing';
-import Boutique from './pages/Boutique';
+import SystemHealth from './pages/SystemHealth';
 import Automation from './pages/Automation';
 import Campaigns from './pages/Campaigns';
 import Caisse from './pages/Caisse';
@@ -44,7 +44,7 @@ export default function App() {
             <Route path="history" element={<History />} />
             <Route path="sms" element={<Sms />} />
             <Route path="mailing" element={<Mailing />} />
-            <Route path="boutique" element={<Boutique />} />
+            <Route path="system" element={<SystemHealth />} />
             <Route path="automation" element={<Automation />} />
             <Route path="campaigns" element={<Campaigns />} />
             <Route path="caisse" element={<Caisse />} />

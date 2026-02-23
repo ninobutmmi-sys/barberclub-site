@@ -177,6 +177,10 @@
             cursor: pointer;
         }
 
+        .gallery-item picture {
+            display: block;
+        }
+
         .gallery-item img {
             width: 100%;
             height: auto;
@@ -418,35 +422,50 @@
 
             <div class="gallery-grid">
                 <div class="gallery-item" onclick="openLightbox(this)">
-                    <img src="../../assets/images/salons/meylan/devanture-meylan.jpg" alt="Devanture BarberClub Meylan">
+                    <picture>
+                        <source srcset="../../assets/images/salons/meylan/devanture-meylan.webp" type="image/webp">
+                        <img src="../../assets/images/salons/meylan/devanture-meylan.jpg" alt="Devanture BarberClub Meylan">
+                    </picture>
                     <div class="gallery-item-overlay">
                         <span class="gallery-item-title">La Devanture</span>
                     </div>
                 </div>
 
                 <div class="gallery-item" onclick="openLightbox(this)">
-                    <img src="../../assets/images/salons/meylan/comptoir-meylan.jpg" alt="Comptoir BarberClub Meylan">
+                    <picture>
+                        <source srcset="../../assets/images/salons/meylan/comptoir-meylan.webp" type="image/webp">
+                        <img src="../../assets/images/salons/meylan/comptoir-meylan.jpg" alt="Comptoir BarberClub Meylan">
+                    </picture>
                     <div class="gallery-item-overlay">
                         <span class="gallery-item-title">Le Comptoir</span>
                     </div>
                 </div>
 
                 <div class="gallery-item" onclick="openLightbox(this)">
-                    <img src="../../assets/images/salons/meylan/cologne-meylan.jpg" alt="Eaux de cologne">
+                    <picture>
+                        <source srcset="../../assets/images/salons/meylan/cologne-meylan.webp" type="image/webp">
+                        <img src="../../assets/images/salons/meylan/cologne-meylan.jpg" alt="Eaux de cologne">
+                    </picture>
                     <div class="gallery-item-overlay">
                         <span class="gallery-item-title">Nos Colognes</span>
                     </div>
                 </div>
 
                 <div class="gallery-item" onclick="openLightbox(this)">
-                    <img src="../../assets/images/salons/meylan/parfums-meylan.jpg" alt="Parfums">
+                    <picture>
+                        <source srcset="../../assets/images/salons/meylan/parfums-meylan.webp" type="image/webp">
+                        <img src="../../assets/images/salons/meylan/parfums-meylan.jpg" alt="Parfums">
+                    </picture>
                     <div class="gallery-item-overlay">
                         <span class="gallery-item-title">Nos Parfums</span>
                     </div>
                 </div>
 
                 <div class="gallery-item" onclick="openLightbox(this)">
-                    <img src="../../assets/images/salons/meylan/salon-meylan.jpg" alt="Intérieur du salon">
+                    <picture>
+                        <source srcset="../../assets/images/salons/meylan/salon-meylan.webp" type="image/webp">
+                        <img src="../../assets/images/salons/meylan/salon-meylan.jpg" alt="Intérieur du salon">
+                    </picture>
                     <div class="gallery-item-overlay">
                         <span class="gallery-item-title">L'Intérieur</span>
                     </div>
@@ -527,7 +546,8 @@
         // Lightbox
         function openLightbox(element) {
             const img = element.querySelector('img');
-            document.getElementById('lightbox-img').src = img.src;
+            const source = element.querySelector('source[type="image/webp"]');
+            document.getElementById('lightbox-img').src = source ? source.srcset : img.src;
             document.getElementById('lightbox-img').alt = img.alt;
             document.getElementById('lightbox').classList.add('active');
             document.body.style.overflow = 'hidden';

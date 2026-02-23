@@ -287,6 +287,9 @@ export const getNotificationLogs = (params) => {
 export const getNotificationStats = () => request('/admin/notifications/stats');
 export const getBrevoStatus = () => request('/admin/notifications/brevo-status');
 
+// ---- Admin: System Health ----
+export const getSystemHealth = () => request('/admin/system/health');
+
 // ---- Admin: Campaign Tracking ----
 export const getCampaigns = () => request('/admin/campaigns');
 export const createCampaign = (body) =>

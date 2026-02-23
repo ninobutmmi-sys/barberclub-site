@@ -79,9 +79,10 @@ async function processReviewSms(triggerConfig) {
 
   if (!message) return;
 
-  // Find bookings completed more than delayMinutes ago, not yet sent review SMS
+  // Find bookings completed more than delayMinutes ago
+  // Only for clients who have NEVER received a review SMS (once per lifetime)
   const result = await db.query(
-    `SELECT b.id, b.date, b.start_time,
+    `SELECT b.id, b.client_id, b.date, b.start_time,
             c.first_name, c.last_name, c.phone
      FROM bookings b
      JOIN clients c ON b.client_id = c.id
@@ -89,6 +90,7 @@ async function processReviewSms(triggerConfig) {
        AND b.deleted_at IS NULL
        AND b.review_email_sent = false
        AND c.phone IS NOT NULL
+       AND c.review_requested = false
        AND b.date = CURRENT_DATE
        AND (b.end_time::time + ($1 || ' minutes')::interval) <= CURRENT_TIME
        AND NOT EXISTS (
@@ -108,11 +110,13 @@ async function processReviewSms(triggerConfig) {
     try {
       await brevoSMS(booking.phone, personalMessage);
       logger.info('Review SMS sent', { bookingId: booking.id, phone: booking.phone });
+      // Mark client as already contacted for review (lifetime flag)
+      await db.query('UPDATE clients SET review_requested = true WHERE id = $1', [booking.client_id]);
     } catch (err) {
       logger.error('Review SMS failed', { bookingId: booking.id, error: err.message });
     }
 
-    // Mark as processed to avoid re-sending
+    // Mark booking as processed
     await db.query('UPDATE bookings SET review_email_sent = true WHERE id = $1', [booking.id]);
   }
 

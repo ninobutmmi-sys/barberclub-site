@@ -203,8 +203,9 @@ router.get('/bookings/:id',
     try {
       const result = await db.query(
         `SELECT b.id, b.date, b.start_time, b.end_time, b.status, b.price, b.cancel_token,
+                b.barber_id, b.service_id, b.rescheduled,
                 s.name as service_name, s.duration as service_duration,
-                br.name as barber_name
+                br.name as barber_name, br.photo_url as barber_photo
          FROM bookings b
          JOIN services s ON b.service_id = s.id
          JOIN barbers br ON b.barber_id = br.id
@@ -237,6 +238,34 @@ router.post('/bookings/:id/cancel',
     try {
       const result = await bookingService.cancelBooking(req.params.id, req.body.token);
       res.json({ message: 'Rendez-vous annulé avec succès', booking: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// POST /api/bookings/:id/reschedule — Reschedule a booking (public, via cancel_token)
+// ============================================
+router.post('/bookings/:id/reschedule',
+  publicLimiter,
+  [
+    param('id').matches(uuidRegex).withMessage('ID invalide'),
+    body('token').matches(uuidRegex).withMessage('Token invalide'),
+    body('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide (format: YYYY-MM-DD)')
+      .custom((val) => !isNaN(new Date(val + 'T00:00:00').getTime())).withMessage('Date invalide'),
+    body('start_time').matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure invalide (format: HH:MM)'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const result = await bookingService.rescheduleBooking(
+        req.params.id,
+        req.body.token,
+        req.body.date,
+        req.body.start_time
+      );
+      res.json({ message: 'Rendez-vous déplacé avec succès', booking: result });
     } catch (error) {
       next(error);
     }

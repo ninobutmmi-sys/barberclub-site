@@ -14,7 +14,7 @@ function generateICS(booking) {
   const startDate = formatICSDate(booking.date, booking.start_time);
   const endDate = formatICSDate(booking.date, booking.end_time);
   const now = formatICSDateNow();
-  const uid = `${booking.id}@barberclub.fr`;
+  const uid = `${booking.id}@barberclub-grenoble.fr`;
 
   return [
     'BEGIN:VCALENDAR',

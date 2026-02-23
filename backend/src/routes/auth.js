@@ -282,7 +282,7 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
 // ============================================
 // POST /api/auth/logout
 // ============================================
-router.post('/logout', async (req, res, next) => {
+router.post('/logout', authLimiter, async (req, res, next) => {
   try {
     const { refresh_token } = req.body;
     if (!refresh_token) {

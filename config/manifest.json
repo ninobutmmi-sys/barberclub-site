@@ -11,49 +11,49 @@
     "lang": "fr-FR",
     "icons": [
         {
-            "src": "../assets/icons/icon-72x72.png",
+            "src": "/assets/icons/icon-72x72.png",
             "sizes": "72x72",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "../assets/icons/icon-96x96.png",
+            "src": "/assets/icons/icon-96x96.png",
             "sizes": "96x96",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "../assets/icons/icon-128x128.png",
+            "src": "/assets/icons/icon-128x128.png",
             "sizes": "128x128",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "../assets/icons/icon-144x144.png",
+            "src": "/assets/icons/icon-144x144.png",
             "sizes": "144x144",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "../assets/icons/icon-152x152.png",
+            "src": "/assets/icons/icon-152x152.png",
             "sizes": "152x152",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "../assets/icons/icon-192x192.png",
+            "src": "/assets/icons/icon-192x192.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "../assets/icons/icon-384x384.png",
+            "src": "/assets/icons/icon-384x384.png",
             "sizes": "384x384",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "../assets/icons/icon-512x512.png",
+            "src": "/assets/icons/icon-512x512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any maskable"
@@ -65,20 +65,20 @@
             "short_name": "Grenoble",
             "description": "Prendre rendez-vous au salon de Grenoble",
             "url": "https://www.planity.com/barber-club-38000-grenoble",
-            "icons": [{ "src": "../assets/icons/icon-96x96.png", "sizes": "96x96" }]
+            "icons": [{ "src": "/assets/icons/icon-96x96.png", "sizes": "96x96" }]
         },
         {
             "name": "Réserver Meylan",
             "short_name": "Meylan",
             "description": "Prendre rendez-vous au salon de Meylan",
-            "url": "https://book.timify.com/?accountId=68e13d325845e16b4feb0d4c",
-            "icons": [{ "src": "../assets/icons/icon-96x96.png", "sizes": "96x96" }]
+            "url": "/pages/meylan/reserver.html",
+            "icons": [{ "src": "/assets/icons/icon-96x96.png", "sizes": "96x96" }]
         }
     ],
     "categories": ["lifestyle", "shopping"],
     "screenshots": [
         {
-            "src": "../assets/images/screenshot-mobile.jpg",
+            "src": "/assets/images/screenshot-mobile.jpg",
             "sizes": "390x844",
             "type": "image/jpeg",
             "form_factor": "narrow"

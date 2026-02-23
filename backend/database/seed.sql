@@ -26,7 +26,7 @@ INSERT INTO barbers (id, name, role, photo_url, email, password_hash, is_active,
     'Julien',
     'Barber',
     '/assets/images/barbers/julien.jpg',
-    'julien@barberclub.fr',
+    'julien@barberclub-grenoble.fr',
     '$2b$12$4OoC39X1AkQ.PPldLi7mqOkSzeB5mXPvM18AcWJXbWoICm6R1utN2',
     true,
     2

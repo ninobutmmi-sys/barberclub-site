@@ -31,6 +31,7 @@ const productRoutes = require('./routes/admin/products');
 const waitlistRoutes = require('./routes/admin/waitlist');
 const automationRoutes = require('./routes/admin/automation');
 const { adminRouter: campaignRoutes, publicRouter: campaignTrackRoutes } = require('./routes/admin/campaignTracking');
+const systemHealthRoutes = require('./routes/admin/systemHealth');
 
 // Cron job imports
 const { queueReminders } = require('./cron/reminders');
@@ -39,9 +40,39 @@ const { processQueue, cleanupOldNotifications, cleanupExpiredTokens } = require(
 const { processAutomationTriggers } = require('./cron/automationTriggers');
 
 // ============================================
+// Cron job tracking (in-memory)
+// ============================================
+const cronStatus = {
+  processQueue:          { label: 'File notifications', schedule: '*/2 * * * *', lastRun: null, status: 'idle', error: null },
+  queueReminders:        { label: 'SMS rappels J-1',    schedule: '0 18 * * *',  lastRun: null, status: 'idle', error: null },
+  queueReviewRequests:   { label: 'Emails avis Google', schedule: '0 10 * * *',  lastRun: null, status: 'idle', error: null },
+  cleanupNotifications:  { label: 'Cleanup notifs 30j', schedule: '0 3 * * *',   lastRun: null, status: 'idle', error: null },
+  cleanupExpiredTokens:  { label: 'Cleanup tokens',     schedule: '30 3 * * *',  lastRun: null, status: 'idle', error: null },
+  automationTriggers:    { label: 'Triggers auto',      schedule: '*/10 * * * *', lastRun: null, status: 'idle', error: null },
+};
+
+function trackCron(key, fn) {
+  return async () => {
+    cronStatus[key].status = 'running';
+    cronStatus[key].error = null;
+    try {
+      await fn();
+      cronStatus[key].status = 'ok';
+      cronStatus[key].lastRun = new Date().toISOString();
+    } catch (err) {
+      cronStatus[key].status = 'error';
+      cronStatus[key].error = err.message;
+      cronStatus[key].lastRun = new Date().toISOString();
+      logger.error(`Cron ${key} failed`, { error: err.message });
+    }
+  };
+}
+
+// ============================================
 // Express app setup
 // ============================================
 const app = express();
+app.cronStatus = cronStatus;
 
 // Trust Railway's reverse proxy (fixes rate limiter IP detection + req.protocol)
 app.set('trust proxy', 1);
@@ -125,6 +156,7 @@ adminRouter.use('/products', productRoutes);
 adminRouter.use('/waitlist', waitlistRoutes);
 adminRouter.use('/automation', automationRoutes);
 adminRouter.use('/campaigns', campaignRoutes);
+adminRouter.use('/system', systemHealthRoutes);
 app.use('/api/admin', adminRouter);
 
 // Public campaign tracking (no auth)
@@ -179,23 +211,12 @@ app.use((err, req, res, next) => {
 // Cron jobs (scheduled tasks)
 // ============================================
 
-// Process notification queue every 2 minutes
-cron.schedule('*/2 * * * *', processQueue);
-
-// Queue SMS reminders every day at 18:00 (Paris time)
-cron.schedule('0 18 * * *', queueReminders);
-
-// Queue review emails every day at 10:00
-cron.schedule('0 10 * * *', queueReviewRequests);
-
-// Cleanup old notifications every day at 03:00
-cron.schedule('0 3 * * *', cleanupOldNotifications);
-
-// Cleanup expired tokens every day at 03:30
-cron.schedule('30 3 * * *', cleanupExpiredTokens);
-
-// Process automation triggers every 10 minutes
-cron.schedule('*/10 * * * *', processAutomationTriggers);
+cron.schedule('*/2 * * * *',  trackCron('processQueue', processQueue));
+cron.schedule('0 18 * * *',   trackCron('queueReminders', queueReminders));
+cron.schedule('0 10 * * *',   trackCron('queueReviewRequests', queueReviewRequests));
+cron.schedule('0 3 * * *',    trackCron('cleanupNotifications', cleanupOldNotifications));
+cron.schedule('30 3 * * *',   trackCron('cleanupExpiredTokens', cleanupExpiredTokens));
+cron.schedule('*/10 * * * *', trackCron('automationTriggers', processAutomationTriggers));
 
 // ============================================
 // Start server

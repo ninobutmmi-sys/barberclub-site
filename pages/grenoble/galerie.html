@@ -210,6 +210,10 @@
             }
         }
 
+        .gallery-item picture {
+            display: block;
+        }
+
         .gallery-item img {
             width: 100%;
             height: auto;
@@ -579,7 +583,10 @@
         <div class="gallery" id="gallery">
             <!-- Salon -->
             <div class="gallery-item">
-                <img src="../../assets/images/salons/grenoble/salon-grenoble.jpg" alt="Intérieur du salon BarberClub Grenoble">
+                <picture>
+                    <source srcset="../../assets/images/salons/grenoble/salon-grenoble.webp" type="image/webp">
+                    <img src="../../assets/images/salons/grenoble/salon-grenoble.jpg" alt="Intérieur du salon BarberClub Grenoble">
+                </picture>
                 <div class="item-info">
                     <p class="item-title">L'Intérieur</p>
                 </div>
@@ -587,7 +594,10 @@
 
             <!-- Miroir -->
             <div class="gallery-item">
-                <img src="../../assets/images/salons/grenoble/miroir-grenoble.jpg" alt="Miroir et postes de coupe">
+                <picture>
+                    <source srcset="../../assets/images/salons/grenoble/miroir-grenoble.webp" type="image/webp">
+                    <img src="../../assets/images/salons/grenoble/miroir-grenoble.jpg" alt="Miroir et postes de coupe">
+                </picture>
                 <div class="item-info">
                     <p class="item-title">Les Postes</p>
                 </div>
@@ -595,7 +605,10 @@
 
             <!-- Comptoir -->
             <div class="gallery-item">
-                <img src="../../assets/images/salons/grenoble/comptoir-grenoble.jpg" alt="Comptoir d'accueil">
+                <picture>
+                    <source srcset="../../assets/images/salons/grenoble/comptoir-grenoble.webp" type="image/webp">
+                    <img src="../../assets/images/salons/grenoble/comptoir-grenoble.jpg" alt="Comptoir d'accueil">
+                </picture>
                 <div class="item-info">
                     <p class="item-title">Le Comptoir</p>
                 </div>
@@ -603,7 +616,10 @@
 
             <!-- Chaise -->
             <div class="gallery-item">
-                <img src="../../assets/images/salons/grenoble/chaise-grenoble.jpg" alt="Chaise de barbier">
+                <picture>
+                    <source srcset="../../assets/images/salons/grenoble/chaise-grenoble.webp" type="image/webp">
+                    <img src="../../assets/images/salons/grenoble/chaise-grenoble.jpg" alt="Chaise de barbier">
+                </picture>
                 <div class="item-info">
                     <p class="item-title">La Chaise</p>
                 </div>
@@ -722,8 +738,9 @@
         function showImage(index) {
             const item = visibleItems[index];
             const img = item.querySelector('img');
+            const source = item.querySelector('source[type="image/webp"]');
             if (img) {
-                lightboxImage.src = img.src;
+                lightboxImage.src = source ? source.srcset : img.src;
                 lightboxImage.alt = img.alt;
                 lightboxImage.style.background = '';
                 lightboxImage.style.width = '';

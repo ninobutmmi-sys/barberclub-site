@@ -24,7 +24,9 @@ const logger = require('../utils/logger');
 async function createBooking(data) {
   const isAdmin = data.source === 'manual';
 
-  const result = await db.transaction(async (client) => {
+  let result;
+  try {
+  result = await db.transaction(async (client) => {
     // 0. Validate date/time is not in the past and not too far in the future (client bookings only)
     if (!isAdmin) {
       const today = new Date();
@@ -229,6 +231,13 @@ async function createBooking(data) {
       created_at: booking.created_at,
     };
   });
+  } catch (err) {
+    // Unique constraint violation = double booking race condition
+    if (err.code === '23505') {
+      throw ApiError.conflict('Ce créneau vient d\'être pris par un autre client. Veuillez en choisir un autre.');
+    }
+    throw err;
+  }
 
   // Queue confirmation email AFTER transaction commit (so booking_id exists in DB)
   try {
@@ -456,10 +465,197 @@ async function getBookingDetails(bookingId) {
   return result.rows[0];
 }
 
+/**
+ * Reschedule a booking by cancel_token (public, no auth needed)
+ * Atomic: validates new slot, updates booking, regenerates cancel_token
+ */
+async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) {
+  const result = await db.transaction(async (client) => {
+    // 1. Fetch booking with lock
+    const bookingResult = await client.query(
+      `SELECT b.*, s.name as service_name, s.duration as service_duration, s.price as service_price,
+              br.name as barber_name,
+              c.first_name, c.last_name, c.phone, c.email
+       FROM bookings b
+       JOIN services s ON b.service_id = s.id
+       JOIN barbers br ON b.barber_id = br.id
+       JOIN clients c ON b.client_id = c.id
+       WHERE b.id = $1 AND b.cancel_token = $2 AND b.deleted_at IS NULL
+       FOR UPDATE OF b`,
+      [bookingId, cancelToken]
+    );
+
+    if (bookingResult.rows.length === 0) {
+      throw ApiError.notFound('Rendez-vous introuvable');
+    }
+
+    const booking = bookingResult.rows[0];
+
+    if (booking.status !== 'confirmed') {
+      throw ApiError.badRequest('Ce rendez-vous ne peut plus être modifié');
+    }
+
+    // 1b. Check if already rescheduled (limit: 1 reschedule per booking)
+    if (booking.rescheduled) {
+      throw ApiError.badRequest('Ce rendez-vous a déjà été décalé une fois. Vous pouvez toujours l\'annuler.');
+    }
+
+    // 2. Check 12h minimum rule (same as cancel)
+    const bookingDateTime = new Date(`${booking.date}T${booking.start_time}`);
+    const now = new Date();
+    const hoursUntil = (bookingDateTime - now) / (1000 * 60 * 60);
+
+    if (hoursUntil < 12) {
+      throw ApiError.badRequest(
+        'Les modifications doivent être effectuées au moins 12 heures avant le rendez-vous'
+      );
+    }
+
+    // 3. Validate new date is not in the past and not too far
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const requestedDate = new Date(newDate + 'T00:00:00');
+    if (requestedDate < today) {
+      throw ApiError.badRequest('Impossible de déplacer dans le passé');
+    }
+    const newDateTime = new Date(`${newDate}T${newStartTime}:00`);
+    if (newDateTime < now) {
+      throw ApiError.badRequest('Impossible de déplacer sur un créneau déjà passé');
+    }
+    const maxDate = new Date(today);
+    maxDate.setMonth(maxDate.getMonth() + 6);
+    if (requestedDate > maxDate) {
+      throw ApiError.badRequest('Impossible de réserver plus de 6 mois à l\'avance');
+    }
+
+    // 4. Calculate new end time
+    const newEndTime = availability.addMinutesToTime(newStartTime, booking.service_duration);
+
+    // 5. Validate barber schedule for new date
+    const dateObj = new Date(newDate + 'T00:00:00');
+    const jsDay = dateObj.getDay();
+    const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1;
+
+    const overrideCheck = await client.query(
+      'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
+      [booking.barber_id, newDate]
+    );
+
+    if (overrideCheck.rows.length > 0) {
+      const ov = overrideCheck.rows[0];
+      if (ov.is_day_off) {
+        throw ApiError.badRequest('Le barber ne travaille pas ce jour');
+      }
+      if (newStartTime < ov.start_time.slice(0, 5) || newEndTime > ov.end_time.slice(0, 5)) {
+        throw ApiError.badRequest('Horaire en dehors des heures de travail');
+      }
+    } else {
+      const scheduleCheck = await client.query(
+        'SELECT is_working, start_time, end_time FROM schedules WHERE barber_id = $1 AND day_of_week = $2',
+        [booking.barber_id, dayOfWeek]
+      );
+      if (scheduleCheck.rows.length === 0 || !scheduleCheck.rows[0].is_working) {
+        throw ApiError.badRequest('Le barber ne travaille pas ce jour');
+      }
+      const sched = scheduleCheck.rows[0];
+      if (newStartTime < sched.start_time.slice(0, 5) || newEndTime > sched.end_time.slice(0, 5)) {
+        throw ApiError.badRequest('Horaire en dehors des heures de travail');
+      }
+    }
+
+    // 6. Check blocked slots
+    const blockedCheck = await client.query(
+      `SELECT id FROM blocked_slots
+       WHERE barber_id = $1 AND date = $2
+         AND start_time < $3 AND end_time > $4`,
+      [booking.barber_id, newDate, newEndTime, newStartTime]
+    );
+    if (blockedCheck.rows.length > 0) {
+      throw ApiError.badRequest('Ce créneau est bloqué');
+    }
+
+    // 7. Check new slot is available (excluding current booking)
+    const conflictCheck = await client.query(
+      `SELECT id FROM bookings
+       WHERE barber_id = $1 AND date = $2
+         AND status != 'cancelled' AND deleted_at IS NULL
+         AND start_time < $3 AND end_time > $4
+         AND id != $5
+       FOR UPDATE`,
+      [booking.barber_id, newDate, newEndTime, newStartTime, bookingId]
+    );
+    if (conflictCheck.rows.length > 0) {
+      throw ApiError.conflict('Ce créneau est déjà pris');
+    }
+
+    // 8. Update booking (keep same cancel_token so original email link stays valid)
+    const updateResult = await client.query(
+      `UPDATE bookings
+       SET date = $1, start_time = $2, end_time = $3, rescheduled = true
+       WHERE id = $4
+       RETURNING *`,
+      [newDate, newStartTime, newEndTime, bookingId]
+    );
+
+    logger.info('Booking rescheduled', {
+      bookingId,
+      oldDate: booking.date,
+      oldTime: booking.start_time.slice(0, 5),
+      newDate,
+      newTime: newStartTime,
+    });
+
+    return {
+      booking: updateResult.rows[0],
+      oldDate: booking.date,
+      oldTime: booking.start_time,
+      service_name: booking.service_name,
+      barber_name: booking.barber_name,
+      email: booking.email,
+      first_name: booking.first_name,
+      price: booking.service_price,
+      cancelToken: booking.cancel_token,
+    };
+  });
+
+  // Send reschedule email after transaction commit
+  try {
+    await notification.sendRescheduleEmail({
+      email: result.email,
+      first_name: result.first_name,
+      service_name: result.service_name,
+      barber_name: result.barber_name,
+      old_date: result.oldDate,
+      old_time: result.oldTime,
+      new_date: newDate,
+      new_time: newStartTime,
+      new_barber_name: result.barber_name,
+      price: result.price,
+      cancel_token: result.cancelToken,
+      booking_id: bookingId,
+    });
+  } catch (err) {
+    logger.error('Failed to send reschedule email', { bookingId, error: err.message });
+  }
+
+  return {
+    id: bookingId,
+    date: newDate,
+    start_time: newStartTime,
+    end_time: result.booking.end_time,
+    status: result.booking.status,
+    cancel_token: result.cancelToken,
+    service_name: result.service_name,
+    barber_name: result.barber_name,
+    price: result.price,
+  };
+}
+
 module.exports = {
   createBooking,
   createRecurringBookings,
   cancelBooking,
+  rescheduleBooking,
   updateBookingStatus,
   getBookingDetails,
 };

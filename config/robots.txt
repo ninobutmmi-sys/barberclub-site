@@ -1,11 +1,11 @@
 # Robots.txt pour BarberClub
-# https://barberclub.fr
+# https://barberclub-grenoble.fr
 
 User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://barberclub.fr/sitemap.xml
+Sitemap: https://barberclub-grenoble.fr/sitemap.xml
 
 # Pages à ne pas indexer
 Disallow: /generate-icons.html

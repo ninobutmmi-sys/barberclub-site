@@ -98,6 +98,7 @@ CREATE TABLE clients (
     failed_login_attempts INTEGER DEFAULT 0,
     locked_until TIMESTAMPTZ,
     notes TEXT,
+    review_requested BOOLEAN DEFAULT false,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
 );

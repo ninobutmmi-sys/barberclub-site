@@ -695,7 +695,7 @@
             color: rgba(255, 255, 255, 0.85);
         }
 
-        .calendar-day:active {
+        .calendar-day:not(.past):not(.disabled):not(.empty):active {
             transform: scale(0.92);
         }
 
@@ -705,11 +705,13 @@
 
         .calendar-day.past,
         .calendar-day.disabled {
-            color: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.12) !important;
             cursor: not-allowed;
+            pointer-events: none;
+            border-color: transparent !important;
         }
 
-        .calendar-day.today {
+        .calendar-day.today:not(.disabled) {
             border-color: rgba(255, 255, 255, 0.25);
             color: #fff;
             font-weight: 600;
@@ -1645,14 +1647,45 @@
         .header { animation: fadeIn 0.4s ease forwards; }
 
         /* ========================================
-           DESKTOP (min 768px)
+           TABLET (min 768px)
            ======================================== */
         @media (min-width: 768px) {
             .page {
-                max-width: 520px;
+                max-width: 640px;
                 margin: 0 auto;
             }
 
+            .header {
+                padding: 16px 24px;
+            }
+
+            .step {
+                padding: 0 28px 28px;
+            }
+
+            .step-title {
+                font-size: 26px;
+            }
+
+            .progress-bar {
+                padding: 20px 32px 24px;
+            }
+
+            .progress-step {
+                width: 72px;
+            }
+
+            .progress-circle {
+                width: 34px;
+                height: 34px;
+                font-size: 13px;
+            }
+
+            .progress-label {
+                font-size: 10px;
+            }
+
+            /* Hover states */
             .barber-card:hover:not(.selected) {
                 background: rgba(255, 255, 255, 0.05);
                 border-color: rgba(255, 255, 255, 0.14);
@@ -1734,6 +1767,404 @@
 
             .practical-maps-btn:hover {
                 background: rgba(255, 255, 255, 0.1);
+            }
+
+            .back-btn:hover {
+                background: rgba(255, 255, 255, 0.15);
+            }
+
+            .calendar-nav-btn:hover:not(:disabled) {
+                background: rgba(255, 255, 255, 0.12);
+            }
+
+            .slots-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+
+            .action-bar {
+                padding: 16px 28px 20px;
+            }
+
+            .action-btn {
+                max-width: 400px;
+                margin: 0 auto;
+                border-radius: 16px;
+            }
+        }
+
+        /* ========================================
+           DESKTOP (min 1024px)
+           ======================================== */
+        @media (min-width: 1024px) {
+            .page {
+                max-width: 880px;
+            }
+
+            .header {
+                padding: 18px 32px;
+                border-bottom-color: rgba(255, 255, 255, 0.04);
+            }
+
+            .header-title {
+                font-size: 17px;
+            }
+
+            .step {
+                padding: 0 40px 32px;
+            }
+
+            .step-title {
+                font-size: 30px;
+                margin-bottom: 8px;
+            }
+
+            .step-desc {
+                font-size: 15px;
+                margin-bottom: 32px;
+            }
+
+            .progress-bar {
+                padding: 24px 48px 28px;
+            }
+
+            .progress-step {
+                width: 88px;
+            }
+
+            .progress-circle {
+                width: 38px;
+                height: 38px;
+                font-size: 14px;
+            }
+
+            .progress-label {
+                font-size: 11px;
+                margin-top: 8px;
+            }
+
+            .progress-line {
+                margin-top: 19px;
+            }
+
+            /* Step 1: Barber cards — 2 columns */
+            .barber-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 14px;
+            }
+
+            .barber-card {
+                padding: 20px;
+                border-radius: 20px;
+            }
+
+            .barber-avatar {
+                width: 64px;
+                height: 64px;
+            }
+
+            .barber-name {
+                font-size: 16px;
+            }
+
+            .barber-role {
+                font-size: 13px;
+            }
+
+            /* Step 2: Service cards — 2 columns */
+            .service-list {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .service-card {
+                padding: 18px 20px;
+                border-radius: 16px;
+            }
+
+            .service-name {
+                font-size: 15px;
+            }
+
+            .service-price {
+                font-size: 15px;
+            }
+
+            /* Step 3: Calendar + Slots side by side */
+            #step3 .step-title,
+            #step3 .step-desc {
+                text-align: center;
+            }
+
+            .quick-suggestions {
+                max-width: 600px;
+                margin-left: auto;
+                margin-right: auto;
+                margin-bottom: 28px;
+            }
+
+            .quick-divider {
+                max-width: 600px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            #step3 .calendar-section {
+                float: left;
+                width: 52%;
+                padding-right: 24px;
+                margin-bottom: 0;
+            }
+
+            #step3 .slots-section {
+                float: right;
+                width: 48%;
+                padding-left: 24px;
+                border-left: 1px solid rgba(255, 255, 255, 0.06);
+                min-height: 320px;
+            }
+
+            /* Clearfix for float layout */
+            #step3::after {
+                content: '';
+                display: table;
+                clear: both;
+            }
+
+            .slots-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+
+            .slots-title {
+                margin-bottom: 16px;
+            }
+
+            .slot-btn {
+                padding: 14px 10px;
+                font-size: 15px;
+            }
+
+            .calendar-day {
+                font-size: 15px;
+                border-radius: 14px;
+            }
+
+            /* Step 4: Two-column layout — summary left, forms right */
+            #step4.active {
+                display: grid;
+                grid-template-columns: 340px 1fr;
+                gap: 0 40px;
+                align-items: start;
+            }
+
+            #step4.active .step-title {
+                grid-column: 1 / -1;
+            }
+
+            #step4.active .step-desc {
+                grid-column: 1 / -1;
+            }
+
+            .summary-card {
+                grid-column: 1;
+                grid-row: 3 / 20;
+                position: sticky;
+                top: 100px;
+                padding: 26px;
+                border-radius: 20px;
+                margin-bottom: 0;
+            }
+
+            .summary-label {
+                font-size: 13px;
+            }
+
+            .summary-value {
+                font-size: 15px;
+            }
+
+            .auth-choice {
+                grid-column: 2;
+            }
+
+            #step4 .auth-form-section {
+                grid-column: 2;
+            }
+
+            .auth-form-card {
+                padding: 28px 24px;
+                border-radius: 20px;
+            }
+
+            .auth-signup-card {
+                border-radius: 20px;
+                padding: 24px 24px 22px;
+            }
+
+            .auth-option {
+                padding: 22px 20px;
+            }
+
+            .auth-signup-cta {
+                margin-top: 24px;
+            }
+
+            /* Step 5: Success — wider and more spacious */
+            .success-container {
+                padding: 60px 40px;
+            }
+
+            .success-icon {
+                width: 96px;
+                height: 96px;
+                margin-bottom: 32px;
+            }
+
+            .success-icon svg {
+                width: 44px;
+                height: 44px;
+            }
+
+            .success-title {
+                font-size: 32px;
+                margin-bottom: 14px;
+            }
+
+            .success-text {
+                font-size: 15px;
+                max-width: 380px;
+                margin-bottom: 40px;
+            }
+
+            .success-details {
+                max-width: 420px;
+                padding: 28px;
+                border-radius: 20px;
+                margin-bottom: 40px;
+            }
+
+            .success-detail-label {
+                font-size: 13px;
+            }
+
+            .success-detail-value {
+                font-size: 14px;
+            }
+
+            .success-actions {
+                max-width: 420px;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .success-btn {
+                flex: 1;
+                min-width: 180px;
+            }
+
+            .success-btn:last-child {
+                flex-basis: 100%;
+            }
+
+            .practical-info {
+                max-width: 420px;
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .practical-card:first-child {
+                grid-column: 1 / -1;
+            }
+
+            .practical-card {
+                margin-bottom: 0;
+            }
+
+            .cancel-note {
+                max-width: 420px;
+            }
+
+            /* Action bar — desktop refinement */
+            .action-bar {
+                padding: 20px 40px 24px;
+                background: linear-gradient(to top, rgba(0,0,0,1) 50%, rgba(0,0,0,0.85) 75%, rgba(0,0,0,0));
+            }
+
+            .action-btn {
+                max-width: 360px;
+                padding: 18px 28px;
+                font-size: 14px;
+            }
+        }
+
+        /* ========================================
+           WIDE DESKTOP (min 1280px)
+           ======================================== */
+        @media (min-width: 1280px) {
+            .page {
+                max-width: 960px;
+            }
+
+            .step {
+                padding: 0 48px 40px;
+            }
+
+            .step-title {
+                font-size: 32px;
+            }
+
+            .progress-bar {
+                padding: 28px 64px 32px;
+            }
+
+            .barber-grid {
+                gap: 16px;
+            }
+
+            .barber-card {
+                padding: 22px;
+            }
+
+            .barber-avatar {
+                width: 68px;
+                height: 68px;
+            }
+
+            .service-list {
+                gap: 12px;
+            }
+
+            .service-card {
+                padding: 20px 22px;
+            }
+
+            #step3 .calendar-section {
+                padding-right: 32px;
+            }
+
+            #step3 .slots-section {
+                padding-left: 32px;
+            }
+
+            .slots-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .success-title {
+                font-size: 36px;
+            }
+
+            .success-container {
+                padding: 80px 48px;
+            }
+
+            /* Step 4 wider */
+            #step4.active {
+                grid-template-columns: 380px 1fr;
+                gap: 0 48px;
             }
         }
 
@@ -2585,10 +3016,15 @@
 
             if (state.selectedBarber.id === 'any') {
                 // All barbers off on this day? Check if ALL barbers have this dow in off_days
-                return state.barbers.every(b => (b.off_days || []).includes(dow));
+                return state.barbers.length === 0 || state.barbers.every(b => {
+                    const offs = (b.off_days || []).map(Number);
+                    return offs.includes(dow);
+                });
             } else {
                 const barber = state.barbers.find(b => b.id === state.selectedBarber.id);
-                return barber && (barber.off_days || []).includes(dow);
+                if (!barber) return true;
+                const offs = (barber.off_days || []).map(Number);
+                return offs.includes(dow);
             }
         }
 
@@ -2634,8 +3070,8 @@
                 let cls = 'calendar-day';
                 if (isPast || off) cls += ' past';
                 if (off) cls += ' disabled';
-                if (isToday && !off) cls += ' today';
-                if (isSelected && !off) cls += ' selected';
+                if (isToday) cls += ' today';
+                if (isSelected && !off && !isPast) cls += ' selected';
 
                 html += `<div class="${cls}" data-date="${dateStr}">${d}</div>`;
             }
@@ -2847,6 +3283,10 @@
                 for (let i = 0; i < 8 && suggestions.length < 3; i++) {
                     const d = new Date(today);
                     d.setDate(d.getDate() + i);
+
+                    // Skip off days (no API call needed)
+                    if (isOffDay(d)) continue;
+
                     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
                     const params = `?service_id=${serviceId}&date=${dateStr}`;

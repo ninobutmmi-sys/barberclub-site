@@ -145,7 +145,7 @@ async function sendConfirmationEmail(data) {
     return;
   }
 
-  const cancelUrl = `${config.siteUrl}/pages/meylan/annuler.html?id=${data.booking_id}&token=${data.cancel_token}`;
+  const cancelUrl = `${config.siteUrl}/pages/meylan/mon-rdv.html?id=${data.booking_id}&token=${data.cancel_token}`;
 
   const dateFormatted = formatDateFR(data.date);
   const timeFormatted = formatTime(data.start_time);
@@ -180,7 +180,7 @@ async function sendReminderSMS(data) {
     return;
   }
 
-  const cancelUrl = `${config.siteUrl}/pages/meylan/annuler.html?id=${data.booking_id}&token=${data.cancel_token}`;
+  const cancelUrl = `${config.siteUrl}/pages/meylan/mon-rdv.html?id=${data.booking_id}&token=${data.cancel_token}`;
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
@@ -271,11 +271,11 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
     </div>
 
     <div style="text-align:center;margin-bottom:32px;">
-      <a href="${cancelUrl}" style="display:inline-block;background:rgba(239,68,68,0.1);color:rgba(239,68,68,0.8);padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;border:1px solid rgba(239,68,68,0.2);">
-        Annuler ce rendez-vous
+      <a href="${cancelUrl}" style="display:inline-block;background:rgba(255,255,255,0.08);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;border:1px solid rgba(255,255,255,0.15);">
+        Gérer mon rendez-vous
       </a>
       <p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:8px;">
-        Annulation gratuite jusqu'à 12h avant le rendez-vous
+        Annulation ou modification gratuite jusqu'à 12h avant le rendez-vous
       </p>
     </div>
 
@@ -433,7 +433,7 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
 /**
  * Send reschedule email directly (admin-triggered, not queued)
  */
-async function sendRescheduleEmail({ email, first_name, service_name, barber_name, old_date, old_time, new_date, new_time, new_barber_name, price }) {
+async function sendRescheduleEmail({ email, first_name, service_name, barber_name, old_date, old_time, new_date, new_time, new_barber_name, price, cancel_token, booking_id }) {
   if (!config.brevo.apiKey || !email) {
     logger.warn('Brevo not configured or no email, skipping reschedule email');
     return;
@@ -483,6 +483,12 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
       <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:16px 0;">
       <p style="margin:0;color:rgba(255,255,255,0.5);font-size:13px;">📍 ${config.salon.address}</p>
     </div>
+
+    ${cancel_token && booking_id ? `<div style="text-align:center;margin-bottom:24px;">
+      <a href="${config.siteUrl}/pages/meylan/mon-rdv.html?id=${booking_id}&token=${cancel_token}" style="display:inline-block;background:rgba(255,255,255,0.08);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;border:1px solid rgba(255,255,255,0.15);">
+        Gérer mon rendez-vous
+      </a>
+    </div>` : ''}
 
     <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;">
       <p>Paiement sur place uniquement</p>

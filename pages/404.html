@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>404 - Page introuvable | BarberClub</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/png" sizes="96x96" href="../assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="../assets/icons/icon-192x192.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Subtle radial gradient background */
+        .bg-glow {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 600px 400px at 50% 40%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            width: 100%;
+            max-width: 540px;
+        }
+
+        /* Crown logo */
+        .crown {
+            width: 64px;
+            height: auto;
+            margin-bottom: 2rem;
+            opacity: 0.7;
+            filter: brightness(0) invert(1);
+        }
+
+        /* Glassmorphism card */
+        .card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* 404 number with animation */
+        .error-code {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 8rem;
+            line-height: 1;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(180deg, #fff 0%, rgba(255, 255, 255, 0.4) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse404 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse404 {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+                filter: drop-shadow(0 0 0px rgba(255, 255, 255, 0));
+            }
+            50% {
+                opacity: 0.85;
+                transform: scale(1.02);
+                filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.08));
+            }
+        }
+
+        .subtitle {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1.25rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .message {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 2.5rem;
+            max-width: 360px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Buttons */
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-decoration: none;
+            padding: 0.9rem 2rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 140px;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-primary {
+            background: #fff;
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .card {
+                padding: 2.5rem 1.5rem;
+                border-radius: 20px;
+            }
+
+            .error-code {
+                font-size: 6rem;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .crown {
+                width: 52px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .error-code {
+                font-size: 5rem;
+            }
+
+            .buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-glow"></div>
+
+    <div class="container">
+        <img src="../assets/images/common/couronne.png" alt="BarberClub" class="crown">
+
+        <div class="card">
+            <div class="error-code">404</div>
+            <h1 class="subtitle">Page introuvable</h1>
+            <p class="message">La page que vous cherchez n'existe pas ou a été déplacée.</p>
+            <div class="buttons">
+                <a href="../index.html" class="btn btn-primary">Accueil</a>
+                <a href="meylan/reserver.html" class="btn btn-secondary">Réserver</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
