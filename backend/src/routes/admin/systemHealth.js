@@ -24,10 +24,10 @@ router.get('/health', async (req, res, next) => {
 
     const notifStats = await db.query(`
       SELECT
-        COUNT(*) FILTER (WHERE type = 'sms' AND status = 'sent')     AS sms_sent,
-        COUNT(*) FILTER (WHERE type = 'sms' AND status = 'failed')   AS sms_failed,
-        COUNT(*) FILTER (WHERE type = 'email' AND status = 'sent')   AS email_sent,
-        COUNT(*) FILTER (WHERE type = 'email' AND status = 'failed') AS email_failed,
+        COUNT(*) FILTER (WHERE type LIKE '%sms' AND status = 'sent')     AS sms_sent,
+        COUNT(*) FILTER (WHERE type LIKE '%sms' AND status = 'failed')   AS sms_failed,
+        COUNT(*) FILTER (WHERE type LIKE '%email' AND status = 'sent')   AS email_sent,
+        COUNT(*) FILTER (WHERE type LIKE '%email' AND status = 'failed') AS email_failed,
         COUNT(*) FILTER (WHERE status = 'pending')                   AS pending
       FROM notification_queue
       WHERE created_at >= $1
