@@ -44,7 +44,7 @@ function timeToMinutes(t) {
 }
 
 const HOUR_START = 9;
-const HOUR_END = 19;
+const HOUR_END = 20;
 const TOTAL_MINUTES = (HOUR_END - HOUR_START) * 60;
 const PX_PER_MIN = 3;
 const GRID_HEIGHT = TOTAL_MINUTES * PX_PER_MIN; // 1800px
@@ -655,7 +655,7 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
                 </div>
                 <div className="form-group">
                   <label className="label">Heure</label>
-                  <input className="input" type="time" value={rTime} onChange={(e) => setRTime(e.target.value)} min="09:00" max="19:00" required />
+                  <input className="input" type="time" value={rTime} onChange={(e) => setRTime(e.target.value)} min="09:00" max="20:00" required />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -1040,7 +1040,7 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
               </div>
               <div className="bk-field">
                 <label>Heure</label>
-                <input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} min="09:00" max="19:00" required />
+                <input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} min="09:00" max="20:00" required />
               </div>
               <div className="bk-field">
                 <label>Durée (min)</label>
@@ -1286,11 +1286,11 @@ function BlockSlotModal({ barbers, onClose, onCreated, initialDate, initialBarbe
             <div style={formRow}>
               <div className="form-group">
                 <label className="label">Début</label>
-                <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} min="09:00" max="19:00" required />
+                <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} min="09:00" max="20:00" required />
               </div>
               <div className="form-group">
                 <label className="label">Fin</label>
-                <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} min="09:00" max="19:00" required />
+                <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} min="09:00" max="20:00" required />
               </div>
             </div>
             <div className="form-group">

@@ -92,6 +92,14 @@ async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = 
     endTime = scheduleResult.rows[0].end_time;
   }
 
+  // Admin can book up to 20:00 even if schedule ends at 19:00
+  if (options.adminMode) {
+    const endMin = timeToMinutes(endTime);
+    if (endMin < 20 * 60) {
+      endTime = '20:00';
+    }
+  }
+
   // Get existing bookings for this barber on this date
   const bookingsResult = await db.query(
     `SELECT start_time, end_time FROM bookings
@@ -131,6 +139,16 @@ async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = 
   const endMin = timeToMinutes(endTime);
   const slots = [];
 
+  // For today: skip slots starting within 5 minutes (public only)
+  let minSlotStart = 0;
+  if (!options.adminMode) {
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (date === todayStr) {
+      minSlotStart = now.getHours() * 60 + now.getMinutes() + 5;
+    }
+  }
+
   // Slots every 30 min for clients (public API), every 5 min for admin
   const step = options.adminMode ? 5 : 30;
   for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
@@ -144,7 +162,7 @@ async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = 
       (blocked) => slotStart < blocked.end && slotEnd > blocked.start
     );
 
-    if (!overlapsBooking && !overlapsBlocked) {
+    if (!overlapsBooking && !overlapsBlocked && slotStart >= minSlotStart) {
       slots.push({
         time: minutesToTime(slotStart),
         barber_id: barberId,

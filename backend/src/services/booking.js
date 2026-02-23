@@ -29,17 +29,18 @@ async function createBooking(data) {
   result = await db.transaction(async (client) => {
     // 0. Validate date/time is not in the past and not too far in the future (client bookings only)
     if (!isAdmin) {
-      const today = new Date();
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+      const today = new Date(now);
       today.setHours(0, 0, 0, 0);
       const requestedDate = new Date(data.date + 'T00:00:00');
       if (requestedDate < today) {
         throw ApiError.badRequest('Impossible de réserver dans le passé');
       }
-      // Reject same-day bookings for past time slots
-      const now = new Date();
+      // Reject bookings starting within 5 minutes
+      const minBookingTime = new Date(now.getTime() + 5 * 60 * 1000);
       const requestedDateTime = new Date(`${data.date}T${data.start_time}:00`);
-      if (requestedDateTime < now) {
-        throw ApiError.badRequest('Impossible de réserver un créneau déjà passé');
+      if (requestedDateTime < minBookingTime) {
+        throw ApiError.badRequest('Impossible de réserver un créneau dans moins de 5 minutes');
       }
       const maxDate = new Date(today);
       maxDate.setMonth(maxDate.getMonth() + 6);
@@ -519,7 +520,7 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
 
     // 2. Check 12h minimum rule (same as cancel)
     const bookingDateTime = new Date(`${booking.date}T${booking.start_time}`);
-    const now = new Date();
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
     const hoursUntil = (bookingDateTime - now) / (1000 * 60 * 60);
 
     if (hoursUntil < 12) {
@@ -529,15 +530,16 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
     }
 
     // 3. Validate new date is not in the past and not too far
-    const today = new Date();
+    const today = new Date(now);
     today.setHours(0, 0, 0, 0);
     const requestedDate = new Date(newDate + 'T00:00:00');
     if (requestedDate < today) {
       throw ApiError.badRequest('Impossible de déplacer dans le passé');
     }
+    const minBookingTime = new Date(now.getTime() + 5 * 60 * 1000);
     const newDateTime = new Date(`${newDate}T${newStartTime}:00`);
-    if (newDateTime < now) {
-      throw ApiError.badRequest('Impossible de déplacer sur un créneau déjà passé');
+    if (newDateTime < minBookingTime) {
+      throw ApiError.badRequest('Impossible de déplacer sur un créneau dans moins de 5 minutes');
     }
     const maxDate = new Date(today);
     maxDate.setMonth(maxDate.getMonth() + 6);
