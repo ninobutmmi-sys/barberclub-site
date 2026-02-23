@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -16,41 +16,45 @@ import Automation from './pages/Automation';
 import Campaigns from './pages/Campaigns';
 import Caisse from './pages/Caisse';
 
-function ProtectedRoute({ children }) {
+function AppRoutes() {
   const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
+
+  if (loading) {
+    return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0a0a0a',color:'#fff',fontFamily:'sans-serif'}}>Chargement...</div>;
+  }
+
+  if (!user) {
+    return <Login />;
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Analytics />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="planning" element={<Planning />} />
+        <Route path="services" element={<Services />} />
+        <Route path="barbers" element={<Barbers />} />
+        <Route path="clients" element={<Clients />} />
+        <Route path="clients/:id" element={<ClientDetail />} />
+        <Route path="history" element={<History />} />
+        <Route path="sms" element={<Sms />} />
+        <Route path="mailing" element={<Mailing />} />
+        <Route path="system" element={<SystemHealth />} />
+        <Route path="automation" element={<Automation />} />
+        <Route path="campaigns" element={<Campaigns />} />
+        <Route path="caisse" element={<Caisse />} />
+      </Route>
+    </Routes>
+  );
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Analytics />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="planning" element={<Planning />} />
-            <Route path="services" element={<Services />} />
-            <Route path="barbers" element={<Barbers />} />
-            <Route path="clients" element={<Clients />} />
-            <Route path="clients/:id" element={<ClientDetail />} />
-            <Route path="history" element={<History />} />
-            <Route path="sms" element={<Sms />} />
-            <Route path="mailing" element={<Mailing />} />
-            <Route path="system" element={<SystemHealth />} />
-            <Route path="automation" element={<Automation />} />
-            <Route path="campaigns" element={<Campaigns />} />
-            <Route path="caisse" element={<Caisse />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <HashRouter>
+        <AppRoutes />
+      </HashRouter>
     </AuthProvider>
   );
 }

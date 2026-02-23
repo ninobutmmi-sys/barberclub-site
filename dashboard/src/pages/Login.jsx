@@ -1,16 +1,12 @@
 import { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth';
 
 export default function Login() {
-  const { user, login } = useAuth();
-  const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  if (user) return <Navigate to="/" replace />;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,7 +14,6 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/', { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -46,7 +41,6 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="lucas@barberclub.fr"
               required
-              autoFocus
             />
           </div>
 
