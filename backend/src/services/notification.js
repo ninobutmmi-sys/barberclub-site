@@ -21,6 +21,28 @@ async function queueNotification(bookingId, type) {
  * Picks up pending items and attempts to send them
  */
 async function processPendingNotifications() {
+  // Atomically claim pending notifications by setting status = 'processing'
+  // This prevents duplicate sends if the cron overlaps or runs concurrently
+  const claimed = await db.query(
+    `UPDATE notification_queue
+     SET status = 'processing'
+     WHERE id IN (
+       SELECT nq.id FROM notification_queue nq
+       WHERE nq.status = 'pending'
+         AND nq.next_retry_at <= NOW()
+         AND nq.attempts < nq.max_attempts
+       ORDER BY nq.created_at
+       LIMIT 10
+       FOR UPDATE SKIP LOCKED
+     )
+     RETURNING id`
+  );
+
+  if (claimed.rows.length === 0) return;
+
+  const claimedIds = claimed.rows.map(r => r.id);
+
+  // Now fetch full data for claimed notifications
   const result = await db.query(
     `SELECT nq.*, b.date, b.start_time, b.end_time, b.price, b.cancel_token,
             s.name as service_name,
@@ -31,17 +53,13 @@ async function processPendingNotifications() {
      JOIN services s ON b.service_id = s.id
      JOIN barbers br ON b.barber_id = br.id
      JOIN clients c ON b.client_id = c.id
-     WHERE nq.status = 'pending'
-       AND nq.next_retry_at <= NOW()
-       AND nq.attempts < nq.max_attempts
-     ORDER BY nq.created_at
-     LIMIT 10`
+     WHERE nq.id = ANY($1)`,
+    [claimedIds]
   );
 
   for (const notification of result.rows) {
     try {
       await sendNotification(notification);
-      // Mark as sent
       await db.query(
         `UPDATE notification_queue SET status = 'sent', sent_at = NOW()
          WHERE id = $1`,
@@ -184,7 +202,7 @@ async function sendReminderSMS(data) {
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `BarberClub Meylan - Rappel de votre RDV le ${dateFR} a ${timeFormatted} au 26 Av. du Gresivaudan, Corenc. Gerer votre RDV : ${rdvUrl}`;
+  const message = `BarberClub Meylan - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au 26 Av. du Gresivaudan, Corenc.\n\nGerer votre RDV : ${rdvUrl}`;
 
   await brevoSMS(data.phone, message);
 

@@ -421,6 +421,7 @@ SITE_URL=https://barberclub-grenoble.fr
 - [ ] Tester dashboard admin sur URL pages.dev
 - [ ] Valider CORS avec les nouvelles origines pages.dev
 - [ ] Si tout OK → bascule DNS vers `barberclub-grenoble.fr` + `gestion.barberclub-grenoble.fr`
+- [ ] Configurer `API_URL=https://api.barberclub-grenoble.fr` sur Railway (pour que les liens SMS utilisent le domaine propre au lieu de `fortunate-benevolence-production-7df2.up.railway.app`)
 
 ---
 

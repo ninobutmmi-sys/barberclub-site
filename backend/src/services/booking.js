@@ -247,6 +247,25 @@ async function createBooking(data) {
     logger.error('Failed to queue confirmation email', { bookingId: result.id, error: err.message });
   }
 
+  // If booking is within 24h, queue SMS reminder immediately
+  // (the daily cron at 18h won't catch last-minute bookings)
+  try {
+    const bookingDateTime = new Date(`${result.date}T${result.start_time.slice(0, 5)}`);
+    const now = new Date();
+    const hoursUntilBooking = (bookingDateTime - now) / (1000 * 60 * 60);
+
+    if (hoursUntilBooking > 0 && hoursUntilBooking <= 24) {
+      await notification.queueNotification(result.id, 'reminder_sms');
+      await db.query(
+        'UPDATE bookings SET reminder_sent = true WHERE id = $1',
+        [result.id]
+      );
+      logger.info('Immediate SMS reminder queued (booking within 24h)', { bookingId: result.id, hoursUntil: Math.round(hoursUntilBooking) });
+    }
+  } catch (err) {
+    logger.error('Failed to queue immediate reminder SMS', { bookingId: result.id, error: err.message });
+  }
+
   return result;
 }
 
