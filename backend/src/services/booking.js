@@ -240,30 +240,65 @@ async function createBooking(data) {
     throw err;
   }
 
-  // Queue confirmation email AFTER transaction commit (so booking_id exists in DB)
+  // Send notifications DIRECTLY after transaction commit
+  // (direct sends are more reliable than queue — consistent with reschedule/cancel emails)
+  let bookingDetails;
   try {
-    await notification.queueNotification(result.id, 'confirmation_email');
+    bookingDetails = await getBookingDetails(result.id);
   } catch (err) {
-    logger.error('Failed to queue confirmation email', { bookingId: result.id, error: err.message });
+    logger.error('Failed to fetch booking details for notifications', { bookingId: result.id, error: err.message });
   }
 
-  // If booking is within 24h, queue SMS reminder immediately
-  // (the daily cron at 18h won't catch last-minute bookings)
-  try {
+  if (bookingDetails) {
+    // 1. Confirmation email
+    if (bookingDetails.client_email) {
+      try {
+        await notification.sendConfirmationEmail({
+          booking_id: result.id,
+          cancel_token: result.cancel_token,
+          email: bookingDetails.client_email,
+          first_name: bookingDetails.client_first_name,
+          service_name: bookingDetails.service_name,
+          barber_name: bookingDetails.barber_name,
+          date: bookingDetails.date,
+          start_time: bookingDetails.start_time,
+          price: bookingDetails.price,
+        });
+        logger.info('Confirmation email sent directly', { bookingId: result.id });
+      } catch (err) {
+        logger.error('Direct confirmation email failed, queueing for retry', { bookingId: result.id, error: err.message });
+        try { await notification.queueNotification(result.id, 'confirmation_email'); } catch (qErr) {
+          logger.error('Failed to queue confirmation email fallback', { bookingId: result.id, error: qErr.message });
+        }
+      }
+    }
+
+    // 2. Immediate SMS reminder if booking is within 24h
     const bookingDateTime = new Date(`${result.date}T${result.start_time.slice(0, 5)}`);
     const now = new Date();
     const hoursUntilBooking = (bookingDateTime - now) / (1000 * 60 * 60);
 
-    if (hoursUntilBooking > 0 && hoursUntilBooking <= 24) {
-      await notification.queueNotification(result.id, 'reminder_sms');
-      await db.query(
-        'UPDATE bookings SET reminder_sent = true WHERE id = $1',
-        [result.id]
-      );
-      logger.info('Immediate SMS reminder queued (booking within 24h)', { bookingId: result.id, hoursUntil: Math.round(hoursUntilBooking) });
+    if (hoursUntilBooking > 0 && hoursUntilBooking <= 24 && bookingDetails.client_phone) {
+      try {
+        await notification.sendReminderSMSDirect({
+          booking_id: result.id,
+          cancel_token: result.cancel_token,
+          phone: bookingDetails.client_phone,
+          date: bookingDetails.date,
+          start_time: bookingDetails.start_time,
+        });
+        await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [result.id]);
+        logger.info('Immediate SMS reminder sent directly (booking within 24h)', { bookingId: result.id, hoursUntil: Math.round(hoursUntilBooking) });
+      } catch (err) {
+        logger.error('Direct reminder SMS failed, queueing for retry', { bookingId: result.id, error: err.message });
+        try {
+          await notification.queueNotification(result.id, 'reminder_sms');
+          await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [result.id]);
+        } catch (qErr) {
+          logger.error('Failed to queue reminder SMS fallback', { bookingId: result.id, error: qErr.message });
+        }
+      }
     }
-  } catch (err) {
-    logger.error('Failed to queue immediate reminder SMS', { bookingId: result.id, error: err.message });
   }
 
   return result;

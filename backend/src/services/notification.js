@@ -572,10 +572,31 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
   logger.info('Reset password email sent', { email });
 }
 
+/**
+ * Send SMS reminder directly (without DB update — caller handles it)
+ * Used for immediate reminders when booking is within 24h
+ */
+async function sendReminderSMSDirect(data) {
+  if (!config.brevo.apiKey) {
+    logger.warn('Brevo not configured, skipping SMS');
+    return;
+  }
+
+  const rdvUrl = `${config.apiUrl}/r/rdv/${data.booking_id}/${data.cancel_token}`;
+  const timeFormatted = formatTime(data.start_time);
+  const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
+
+  const message = `BarberClub Meylan - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au 26 Av. du Gresivaudan, Corenc.\n\nGerer votre RDV : ${rdvUrl}`;
+
+  await brevoSMS(data.phone, message);
+}
+
 module.exports = {
   queueNotification,
   processPendingNotifications,
   sendNotification,
+  sendConfirmationEmail,
+  sendReminderSMSDirect,
   sendCancellationEmail,
   sendRescheduleEmail,
   sendResetPasswordEmail,
