@@ -414,19 +414,24 @@ router.get('/clients', async (req, res, next) => {
   try {
     // New vs returning clients per month
     const newVsReturning = await db.query(
-      `SELECT TO_CHAR(date, 'YYYY-MM') as month,
-              COUNT(DISTINCT client_id) FILTER (
-                WHERE client_id IN (
-                  SELECT client_id FROM bookings
-                  WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL
-                  GROUP BY client_id HAVING MIN(date) >= DATE_TRUNC('month', bookings.date)
+      `WITH first_visits AS (
+         SELECT client_id, MIN(date) as first_date
+         FROM bookings
+         WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL
+         GROUP BY client_id
+       )
+       SELECT TO_CHAR(b.date, 'YYYY-MM') as month,
+              COUNT(DISTINCT b.client_id) FILTER (
+                WHERE b.client_id IN (
+                  SELECT fv.client_id FROM first_visits fv
+                  WHERE TO_CHAR(fv.first_date, 'YYYY-MM') = TO_CHAR(b.date, 'YYYY-MM')
                 )
               ) as new_clients,
-              COUNT(DISTINCT client_id) as total_clients
-       FROM bookings
-       WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL
-         AND date >= CURRENT_DATE - INTERVAL '12 months'
-       GROUP BY TO_CHAR(date, 'YYYY-MM')
+              COUNT(DISTINCT b.client_id) as total_clients
+       FROM bookings b
+       WHERE b.status IN ('confirmed', 'completed') AND b.deleted_at IS NULL
+         AND b.date >= CURRENT_DATE - INTERVAL '12 months'
+       GROUP BY TO_CHAR(b.date, 'YYYY-MM')
        ORDER BY month`
     );
 

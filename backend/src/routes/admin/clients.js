@@ -268,7 +268,8 @@ router.delete('/:id',
   async (req, res, next) => {
     try {
       const result = await db.query(
-        `UPDATE clients SET deleted_at = NOW(), email = NULL, phone = 'DELETED',
+        `UPDATE clients SET deleted_at = NOW(), email = NULL,
+         phone = 'DELETED_' || $1,
          first_name = 'Client', last_name = 'supprimé', password_hash = NULL,
          has_account = false, reset_token = NULL, reset_token_expires = NULL
          WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
