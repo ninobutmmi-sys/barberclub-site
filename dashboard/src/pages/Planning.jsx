@@ -1109,15 +1109,15 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
 
             {/* Service */}
             <div className="bk-field">
-              <label>Prestation</label>
-              <div style={{ position: 'relative' }}>
-                <select className="input" value={serviceId} onChange={(e) => setServiceId(e.target.value)} required style={{ paddingRight: 38 }}>
-                  {filteredServices.map((s) => <option key={s.id} value={s.id}>{s.name} — {s.duration}min</option>)}
-                </select>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                Prestation
                 {selectedService?.color && (
-                  <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, borderRadius: '50%', background: selectedService.color, border: '2px solid rgba(255,255,255,0.15)', pointerEvents: 'none' }} />
+                  <span style={{ width: 12, height: 12, borderRadius: '50%', background: selectedService.color, border: '2px solid rgba(255,255,255,0.15)', flexShrink: 0 }} />
                 )}
-              </div>
+              </label>
+              <select className="input" value={serviceId} onChange={(e) => setServiceId(e.target.value)} required>
+                {filteredServices.map((s) => <option key={s.id} value={s.id}>{s.name} — {s.duration}min</option>)}
+              </select>
             </div>
 
             {/* Date / Heure / Durée */}
