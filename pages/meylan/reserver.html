@@ -1245,6 +1245,52 @@
             margin-top: 4px;
         }
 
+        .consent-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: pointer;
+            padding: 14px 0 6px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .consent-label input { display: none; }
+        .consent-box {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid rgba(255,255,255,0.2);
+            border-radius: 5px;
+            background: rgba(255,255,255,0.03);
+            transition: all 0.2s ease;
+            position: relative;
+            margin-top: 1px;
+        }
+        .consent-label input:checked + .consent-box {
+            background: #fff;
+            border-color: #fff;
+        }
+        .consent-label input:checked + .consent-box::after {
+            content: '';
+            position: absolute;
+            left: 6px; top: 2px;
+            width: 5px; height: 10px;
+            border: solid #000;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .consent-label.error .consent-box {
+            border-color: #ef4444;
+        }
+        .consent-text {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.5;
+        }
+        .consent-text a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: underline;
+        }
+
         /* SUMMARY CARD */
         .summary-card {
             background: rgba(255, 255, 255, 0.03);
@@ -2536,6 +2582,14 @@
                             <p class="form-hint">Pour recevoir la confirmation et vos futurs rendez-vous</p>
                         </div>
                     </div>
+
+                    <!-- RGPD consent -->
+                    <label class="consent-label" id="consentLabel">
+                        <input type="checkbox" id="consentCheck">
+                        <span class="consent-box"></span>
+                        <span class="consent-text">J'accepte que mes donn&eacute;es personnelles soient utilis&eacute;es pour la gestion de mon rendez-vous. <a href="../legal/politique-confidentialite.html" target="_blank" rel="noopener">Politique de confidentialit&eacute;</a></span>
+                    </label>
+                    <p class="form-error" id="consentError" style="margin:-6px 0 8px 32px">Vous devez accepter pour continuer</p>
                 </div>
             </div>
 
@@ -3254,6 +3308,17 @@
                 $('#emailError').classList.remove('visible');
             }
 
+            // RGPD consent
+            const consent = $('#consentCheck');
+            if (consent && !consent.checked) {
+                $('#consentLabel').classList.add('error');
+                $('#consentError').classList.add('visible');
+                valid = false;
+            } else if (consent) {
+                $('#consentLabel').classList.remove('error');
+                $('#consentError').classList.remove('visible');
+            }
+
             return valid;
         }
 
@@ -3264,6 +3329,14 @@
                 $(`#${id}Error`).classList.remove('visible');
             });
         });
+
+        // Consent checkbox reset
+        if ($('#consentCheck')) {
+            $('#consentCheck').addEventListener('change', () => {
+                $('#consentLabel').classList.remove('error');
+                $('#consentError').classList.remove('visible');
+            });
+        }
 
         // ---- STEP 3: QUICK SUGGESTIONS ----
         const DAYS_FR_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
