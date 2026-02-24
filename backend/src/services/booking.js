@@ -165,11 +165,19 @@ async function createBooking(data) {
       throw ApiError.conflict('Ce créneau vient d\'être pris par un autre client. Veuillez en choisir un autre.');
     }
 
-    // 5. Find or create client by phone OR email (centralizes client data)
+    // 5. Find or create client — prioritize phone (unique primary identifier)
     let clientResult = await client.query(
-      'SELECT id FROM clients WHERE (phone = $1 OR (email = $2 AND email IS NOT NULL AND email != \'\')) AND deleted_at IS NULL LIMIT 1',
-      [data.phone, data.email || '']
+      'SELECT id FROM clients WHERE phone = $1 AND deleted_at IS NULL LIMIT 1',
+      [data.phone]
     );
+
+    // If not found by phone, try email
+    if (clientResult.rows.length === 0 && data.email) {
+      clientResult = await client.query(
+        'SELECT id FROM clients WHERE email = $1 AND email IS NOT NULL AND deleted_at IS NULL LIMIT 1',
+        [data.email]
+      );
+    }
 
     let clientId;
     if (clientResult.rows.length > 0) {
@@ -241,8 +249,13 @@ async function createBooking(data) {
     };
   });
   } catch (err) {
-    // Unique constraint violation = double booking race condition
+    // Unique constraint violation
     if (err.code === '23505') {
+      // Client phone/email conflict (not a slot conflict)
+      if (err.constraint && err.constraint.includes('client')) {
+        throw ApiError.conflict('Un compte client existe déjà avec ce numéro ou cet email. Essayez de vous connecter.');
+      }
+      // Booking slot conflict (race condition)
       throw ApiError.conflict('Ce créneau vient d\'être pris par un autre client. Veuillez en choisir un autre.');
     }
     throw err;
