@@ -57,8 +57,8 @@ router.get('/',
 
       const result = await db.query(
         `SELECT b.id, b.date, b.start_time, b.end_time, b.status, b.price, b.source,
-                b.created_at, b.service_id, b.is_first_visit,
-                s.name as service_name, s.duration as service_duration, s.color as service_color,
+                b.created_at, b.service_id, b.is_first_visit, b.color as booking_color,
+                s.name as service_name, s.duration as service_duration, COALESCE(b.color, s.color) as service_color,
                 br.id as barber_id, br.name as barber_name,
                 c.id as client_id, c.first_name as client_first_name,
                 c.last_name as client_last_name, c.phone as client_phone,
@@ -213,6 +213,7 @@ router.post('/',
     body('phone').trim().notEmpty().withMessage('Téléphone requis')
       .matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numéro invalide'),
     body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('color').optional({ values: 'falsy' }).matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide'),
     body('recurrence').optional().isObject(),
     body('recurrence.type').optional().isIn(['weekly', 'biweekly', 'monthly']),
     body('recurrence.end_type').optional().isIn(['occurrences', 'end_date']),
@@ -253,13 +254,14 @@ router.put('/:id',
     body('start_time').optional().matches(/^\d{2}:\d{2}$/),
     body('barber_id').optional().matches(uuidRegex),
     body('service_id').optional().matches(uuidRegex),
+    body('color').optional({ values: 'falsy' }).matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide'),
     body('notify_client').optional().isBoolean(),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { date, start_time, barber_id, service_id, notify_client } = req.body;
+      const { date, start_time, barber_id, service_id, color, notify_client } = req.body;
 
       // Get current booking with client info
       const current = await db.query(
@@ -328,9 +330,9 @@ router.put('/:id',
 
       const result = await db.query(
         `UPDATE bookings SET date = $1, start_time = $2, end_time = $3,
-         barber_id = $4, service_id = $5, price = $6
-         WHERE id = $7 RETURNING *`,
-        [newDate, newStartTime, newEndTime, newBarberId, newServiceId, price, id]
+         barber_id = $4, service_id = $5, price = $6, color = $7
+         WHERE id = $8 RETURNING *`,
+        [newDate, newStartTime, newEndTime, newBarberId, newServiceId, price, color !== undefined ? color : booking.color || null, id]
       );
 
       // Send reschedule email if requested (non-blocking)

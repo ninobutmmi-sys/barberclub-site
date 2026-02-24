@@ -79,6 +79,13 @@ function hexToBlockStyle(hex) {
 // Fallback color palette for bookings without service_color
 const FALLBACK_COLOR = '#22c55e';
 
+const COLOR_PALETTE = [
+  '#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899',
+  '#14b8a6', '#ef4444', '#6366f1', '#06b6d4', '#d946ef',
+  '#84cc16', '#f97316', '#a855f7', '#0ea5e9', '#e11d48',
+  '#10b981', '#eab308', '#64748b', '#f43f5e', '#0891b2',
+];
+
 const STATUS_OVERRIDES = {
   completed: { bg: 'var(--status-completed-bg)', border: '#6b7280', text: 'var(--text)' },
   no_show: { bg: 'var(--status-noshow-bg)', border: '#ef4444', text: 'var(--text)' },
@@ -504,8 +511,15 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
   const [rTime, setRTime] = useState('');
   const [rBarberId, setRBarberId] = useState('');
   const [rServiceId, setRServiceId] = useState('');
+  const [rColor, setRColor] = useState('');
   const [rSaving, setRSaving] = useState(false);
   const [rError, setRError] = useState('');
+
+  // Filter services by selected barber for reschedule
+  const rFilteredServices = useMemo(() => {
+    if (!rBarberId) return services;
+    return services.filter((s) => s.barbers && s.barbers.some((b) => b.id === rBarberId));
+  }, [services, rBarberId]);
 
   // Notes state
   const [notes, setNotes] = useState(booking?.client_notes || '');
@@ -536,6 +550,13 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
     return () => { if (noteTimerRef.current) clearTimeout(noteTimerRef.current); };
   }, []);
 
+  // Reset service when reschedule barber changes
+  useEffect(() => {
+    if (rBarberId && rFilteredServices.length > 0 && !rFilteredServices.find((s) => s.id === rServiceId)) {
+      setRServiceId(rFilteredServices[0].id);
+    }
+  }, [rBarberId, rFilteredServices]);
+
   if (!booking) return null;
 
   const color = hexToBlockStyle(booking.service_color || FALLBACK_COLOR);
@@ -547,6 +568,7 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
     setRTime(booking.start_time?.slice(0, 5) || '09:00');
     setRBarberId(booking.barber_id || '');
     setRServiceId(booking.service_id || '');
+    setRColor(booking.booking_color || booking.service_color || FALLBACK_COLOR);
     setNotifyClient(true);
     setRError('');
     setSubView('reschedule');
@@ -568,6 +590,7 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
         start_time: rTime,
         barber_id: rBarberId,
         service_id: rServiceId,
+        color: rColor || undefined,
         notify_client: notifyClient && hasEmail,
       });
     } catch (err) {
@@ -668,8 +691,27 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
                 <div className="form-group">
                   <label className="label">Prestation</label>
                   <select className="input" value={rServiceId} onChange={(e) => setRServiceId(e.target.value)} required>
-                    {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {rFilteredServices.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
+                </div>
+              </div>
+
+              {/* Color picker */}
+              <div className="form-group">
+                <label className="label">Couleur</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                  {COLOR_PALETTE.map((c) => (
+                    <div
+                      key={c}
+                      onClick={() => setRColor(c)}
+                      style={{
+                        width: 22, height: 22, borderRadius: 6, background: c, cursor: 'pointer',
+                        border: rColor === c ? '2px solid #fff' : '2px solid transparent',
+                        boxShadow: rColor === c ? `0 0 0 1px ${c}` : 'none',
+                        transition: 'all 0.15s ease',
+                      }}
+                    />
+                  ))}
                 </div>
               </div>
 
@@ -790,11 +832,19 @@ function DetailRow({ label, value, bold, valueStyle }) {
 
 function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate, initialTime, initialBarberId }) {
   const [barberId, setBarberId] = useState(initialBarberId || (barbers[0]?.id ?? ''));
-  const [serviceId, setServiceId] = useState(services[0]?.id ?? '');
+
+  // Filter services by selected barber
+  const filteredServices = useMemo(() => {
+    if (!barberId) return services;
+    return services.filter((s) => s.barbers && s.barbers.some((b) => b.id === barberId));
+  }, [services, barberId]);
+
+  const [serviceId, setServiceId] = useState(filteredServices[0]?.id ?? '');
   const [date, setDate] = useState(initialDate || format(new Date(), 'yyyy-MM-dd'));
   const [time, setTime] = useState(initialTime || '09:00');
-  const selectedService = services.find((s) => s.id === serviceId);
+  const selectedService = filteredServices.find((s) => s.id === serviceId) || filteredServices[0];
   const [duration, setDuration] = useState(selectedService?.duration || 30);
+  const [bookingColor, setBookingColor] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -819,11 +869,21 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
   const searchTimerRef = useRef(null);
   const searchWrapperRef = useRef(null);
 
-  // Update duration when service changes
+  // Reset service when barber changes (if current service not available)
   useEffect(() => {
-    const svc = services.find((s) => s.id === serviceId);
-    if (svc) setDuration(svc.duration);
-  }, [serviceId, services]);
+    if (filteredServices.length > 0 && !filteredServices.find((s) => s.id === serviceId)) {
+      setServiceId(filteredServices[0].id);
+    }
+  }, [barberId, filteredServices]);
+
+  // Update duration + color when service changes
+  useEffect(() => {
+    const svc = filteredServices.find((s) => s.id === serviceId);
+    if (svc) {
+      setDuration(svc.duration);
+      if (!bookingColor) setBookingColor(svc.color || FALLBACK_COLOR);
+    }
+  }, [serviceId, filteredServices]);
 
   // Close search dropdown on click outside
   useEffect(() => {
@@ -891,6 +951,7 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
       const payload = {
         barber_id: barberId, service_id: serviceId, date, start_time: time,
         duration, first_name: firstName, last_name: lastName, phone, email: email || undefined,
+        color: bookingColor || undefined,
       };
 
       if (repeatEnabled) {
@@ -1028,7 +1089,7 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
             <div className="bk-field">
               <label>Prestation</label>
               <select className="input" value={serviceId} onChange={(e) => setServiceId(e.target.value)} required>
-                {services.map((s) => <option key={s.id} value={s.id}>{s.name} — {s.duration}min</option>)}
+                {filteredServices.map((s) => <option key={s.id} value={s.id}>{s.name} — {s.duration}min</option>)}
               </select>
             </div>
 
@@ -1045,6 +1106,25 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
               <div className="bk-field">
                 <label>Durée (min)</label>
                 <input className="input" type="number" value={duration} onChange={(e) => setDuration(parseInt(e.target.value) || 0)} min="5" step="5" required />
+              </div>
+            </div>
+
+            {/* Color picker */}
+            <div className="bk-field" style={{ marginTop: 6 }}>
+              <label>Couleur</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                {COLOR_PALETTE.map((c) => (
+                  <div
+                    key={c}
+                    onClick={() => setBookingColor(c)}
+                    style={{
+                      width: 22, height: 22, borderRadius: 6, background: c, cursor: 'pointer',
+                      border: bookingColor === c ? '2px solid #fff' : '2px solid transparent',
+                      boxShadow: bookingColor === c ? `0 0 0 1px ${c}` : 'none',
+                      transition: 'all 0.15s ease',
+                    }}
+                  />
+                ))}
               </div>
             </div>
           </div>
