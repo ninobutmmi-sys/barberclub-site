@@ -1535,6 +1535,102 @@
             height: 16px;
         }
 
+        /* Claim account block (step 5) */
+        .claim-account-block {
+            width: 100%;
+            max-width: 350px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 24px;
+            margin-top: 24px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .claim-account-block h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            margin: 0 0 6px;
+        }
+
+        .claim-account-block .claim-subtitle {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin: 0 0 18px;
+        }
+
+        .claim-account-block .claim-input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .claim-account-block input {
+            flex: 1;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #fff;
+            font-size: 16px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .claim-account-block input:focus {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .claim-account-block input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .claim-account-block .claim-btn {
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: #fff;
+            color: #000;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .claim-account-block .claim-btn:active {
+            transform: scale(0.96);
+        }
+
+        .claim-account-block .claim-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .claim-account-block .claim-error {
+            font-size: 11px;
+            color: #ff6b6b;
+            margin-top: 8px;
+        }
+
+        .claim-account-done {
+            width: 100%;
+            max-width: 350px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 20px 24px;
+            margin-top: 24px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
         /* Cancel note */
         .cancel-note {
             width: 100%;
@@ -2635,6 +2731,18 @@
                         </a>
                     </div>
 
+                    <!-- Claim account (shown for guests without account) -->
+                    <div class="claim-account-block" id="claimAccountBlock" style="display:none;">
+                        <h3>Cr&eacute;ez votre espace client</h3>
+                        <p class="claim-subtitle">Retrouvez et g&eacute;rez vos RDV facilement</p>
+                        <div class="claim-input-row">
+                            <input type="password" id="claimPassword" placeholder="Mot de passe (8 car. min)" autocomplete="new-password">
+                            <button class="claim-btn" id="claimBtn">Cr&eacute;er</button>
+                        </div>
+                        <p class="claim-error" id="claimError" style="display:none;"></p>
+                    </div>
+                    <div class="claim-account-done" id="claimAccountDone" style="display:none;"></div>
+
                     <!-- Practical info -->
                     <div class="practical-info">
                         <div class="practical-card">
@@ -3557,6 +3665,59 @@
             // .ics download link
             if (b && b.id && b.cancel_token) {
                 $('#addIcsCalBtn').href = `${API}/bookings/${b.id}/ics?token=${b.cancel_token}`;
+            }
+
+            // Claim account block (guest without account only)
+            const claimBlock = $('#claimAccountBlock');
+            const claimDone = $('#claimAccountDone');
+            claimBlock.style.display = 'none';
+            claimDone.style.display = 'none';
+
+            if (b && b.has_account === false && state.authMode !== 'connected') {
+                claimBlock.style.display = '';
+
+                const claimBtn = $('#claimBtn');
+                const claimInput = $('#claimPassword');
+                const claimError = $('#claimError');
+
+                // Remove old listeners by cloning
+                const newBtn = claimBtn.cloneNode(true);
+                claimBtn.parentNode.replaceChild(newBtn, claimBtn);
+
+                newBtn.addEventListener('click', async () => {
+                    const pwd = claimInput.value;
+                    claimError.style.display = 'none';
+
+                    if (pwd.length < 8) {
+                        claimError.textContent = '8 caractères minimum';
+                        claimError.style.display = '';
+                        return;
+                    }
+
+                    newBtn.disabled = true;
+                    newBtn.textContent = '...';
+
+                    try {
+                        const data = await apiPost('/auth/claim-account', {
+                            booking_id: b.id,
+                            cancel_token: b.cancel_token,
+                            password: pwd,
+                        });
+
+                        // Save session
+                        saveClientSession(data);
+
+                        // Show success
+                        claimBlock.style.display = 'none';
+                        claimDone.textContent = 'Compte créé \u2713';
+                        claimDone.style.display = '';
+                    } catch (e) {
+                        claimError.textContent = e.message || 'Erreur lors de la création du compte';
+                        claimError.style.display = '';
+                        newBtn.disabled = false;
+                        newBtn.textContent = 'Créer';
+                    }
+                });
             }
         }
 

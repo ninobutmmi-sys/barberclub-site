@@ -214,6 +214,13 @@ async function createBooking(data) {
       source: data.source || 'online',
     });
 
+    // Check if client has an account (for "claim account" prompt on frontend)
+    const accountCheck = await client.query(
+      'SELECT has_account FROM clients WHERE id = $1',
+      [clientId]
+    );
+    const hasAccount = accountCheck.rows[0]?.has_account || false;
+
     // Return full booking details (notification queued after commit)
     return {
       id: booking.id,
@@ -230,6 +237,7 @@ async function createBooking(data) {
       cancel_token: booking.cancel_token,
       source: booking.source,
       created_at: booking.created_at,
+      has_account: hasAccount,
     };
   });
   } catch (err) {

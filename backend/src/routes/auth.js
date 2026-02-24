@@ -438,4 +438,78 @@ router.post('/reset-password',
   }
 );
 
+// ============================================
+// POST /api/auth/claim-account
+// Allows a guest client to set a password after booking
+// Uses booking_id + cancel_token as proof of identity
+// ============================================
+router.post('/claim-account',
+  authLimiter,
+  [
+    body('booking_id').notEmpty().withMessage('Réservation requise'),
+    body('cancel_token').notEmpty().withMessage('Token requis'),
+    body('password').isLength({ min: 8 }).withMessage('Le mot de passe doit faire au moins 8 caractères'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { booking_id, cancel_token, password } = req.body;
+
+      // 1. Verify booking + cancel_token → get client_id
+      const bookingResult = await db.query(
+        `SELECT b.client_id, c.has_account, c.email, c.first_name, c.last_name
+         FROM bookings b
+         JOIN clients c ON b.client_id = c.id
+         WHERE b.id = $1 AND b.cancel_token = $2 AND b.deleted_at IS NULL AND c.deleted_at IS NULL`,
+        [booking_id, cancel_token]
+      );
+
+      if (bookingResult.rows.length === 0) {
+        throw ApiError.notFound('Réservation introuvable');
+      }
+
+      const { client_id, has_account, email, first_name, last_name } = bookingResult.rows[0];
+
+      // 2. Check client doesn't already have an account
+      if (has_account) {
+        throw ApiError.conflict('Vous avez déjà un compte');
+      }
+
+      // 3. Hash password and activate account
+      const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+      await db.query(
+        'UPDATE clients SET password_hash = $1, has_account = true WHERE id = $2',
+        [passwordHash, client_id]
+      );
+
+      // 4. Generate tokens (auto-login)
+      const name = `${first_name} ${last_name}`;
+      const tokenPayload = { id: client_id, type: 'client', email, name };
+      const accessToken = generateAccessToken(tokenPayload);
+      const refreshToken = generateRefreshToken(tokenPayload);
+
+      const expiresAt = new Date(Date.now() + config.jwt.refreshExpiresMs);
+      await db.query(
+        'INSERT INTO refresh_tokens (user_id, user_type, token, expires_at) VALUES ($1, $2, $3, $4)',
+        [client_id, 'client', refreshToken, expiresAt]
+      );
+
+      logger.info('Account claimed after booking', { clientId: client_id, bookingId: booking_id });
+
+      res.status(201).json({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        user: {
+          id: client_id,
+          type: 'client',
+          email,
+          name,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 module.exports = router;

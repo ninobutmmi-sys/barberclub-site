@@ -645,26 +645,26 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
               </div>
             )}
           </div>
-          <div className="modal-footer" style={{ flexDirection: 'column', gap: 8 }}>
+          <div className="modal-footer" style={{ flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             {booking.recurrence_group_id && (
-              <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                <button className="btn btn-danger btn-sm" style={{ flex: 1 }} onClick={handleDelete} disabled={deleting}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', width: '100%' }}>
+                <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
                   Ce RDV uniquement
                 </button>
-                <button className="btn btn-danger btn-sm" style={{ flex: 1 }} onClick={() => handleDeleteGroup(true)} disabled={deleting}>
+                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteGroup(true)} disabled={deleting}>
                   Tous les futurs
                 </button>
-                <button className="btn btn-danger btn-sm" style={{ flex: 1 }} onClick={() => handleDeleteGroup(false)} disabled={deleting}>
+                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteGroup(false)} disabled={deleting}>
                   Tout le groupe
                 </button>
               </div>
             )}
             {!booking.recurrence_group_id && (
-              <button className="btn btn-danger btn-sm" style={{ width: '100%' }} onClick={handleDelete} disabled={deleting}>
+              <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
                 {deleting ? 'Suppression...' : 'Confirmer la suppression'}
               </button>
             )}
-            <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => setSubView('detail')}>Retour</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setSubView('detail')}>Retour</button>
           </div>
         </div>
       </div>
