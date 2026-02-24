@@ -93,8 +93,16 @@ app.use(helmet({
 // CORS — only allow configured origins
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, server-to-server)
-    if (!origin) return callback(null, true);
+    // In production, reject requests with no Origin header (blocks curl/scripts abuse)
+    // Exception: health check and tracking routes are handled before CORS matters
+    if (!origin) {
+      if (config.nodeEnv === 'production') {
+        logger.warn('CORS blocked request with no origin (production)');
+        return callback(new Error('Not allowed by CORS'));
+      }
+      // In dev, allow no-origin (Postman, curl, etc.)
+      return callback(null, true);
+    }
 
     if (config.corsOrigins.includes(origin)) {
       callback(null, true);
@@ -220,14 +228,20 @@ app.use((err, req, res, next) => {
 
 // ============================================
 // Cron jobs (scheduled tasks)
+// Only run in production to avoid duplicates when dev + prod share the same DB
 // ============================================
 
-cron.schedule('*/2 * * * *',  trackCron('processQueue', processQueue));
-cron.schedule('0 18 * * *',   trackCron('queueReminders', queueReminders));
-cron.schedule('0 10 * * *',   trackCron('queueReviewRequests', queueReviewRequests));
-cron.schedule('0 3 * * *',    trackCron('cleanupNotifications', cleanupOldNotifications));
-cron.schedule('30 3 * * *',   trackCron('cleanupExpiredTokens', cleanupExpiredTokens));
-cron.schedule('*/10 * * * *', trackCron('automationTriggers', processAutomationTriggers));
+if (config.nodeEnv === 'production') {
+  cron.schedule('*/2 * * * *',  trackCron('processQueue', processQueue));
+  cron.schedule('0 18 * * *',   trackCron('queueReminders', queueReminders));
+  cron.schedule('0 10 * * *',   trackCron('queueReviewRequests', queueReviewRequests));
+  cron.schedule('0 3 * * *',    trackCron('cleanupNotifications', cleanupOldNotifications));
+  cron.schedule('30 3 * * *',   trackCron('cleanupExpiredTokens', cleanupExpiredTokens));
+  cron.schedule('*/10 * * * *', trackCron('automationTriggers', processAutomationTriggers));
+  logger.info('Cron jobs enabled (production)');
+} else {
+  logger.info('Cron jobs disabled (development) — only production sends SMS/emails via crons');
+}
 
 // ============================================
 // Start server

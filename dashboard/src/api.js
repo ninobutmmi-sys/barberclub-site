@@ -132,6 +132,8 @@ export const updateBookingStatus = (id, status) =>
   request(`/admin/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
 export const deleteBooking = (id, { notify = false } = {}) =>
   request(`/admin/bookings/${id}?notify=${notify}`, { method: 'DELETE' });
+export const deleteBookingGroup = (groupId, { notify = false, futureOnly = false } = {}) =>
+  request(`/admin/bookings/group/${groupId}?notify=${notify}&future_only=${futureOnly}`, { method: 'DELETE' });
 export const getBookingsHistory = (params) => {
   const filtered = Object.fromEntries(
     Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined)

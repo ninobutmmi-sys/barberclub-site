@@ -22,10 +22,17 @@ assets/images/barbers/*.jpg
 # Keep common images (logo, favicon, couronne) — small files
 # !assets/images/common/
 
+# Cloudflare Wrangler cache
+.wrangler/
+
 # Build artifacts
 dashboard/dist/
+dashboard-grenoble/dist/
 *.tmp
 *.bak
+
+# Grenoble old Timify page (kept as backup)
+pages/grenoble/reserver-timify.html
 
 # IDE
 .vscode/

@@ -2239,8 +2239,8 @@
     <div class="page">
         <!-- HEADER -->
         <header class="header">
-            <a href="./" class="back-btn" id="backBtn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <a href="./" class="back-btn" id="backBtn" aria-label="Retour à l'accueil" onclick="if(history.length>1){history.back();return false}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M19 12H5M12 19l-7-7 7-7" />
                 </svg>
             </a>
@@ -2252,8 +2252,8 @@
         </header>
 
         <!-- PROGRESS (Breadcrumb Stepper) -->
-        <div class="progress-bar">
-            <div class="progress-step active" data-step="1">
+        <div class="progress-bar" role="navigation" aria-label="Étapes de réservation">
+            <div class="progress-step active" data-step="1" aria-current="step">
                 <div class="progress-circle">1</div>
                 <span class="progress-label">Barber</span>
             </div>
@@ -2286,7 +2286,7 @@
             <div class="step active" id="step1">
                 <h2 class="step-title">Votre barber</h2>
                 <p class="step-desc">Choisissez votre barber préféré</p>
-                <div class="barber-grid" id="barberGrid">
+                <div class="barber-grid" id="barberGrid" role="radiogroup" aria-label="Choisir un barber">
                     <!-- Filled by JS -->
                 </div>
             </div>
@@ -2295,7 +2295,7 @@
             <div class="step" id="step2">
                 <h2 class="step-title">Prestation</h2>
                 <p class="step-desc">Sélectionnez votre prestation</p>
-                <div class="service-list" id="serviceList">
+                <div class="service-list" id="serviceList" role="radiogroup" aria-label="Choisir une prestation">
                     <!-- Filled by JS -->
                 </div>
             </div>
@@ -2317,14 +2317,14 @@
 
                 <div class="calendar-section">
                     <div class="calendar-nav">
-                        <button class="calendar-nav-btn" id="calPrev">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <button class="calendar-nav-btn" id="calPrev" aria-label="Mois précédent">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M15 18l-6-6 6-6"/>
                             </svg>
                         </button>
-                        <span class="calendar-month" id="calMonth"></span>
-                        <button class="calendar-nav-btn" id="calNext">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <span class="calendar-month" id="calMonth" aria-live="polite"></span>
+                        <button class="calendar-nav-btn" id="calNext" aria-label="Mois suivant">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M9 18l6-6-6-6"/>
                             </svg>
                         </button>
@@ -2952,9 +2952,9 @@
 
             // "Peu importe" option
             html += `
-                <div class="barber-card any-barber" data-id="any">
+                <div class="barber-card any-barber" data-id="any" role="radio" tabindex="0" aria-checked="false" aria-label="Peu importe — Premier barber disponible">
                     <div class="any-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                             <circle cx="9" cy="7" r="4"/>
                             <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -2977,7 +2977,7 @@
                     : `<span class="barber-avatar-placeholder">${initial}</span>`;
 
                 html += `
-                    <div class="barber-card" data-id="${b.id}">
+                    <div class="barber-card" data-id="${b.id}" role="radio" tabindex="0" aria-checked="false" aria-label="${b.name}">
                         <div class="barber-avatar">${avatarContent}</div>
                         <div class="barber-info">
                             <div class="barber-name">${b.name}</div>
@@ -2991,10 +2991,14 @@
 
             // Event listeners
             grid.querySelectorAll('.barber-card').forEach((card) => {
-                card.addEventListener('click', () => {
+                function selectBarber() {
                     const id = card.dataset.id;
-                    grid.querySelectorAll('.barber-card').forEach(c => c.classList.remove('selected'));
+                    grid.querySelectorAll('.barber-card').forEach(c => {
+                        c.classList.remove('selected');
+                        c.setAttribute('aria-checked', 'false');
+                    });
                     card.classList.add('selected');
+                    card.setAttribute('aria-checked', 'true');
 
                     if (id === 'any') {
                         state.selectedBarber = { id: 'any', name: 'Peu importe' };
@@ -3007,6 +3011,10 @@
                     state.selectedSlot = null;
                     state.selectedDate = null;
                     updateActionBtn();
+                }
+                card.addEventListener('click', selectBarber);
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectBarber(); }
                 });
             });
         }
@@ -3032,7 +3040,7 @@
             let html = '';
             for (const s of state.services) {
                 html += `
-                    <div class="service-card" data-id="${s.id}">
+                    <div class="service-card" data-id="${s.id}" role="radio" tabindex="0" aria-checked="false" aria-label="${s.name} — ${s.duration} minutes — ${formatPrice(s.price)}">
                         <div class="service-left">
                             <div class="service-name">${s.name}</div>
                             <div class="service-duration">${clockSVG} ${s.duration} min</div>
@@ -3048,16 +3056,24 @@
             list.innerHTML = html;
 
             list.querySelectorAll('.service-card').forEach((card) => {
-                card.addEventListener('click', () => {
+                function selectService() {
                     const id = card.dataset.id;
-                    list.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+                    list.querySelectorAll('.service-card').forEach(c => {
+                        c.classList.remove('selected');
+                        c.setAttribute('aria-checked', 'false');
+                    });
                     card.classList.add('selected');
+                    card.setAttribute('aria-checked', 'true');
                     state.selectedService = state.services.find(s => s.id === id);
 
                     // Reset downstream
                     state.selectedSlot = null;
                     state.selectedDate = null;
                     updateActionBtn();
+                }
+                card.addEventListener('click', selectService);
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectService(); }
                 });
             });
         }
@@ -3177,12 +3193,12 @@
                 }
             }
 
-            let html = `<p class="slots-title">${uniqueSlots.length} créneaux disponibles</p>`;
-            html += '<div class="slots-grid">';
+            let html = `<p class="slots-title" aria-live="polite">${uniqueSlots.length} créneaux disponibles</p>`;
+            html += '<div class="slots-grid" role="radiogroup" aria-label="Créneaux horaires disponibles">';
 
             for (const slot of uniqueSlots) {
                 const isSelected = state.selectedSlot && state.selectedSlot.time === slot.time;
-                html += `<button class="slot-btn${isSelected ? ' selected' : ''}" data-time="${slot.time}" data-barber-id="${slot.barber_id}" data-barber-name="${slot.barber_name}">${slot.time}</button>`;
+                html += `<button class="slot-btn${isSelected ? ' selected' : ''}" data-time="${slot.time}" data-barber-id="${slot.barber_id}" data-barber-name="${slot.barber_name}" role="radio" aria-checked="${isSelected ? 'true' : 'false'}" aria-label="Créneau ${slot.time}">${slot.time}</button>`;
             }
 
             html += '</div>';

@@ -92,7 +92,7 @@ router.get('/availability',
     query('service_id').matches(uuidRegex).withMessage('Service ID invalide'),
     query('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide (format: YYYY-MM-DD)')
       .custom((val) => !isNaN(new Date(val + 'T00:00:00').getTime())).withMessage('Date invalide'),
-    query('barber_id').optional(),
+    query('barber_id').optional().custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide'),
   ],
   handleValidation,
   async (req, res, next) => {

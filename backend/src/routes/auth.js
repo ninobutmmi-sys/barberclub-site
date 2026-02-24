@@ -350,13 +350,15 @@ router.post('/forgot-password',
       // Build reset URL
       const resetUrl = `${config.siteUrl}/pages/meylan/reset-password.html?token=${resetToken}`;
 
-      // Send email (async, don't block response)
-      sendResetPasswordEmail({
-        email: client.email,
-        first_name: client.first_name,
-        resetUrl,
-      }).catch((err) => {
-        logger.error('Failed to send reset password email', { email, error: err.message });
+      // Send email (async, don't block response, with retry)
+      const resetEmailData = { email: client.email, first_name: client.first_name, resetUrl };
+      sendResetPasswordEmail(resetEmailData).catch((err) => {
+        logger.error('Reset password email failed, retrying in 3s...', { email, error: err.message });
+        setTimeout(() => {
+          sendResetPasswordEmail(resetEmailData).catch((e) => {
+            logger.error('Reset password email retry failed', { email, error: e.message });
+          });
+        }, 3000);
       });
 
       logger.info('Password reset requested', { clientId: client.id });

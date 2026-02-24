@@ -403,65 +403,76 @@ async function createRecurringBookings(data, recurrence) {
  * Enforces 2-hour minimum cancellation window
  */
 async function cancelBooking(bookingId, cancelToken) {
-  // Find the booking
-  const result = await db.query(
-    `SELECT b.*, s.name as service_name, br.name as barber_name,
-            c.first_name, c.email as client_email
-     FROM bookings b
-     JOIN services s ON b.service_id = s.id
-     JOIN barbers br ON b.barber_id = br.id
-     JOIN clients c ON b.client_id = c.id
-     WHERE b.id = $1 AND b.cancel_token = $2 AND b.deleted_at IS NULL`,
-    [bookingId, cancelToken]
-  );
-
-  if (result.rows.length === 0) {
-    throw ApiError.notFound('Rendez-vous introuvable');
-  }
-
-  const booking = result.rows[0];
-
-  if (booking.status === 'cancelled') {
-    throw ApiError.badRequest('Ce rendez-vous a déjà été annulé');
-  }
-
-  if (booking.status !== 'confirmed') {
-    throw ApiError.badRequest('Ce rendez-vous ne peut plus être annulé');
-  }
-
-  // Check 12-hour cancellation window
-  const bookingDateTime = new Date(`${booking.date}T${booking.start_time}`);
-  const now = new Date();
-  const hoursUntil = (bookingDateTime - now) / (1000 * 60 * 60);
-
-  if (hoursUntil < 12) {
-    throw ApiError.badRequest(
-      'Les annulations doivent être effectuées au moins 12 heures avant le rendez-vous'
+  // Use transaction with FOR UPDATE to prevent race condition (double-click / parallel requests)
+  const booking = await db.transaction(async (client) => {
+    // 1. Lock the booking row
+    const result = await client.query(
+      `SELECT b.*, s.name as service_name, br.name as barber_name,
+              c.first_name, c.email as client_email
+       FROM bookings b
+       JOIN services s ON b.service_id = s.id
+       JOIN barbers br ON b.barber_id = br.id
+       JOIN clients c ON b.client_id = c.id
+       WHERE b.id = $1 AND b.cancel_token = $2 AND b.deleted_at IS NULL
+       FOR UPDATE OF b`,
+      [bookingId, cancelToken]
     );
-  }
 
-  // Cancel it
-  await db.query(
-    `UPDATE bookings SET status = 'cancelled', cancelled_at = NOW()
-     WHERE id = $1`,
-    [bookingId]
-  );
+    if (result.rows.length === 0) {
+      throw ApiError.notFound('Rendez-vous introuvable');
+    }
+
+    const bk = result.rows[0];
+
+    if (bk.status === 'cancelled') {
+      throw ApiError.badRequest('Ce rendez-vous a déjà été annulé');
+    }
+
+    if (bk.status !== 'confirmed') {
+      throw ApiError.badRequest('Ce rendez-vous ne peut plus être annulé');
+    }
+
+    // 2. Check 12-hour cancellation window (Paris timezone, consistent with reschedule)
+    const bookingDateTime = new Date(`${bk.date}T${bk.start_time}`);
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const hoursUntil = (bookingDateTime - now) / (1000 * 60 * 60);
+
+    if (hoursUntil < 12) {
+      throw ApiError.badRequest(
+        'Les annulations doivent être effectuées au moins 12 heures avant le rendez-vous'
+      );
+    }
+
+    // 3. Cancel it (inside transaction — atomic)
+    await client.query(
+      `UPDATE bookings SET status = 'cancelled', cancelled_at = NOW()
+       WHERE id = $1`,
+      [bookingId]
+    );
+
+    return bk;
+  });
 
   logger.info('Booking cancelled', { bookingId, date: booking.date, time: booking.start_time });
 
-  // Send cancellation email
+  // Send cancellation email (with retry fallback) — outside transaction
+  const cancelEmailData = {
+    email: booking.client_email,
+    first_name: booking.first_name,
+    service_name: booking.service_name,
+    barber_name: booking.barber_name,
+    date: booking.date,
+    start_time: booking.start_time,
+    price: booking.price,
+  };
   try {
-    await notification.sendCancellationEmail({
-      email: booking.client_email,
-      first_name: booking.first_name,
-      service_name: booking.service_name,
-      barber_name: booking.barber_name,
-      date: booking.date,
-      start_time: booking.start_time,
-      price: booking.price,
-    });
+    await notification.sendCancellationEmail(cancelEmailData);
   } catch (err) {
-    logger.error('Failed to send cancellation email', { error: err.message });
+    logger.error('Cancellation email failed, retrying in 3s...', { bookingId, error: err.message });
+    setTimeout(async () => {
+      try { await notification.sendCancellationEmail(cancelEmailData); }
+      catch (e) { logger.error('Cancellation email retry failed', { bookingId, error: e.message }); }
+    }, 3000);
   }
 
   // Check waitlist — notify clients waiting for this barber/date
@@ -691,24 +702,29 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
     };
   });
 
-  // Send reschedule email after transaction commit
+  // Send reschedule email after transaction commit (with retry fallback)
+  const rescheduleEmailData = {
+    email: result.email,
+    first_name: result.first_name,
+    service_name: result.service_name,
+    barber_name: result.barber_name,
+    old_date: result.oldDate,
+    old_time: result.oldTime,
+    new_date: newDate,
+    new_time: newStartTime,
+    new_barber_name: result.barber_name,
+    price: result.price,
+    cancel_token: result.cancelToken,
+    booking_id: bookingId,
+  };
   try {
-    await notification.sendRescheduleEmail({
-      email: result.email,
-      first_name: result.first_name,
-      service_name: result.service_name,
-      barber_name: result.barber_name,
-      old_date: result.oldDate,
-      old_time: result.oldTime,
-      new_date: newDate,
-      new_time: newStartTime,
-      new_barber_name: result.barber_name,
-      price: result.price,
-      cancel_token: result.cancelToken,
-      booking_id: bookingId,
-    });
+    await notification.sendRescheduleEmail(rescheduleEmailData);
   } catch (err) {
-    logger.error('Failed to send reschedule email', { bookingId, error: err.message });
+    logger.error('Reschedule email failed, retrying in 3s...', { bookingId, error: err.message });
+    setTimeout(async () => {
+      try { await notification.sendRescheduleEmail(rescheduleEmailData); }
+      catch (e) { logger.error('Reschedule email retry failed', { bookingId, error: e.message }); }
+    }, 3000);
   }
 
   return {

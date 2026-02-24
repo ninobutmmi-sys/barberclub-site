@@ -1124,20 +1124,20 @@
             <div class="reschedule-panel">
                 <div class="panel-header">
                     <span class="panel-title">Nouveau créneau</span>
-                    <button class="btn-back" id="backBtn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    <button class="btn-back" id="backBtn" aria-label="Retour aux détails du rendez-vous">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                         Retour
                     </button>
                 </div>
 
                 <div class="calendar-section">
                     <div class="calendar-nav">
-                        <button class="calendar-nav-btn" id="calPrev">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                        <button class="calendar-nav-btn" id="calPrev" aria-label="Mois précédent">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
                         </button>
-                        <span class="calendar-month" id="calMonth"></span>
-                        <button class="calendar-nav-btn" id="calNext">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        <span class="calendar-month" id="calMonth" aria-live="polite"></span>
+                        <button class="calendar-nav-btn" id="calNext" aria-label="Mois suivant">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
                         </button>
                     </div>
                     <div class="calendar-weekdays">

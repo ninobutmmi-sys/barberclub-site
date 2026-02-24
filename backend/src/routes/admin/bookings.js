@@ -58,6 +58,7 @@ router.get('/',
       const result = await db.query(
         `SELECT b.id, b.date, b.start_time, b.end_time, b.status, b.price, b.source,
                 b.created_at, b.service_id, b.is_first_visit, b.color as booking_color,
+                b.recurrence_group_id,
                 s.name as service_name, s.duration as service_duration, COALESCE(b.color, s.color) as service_color,
                 br.id as barber_id, br.name as barber_name,
                 c.id as client_id, c.first_name as client_first_name,
@@ -371,6 +372,82 @@ router.patch('/:id/status',
     try {
       const result = await bookingService.updateBookingStatus(req.params.id, req.body.status);
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// DELETE /api/admin/bookings/group/:groupId — Delete all bookings in a recurrence group
+// ============================================
+router.delete('/group/:groupId',
+  [param('groupId').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { groupId } = req.params;
+      const notify = req.query.notify === 'true';
+      const futureOnly = req.query.future_only === 'true';
+
+      // Build date condition: future_only = only today and future bookings
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+      const todayStr = now.toISOString().split('T')[0];
+      const dateCondition = futureOnly ? ` AND b.date >= '${todayStr}'` : '';
+
+      // If notify, fetch all bookings info before deleting
+      let bookingsInfo = [];
+      if (notify) {
+        const infoResult = await db.query(
+          `SELECT b.id, b.date, b.start_time, b.price,
+                  s.name as service_name, br.name as barber_name,
+                  c.first_name, c.email
+           FROM bookings b
+           JOIN services s ON b.service_id = s.id
+           JOIN barbers br ON b.barber_id = br.id
+           JOIN clients c ON b.client_id = c.id
+           WHERE b.recurrence_group_id = $1
+             AND b.deleted_at IS NULL AND b.status != 'cancelled'
+             ${dateCondition}`,
+          [groupId]
+        );
+        bookingsInfo = infoResult.rows;
+      }
+
+      // Soft delete all bookings in the group
+      const result = await db.query(
+        `UPDATE bookings b SET deleted_at = NOW(), status = 'cancelled'
+         WHERE recurrence_group_id = $1
+           AND deleted_at IS NULL AND status != 'cancelled'
+           ${dateCondition}
+         RETURNING id`,
+        [groupId]
+      );
+
+      if (result.rows.length === 0) {
+        throw ApiError.notFound('Aucun RDV trouvé dans ce groupe');
+      }
+
+      // Send cancellation emails (non-blocking)
+      if (notify && bookingsInfo.length > 0) {
+        for (const info of bookingsInfo) {
+          if (info.email) {
+            const dateStr = typeof info.date === 'string' ? info.date.slice(0, 10) : info.date;
+            sendCancellationEmail({
+              email: info.email,
+              first_name: info.first_name,
+              service_name: info.service_name,
+              barber_name: info.barber_name,
+              date: dateStr,
+              start_time: info.start_time,
+              price: info.price,
+            }).catch((err) => logger.error('Email notification failed', { error: err.message, bookingId: info.id }));
+          }
+        }
+      }
+
+      logger.info('Recurring group deleted', { groupId, count: result.rows.length, futureOnly });
+      res.json({ message: `${result.rows.length} RDV supprimés`, count: result.rows.length });
     } catch (error) {
       next(error);
     }

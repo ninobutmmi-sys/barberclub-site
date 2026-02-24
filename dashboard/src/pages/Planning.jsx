@@ -8,6 +8,7 @@ import {
   updateBookingStatus,
   updateBooking,
   deleteBooking,
+  deleteBookingGroup,
   createBooking,
   getBlockedSlots,
   createBlockedSlot,
@@ -501,7 +502,7 @@ function NowIndicator() {
 // BookingDetailModal
 // ---------------------------------------------------------------------------
 
-function BookingDetailModal({ booking, barbers, services, onClose, onStatusChange, onDelete, onReschedule, onNotesUpdated }) {
+function BookingDetailModal({ booking, barbers, services, onClose, onStatusChange, onDelete, onDeleteGroup, onReschedule, onNotesUpdated }) {
   const [subView, setSubView] = useState('detail'); // 'detail' | 'delete' | 'reschedule'
   const [notifyClient, setNotifyClient] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -580,6 +581,12 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
     setDeleting(false);
   }
 
+  async function handleDeleteGroup(futureOnly = false) {
+    setDeleting(true);
+    await onDeleteGroup(booking.recurrence_group_id, notifyClient && hasEmail, futureOnly);
+    setDeleting(false);
+  }
+
   async function handleReschedule(e) {
     e.preventDefault();
     setRError('');
@@ -638,11 +645,26 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
               </div>
             )}
           </div>
-          <div className="modal-footer">
-            <button className="btn btn-secondary btn-sm" onClick={() => setSubView('detail')}>Retour</button>
-            <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
-              {deleting ? 'Suppression...' : 'Confirmer la suppression'}
-            </button>
+          <div className="modal-footer" style={{ flexDirection: 'column', gap: 8 }}>
+            {booking.recurrence_group_id && (
+              <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                <button className="btn btn-danger btn-sm" style={{ flex: 1 }} onClick={handleDelete} disabled={deleting}>
+                  Ce RDV uniquement
+                </button>
+                <button className="btn btn-danger btn-sm" style={{ flex: 1 }} onClick={() => handleDeleteGroup(true)} disabled={deleting}>
+                  Tous les futurs
+                </button>
+                <button className="btn btn-danger btn-sm" style={{ flex: 1 }} onClick={() => handleDeleteGroup(false)} disabled={deleting}>
+                  Tout le groupe
+                </button>
+              </div>
+            )}
+            {!booking.recurrence_group_id && (
+              <button className="btn btn-danger btn-sm" style={{ width: '100%' }} onClick={handleDelete} disabled={deleting}>
+                {deleting ? 'Suppression...' : 'Confirmer la suppression'}
+              </button>
+            )}
+            <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => setSubView('detail')}>Retour</button>
           </div>
         </div>
       </div>
@@ -2006,6 +2028,10 @@ export default function Planning() {
     try { await deleteBooking(id, { notify }); setSelectedBooking(null); loadData(); } catch (err) { alert(err.message); }
   }
 
+  async function handleDeleteBookingGroup(groupId, notify = false, futureOnly = false) {
+    try { const res = await deleteBookingGroup(groupId, { notify, futureOnly }); setSelectedBooking(null); loadData(); return res; } catch (err) { alert(err.message); }
+  }
+
   async function handleRescheduleBooking(id, data) {
     try {
       await updateBooking(id, data);
@@ -2168,6 +2194,7 @@ export default function Planning() {
           onClose={() => setSelectedBooking(null)}
           onStatusChange={handleStatusChange}
           onDelete={handleDeleteBooking}
+          onDeleteGroup={handleDeleteBookingGroup}
           onReschedule={handleRescheduleBooking}
           onNotesUpdated={(clientId, newNotes) => {
             setBookings((prev) => prev.map((b) =>

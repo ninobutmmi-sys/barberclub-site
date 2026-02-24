@@ -95,7 +95,19 @@
         "openingHoursSpecification": [
             {
                 "@type": "OpeningHoursSpecification",
-                "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                "dayOfWeek": ["Monday", "Tuesday", "Thursday", "Friday"],
+                "opens": "09:00",
+                "closes": "19:00"
+            },
+            {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": "Wednesday",
+                "opens": "09:00",
+                "closes": "19:00"
+            },
+            {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": "Saturday",
                 "opens": "09:00",
                 "closes": "19:00"
             }
@@ -236,6 +248,8 @@
             z-index: 10;
             padding: 0 20px;
             padding-bottom: max(30px, env(safe-area-inset-bottom));
+            max-width: 420px;
+            margin: 0 auto;
         }
 
         .nav-grid {
@@ -411,7 +425,6 @@
         @media (min-width: 768px) {
             .nav {
                 max-width: 600px;
-                margin: 0 auto;
                 padding-bottom: 60px;
             }
 
@@ -841,7 +854,7 @@
         <div class="bg-overlay"></div>
 
         <header class="header">
-            <a href="../../" class="back-btn">
+            <a href="../../" class="back-btn" onclick="if(history.length>1){history.back();return false}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <path d="M19 12H5M12 19l-7-7 7-7" />

@@ -135,8 +135,13 @@ router.get('/brevo-status', async (req, res) => {
       if (response.ok) {
         const account = await response.json();
         statusData.accountEmail = account.email;
-        statusData.plan = account.plan?.[0]?.type || 'unknown';
-        statusData.credits = account.plan?.[0]?.credits || 0;
+        const plans = account.plan || [];
+        const freePlan = plans.find(p => p.type === 'free');
+        const smsPlan = plans.find(p => p.type === 'sms');
+        statusData.plan = freePlan?.type || plans[0]?.type || 'unknown';
+        statusData.emailCredits = freePlan?.credits || 0;
+        statusData.smsCredits = smsPlan?.credits || 0;
+        statusData.credits = smsPlan?.credits || freePlan?.credits || 0;
         statusData.connected = true;
       } else {
         statusData.connected = false;
