@@ -972,7 +972,7 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
     try {
       const payload = {
         barber_id: barberId, service_id: serviceId, date, start_time: time,
-        duration, first_name: firstName, last_name: lastName, phone, email: email || undefined,
+        duration, first_name: firstName, last_name: lastName, phone: phone.replace(/\s/g, ''), email: email || undefined,
         color: bookingColor || undefined,
       };
 
