@@ -19,7 +19,7 @@ export default function Campaigns() {
     try {
       const c = await getCampaigns();
       setCampaigns(c);
-    } catch (err) { console.error(err); }
+    } catch (err) { /* silently handled */ }
     setLoading(false);
   }
 

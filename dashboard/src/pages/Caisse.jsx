@@ -184,7 +184,7 @@ export default function Caisse() {
       const result = await getDailyCash(dateStr);
       setData(result);
     } catch (err) {
-      console.error('Caisse loadData error:', err);
+      // silently handled
     }
     setLoading(false);
   }, [dateStr]);

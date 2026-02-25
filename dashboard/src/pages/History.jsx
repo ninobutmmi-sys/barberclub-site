@@ -134,7 +134,6 @@ export default function History() {
       setBookings(data.bookings);
       setTotal(data.total);
     } catch (err) {
-      console.error('History load error:', err);
       setError(err.message || 'Erreur de chargement');
     }
     setLoading(false);

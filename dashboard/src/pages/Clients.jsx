@@ -37,7 +37,7 @@ export default function Clients() {
       setClients(data.clients);
       setTotal(data.total);
     } catch (err) {
-      console.error(err);
+      // silently handled
     }
     setLoading(false);
   }

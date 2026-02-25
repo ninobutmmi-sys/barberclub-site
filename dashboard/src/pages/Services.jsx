@@ -29,7 +29,7 @@ export default function Services() {
       setServices(s);
       setBarbers(b);
     } catch (err) {
-      console.error(err);
+      // silently handled
     }
     setLoading(false);
   }

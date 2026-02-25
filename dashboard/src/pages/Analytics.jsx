@@ -797,7 +797,6 @@ export default function Analytics() {
       setInactiveClients(inactive.clients || []);
       setMemberStats(members);
     } catch (err) {
-      console.error(err);
       setError(err.message || 'Erreur de chargement');
     }
     setLoading(false);

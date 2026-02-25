@@ -87,7 +87,6 @@ export function useNotifications() {
       setAllBookings(list);
     } catch (err) {
       // Silently swallow polling errors so the UI is not disrupted.
-      console.warn('[Notifications] polling error:', err.message);
     } finally {
       setLoading(false);
     }

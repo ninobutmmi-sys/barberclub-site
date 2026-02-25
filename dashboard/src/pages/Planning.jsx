@@ -1973,7 +1973,7 @@ export default function Planning() {
       }));
       setBarberOffDays(offMap);
     } catch (err) {
-      console.error('Planning loadData error:', err);
+      // silently handled
     }
     setLoading(false);
   }, [apiDateStr, view]);

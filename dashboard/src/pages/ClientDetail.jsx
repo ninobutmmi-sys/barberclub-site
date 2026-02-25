@@ -33,7 +33,7 @@ export default function ClientDetail() {
       setClient(data);
       setNotes(data.notes || '');
     } catch (err) {
-      console.error(err);
+      // silently handled
     }
     setLoading(false);
   }

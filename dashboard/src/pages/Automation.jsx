@@ -57,7 +57,7 @@ export default function Automation() {
       ]);
       setStats(s);
       setRecentLogs(l.notifications || []);
-    } catch (err) { console.error(err); }
+    } catch (err) { /* silently handled */ }
     setStatsLoading(false);
   }
 
@@ -76,7 +76,7 @@ export default function Automation() {
       setWaitlistCount(wlc.count ?? 0);
       setBarbers(b);
       setServices(s);
-    } catch (err) { console.error(err); }
+    } catch (err) { /* silently handled */ }
     setLoading(false);
   }
 

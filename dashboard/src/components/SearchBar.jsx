@@ -34,7 +34,6 @@ export default function SearchBar() {
         setResults(data.clients || []);
         setOpen(true);
       } catch (err) {
-        console.error('Search error:', err);
         setResults([]);
       }
       setLoading(false);

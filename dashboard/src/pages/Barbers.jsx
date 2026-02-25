@@ -77,7 +77,6 @@ export default function Barbers() {
     try {
       setBarbers(await getBarbers());
     } catch (err) {
-      console.error(err);
       setError('Impossible de charger les barbers. Vérifiez votre connexion.');
     }
     setLoading(false);
@@ -391,7 +390,7 @@ function ScheduleModal({ barber, onClose }) {
       setSchedule(sched);
       setOverrides(data.overrides || []);
     } catch (err) {
-      console.error(err);
+      // silently handled
     }
     setLoading(false);
   }
