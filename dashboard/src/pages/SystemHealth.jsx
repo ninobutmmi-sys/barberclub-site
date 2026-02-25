@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getSystemHealth } from '../api';
+import { getSystemHealth, purgeFailedNotifications } from '../api';
 import useMobile from '../hooks/useMobile';
 
 function formatUptime(seconds) {
@@ -126,8 +126,21 @@ export default function SystemHealth() {
 
         {/* ====== NOTIFICATIONS ====== */}
         <div className="a-card" style={{ marginBottom: 24 }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(var(--overlay), 0.06)' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(var(--overlay), 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Notifications ce mois</h3>
+            {(notifs.sms_failed > 0 || notifs.email_failed > 0) && (
+              <button
+                className="btn btn-sm"
+                style={{ fontSize: 11, padding: '4px 12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, cursor: 'pointer' }}
+                onClick={async () => {
+                  if (!confirm('Supprimer toutes les notifications échouées ?')) return;
+                  await purgeFailedNotifications();
+                  load();
+                }}
+              >
+                Purger les échecs
+              </button>
+            )}
           </div>
           <div style={{ padding: 20 }}>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>

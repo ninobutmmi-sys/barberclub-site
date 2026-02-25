@@ -156,4 +156,20 @@ router.get('/brevo-status', async (req, res) => {
   res.json(statusData);
 });
 
+/**
+ * DELETE /api/admin/notifications/failed
+ * Purge toutes les notifications échouées
+ */
+router.delete('/failed', async (req, res) => {
+  try {
+    const result = await db.query(
+      `DELETE FROM notification_queue WHERE status = 'failed'`
+    );
+    res.json({ deleted: result.rowCount });
+  } catch (err) {
+    logger.error('Failed to purge failed notifications', { error: err.message });
+    res.status(500).json({ error: 'Erreur lors de la purge' });
+  }
+});
+
 module.exports = router;

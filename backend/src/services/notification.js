@@ -162,6 +162,10 @@ async function sendConfirmationEmail(data) {
     logger.warn('Brevo API key not configured, skipping email');
     return;
   }
+  if (!data.email) {
+    logger.info('No client email, skipping confirmation email', { bookingId: data.booking_id });
+    return;
+  }
 
   const cancelUrl = `${config.siteUrl}/pages/meylan/mon-rdv.html?id=${data.booking_id}&token=${data.cancel_token}`;
 
@@ -195,6 +199,10 @@ async function sendConfirmationEmail(data) {
 async function sendReminderSMS(data) {
   if (!config.brevo.apiKey) {
     logger.warn('Brevo not configured, skipping SMS');
+    return;
+  }
+  if (!data.phone) {
+    logger.info('No client phone, skipping reminder SMS', { bookingId: data.booking_id });
     return;
   }
 
