@@ -7,6 +7,10 @@ const logger = require('../utils/logger');
 // previous day in UTC for UTC+ timezones (e.g. '2026-02-18T23:00:00.000Z' for Feb 19 CET).
 types.setTypeParser(1082, (val) => val);
 
+// Return TIME columns as plain strings ('HH:MM:SS') instead of allowing any Date conversion.
+// Prevents timezone offset issues on servers running in UTC (e.g. Railway).
+types.setTypeParser(1083, (val) => val);
+
 const pool = new Pool({
   connectionString: config.databaseUrl,
   ssl: config.nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
