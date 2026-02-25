@@ -258,6 +258,51 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// Base URL for hosted assets (Cloudflare Pages)
+const ASSETS_BASE = 'https://barberclub-site.pages.dev';
+const LOGO_URL = `${ASSETS_BASE}/assets/images/common/logo-blanc.png`;
+const HERO_URL = `${ASSETS_BASE}/assets/images/salons/meylan/salon-meylan-interieur.jpg`;
+
+function emailShell(content, { showHero = true } = {}) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <div style="max-width:600px;margin:0 auto;background:#0a0a0a;">
+    ${showHero ? `
+    <!-- HERO with salon photo -->
+    <div style="position:relative;background:#000;text-align:center;overflow:hidden;">
+      <img src="${HERO_URL}" alt="BarberClub" style="width:100%;height:220px;object-fit:cover;display:block;opacity:0.4;">
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(0,0,0,0.3) 0%,rgba(0,0,0,0.8) 100%);"></div>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+        <img src="${LOGO_URL}" alt="BarberClub" style="width:180px;height:auto;margin-bottom:8px;">
+        <p style="color:rgba(255,255,255,0.6);font-size:12px;margin:0;letter-spacing:2px;text-transform:uppercase;">Meylan</p>
+      </div>
+    </div>
+    ` : `
+    <div style="text-align:center;padding:32px 24px 16px;">
+      <img src="${LOGO_URL}" alt="BarberClub" style="width:160px;height:auto;">
+      <p style="color:rgba(255,255,255,0.5);font-size:12px;margin:6px 0 0;letter-spacing:2px;text-transform:uppercase;">Meylan</p>
+    </div>
+    `}
+    <!-- CONTENT -->
+    <div style="padding:32px 28px 40px;color:#fff;">
+      ${content}
+    </div>
+    <!-- FOOTER -->
+    <div style="padding:20px 28px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
+      <p style="margin:0 0 4px;color:rgba(255,255,255,0.25);font-size:11px;">BarberClub Meylan — 26 Av. du Grésivaudan, 38700 Corenc</p>
+      <p style="margin:0;color:rgba(255,255,255,0.2);font-size:10px;">Paiement sur place uniquement</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, time, price, cancelUrl, address }) {
   firstName = escapeHtml(firstName);
   serviceName = escapeHtml(serviceName);
@@ -266,87 +311,96 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
   time = escapeHtml(time);
   price = escapeHtml(price);
   address = escapeHtml(address);
-  return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#000;font-family:'Inter',Arial,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 24px;">
-    <div style="text-align:center;margin-bottom:32px;">
-      <h1 style="font-family:'Orbitron',monospace;font-size:24px;font-weight:800;margin:0;letter-spacing:0.05em;">
-        BARBERCLUB
-      </h1>
-      <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:4px 0 0;">Meylan</p>
-    </div>
 
-    <div style="text-align:center;margin-bottom:32px;">
-      <h2 style="font-size:20px;font-weight:600;margin:0;">Rendez-vous confirmé</h2>
-    </div>
+  const content = `
+      <!-- Title -->
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="display:inline-block;background:rgba(34,197,94,0.12);border-radius:50%;width:48px;height:48px;line-height:48px;text-align:center;margin-bottom:12px;">
+          <span style="font-size:22px;">✓</span>
+        </div>
+        <h2 style="font-size:22px;font-weight:700;margin:0;color:#fff;">Rendez-vous confirmé</h2>
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:6px 0 0;">Bonjour${firstName ? ` ${firstName}` : ''}, votre réservation est enregistrée.</p>
+      </div>
 
-    <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="margin:0 0 12px;color:rgba(255,255,255,0.6);font-size:13px;">RÉCAPITULATIF</p>
-      <p style="margin:0 0 8px;font-size:16px;font-weight:600;">${serviceName}</p>
-      <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);">avec ${barberName}</p>
-      <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);">${date} à ${time}</p>
-      <p style="margin:0 0 8px;font-size:18px;font-weight:600;">${price} €</p>
-      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:16px 0;">
-      <p style="margin:0;color:rgba(255,255,255,0.5);font-size:13px;">📍 ${address}</p>
-    </div>
+      <!-- Recap card -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;margin-bottom:24px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:8px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;vertical-align:top;width:110px;">Prestation</td>
+            <td style="padding:8px 0;color:#fff;font-size:15px;font-weight:600;text-align:right;">${serviceName}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;vertical-align:top;">Barbier</td>
+            <td style="padding:8px 0;color:rgba(255,255,255,0.85);font-size:14px;text-align:right;">${barberName}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;vertical-align:top;">Date</td>
+            <td style="padding:8px 0;color:rgba(255,255,255,0.85);font-size:14px;text-align:right;">${date}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;vertical-align:top;">Heure</td>
+            <td style="padding:8px 0;color:#fff;font-size:16px;font-weight:700;text-align:right;">${time}</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:12px 0 0;"><div style="border-top:1px solid rgba(255,255,255,0.06);"></div></td>
+          </tr>
+          <tr>
+            <td style="padding:12px 0 4px;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;vertical-align:top;">Prix</td>
+            <td style="padding:12px 0 4px;color:#fff;font-size:20px;font-weight:800;text-align:right;">${price} <span style="font-size:14px;font-weight:400;">€</span></td>
+          </tr>
+        </table>
+      </div>
 
-    <div style="text-align:center;margin-bottom:32px;">
-      <a href="${cancelUrl}" style="display:inline-block;background:rgba(255,255,255,0.08);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;border:1px solid rgba(255,255,255,0.15);">
-        Gérer mon rendez-vous
-      </a>
-      <p style="color:rgba(255,255,255,0.3);font-size:11px;margin-top:8px;">
-        Annulation ou modification gratuite jusqu'à 12h avant le rendez-vous
-      </p>
-    </div>
+      <!-- Address -->
+      <div style="background:rgba(255,255,255,0.02);border-radius:10px;padding:14px 18px;margin-bottom:28px;text-align:center;">
+        <p style="margin:0;color:rgba(255,255,255,0.5);font-size:13px;">📍 ${address}</p>
+      </div>
 
-    <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;">
-      <p>Paiement sur place uniquement</p>
-      <p>BarberClub Meylan — ${address}</p>
-    </div>
-  </div>
-</body>
-</html>`;
+      <!-- CTA -->
+      <div style="text-align:center;margin-bottom:16px;">
+        <a href="${cancelUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
+          Gérer mon rendez-vous
+        </a>
+      </div>
+      <p style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;margin:0;">
+        Modification ou annulation gratuite jusqu'à 12h avant
+      </p>`;
+
+  return emailShell(content);
 }
 
 function buildReviewEmailHTML({ firstName, barberName, reviewUrl }) {
   firstName = escapeHtml(firstName);
   barberName = escapeHtml(barberName);
-  return `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#000;font-family:'Inter',Arial,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 24px;">
-    <div style="text-align:center;margin-bottom:32px;">
-      <h1 style="font-family:'Orbitron',monospace;font-size:24px;font-weight:800;margin:0;letter-spacing:0.05em;">
-        BARBERCLUB
-      </h1>
-    </div>
 
-    <div style="text-align:center;margin-bottom:24px;">
-      <h2 style="font-size:20px;font-weight:600;margin:0 0 12px;">
-        Merci pour votre visite${firstName ? `, ${firstName}` : ''} !
-      </h2>
-      <p style="color:rgba(255,255,255,0.7);margin:0;">
-        Nous espérons que votre passage avec ${barberName} vous a plu.
-      </p>
-    </div>
+  const content = `
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="display:inline-block;background:rgba(251,191,36,0.12);border-radius:50%;width:56px;height:56px;line-height:56px;text-align:center;margin-bottom:14px;">
+          <span style="font-size:26px;">⭐</span>
+        </div>
+        <h2 style="font-size:22px;font-weight:700;margin:0;color:#fff;">
+          Merci pour votre visite${firstName ? `, ${firstName}` : ''} !
+        </h2>
+        <p style="color:rgba(255,255,255,0.6);font-size:14px;margin:10px 0 0;line-height:1.5;">
+          Nous espérons que votre passage avec <strong style="color:rgba(255,255,255,0.85);">${barberName}</strong> vous a plu.
+        </p>
+      </div>
 
-    <div style="text-align:center;margin:32px 0;">
-      <a href="${reviewUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
-        Laisser un avis ⭐
-      </a>
-    </div>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;margin-bottom:28px;text-align:center;">
+        <p style="color:rgba(255,255,255,0.6);font-size:13px;margin:0 0 8px;">Votre avis compte pour nous</p>
+        <p style="color:rgba(255,255,255,0.4);font-size:12px;margin:0 0 20px;line-height:1.5;">
+          Un petit mot sur Google aide d'autres clients à nous découvrir et nous permet de nous améliorer.
+        </p>
+        <a href="${reviewUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
+          Laisser un avis Google
+        </a>
+      </div>
 
-    <p style="text-align:center;color:rgba(255,255,255,0.5);font-size:13px;">
-      Votre avis compte énormément pour nous et aide d'autres clients à nous découvrir.
-    </p>
-  </div>
-</body>
-</html>`;
+      <p style="text-align:center;color:rgba(255,255,255,0.25);font-size:11px;margin:0;">
+        Cet email est envoyé une seule fois après votre première visite.
+      </p>`;
+
+  return emailShell(content);
 }
 
 // ============================================
@@ -404,43 +458,41 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
   service_name = escapeHtml(service_name);
   barber_name = escapeHtml(barber_name);
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#000;font-family:'Inter',Arial,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 24px;">
-    <div style="text-align:center;margin-bottom:32px;">
-      <h1 style="font-family:'Orbitron',monospace;font-size:24px;font-weight:800;margin:0;letter-spacing:0.05em;">
-        BARBERCLUB
-      </h1>
-      <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:4px 0 0;">Meylan</p>
-    </div>
+  const html = emailShell(`
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="display:inline-block;background:rgba(239,68,68,0.12);border-radius:50%;width:48px;height:48px;line-height:48px;text-align:center;margin-bottom:12px;">
+          <span style="font-size:22px;">✕</span>
+        </div>
+        <h2 style="font-size:22px;font-weight:700;margin:0;color:#fff;">Rendez-vous annulé</h2>
+      </div>
 
-    <div style="text-align:center;margin-bottom:32px;">
-      <h2 style="font-size:20px;font-weight:600;margin:0;">Rendez-vous annulé</h2>
-    </div>
+      <div style="background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.12);border-radius:14px;padding:24px;margin-bottom:24px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;width:110px;">Prestation</td>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.6);font-size:14px;text-align:right;text-decoration:line-through;">${service_name}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Barbier</td>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.6);font-size:14px;text-align:right;text-decoration:line-through;">${barber_name}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Date</td>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.6);font-size:14px;text-align:right;text-decoration:line-through;">${dateFormatted} à ${timeFormatted}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Prix</td>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.6);font-size:14px;text-align:right;text-decoration:line-through;">${priceFormatted} €</td>
+          </tr>
+        </table>
+      </div>
 
-    <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="margin:0 0 12px;color:rgba(255,255,255,0.6);font-size:13px;">VOTRE RDV SUIVANT A ÉTÉ ANNULÉ</p>
-      <p style="margin:0 0 8px;font-size:16px;font-weight:600;">${service_name}</p>
-      <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);">avec ${barber_name}</p>
-      <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);">${dateFormatted} à ${timeFormatted}</p>
-      <p style="margin:0;font-size:16px;font-weight:600;">${priceFormatted} €</p>
-    </div>
-
-    <div style="text-align:center;margin-bottom:24px;">
-      <p style="color:rgba(255,255,255,0.6);font-size:14px;margin:0 0 16px;">
-        N'hésitez pas à reprendre rendez-vous en ligne.
-      </p>
-    </div>
-
-    <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;">
-      <p>BarberClub Meylan — ${config.salon.address}</p>
-    </div>
-  </div>
-</body>
-</html>`;
+      <div style="text-align:center;margin-bottom:16px;">
+        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 20px;">N'hésitez pas à reprendre rendez-vous en ligne.</p>
+        <a href="${config.siteUrl}/pages/meylan/reserver.html" style="display:inline-block;background:#fff;color:#000;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
+          Reprendre rendez-vous
+        </a>
+      </div>`, { showHero: false });
 
   try {
     await brevoEmail(email, `RDV annulé - ${service_name} le ${dateFormatted}`, html);
@@ -468,52 +520,67 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
   barber_name = escapeHtml(barber_name);
   new_barber_name = escapeHtml(new_barber_name);
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#000;font-family:'Inter',Arial,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 24px;">
-    <div style="text-align:center;margin-bottom:32px;">
-      <h1 style="font-family:'Orbitron',monospace;font-size:24px;font-weight:800;margin:0;letter-spacing:0.05em;">
-        BARBERCLUB
-      </h1>
-      <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:4px 0 0;">Meylan</p>
-    </div>
+  const manageUrl = cancel_token && booking_id
+    ? `${config.siteUrl}/pages/meylan/mon-rdv.html?id=${booking_id}&token=${cancel_token}`
+    : null;
 
-    <div style="text-align:center;margin-bottom:32px;">
-      <h2 style="font-size:20px;font-weight:600;margin:0;">Rendez-vous déplacé</h2>
-    </div>
+  const html = emailShell(`
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="display:inline-block;background:rgba(59,130,246,0.12);border-radius:50%;width:48px;height:48px;line-height:48px;text-align:center;margin-bottom:12px;">
+          <span style="font-size:22px;">↻</span>
+        </div>
+        <h2 style="font-size:22px;font-weight:700;margin:0;color:#fff;">Rendez-vous déplacé</h2>
+      </div>
 
-    <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;margin-bottom:16px;">
-      <p style="margin:0 0 12px;color:rgba(239,68,68,0.7);font-size:13px;text-decoration:line-through;">ANCIEN CRÉNEAU</p>
-      <p style="margin:0 0 4px;color:rgba(255,255,255,0.5);text-decoration:line-through;">${oldDateFormatted} à ${oldTimeFormatted}</p>
-      ${old_date !== new_date || barber_name !== new_barber_name ? `<p style="margin:0;color:rgba(255,255,255,0.4);text-decoration:line-through;">avec ${barber_name}</p>` : ''}
-    </div>
+      <!-- Ancien créneau -->
+      <div style="background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.1);border-radius:14px;padding:16px 20px;margin-bottom:12px;">
+        <p style="margin:0 0 6px;color:rgba(239,68,68,0.6);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Ancien créneau</p>
+        <p style="margin:0;color:rgba(255,255,255,0.4);font-size:14px;text-decoration:line-through;">
+          ${oldDateFormatted} à ${oldTimeFormatted}${old_date !== new_date || barber_name !== new_barber_name ? ` — avec ${barber_name}` : ''}
+        </p>
+      </div>
 
-    <div style="background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="margin:0 0 12px;color:rgba(34,197,94,0.8);font-size:13px;">NOUVEAU CRÉNEAU</p>
-      <p style="margin:0 0 8px;font-size:16px;font-weight:600;">${service_name}</p>
-      <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);">avec ${new_barber_name || barber_name}</p>
-      <p style="margin:0 0 8px;color:rgba(255,255,255,0.8);">${newDateFormatted} à ${newTimeFormatted}</p>
-      <p style="margin:0;font-size:16px;font-weight:600;">${priceFormatted} €</p>
-      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:16px 0;">
-      <p style="margin:0;color:rgba(255,255,255,0.5);font-size:13px;">📍 ${config.salon.address}</p>
-    </div>
+      <!-- Nouveau créneau -->
+      <div style="background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.15);border-radius:14px;padding:24px;margin-bottom:24px;">
+        <p style="margin:0 0 10px;color:rgba(34,197,94,0.7);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Nouveau créneau</p>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;width:110px;">Prestation</td>
+            <td style="padding:6px 0;color:#fff;font-size:15px;font-weight:600;text-align:right;">${service_name}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Barbier</td>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.85);font-size:14px;text-align:right;">${new_barber_name || barber_name}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Date</td>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.85);font-size:14px;text-align:right;">${newDateFormatted}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Heure</td>
+            <td style="padding:6px 0;color:#fff;font-size:16px;font-weight:700;text-align:right;">${newTimeFormatted}</td>
+          </tr>
+          <tr>
+            <td colspan="2" style="padding:10px 0 0;"><div style="border-top:1px solid rgba(255,255,255,0.06);"></div></td>
+          </tr>
+          <tr>
+            <td style="padding:10px 0 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Prix</td>
+            <td style="padding:10px 0 0;color:#fff;font-size:18px;font-weight:800;text-align:right;">${priceFormatted} <span style="font-size:13px;font-weight:400;">€</span></td>
+          </tr>
+        </table>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
+          <p style="margin:0;color:rgba(255,255,255,0.4);font-size:12px;">📍 ${config.salon.address}</p>
+        </div>
+      </div>
 
-    ${cancel_token && booking_id ? `<div style="text-align:center;margin-bottom:24px;">
-      <a href="${config.siteUrl}/pages/meylan/mon-rdv.html?id=${booking_id}&token=${cancel_token}" style="display:inline-block;background:rgba(255,255,255,0.08);color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;border:1px solid rgba(255,255,255,0.15);">
-        Gérer mon rendez-vous
-      </a>
-    </div>` : ''}
-
-    <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;">
-      <p>Paiement sur place uniquement</p>
-      <p>BarberClub Meylan — ${config.salon.address}</p>
-    </div>
-  </div>
-</body>
-</html>`;
+      ${manageUrl ? `<div style="text-align:center;margin-bottom:16px;">
+        <a href="${manageUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
+          Gérer mon rendez-vous
+        </a>
+      </div>
+      <p style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;margin:0;">
+        Modification ou annulation gratuite jusqu'à 12h avant
+      </p>` : ''}`, { showHero: false });
 
   try {
     await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html);
@@ -535,46 +602,30 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
 
   first_name = escapeHtml(first_name);
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#000;font-family:'Inter',Arial,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 24px;">
-    <div style="text-align:center;margin-bottom:32px;">
-      <h1 style="font-family:'Orbitron',monospace;font-size:24px;font-weight:800;margin:0;letter-spacing:0.05em;">
-        BARBERCLUB
-      </h1>
-      <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:4px 0 0;">Meylan</p>
-    </div>
-
-    <div style="text-align:center;margin-bottom:32px;">
-      <div style="width:56px;height:56px;border-radius:50%;background:rgba(59,130,246,0.15);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
-        <span style="font-size:28px;">🔑</span>
+  const html = emailShell(`
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="display:inline-block;background:rgba(59,130,246,0.12);border-radius:50%;width:48px;height:48px;line-height:48px;text-align:center;margin-bottom:12px;">
+          <span style="font-size:22px;">🔑</span>
+        </div>
+        <h2 style="font-size:22px;font-weight:700;margin:0;color:#fff;">Réinitialiser votre mot de passe</h2>
       </div>
-      <h2 style="font-size:20px;font-weight:600;margin:0;">Réinitialiser votre mot de passe</h2>
-    </div>
 
-    <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="margin:0 0 16px;color:rgba(255,255,255,0.7);font-size:14px;line-height:1.6;">
-        Bonjour${first_name ? ` ${first_name}` : ''},<br><br>
-        Vous avez demandé la réinitialisation de votre mot de passe BarberClub. Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
-      </p>
-      <div style="text-align:center;">
-        <a href="${resetUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
-          Nouveau mot de passe
-        </a>
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;margin-bottom:24px;">
+        <p style="margin:0 0 20px;color:rgba(255,255,255,0.65);font-size:14px;line-height:1.6;">
+          Bonjour${first_name ? ` ${first_name}` : ''},<br><br>
+          Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.
+        </p>
+        <div style="text-align:center;">
+          <a href="${resetUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
+            Nouveau mot de passe
+          </a>
+        </div>
       </div>
-    </div>
 
-    <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;line-height:1.6;">
-      <p>Ce lien expire dans 1 heure.</p>
-      <p>Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>
-      <p style="margin-top:16px;">BarberClub Meylan — ${config.salon.address}</p>
-    </div>
-  </div>
-</body>
-</html>`;
+      <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;line-height:1.6;">
+        <p style="margin:0 0 4px;">Ce lien expire dans 1 heure.</p>
+        <p style="margin:0;">Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+      </div>`, { showHero: false });
 
   await brevoEmail(email, 'Réinitialisation de votre mot de passe BarberClub', html);
   logger.info('Reset password email sent', { email });
