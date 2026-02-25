@@ -294,12 +294,12 @@ async function createBooking(data) {
       }
     }
 
-    // 2. Immediate SMS reminder if booking is within 24h
+    // 2. Immediate SMS reminder if booking is within 24h (online bookings only, min 2h before)
     const bookingDateTime = new Date(`${result.date}T${result.start_time.slice(0, 5)}`);
     const now = new Date();
     const hoursUntilBooking = (bookingDateTime - now) / (1000 * 60 * 60);
 
-    if (hoursUntilBooking > 0 && hoursUntilBooking <= 24 && bookingDetails.client_phone) {
+    if (result.source === 'online' && hoursUntilBooking >= 2 && hoursUntilBooking <= 24 && bookingDetails.client_phone) {
       try {
         await notification.sendReminderSMSDirect({
           booking_id: result.id,
