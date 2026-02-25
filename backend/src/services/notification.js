@@ -261,9 +261,20 @@ function escapeHtml(str) {
 // Base URL for hosted assets (Cloudflare Pages)
 const ASSETS_BASE = 'https://barberclub-site.pages.dev';
 const LOGO_URL = `${ASSETS_BASE}/assets/images/common/logo-blanc.png`;
+const CROWN_URL = `${ASSETS_BASE}/assets/images/common/couronne.png`;
 const HERO_URL = `${ASSETS_BASE}/assets/images/salons/meylan/salon-meylan-interieur.jpg`;
 
-function emailShell(content, { showHero = true } = {}) {
+// Design tokens — luxury dark + gold
+const GOLD = '#CA8A04';
+const GOLD_LIGHT = '#EAB308';
+const DARK_BG = '#0C0A09';
+const CARD_BG = '#1C1917';
+const CARD_BORDER = '#292524';
+const TEXT_PRIMARY = '#FAFAF9';
+const TEXT_SECONDARY = '#A8A29E';
+const TEXT_MUTED = '#78716C';
+
+function emailShell(content, { showHero = true, accentColor = GOLD } = {}) {
   return `
 <!DOCTYPE html>
 <html>
@@ -271,32 +282,46 @@ function emailShell(content, { showHero = true } = {}) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
-  <div style="max-width:600px;margin:0 auto;background:#0a0a0a;">
+<body style="margin:0;padding:0;background:#000;font-family:'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <div style="max-width:600px;margin:0 auto;background:${DARK_BG};border-left:1px solid ${CARD_BORDER};border-right:1px solid ${CARD_BORDER};">
+
     ${showHero ? `
-    <!-- HERO with salon photo -->
-    <div style="position:relative;background:#000;text-align:center;overflow:hidden;">
-      <img src="${HERO_URL}" alt="BarberClub" style="width:100%;height:220px;object-fit:cover;display:block;opacity:0.4;">
-      <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(0,0,0,0.3) 0%,rgba(0,0,0,0.8) 100%);"></div>
-      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
-        <img src="${LOGO_URL}" alt="BarberClub" style="width:180px;height:auto;margin-bottom:8px;">
-        <p style="color:rgba(255,255,255,0.6);font-size:12px;margin:0;letter-spacing:2px;text-transform:uppercase;">Meylan</p>
+    <!-- HERO — Salon photo with overlay -->
+    <div style="position:relative;overflow:hidden;height:240px;background:#000;">
+      <img src="${HERO_URL}" alt="" style="width:100%;height:240px;object-fit:cover;display:block;opacity:0.35;">
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg, rgba(12,10,9,0.2) 0%, rgba(12,10,9,0.95) 100%);"></div>
+      <div style="position:absolute;bottom:0;left:0;right:0;text-align:center;padding:0 24px 28px;">
+        <img src="${LOGO_URL}" alt="BarberClub" style="width:200px;height:auto;margin-bottom:4px;">
+        <div style="display:inline-block;margin-top:6px;">
+          <span style="color:${GOLD};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</span>
+        </div>
       </div>
     </div>
+    <!-- Gold accent line -->
+    <div style="height:2px;background:linear-gradient(90deg, transparent 0%, ${GOLD} 30%, ${GOLD_LIGHT} 50%, ${GOLD} 70%, transparent 100%);"></div>
     ` : `
-    <div style="text-align:center;padding:32px 24px 16px;">
-      <img src="${LOGO_URL}" alt="BarberClub" style="width:160px;height:auto;">
-      <p style="color:rgba(255,255,255,0.5);font-size:12px;margin:6px 0 0;letter-spacing:2px;text-transform:uppercase;">Meylan</p>
+    <!-- Compact header without hero -->
+    <div style="text-align:center;padding:36px 24px 20px;border-bottom:1px solid ${CARD_BORDER};">
+      <img src="${CROWN_URL}" alt="" style="width:28px;height:auto;margin-bottom:8px;opacity:0.7;">
+      <br>
+      <img src="${LOGO_URL}" alt="BarberClub" style="width:170px;height:auto;">
+      <div style="margin-top:8px;">
+        <span style="color:${GOLD};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</span>
+      </div>
     </div>
+    <div style="height:1px;background:linear-gradient(90deg, transparent 10%, ${GOLD}40 50%, transparent 90%);"></div>
     `}
+
     <!-- CONTENT -->
-    <div style="padding:32px 28px 40px;color:#fff;">
+    <div style="padding:36px 32px 40px;color:${TEXT_PRIMARY};">
       ${content}
     </div>
+
     <!-- FOOTER -->
-    <div style="padding:20px 28px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
-      <p style="margin:0 0 4px;color:rgba(255,255,255,0.25);font-size:11px;">BarberClub Meylan — 26 Av. du Grésivaudan, 38700 Corenc</p>
-      <p style="margin:0;color:rgba(255,255,255,0.2);font-size:10px;">Paiement sur place uniquement</p>
+    <div style="border-top:1px solid ${CARD_BORDER};padding:24px 32px 28px;text-align:center;">
+      <img src="${CROWN_URL}" alt="" style="width:16px;height:auto;opacity:0.3;margin-bottom:10px;">
+      <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;letter-spacing:0.3px;">BarberClub Meylan &mdash; 26 Av. du Gr&eacute;sivaudan, 38700 Corenc</p>
+      <p style="margin:0;color:${TEXT_MUTED};font-size:10px;opacity:0.6;">Paiement sur place uniquement</p>
     </div>
   </div>
 </body>
@@ -313,57 +338,67 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
   address = escapeHtml(address);
 
   const content = `
-      <!-- Title -->
-      <div style="text-align:center;margin-bottom:28px;">
-        <div style="display:inline-block;background:rgba(34,197,94,0.12);border-radius:50%;width:48px;height:48px;line-height:48px;text-align:center;margin-bottom:12px;">
-          <span style="font-size:22px;">✓</span>
+      <!-- Status badge -->
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="display:inline-block;border:2px solid ${GOLD};border-radius:50%;width:56px;height:56px;line-height:52px;text-align:center;margin-bottom:16px;">
+          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/check.svg" alt="" style="width:28px;height:28px;vertical-align:middle;filter:invert(62%) sepia(98%) saturate(375%) hue-rotate(11deg) brightness(97%) contrast(89%);">
         </div>
-        <h2 style="font-size:22px;font-weight:700;margin:0;color:#fff;">Rendez-vous confirmé</h2>
-        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:6px 0 0;">Bonjour${firstName ? ` ${firstName}` : ''}, votre réservation est enregistrée.</p>
+        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous confirm&eacute;</h2>
+        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
+          ${firstName ? `${firstName}, votre` : 'Votre'} r&eacute;servation est enregistr&eacute;e.
+        </p>
       </div>
 
-      <!-- Recap card -->
-      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;margin-bottom:24px;">
-        <table style="width:100%;border-collapse:collapse;">
-          <tr>
-            <td style="padding:8px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;vertical-align:top;width:110px;">Prestation</td>
-            <td style="padding:8px 0;color:#fff;font-size:15px;font-weight:600;text-align:right;">${serviceName}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;vertical-align:top;">Barbier</td>
-            <td style="padding:8px 0;color:rgba(255,255,255,0.85);font-size:14px;text-align:right;">${barberName}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;vertical-align:top;">Date</td>
-            <td style="padding:8px 0;color:rgba(255,255,255,0.85);font-size:14px;text-align:right;">${date}</td>
-          </tr>
-          <tr>
-            <td style="padding:8px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;vertical-align:top;">Heure</td>
-            <td style="padding:8px 0;color:#fff;font-size:16px;font-weight:700;text-align:right;">${time}</td>
-          </tr>
-          <tr>
-            <td colspan="2" style="padding:12px 0 0;"><div style="border-top:1px solid rgba(255,255,255,0.06);"></div></td>
-          </tr>
-          <tr>
-            <td style="padding:12px 0 4px;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;vertical-align:top;">Prix</td>
-            <td style="padding:12px 0 4px;color:#fff;font-size:20px;font-weight:800;text-align:right;">${price} <span style="font-size:14px;font-weight:400;">€</span></td>
-          </tr>
-        </table>
+      <!-- Time highlight -->
+      <div style="text-align:center;margin-bottom:28px;padding:20px;background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;">
+        <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;text-transform:uppercase;letter-spacing:2px;">Votre rendez-vous</p>
+        <p style="margin:0;color:${GOLD_LIGHT};font-size:32px;font-weight:800;letter-spacing:1px;">${time}</p>
+        <p style="margin:4px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${date}</p>
       </div>
 
-      <!-- Address -->
-      <div style="background:rgba(255,255,255,0.02);border-radius:10px;padding:14px 18px;margin-bottom:28px;text-align:center;">
-        <p style="margin:0;color:rgba(255,255,255,0.5);font-size:13px;">📍 ${address}</p>
+      <!-- Detail card -->
+      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
+        <!-- Gold top border -->
+        <div style="height:3px;background:linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT}, ${GOLD});"></div>
+        <div style="padding:24px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">
+                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/scissors.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Prestation
+              </td>
+              <td style="padding:10px 0;color:${TEXT_PRIMARY};font-size:15px;font-weight:600;text-align:right;">${serviceName}</td>
+            </tr>
+            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
+            <tr>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
+                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/user.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Barbier
+              </td>
+              <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:14px;text-align:right;">${barberName}</td>
+            </tr>
+            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
+            <tr>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
+                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/map-pin.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Adresse
+              </td>
+              <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;">${address}</td>
+            </tr>
+            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
+            <tr>
+              <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
+              <td style="padding:12px 0 4px;color:${GOLD_LIGHT};font-size:22px;font-weight:800;text-align:right;">${price}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
+            </tr>
+          </table>
+        </div>
       </div>
 
       <!-- CTA -->
-      <div style="text-align:center;margin-bottom:16px;">
-        <a href="${cancelUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
-          Gérer mon rendez-vous
+      <div style="text-align:center;margin-bottom:20px;">
+        <a href="${cancelUrl}" style="display:inline-block;background:${GOLD};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+          G&eacute;rer mon rendez-vous
         </a>
       </div>
-      <p style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;margin:0;">
-        Modification ou annulation gratuite jusqu'à 12h avant
+      <p style="text-align:center;color:${TEXT_MUTED};font-size:11px;margin:0;">
+        Modification ou annulation gratuite jusqu'&agrave; 12h avant
       </p>`;
 
   return emailShell(content);
@@ -374,30 +409,42 @@ function buildReviewEmailHTML({ firstName, barberName, reviewUrl }) {
   barberName = escapeHtml(barberName);
 
   const content = `
-      <div style="text-align:center;margin-bottom:28px;">
-        <div style="display:inline-block;background:rgba(251,191,36,0.12);border-radius:50%;width:56px;height:56px;line-height:56px;text-align:center;margin-bottom:14px;">
-          <span style="font-size:26px;">⭐</span>
+      <!-- Star icon -->
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="display:inline-block;border:2px solid ${GOLD};border-radius:50%;width:56px;height:56px;line-height:52px;text-align:center;margin-bottom:16px;">
+          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/star.svg" alt="" style="width:28px;height:28px;vertical-align:middle;filter:invert(62%) sepia(98%) saturate(375%) hue-rotate(11deg) brightness(97%) contrast(89%);">
         </div>
-        <h2 style="font-size:22px;font-weight:700;margin:0;color:#fff;">
-          Merci pour votre visite${firstName ? `, ${firstName}` : ''} !
+        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">
+          Merci pour votre visite${firstName ? `, ${firstName}` : ''}&nbsp;!
         </h2>
-        <p style="color:rgba(255,255,255,0.6);font-size:14px;margin:10px 0 0;line-height:1.5;">
-          Nous espérons que votre passage avec <strong style="color:rgba(255,255,255,0.85);">${barberName}</strong> vous a plu.
+        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:10px 0 0;line-height:1.6;">
+          Nous esp&eacute;rons que votre passage avec <strong style="color:${TEXT_PRIMARY};">${barberName}</strong> vous a plu.
         </p>
       </div>
 
-      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;margin-bottom:28px;text-align:center;">
-        <p style="color:rgba(255,255,255,0.6);font-size:13px;margin:0 0 8px;">Votre avis compte pour nous</p>
-        <p style="color:rgba(255,255,255,0.4);font-size:12px;margin:0 0 20px;line-height:1.5;">
-          Un petit mot sur Google aide d'autres clients à nous découvrir et nous permet de nous améliorer.
-        </p>
-        <a href="${reviewUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
-          Laisser un avis Google
-        </a>
+      <!-- 5 stars visual -->
+      <div style="text-align:center;margin-bottom:28px;">
+        <table style="margin:0 auto;border-collapse:collapse;"><tr>
+          ${[1,2,3,4,5].map(() => `<td style="padding:0 3px;"><img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/star.svg" alt="" style="width:24px;height:24px;filter:invert(62%) sepia(98%) saturate(375%) hue-rotate(11deg) brightness(97%) contrast(89%);"></td>`).join('')}
+        </tr></table>
       </div>
 
-      <p style="text-align:center;color:rgba(255,255,255,0.25);font-size:11px;margin:0;">
-        Cet email est envoyé une seule fois après votre première visite.
+      <!-- Review card -->
+      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
+        <div style="height:3px;background:linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT}, ${GOLD});"></div>
+        <div style="padding:28px 24px;text-align:center;">
+          <p style="color:${TEXT_SECONDARY};font-size:14px;margin:0 0 6px;line-height:1.6;">Votre avis compte &eacute;norm&eacute;ment pour nous</p>
+          <p style="color:${TEXT_MUTED};font-size:12px;margin:0 0 24px;line-height:1.6;">
+            Un petit mot sur Google aide d'autres clients &agrave; nous d&eacute;couvrir<br>et nous permet de continuer &agrave; nous am&eacute;liorer.
+          </p>
+          <a href="${reviewUrl}" style="display:inline-block;background:${GOLD};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+            Laisser un avis Google
+          </a>
+        </div>
+      </div>
+
+      <p style="text-align:center;color:${TEXT_MUTED};font-size:11px;margin:0;opacity:0.6;">
+        Cet email est envoy&eacute; une seule fois apr&egrave;s votre premi&egrave;re visite.
       </p>`;
 
   return emailShell(content);
@@ -459,37 +506,55 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
   barber_name = escapeHtml(barber_name);
 
   const html = emailShell(`
-      <div style="text-align:center;margin-bottom:28px;">
-        <div style="display:inline-block;background:rgba(239,68,68,0.12);border-radius:50%;width:48px;height:48px;line-height:48px;text-align:center;margin-bottom:12px;">
-          <span style="font-size:22px;">✕</span>
+      <!-- Status icon -->
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="display:inline-block;border:2px solid #DC2626;border-radius:50%;width:56px;height:56px;line-height:52px;text-align:center;margin-bottom:16px;">
+          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/x.svg" alt="" style="width:28px;height:28px;vertical-align:middle;filter:invert(25%) sepia(98%) saturate(7404%) hue-rotate(355deg) brightness(93%) contrast(90%);">
         </div>
-        <h2 style="font-size:22px;font-weight:700;margin:0;color:#fff;">Rendez-vous annulé</h2>
+        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous annul&eacute;</h2>
+        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
+          Votre r&eacute;servation a bien &eacute;t&eacute; annul&eacute;e.
+        </p>
       </div>
 
-      <div style="background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.12);border-radius:14px;padding:24px;margin-bottom:24px;">
-        <table style="width:100%;border-collapse:collapse;">
-          <tr>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;width:110px;">Prestation</td>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.6);font-size:14px;text-align:right;text-decoration:line-through;">${service_name}</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Barbier</td>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.6);font-size:14px;text-align:right;text-decoration:line-through;">${barber_name}</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Date</td>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.6);font-size:14px;text-align:right;text-decoration:line-through;">${dateFormatted} à ${timeFormatted}</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Prix</td>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.6);font-size:14px;text-align:right;text-decoration:line-through;">${priceFormatted} €</td>
-          </tr>
-        </table>
+      <!-- Cancelled details -->
+      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
+        <div style="height:3px;background:linear-gradient(90deg, #DC2626, #EF4444, #DC2626);"></div>
+        <div style="padding:24px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">
+                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/scissors.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Prestation
+              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:15px;text-align:right;text-decoration:line-through;">${service_name}</td>
+            </tr>
+            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
+            <tr>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
+                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/user.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Barbier
+              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">${barber_name}</td>
+            </tr>
+            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
+            <tr>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
+                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/calendar.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Date
+              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">${dateFormatted} &agrave; ${timeFormatted}</td>
+            </tr>
+            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
+            <tr>
+              <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
+              <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:18px;font-weight:700;text-align:right;text-decoration:line-through;">${priceFormatted}<span style="font-size:13px;font-weight:400;"> &euro;</span></td>
+            </tr>
+          </table>
+        </div>
       </div>
 
-      <div style="text-align:center;margin-bottom:16px;">
-        <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 0 20px;">N'hésitez pas à reprendre rendez-vous en ligne.</p>
-        <a href="${config.siteUrl}/pages/meylan/reserver.html" style="display:inline-block;background:#fff;color:#000;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
+      <!-- CTA -->
+      <div style="text-align:center;margin-bottom:20px;">
+        <p style="color:${TEXT_SECONDARY};font-size:13px;margin:0 0 20px;">N'h&eacute;sitez pas &agrave; reprendre rendez-vous en ligne.</p>
+        <a href="${config.siteUrl}/pages/meylan/reserver.html" style="display:inline-block;background:${GOLD};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
           Reprendre rendez-vous
         </a>
       </div>`, { showHero: false });
@@ -525,61 +590,87 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
     : null;
 
   const html = emailShell(`
-      <div style="text-align:center;margin-bottom:28px;">
-        <div style="display:inline-block;background:rgba(59,130,246,0.12);border-radius:50%;width:48px;height:48px;line-height:48px;text-align:center;margin-bottom:12px;">
-          <span style="font-size:22px;">↻</span>
+      <!-- Status icon -->
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="display:inline-block;border:2px solid #3B82F6;border-radius:50%;width:56px;height:56px;line-height:52px;text-align:center;margin-bottom:16px;">
+          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/calendar-clock.svg" alt="" style="width:28px;height:28px;vertical-align:middle;filter:invert(42%) sepia(93%) saturate(1352%) hue-rotate(207deg) brightness(99%) contrast(97%);">
         </div>
-        <h2 style="font-size:22px;font-weight:700;margin:0;color:#fff;">Rendez-vous déplacé</h2>
-      </div>
-
-      <!-- Ancien créneau -->
-      <div style="background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.1);border-radius:14px;padding:16px 20px;margin-bottom:12px;">
-        <p style="margin:0 0 6px;color:rgba(239,68,68,0.6);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Ancien créneau</p>
-        <p style="margin:0;color:rgba(255,255,255,0.4);font-size:14px;text-decoration:line-through;">
-          ${oldDateFormatted} à ${oldTimeFormatted}${old_date !== new_date || barber_name !== new_barber_name ? ` — avec ${barber_name}` : ''}
+        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous d&eacute;plac&eacute;</h2>
+        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
+          Votre cr&eacute;neau a &eacute;t&eacute; modifi&eacute; avec succ&egrave;s.
         </p>
       </div>
 
-      <!-- Nouveau créneau -->
-      <div style="background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.15);border-radius:14px;padding:24px;margin-bottom:24px;">
-        <p style="margin:0 0 10px;color:rgba(34,197,94,0.7);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Nouveau créneau</p>
-        <table style="width:100%;border-collapse:collapse;">
-          <tr>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;width:110px;">Prestation</td>
-            <td style="padding:6px 0;color:#fff;font-size:15px;font-weight:600;text-align:right;">${service_name}</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Barbier</td>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.85);font-size:14px;text-align:right;">${new_barber_name || barber_name}</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Date</td>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.85);font-size:14px;text-align:right;">${newDateFormatted}</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Heure</td>
-            <td style="padding:6px 0;color:#fff;font-size:16px;font-weight:700;text-align:right;">${newTimeFormatted}</td>
-          </tr>
-          <tr>
-            <td colspan="2" style="padding:10px 0 0;"><div style="border-top:1px solid rgba(255,255,255,0.06);"></div></td>
-          </tr>
-          <tr>
-            <td style="padding:10px 0 0;color:rgba(255,255,255,0.45);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Prix</td>
-            <td style="padding:10px 0 0;color:#fff;font-size:18px;font-weight:800;text-align:right;">${priceFormatted} <span style="font-size:13px;font-weight:400;">€</span></td>
-          </tr>
-        </table>
-        <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
-          <p style="margin:0;color:rgba(255,255,255,0.4);font-size:12px;">📍 ${config.salon.address}</p>
+      <!-- Ancien cr&eacute;neau (barr&eacute;) -->
+      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:12px;opacity:0.6;">
+        <div style="height:2px;background:#DC2626;"></div>
+        <div style="padding:16px 20px;display:flex;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="padding:4px 0;color:${TEXT_MUTED};font-size:11px;text-transform:uppercase;letter-spacing:1.5px;">Ancien cr&eacute;neau</td>
+              <td style="padding:4px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">
+                ${oldDateFormatted} &agrave; ${oldTimeFormatted}${old_date !== new_date || barber_name !== new_barber_name ? ` &mdash; ${barber_name}` : ''}
+              </td>
+            </tr>
+          </table>
         </div>
       </div>
 
-      ${manageUrl ? `<div style="text-align:center;margin-bottom:16px;">
-        <a href="${manageUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
-          Gérer mon rendez-vous
+      <!-- Arrow down -->
+      <div style="text-align:center;margin:4px 0;">
+        <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/arrow-down.svg" alt="" style="width:20px;height:20px;opacity:0.3;filter:invert(1);">
+      </div>
+
+      <!-- Nouveau cr&eacute;neau -->
+      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;margin-top:4px;">
+        <div style="height:3px;background:linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT}, ${GOLD});"></div>
+        <div style="padding:24px;">
+          <p style="margin:0 0 16px;color:${GOLD};font-size:11px;text-transform:uppercase;letter-spacing:2px;font-weight:600;">Nouveau cr&eacute;neau</p>
+
+          <!-- Time highlight -->
+          <div style="text-align:center;margin-bottom:20px;padding:16px;background:${DARK_BG};border:1px solid ${CARD_BORDER};border-radius:12px;">
+            <p style="margin:0;color:${GOLD_LIGHT};font-size:32px;font-weight:800;letter-spacing:1px;">${newTimeFormatted}</p>
+            <p style="margin:4px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${newDateFormatted}</p>
+          </div>
+
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">
+                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/scissors.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Prestation
+              </td>
+              <td style="padding:10px 0;color:${TEXT_PRIMARY};font-size:15px;font-weight:600;text-align:right;">${service_name}</td>
+            </tr>
+            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
+            <tr>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
+                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/user.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Barbier
+              </td>
+              <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:14px;text-align:right;">${new_barber_name || barber_name}</td>
+            </tr>
+            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
+            <tr>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
+                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/map-pin.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Adresse
+              </td>
+              <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;">${escapeHtml(config.salon.address)}</td>
+            </tr>
+            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
+            <tr>
+              <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
+              <td style="padding:12px 0 4px;color:${GOLD_LIGHT};font-size:22px;font-weight:800;text-align:right;">${priceFormatted}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      ${manageUrl ? `<div style="text-align:center;margin-bottom:20px;">
+        <a href="${manageUrl}" style="display:inline-block;background:${GOLD};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+          G&eacute;rer mon rendez-vous
         </a>
       </div>
-      <p style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;margin:0;">
-        Modification ou annulation gratuite jusqu'à 12h avant
+      <p style="text-align:center;color:${TEXT_MUTED};font-size:11px;margin:0;">
+        Modification ou annulation gratuite jusqu'&agrave; 12h avant
       </p>` : ''}`, { showHero: false });
 
   try {
@@ -603,28 +694,45 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
   first_name = escapeHtml(first_name);
 
   const html = emailShell(`
-      <div style="text-align:center;margin-bottom:28px;">
-        <div style="display:inline-block;background:rgba(59,130,246,0.12);border-radius:50%;width:48px;height:48px;line-height:48px;text-align:center;margin-bottom:12px;">
-          <span style="font-size:22px;">🔑</span>
+      <!-- Lock icon -->
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="display:inline-block;border:2px solid ${GOLD};border-radius:50%;width:56px;height:56px;line-height:52px;text-align:center;margin-bottom:16px;">
+          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/lock-keyhole.svg" alt="" style="width:28px;height:28px;vertical-align:middle;filter:invert(62%) sepia(98%) saturate(375%) hue-rotate(11deg) brightness(97%) contrast(89%);">
         </div>
-        <h2 style="font-size:22px;font-weight:700;margin:0;color:#fff;">Réinitialiser votre mot de passe</h2>
+        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">R&eacute;initialiser votre mot de passe</h2>
       </div>
 
-      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;margin-bottom:24px;">
-        <p style="margin:0 0 20px;color:rgba(255,255,255,0.65);font-size:14px;line-height:1.6;">
-          Bonjour${first_name ? ` ${first_name}` : ''},<br><br>
-          Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.
-        </p>
-        <div style="text-align:center;">
-          <a href="${resetUrl}" style="display:inline-block;background:#fff;color:#000;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px;">
-            Nouveau mot de passe
-          </a>
+      <!-- Card -->
+      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
+        <div style="height:3px;background:linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT}, ${GOLD});"></div>
+        <div style="padding:28px 24px;">
+          <p style="margin:0 0 24px;color:${TEXT_SECONDARY};font-size:14px;line-height:1.7;">
+            Bonjour${first_name ? ` ${first_name}` : ''},<br><br>
+            Vous avez demand&eacute; la r&eacute;initialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.
+          </p>
+          <div style="text-align:center;">
+            <a href="${resetUrl}" style="display:inline-block;background:${GOLD};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+              Nouveau mot de passe
+            </a>
+          </div>
         </div>
       </div>
 
-      <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;line-height:1.6;">
-        <p style="margin:0 0 4px;">Ce lien expire dans 1 heure.</p>
-        <p style="margin:0;">Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+      <!-- Security notice -->
+      <div style="text-align:center;padding:16px;background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:12px;">
+        <table style="margin:0 auto;border-collapse:collapse;">
+          <tr>
+            <td style="padding-right:10px;vertical-align:middle;">
+              <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/shield-check.svg" alt="" style="width:16px;height:16px;opacity:0.4;filter:invert(1);">
+            </td>
+            <td style="vertical-align:middle;">
+              <p style="margin:0;color:${TEXT_MUTED};font-size:11px;line-height:1.6;">
+                Ce lien expire dans 1 heure.<br>
+                Si vous n'avez pas fait cette demande, ignorez cet email.
+              </p>
+            </td>
+          </tr>
+        </table>
       </div>`, { showHero: false });
 
   await brevoEmail(email, 'Réinitialisation de votre mot de passe BarberClub', html);
