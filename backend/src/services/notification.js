@@ -288,7 +288,7 @@ function emailShell(content, { showHero = true } = {}) {
     ${showHero ? `
     <!-- HERO — Salon photo with overlay -->
     <div style="position:relative;overflow:hidden;height:240px;background:#000;">
-      <img src="${HERO_URL}" alt="" style="width:100%;height:240px;object-fit:cover;object-position:center;display:block;opacity:0.35;">
+      <img src="${HERO_URL}" alt="" style="width:100%;height:240px;object-fit:cover;object-position:center 65%;display:block;opacity:0.35;">
       <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg, rgba(12,10,9,0.2) 0%, rgba(12,10,9,0.95) 100%);"></div>
       <div style="position:absolute;bottom:0;left:0;right:0;text-align:center;padding:0 24px 28px;">
         <img src="${LOGO_URL}" alt="BarberClub" style="width:200px;height:auto;margin-bottom:4px;">
