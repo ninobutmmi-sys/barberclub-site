@@ -446,7 +446,7 @@ router.post('/reset-password',
 router.post('/claim-account',
   authLimiter,
   [
-    body('booking_id').notEmpty().withMessage('Réservation requise'),
+    body('booking_id').notEmpty().matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).withMessage('Réservation requise'),
     body('cancel_token').notEmpty().withMessage('Token requis'),
     body('password').isLength({ min: 8 }).withMessage('Le mot de passe doit faire au moins 8 caractères'),
   ],

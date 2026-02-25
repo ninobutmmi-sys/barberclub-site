@@ -165,92 +165,183 @@
             margin-bottom: 40px;
         }
 
-        .tarif-category {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+        .tarif-category-group {
+            margin-bottom: 28px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .category-icon {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.07);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
+            border-radius: 11px;
+            flex-shrink: 0;
+        }
+
+        .category-icon svg {
+            width: 18px;
+            height: 18px;
+            opacity: 0.7;
         }
 
         .category-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 16px;
-            color: #fff;
+            letter-spacing: 0.08em;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .category-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.15), transparent);
+        }
+
+        .tarif-cards {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 10px;
         }
 
-        .category-icon {
-            width: 36px;
-            height: 36px;
+        .tarif-card {
+            position: relative;
             display: flex;
             align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-
-        .category-icon svg {
-            width: 20px;
-            height: 20px;
-            opacity: 0.8;
-        }
-
-        .tarif-item {
-            display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 16px;
+            padding: 16px 18px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px);
         }
 
-        .tarif-item:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
+        .tarif-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+            pointer-events: none;
         }
 
-        .tarif-name {
-            font-size: 14px;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.9);
+        .tarif-card:active {
+            transform: scale(0.97) !important;
+            transition-duration: 0.1s;
         }
 
-        .tarif-desc {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 2px;
+        .tarif-card.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        .tarif-price {
+        .tarif-card.highlight {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .tarif-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tarif-card-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 3px;
+            line-height: 1.3;
+        }
+
+        .tarif-badge {
+            display: inline-block;
+            padding: 2px 8px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 18px;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #000;
+            background: #fff;
+            border-radius: 20px;
+            margin-left: 6px;
+            vertical-align: middle;
+            position: relative;
+            top: -1px;
+        }
+
+        .tarif-card-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .tarif-card-duration {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .tarif-card-duration svg {
+            width: 11px;
+            height: 11px;
+            opacity: 0.6;
+        }
+
+        .tarif-card-price-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            flex-shrink: 0;
+        }
+
+        .tarif-card-price {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
             font-weight: 800;
             color: #fff;
             white-space: nowrap;
+            letter-spacing: -0.02em;
+            line-height: 1;
         }
 
-        .tarif-item.student {
-            opacity: 0.7;
-            padding-top: 16px;
-            margin-top: 4px;
-            border-top: 1px dashed rgba(255, 255, 255, 0.1);
-            border-bottom: none;
+        .tarif-card-price .euro {
+            font-size: 14px;
+            opacity: 0.4;
+            margin-left: 1px;
         }
 
-        .tarif-item.student .tarif-name {
-            font-size: 13px;
+        /* Reduced tarifs */
+        .tarif-category-group.reduced .tarif-card {
+            background: rgba(255, 255, 255, 0.025);
+            border-color: rgba(255, 255, 255, 0.06);
         }
 
-        .tarif-item.student .tarif-price {
-            font-size: 16px;
+        .tarif-category-group.reduced .tarif-card-price {
+            font-size: 20px;
+        }
+
+        .tarif-category-group.reduced .category-icon {
+            background: rgba(255, 255, 255, 0.04);
         }
 
         /* REVIEWS SECTION */
@@ -595,6 +686,21 @@
                 height: 75px;
             }
 
+            .tarif-card:hover {
+                border-color: rgba(255, 255, 255, 0.18);
+                background: rgba(255, 255, 255, 0.07);
+                transform: translateY(-2px);
+            }
+
+            .tarif-card.highlight:hover {
+                border-color: rgba(255, 255, 255, 0.25);
+                background: rgba(255, 255, 255, 0.09);
+            }
+
+            .tarif-card:active {
+                transform: scale(0.98) !important;
+            }
+
             .nav-item:hover {
                 color: rgba(255, 255, 255, 0.8);
             }
@@ -642,10 +748,11 @@
             animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
         }
 
-        .tarif-category {
-            opacity: 0;
-            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            animation-delay: 0.2s;
+        .tarif-card {
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.3s ease,
+                background 0.3s ease;
         }
 
         .reveal {
@@ -698,7 +805,7 @@
 
             .page-header,
             .tarifs-section,
-            .tarif-category,
+            .tarif-card,
             .barber-card,
             .reveal {
                 opacity: 1;
@@ -738,10 +845,10 @@
             <h2 class="section-title">Nos Tarifs</h2>
 
             <!-- Coupes -->
-            <div class="tarif-category">
-                <h3 class="category-title">
+            <div class="tarif-category-group">
+                <div class="category-header">
                     <span class="category-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="6" cy="6" r="3" />
                             <circle cx="6" cy="18" r="3" />
                             <line x1="20" y1="4" x2="8.12" y2="15.88" />
@@ -749,76 +856,175 @@
                             <line x1="8.12" y1="8.12" x2="12" y2="12" />
                         </svg>
                     </span>
-                    Nos Prestations
-                </h3>
-                <div class="tarif-item">
-                    <div>
-                        <div class="tarif-name">Coupe + Barbe + Soin Complet</div>
-                        <div class="tarif-desc">Serviette chaude et soin du visage</div>
-                    </div>
-                    <span class="tarif-price">48€</span>
+                    <h3 class="category-title">Coupes</h3>
+                    <span class="category-line"></span>
                 </div>
-                <div class="tarif-item">
-                    <div>
-                        <div class="tarif-name">Coupe + Barbe</div>
-                        <div class="tarif-desc">Forfait complet</div>
+                <div class="tarif-cards">
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Barbe + Soin Complet</div>
+                            <div class="tarif-card-desc">Serviette chaude et soin du visage</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                40 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">48<span class="euro">&euro;</span></span>
+                        </div>
                     </div>
-                    <span class="tarif-price">38€</span>
-                </div>
-                <div class="tarif-item">
-                    <div>
-                        <div class="tarif-name">Coupe + Traçage Barbe</div>
-                        <div class="tarif-desc">Coupe complète avec finitions barbe</div>
+                    <div class="tarif-card highlight">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Barbe<span class="tarif-badge">Populaire</span></div>
+                            <div class="tarif-card-desc">Forfait complet</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                30 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">38<span class="euro">&euro;</span></span>
+                        </div>
                     </div>
-                    <span class="tarif-price">33€</span>
-                </div>
-                <div class="tarif-item">
-                    <div>
-                        <div class="tarif-name">Coupe Homme</div>
-                        <div class="tarif-desc">Shampoing + coupe + coiffage</div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Traçage Barbe</div>
+                            <div class="tarif-card-desc">Coupe complète avec finitions barbe</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                30 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">33<span class="euro">&euro;</span></span>
+                        </div>
                     </div>
-                    <span class="tarif-price">27€</span>
-                </div>
-                <div class="tarif-item">
-                    <div>
-                        <div class="tarif-name">Barbe Uniquement</div>
-                        <div class="tarif-desc">Taille et finitions</div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe Homme</div>
+                            <div class="tarif-card-desc">Shampoing + coupe + coiffage</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                30 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">27<span class="euro">&euro;</span></span>
+                        </div>
                     </div>
-                    <span class="tarif-price">20€</span>
                 </div>
-                <div class="tarif-item">
-                    <div>
-                        <div class="tarif-name">Soin Visage + Barbe</div>
-                        <div class="tarif-desc">Soin complet du visage</div>
-                    </div>
-                    <span class="tarif-price">20€</span>
-                </div>
+            </div>
 
-                <!-- Tarifs réduits -->
-                <div class="tarif-item student">
-                    <div>
-                        <div class="tarif-name">Coupe Étudiante</div>
-                        <div class="tarif-desc">Sur présentation de la carte</div>
-                    </div>
-                    <span class="tarif-price">24€</span>
+            <!-- Barbe & Soins -->
+            <div class="tarif-category-group">
+                <div class="category-header">
+                    <span class="category-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M7 2h10l-2 5H9L7 2z"/>
+                            <path d="M12 7v15"/>
+                            <path d="M9 7c0 3-3 5-3 10a3 3 0 0 0 6 0"/>
+                            <path d="M15 7c0 3 3 5 3 10a3 3 0 0 1-6 0"/>
+                        </svg>
+                    </span>
+                    <h3 class="category-title">Barbe & Soins</h3>
+                    <span class="category-line"></span>
                 </div>
-                <div class="tarif-item student">
-                    <div>
-                        <div class="tarif-name">Coupe Partenaire</div>
+                <div class="tarif-cards">
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Barbe Uniquement</div>
+                            <div class="tarif-card-desc">Taille et finitions</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                20 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
+                        </div>
                     </div>
-                    <span class="tarif-price">24€</span>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Soin Visage + Barbe</div>
+                            <div class="tarif-card-desc">Soin complet du visage</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                30 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="tarif-item student">
-                    <div>
-                        <div class="tarif-name">Coupe + Traçage Partenaire</div>
-                    </div>
-                    <span class="tarif-price">29€</span>
+            </div>
+
+            <!-- Tarifs Réduits -->
+            <div class="tarif-category-group reduced">
+                <div class="category-header">
+                    <span class="category-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="5" x2="5" y2="19"/>
+                            <circle cx="6.5" cy="6.5" r="2.5"/>
+                            <circle cx="17.5" cy="17.5" r="2.5"/>
+                        </svg>
+                    </span>
+                    <h3 class="category-title">Tarifs Réduits</h3>
+                    <span class="category-line"></span>
                 </div>
-                <div class="tarif-item student">
-                    <div>
-                        <div class="tarif-name">Coupe + Barbe Partenaire</div>
+                <div class="tarif-cards">
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe Étudiante</div>
+                            <div class="tarif-card-desc">Sur présentation de la carte</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                30 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">24<span class="euro">&euro;</span></span>
+                        </div>
                     </div>
-                    <span class="tarif-price">33€</span>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe Partenaire</div>
+                            <div class="tarif-card-desc">Comité d'entreprise</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                20 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">24<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Traçage Partenaire</div>
+                            <div class="tarif-card-desc">Comité d'entreprise</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                20 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">29<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Barbe Partenaire</div>
+                            <div class="tarif-card-desc">Comité d'entreprise</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                30 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">33<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1090,6 +1296,24 @@
         document.querySelectorAll('.reviews-section, .instagram-section, .barbers-section').forEach(el => {
             el.classList.add('reveal');
             revealObserver.observe(el);
+        });
+
+        // Stagger animation for tarif cards
+        document.querySelectorAll('.tarif-category-group').forEach(group => {
+            const cards = group.querySelectorAll('.tarif-card');
+            const cardObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const card = entry.target;
+                        const index = Array.from(cards).indexOf(card);
+                        card.style.transitionDelay = (index * 0.07) + 's';
+                        card.classList.add('visible');
+                        cardObserver.unobserve(card);
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+            cards.forEach(card => cardObserver.observe(card));
         });
 
         const barbersGrid = document.querySelector('.barbers-grid');

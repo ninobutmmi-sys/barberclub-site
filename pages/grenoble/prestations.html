@@ -165,76 +165,183 @@
             margin-bottom: 40px;
         }
 
-        .tarif-category {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+        .tarif-category-group {
+            margin-bottom: 28px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .category-icon {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.07);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
+            border-radius: 11px;
+            flex-shrink: 0;
+        }
+
+        .category-icon svg {
+            width: 18px;
+            height: 18px;
+            opacity: 0.7;
         }
 
         .category-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 16px;
-            color: #fff;
+            letter-spacing: 0.08em;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .category-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.15), transparent);
+        }
+
+        .tarif-cards {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 10px;
         }
 
-        .category-icon {
-            width: 36px;
-            height: 36px;
+        .tarif-card {
+            position: relative;
             display: flex;
             align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-
-        .category-icon svg {
-            width: 20px;
-            height: 20px;
-            opacity: 0.8;
-        }
-
-        .tarif-item {
-            display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            gap: 16px;
+            padding: 16px 18px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px);
         }
 
-        .tarif-item:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
+        .tarif-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+            pointer-events: none;
         }
 
-        .tarif-name {
-            font-size: 14px;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.9);
+        .tarif-card:active {
+            transform: scale(0.97) !important;
+            transition-duration: 0.1s;
         }
 
-        .tarif-desc {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 2px;
+        .tarif-card.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        .tarif-price {
+        .tarif-card.highlight {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .tarif-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tarif-card-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: #fff;
+            margin-bottom: 3px;
+            line-height: 1.3;
+        }
+
+        .tarif-badge {
+            display: inline-block;
+            padding: 2px 8px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 18px;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #000;
+            background: #fff;
+            border-radius: 20px;
+            margin-left: 6px;
+            vertical-align: middle;
+            position: relative;
+            top: -1px;
+        }
+
+        .tarif-card-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .tarif-card-duration {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .tarif-card-duration svg {
+            width: 11px;
+            height: 11px;
+            opacity: 0.6;
+        }
+
+        .tarif-card-price-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            flex-shrink: 0;
+        }
+
+        .tarif-card-price {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
             font-weight: 800;
             color: #fff;
             white-space: nowrap;
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+
+        .tarif-card-price .euro {
+            font-size: 14px;
+            opacity: 0.4;
+            margin-left: 1px;
+        }
+
+        /* Reduced tarifs */
+        .tarif-category-group.reduced .tarif-card {
+            background: rgba(255, 255, 255, 0.025);
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .tarif-category-group.reduced .tarif-card-price {
+            font-size: 20px;
+        }
+
+        .tarif-category-group.reduced .category-icon {
+            background: rgba(255, 255, 255, 0.04);
         }
 
         /* REVIEWS SECTION */
@@ -380,22 +487,6 @@
             gap: 12px;
         }
 
-        .tarif-item.student {
-            opacity: 0.7;
-            padding-top: 16px;
-            margin-top: 4px;
-            border-top: 1px dashed rgba(255, 255, 255, 0.1);
-            border-bottom: none;
-        }
-
-        .tarif-item.student .tarif-name {
-            font-size: 13px;
-        }
-
-        .tarif-item.student .tarif-price {
-            font-size: 16px;
-        }
-
         .barber-card {
             display: block;
             position: relative;
@@ -416,18 +507,15 @@
         }
 
         .barber-photo {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.05);
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .barber-card:active .barber-photo {
             transform: scale(1.05);
-        }
-
-        .barber-photo {
-            width: 100%;
-            aspect-ratio: 1;
-            object-fit: cover;
-            background: rgba(255, 255, 255, 0.05);
         }
 
         .barber-arrow {
@@ -603,6 +691,21 @@
                 height: 75px;
             }
 
+            .tarif-card:hover {
+                border-color: rgba(255, 255, 255, 0.18);
+                background: rgba(255, 255, 255, 0.07);
+                transform: translateY(-2px);
+            }
+
+            .tarif-card.highlight:hover {
+                border-color: rgba(255, 255, 255, 0.25);
+                background: rgba(255, 255, 255, 0.09);
+            }
+
+            .tarif-card:active {
+                transform: scale(0.98) !important;
+            }
+
             .nav-item:hover {
                 color: rgba(255, 255, 255, 0.8);
             }
@@ -641,7 +744,6 @@
             }
         }
 
-        /* Page load animations */
         .page-header {
             animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
@@ -651,13 +753,13 @@
             animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
         }
 
-        .tarif-category {
-            opacity: 0;
-            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            animation-delay: 0.2s;
+        .tarif-card {
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.3s ease,
+                background 0.3s ease;
         }
 
-        /* Scroll reveal animations */
         .reveal {
             opacity: 0;
             transform: translateY(25px);
@@ -670,7 +772,6 @@
             transform: translateY(0);
         }
 
-        /* Staggered barber cards */
         .barber-card {
             opacity: 0;
             transform: translateY(20px);
@@ -700,7 +801,6 @@
             transform: translateY(0);
         }
 
-        /* Bottom nav entrance */
         .bottom-nav {
             animation: fadeIn 0.4s ease 0.3s both;
         }
@@ -718,7 +818,7 @@
 
             .page-header,
             .tarifs-section,
-            .tarif-category,
+            .tarif-card,
             .barber-card,
             .reveal {
                 opacity: 1;
@@ -758,10 +858,10 @@
             <h2 class="section-title">Nos Tarifs</h2>
 
             <!-- Coupes -->
-            <div class="tarif-category">
-                <h3 class="category-title">
+            <div class="tarif-category-group">
+                <div class="category-header">
                     <span class="category-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="6" cy="6" r="3" />
                             <circle cx="6" cy="18" r="3" />
                             <line x1="20" y1="4" x2="8.12" y2="15.88" />
@@ -769,42 +869,92 @@
                             <line x1="8.12" y1="8.12" x2="12" y2="12" />
                         </svg>
                     </span>
-                    Nos Prestations
-                </h3>
-                <div class="tarif-item">
-                    <div>
-                        <div class="tarif-name">Coupe + Barbe</div>
-                        <div class="tarif-desc">Forfait complet</div>
-                    </div>
-                    <span class="tarif-price">30€</span>
+                    <h3 class="category-title">Nos Prestations</h3>
+                    <span class="category-line"></span>
                 </div>
-                <div class="tarif-item">
-                    <div>
-                        <div class="tarif-name">Coupe + Traçage Barbe</div>
-                        <div class="tarif-desc">Coupe complète avec finitions barbe</div>
+                <div class="tarif-cards">
+                    <div class="tarif-card highlight">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Barbe<span class="tarif-badge">Populaire</span></div>
+                            <div class="tarif-card-desc">Forfait complet</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                30 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">30<span class="euro">&euro;</span></span>
+                        </div>
                     </div>
-                    <span class="tarif-price">25€</span>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Traçage Barbe</div>
+                            <div class="tarif-card-desc">Coupe complète avec finitions barbe</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                30 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">25<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe Homme</div>
+                            <div class="tarif-card-desc">Shampoing + coupe + coiffage</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                30 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Barbe Uniquement</div>
+                            <div class="tarif-card-desc">Taille et finitions</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                20 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">15<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="tarif-item">
-                    <div>
-                        <div class="tarif-name">Coupe Homme</div>
-                        <div class="tarif-desc">Shampoing + coupe + coiffage</div>
-                    </div>
-                    <span class="tarif-price">20€</span>
+            </div>
+
+            <!-- Tarifs Réduits -->
+            <div class="tarif-category-group reduced">
+                <div class="category-header">
+                    <span class="category-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="5" x2="5" y2="19"/>
+                            <circle cx="6.5" cy="6.5" r="2.5"/>
+                            <circle cx="17.5" cy="17.5" r="2.5"/>
+                        </svg>
+                    </span>
+                    <h3 class="category-title">Tarifs Réduits</h3>
+                    <span class="category-line"></span>
                 </div>
-                <div class="tarif-item">
-                    <div>
-                        <div class="tarif-name">Barbe Uniquement</div>
-                        <div class="tarif-desc">Taille et finitions</div>
+                <div class="tarif-cards">
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Tarif Étudiant</div>
+                            <div class="tarif-card-desc">Sur présentation de la carte</div>
+                            <span class="tarif-card-duration">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                20 min
+                            </span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">15<span class="euro">&euro;</span></span>
+                        </div>
                     </div>
-                    <span class="tarif-price">15€</span>
-                </div>
-                <div class="tarif-item student">
-                    <div>
-                        <div class="tarif-name">Tarif Étudiant</div>
-                        <div class="tarif-desc">Sur présentation de la carte</div>
-                    </div>
-                    <span class="tarif-price">15€</span>
                 </div>
             </div>
         </section>
@@ -825,33 +975,16 @@
                             <div class="review-author">
                                 <div class="review-name">Maxime D.</div>
                                 <div class="review-stars">
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                                 </div>
                             </div>
                         </div>
-                        <p class="review-text">Super expérience ! Le coiffeur était très pro et à l'écoute. Le résultat
-                            dépasse mes attentes, je recommande à 100%.</p>
+                        <p class="review-text">Super expérience ! Le coiffeur était très pro et à l'écoute. Le résultat dépasse mes attentes, je recommande à 100%.</p>
                     </div>
-
                     <!-- Avis 2 -->
                     <div class="review-card">
                         <div class="review-header">
@@ -859,33 +992,16 @@
                             <div class="review-author">
                                 <div class="review-name">Thomas L.</div>
                                 <div class="review-stars">
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                                 </div>
                             </div>
                         </div>
-                        <p class="review-text">Meilleur barbershop de Grenoble ! Ambiance au top, équipe sympa et
-                            surtout un travail impeccable sur les dégradés.</p>
+                        <p class="review-text">Meilleur barbershop de Grenoble ! Ambiance au top, équipe sympa et surtout un travail impeccable sur les dégradés.</p>
                     </div>
-
                     <!-- Avis 3 -->
                     <div class="review-card">
                         <div class="review-header">
@@ -893,33 +1009,16 @@
                             <div class="review-author">
                                 <div class="review-name">Antoine R.</div>
                                 <div class="review-stars">
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                                 </div>
                             </div>
                         </div>
-                        <p class="review-text">Cela fait 2 ans que je viens ici et je ne changerai pour rien au monde.
-                            Rapport qualité/prix imbattable.</p>
+                        <p class="review-text">Cela fait 2 ans que je viens ici et je ne changerai pour rien au monde. Rapport qualité/prix imbattable.</p>
                     </div>
-
                     <!-- Avis 4 -->
                     <div class="review-card">
                         <div class="review-header">
@@ -927,33 +1026,16 @@
                             <div class="review-author">
                                 <div class="review-name">Karim B.</div>
                                 <div class="review-stars">
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                                 </div>
                             </div>
                         </div>
-                        <p class="review-text">Personnel accueillant et professionnel. Ma coupe + barbe était parfaite.
-                            Je reviendrai c'est sûr !</p>
+                        <p class="review-text">Personnel accueillant et professionnel. Ma coupe + barbe était parfaite. Je reviendrai c'est sûr !</p>
                     </div>
-
                     <!-- Avis 5 -->
                     <div class="review-card">
                         <div class="review-header">
@@ -961,31 +1043,15 @@
                             <div class="review-author">
                                 <div class="review-name">Lucas M.</div>
                                 <div class="review-stars">
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
-                                    <svg viewBox="0 0 24 24">
-                                        <path
-                                            d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                    </svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                                    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                                 </div>
                             </div>
                         </div>
-                        <p class="review-text">Enfin un barbershop qui comprend ce qu'on veut ! Les gars sont sympas et
-                            le cadre est stylé. Top !</p>
+                        <p class="review-text">Enfin un barbershop qui comprend ce qu'on veut ! Les gars sont sympas et le cadre est stylé. Top !</p>
                     </div>
                 </div>
             </div>
@@ -1058,12 +1124,7 @@
             }
         }, { passive: true });
 
-        // Scroll reveal with Intersection Observer
-        const observerOptions = {
-            threshold: 0.15,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
+        // Stagger reveal for tarif cards
         const revealObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -1071,7 +1132,16 @@
                     revealObserver.unobserve(entry.target);
                 }
             });
-        }, observerOptions);
+        }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+        // Observe tarif cards with stagger
+        document.querySelectorAll('.tarif-category-group').forEach(group => {
+            const cards = group.querySelectorAll('.tarif-card');
+            cards.forEach((card, i) => {
+                card.style.transitionDelay = (i * 0.07) + 's';
+                revealObserver.observe(card);
+            });
+        });
 
         // Observe sections
         document.querySelectorAll('.reviews-section, .barbers-section').forEach(el => {

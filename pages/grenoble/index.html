@@ -247,10 +247,11 @@
             justify-content: center;
             gap: 10px;
             padding: 18px 16px;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
             color: #fff;
             text-decoration: none;
             font-family: 'Orbitron', sans-serif;
@@ -258,7 +259,18 @@
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .nav-item:active {
@@ -266,10 +278,16 @@
             background: rgba(255, 255, 255, 0.15);
         }
 
+        .nav-item:active::before {
+            opacity: 1;
+        }
+
         .nav-item svg {
             width: 18px;
             height: 18px;
             opacity: 0.8;
+            position: relative;
+            z-index: 1;
         }
 
         .nav-item.full {
@@ -280,6 +298,7 @@
         .nav-item.cta {
             background: linear-gradient(135deg, #ffffff, #f5f5f5);
             border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 14px;
             color: #000;
             font-weight: 600;
             position: relative;
@@ -298,6 +317,7 @@
                     transparent 0%,
                     rgba(0, 0, 0, 0.1) 50%,
                     transparent 100%);
+            opacity: 1;
             animation: ctaShine 3s ease-in-out infinite;
         }
 
@@ -413,8 +433,13 @@
             }
 
             .nav-item:hover {
-                background: rgba(255, 255, 255, 0.15);
-                border-color: rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.08);
+                border-color: rgba(255, 255, 255, 0.2);
+                transform: translateY(-2px);
+            }
+
+            .nav-item:hover::before {
+                opacity: 1;
             }
 
             .nav-item.cta:hover {
@@ -842,7 +867,7 @@
         <div class="bg-overlay"></div>
 
         <header class="header">
-            <a href="../../" class="back-btn" onclick="if(history.length>1){history.back();return false}">
+            <a href="../../" class="back-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
                     <path d="M19 12H5M12 19l-7-7 7-7" />
