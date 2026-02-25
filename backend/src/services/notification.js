@@ -264,9 +264,9 @@ const LOGO_URL = `${ASSETS_BASE}/assets/images/common/logo-blanc.png`;
 const CROWN_URL = `${ASSETS_BASE}/assets/images/common/couronne.png`;
 const HERO_URL = `${ASSETS_BASE}/assets/images/salons/meylan/salon-meylan-interieur.jpg`;
 
-// Design tokens — luxury dark + gold
-const GOLD = '#CA8A04';
-const GOLD_LIGHT = '#EAB308';
+// Design tokens — monochrome dark luxury
+const ACCENT = '#FFFFFF';
+const ACCENT_DIM = '#D4D4D4';
 const DARK_BG = '#0C0A09';
 const CARD_BG = '#1C1917';
 const CARD_BORDER = '#292524';
@@ -274,7 +274,7 @@ const TEXT_PRIMARY = '#FAFAF9';
 const TEXT_SECONDARY = '#A8A29E';
 const TEXT_MUTED = '#78716C';
 
-function emailShell(content, { showHero = true, accentColor = GOLD } = {}) {
+function emailShell(content, { showHero = true } = {}) {
   return `
 <!DOCTYPE html>
 <html>
@@ -293,12 +293,11 @@ function emailShell(content, { showHero = true, accentColor = GOLD } = {}) {
       <div style="position:absolute;bottom:0;left:0;right:0;text-align:center;padding:0 24px 28px;">
         <img src="${LOGO_URL}" alt="BarberClub" style="width:200px;height:auto;margin-bottom:4px;">
         <div style="display:inline-block;margin-top:6px;">
-          <span style="color:${GOLD};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</span>
+          <span style="color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</span>
         </div>
       </div>
     </div>
-    <!-- Gold accent line -->
-    <div style="height:2px;background:linear-gradient(90deg, transparent 0%, ${GOLD} 30%, ${GOLD_LIGHT} 50%, ${GOLD} 70%, transparent 100%);"></div>
+    <div style="height:2px;background:linear-gradient(90deg, transparent 0%, ${ACCENT_DIM} 30%, ${ACCENT} 50%, ${ACCENT_DIM} 70%, transparent 100%);"></div>
     ` : `
     <!-- Compact header without hero -->
     <div style="text-align:center;padding:36px 24px 20px;border-bottom:1px solid ${CARD_BORDER};">
@@ -306,10 +305,10 @@ function emailShell(content, { showHero = true, accentColor = GOLD } = {}) {
       <br>
       <img src="${LOGO_URL}" alt="BarberClub" style="width:170px;height:auto;">
       <div style="margin-top:8px;">
-        <span style="color:${GOLD};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</span>
+        <span style="color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</span>
       </div>
     </div>
-    <div style="height:1px;background:linear-gradient(90deg, transparent 10%, ${GOLD}40 50%, transparent 90%);"></div>
+    <div style="height:1px;background:linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.15) 50%, transparent 90%);"></div>
     `}
 
     <!-- CONTENT -->
@@ -338,11 +337,7 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
   address = escapeHtml(address);
 
   const content = `
-      <!-- Status badge -->
       <div style="text-align:center;margin-bottom:32px;">
-        <div style="display:inline-block;border:2px solid ${GOLD};border-radius:50%;width:56px;height:56px;line-height:52px;text-align:center;margin-bottom:16px;">
-          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/check.svg" alt="" style="width:28px;height:28px;vertical-align:middle;filter:invert(62%) sepia(98%) saturate(375%) hue-rotate(11deg) brightness(97%) contrast(89%);">
-        </div>
         <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous confirm&eacute;</h2>
         <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
           ${firstName ? `${firstName}, votre` : 'Votre'} r&eacute;servation est enregistr&eacute;e.
@@ -352,40 +347,33 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
       <!-- Time highlight -->
       <div style="text-align:center;margin-bottom:28px;padding:20px;background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;">
         <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;text-transform:uppercase;letter-spacing:2px;">Votre rendez-vous</p>
-        <p style="margin:0;color:${GOLD_LIGHT};font-size:32px;font-weight:800;letter-spacing:1px;">${time}</p>
+        <p style="margin:0;color:${ACCENT};font-size:32px;font-weight:800;letter-spacing:1px;">${time}</p>
         <p style="margin:4px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${date}</p>
       </div>
 
       <!-- Detail card -->
       <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
-        <!-- Gold top border -->
-        <div style="height:3px;background:linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT}, ${GOLD});"></div>
+        <div style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});"></div>
         <div style="padding:24px;">
           <table style="width:100%;border-collapse:collapse;">
             <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">
-                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/scissors.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Prestation
-              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
               <td style="padding:10px 0;color:${TEXT_PRIMARY};font-size:15px;font-weight:600;text-align:right;">${serviceName}</td>
             </tr>
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
             <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
-                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/user.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Barbier
-              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
               <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:14px;text-align:right;">${barberName}</td>
             </tr>
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
             <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
-                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/map-pin.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Adresse
-              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
               <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;">${address}</td>
             </tr>
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
             <tr>
               <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
-              <td style="padding:12px 0 4px;color:${GOLD_LIGHT};font-size:22px;font-weight:800;text-align:right;">${price}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
+              <td style="padding:12px 0 4px;color:${ACCENT};font-size:22px;font-weight:800;text-align:right;">${price}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
             </tr>
           </table>
         </div>
@@ -393,7 +381,7 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
 
       <!-- CTA -->
       <div style="text-align:center;margin-bottom:20px;">
-        <a href="${cancelUrl}" style="display:inline-block;background:${GOLD};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+        <a href="${cancelUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
           G&eacute;rer mon rendez-vous
         </a>
       </div>
@@ -409,11 +397,7 @@ function buildReviewEmailHTML({ firstName, barberName, reviewUrl }) {
   barberName = escapeHtml(barberName);
 
   const content = `
-      <!-- Star icon -->
       <div style="text-align:center;margin-bottom:32px;">
-        <div style="display:inline-block;border:2px solid ${GOLD};border-radius:50%;width:56px;height:56px;line-height:52px;text-align:center;margin-bottom:16px;">
-          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/star.svg" alt="" style="width:28px;height:28px;vertical-align:middle;filter:invert(62%) sepia(98%) saturate(375%) hue-rotate(11deg) brightness(97%) contrast(89%);">
-        </div>
         <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">
           Merci pour votre visite${firstName ? `, ${firstName}` : ''}&nbsp;!
         </h2>
@@ -422,22 +406,15 @@ function buildReviewEmailHTML({ firstName, barberName, reviewUrl }) {
         </p>
       </div>
 
-      <!-- 5 stars visual -->
-      <div style="text-align:center;margin-bottom:28px;">
-        <table style="margin:0 auto;border-collapse:collapse;"><tr>
-          ${[1,2,3,4,5].map(() => `<td style="padding:0 3px;"><img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/star.svg" alt="" style="width:24px;height:24px;filter:invert(62%) sepia(98%) saturate(375%) hue-rotate(11deg) brightness(97%) contrast(89%);"></td>`).join('')}
-        </tr></table>
-      </div>
-
       <!-- Review card -->
       <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
-        <div style="height:3px;background:linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT}, ${GOLD});"></div>
+        <div style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});"></div>
         <div style="padding:28px 24px;text-align:center;">
           <p style="color:${TEXT_SECONDARY};font-size:14px;margin:0 0 6px;line-height:1.6;">Votre avis compte &eacute;norm&eacute;ment pour nous</p>
           <p style="color:${TEXT_MUTED};font-size:12px;margin:0 0 24px;line-height:1.6;">
             Un petit mot sur Google aide d'autres clients &agrave; nous d&eacute;couvrir<br>et nous permet de continuer &agrave; nous am&eacute;liorer.
           </p>
-          <a href="${reviewUrl}" style="display:inline-block;background:${GOLD};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+          <a href="${reviewUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
             Laisser un avis Google
           </a>
         </div>
@@ -506,11 +483,7 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
   barber_name = escapeHtml(barber_name);
 
   const html = emailShell(`
-      <!-- Status icon -->
       <div style="text-align:center;margin-bottom:32px;">
-        <div style="display:inline-block;border:2px solid #DC2626;border-radius:50%;width:56px;height:56px;line-height:52px;text-align:center;margin-bottom:16px;">
-          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/x.svg" alt="" style="width:28px;height:28px;vertical-align:middle;filter:invert(25%) sepia(98%) saturate(7404%) hue-rotate(355deg) brightness(93%) contrast(90%);">
-        </div>
         <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous annul&eacute;</h2>
         <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
           Votre r&eacute;servation a bien &eacute;t&eacute; annul&eacute;e.
@@ -519,27 +492,21 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
 
       <!-- Cancelled details -->
       <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
-        <div style="height:3px;background:linear-gradient(90deg, #DC2626, #EF4444, #DC2626);"></div>
+        <div style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});"></div>
         <div style="padding:24px;">
           <table style="width:100%;border-collapse:collapse;">
             <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">
-                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/scissors.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Prestation
-              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
               <td style="padding:10px 0;color:${TEXT_MUTED};font-size:15px;text-align:right;text-decoration:line-through;">${service_name}</td>
             </tr>
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
             <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
-                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/user.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Barbier
-              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
               <td style="padding:10px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">${barber_name}</td>
             </tr>
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
             <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
-                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/calendar.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Date
-              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Date</td>
               <td style="padding:10px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">${dateFormatted} &agrave; ${timeFormatted}</td>
             </tr>
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
@@ -554,7 +521,7 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
       <!-- CTA -->
       <div style="text-align:center;margin-bottom:20px;">
         <p style="color:${TEXT_SECONDARY};font-size:13px;margin:0 0 20px;">N'h&eacute;sitez pas &agrave; reprendre rendez-vous en ligne.</p>
-        <a href="${config.siteUrl}/pages/meylan/reserver.html" style="display:inline-block;background:${GOLD};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+        <a href="${config.siteUrl}/pages/meylan/reserver.html" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
           Reprendre rendez-vous
         </a>
       </div>`, { showHero: false });
@@ -590,21 +557,16 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
     : null;
 
   const html = emailShell(`
-      <!-- Status icon -->
       <div style="text-align:center;margin-bottom:32px;">
-        <div style="display:inline-block;border:2px solid #3B82F6;border-radius:50%;width:56px;height:56px;line-height:52px;text-align:center;margin-bottom:16px;">
-          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/calendar-clock.svg" alt="" style="width:28px;height:28px;vertical-align:middle;filter:invert(42%) sepia(93%) saturate(1352%) hue-rotate(207deg) brightness(99%) contrast(97%);">
-        </div>
         <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous d&eacute;plac&eacute;</h2>
         <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
           Votre cr&eacute;neau a &eacute;t&eacute; modifi&eacute; avec succ&egrave;s.
         </p>
       </div>
 
-      <!-- Ancien cr&eacute;neau (barr&eacute;) -->
-      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:12px;opacity:0.6;">
-        <div style="height:2px;background:#DC2626;"></div>
-        <div style="padding:16px 20px;display:flex;">
+      <!-- Ancien cr&eacute;neau -->
+      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:16px;opacity:0.6;">
+        <div style="padding:16px 20px;">
           <table style="width:100%;border-collapse:collapse;">
             <tr>
               <td style="padding:4px 0;color:${TEXT_MUTED};font-size:11px;text-transform:uppercase;letter-spacing:1.5px;">Ancien cr&eacute;neau</td>
@@ -616,56 +578,43 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
         </div>
       </div>
 
-      <!-- Arrow down -->
-      <div style="text-align:center;margin:4px 0;">
-        <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/arrow-down.svg" alt="" style="width:20px;height:20px;opacity:0.3;filter:invert(1);">
-      </div>
-
       <!-- Nouveau cr&eacute;neau -->
-      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;margin-top:4px;">
-        <div style="height:3px;background:linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT}, ${GOLD});"></div>
+      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
+        <div style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});"></div>
         <div style="padding:24px;">
-          <p style="margin:0 0 16px;color:${GOLD};font-size:11px;text-transform:uppercase;letter-spacing:2px;font-weight:600;">Nouveau cr&eacute;neau</p>
+          <p style="margin:0 0 16px;color:${ACCENT};font-size:11px;text-transform:uppercase;letter-spacing:2px;font-weight:600;">Nouveau cr&eacute;neau</p>
 
-          <!-- Time highlight -->
           <div style="text-align:center;margin-bottom:20px;padding:16px;background:${DARK_BG};border:1px solid ${CARD_BORDER};border-radius:12px;">
-            <p style="margin:0;color:${GOLD_LIGHT};font-size:32px;font-weight:800;letter-spacing:1px;">${newTimeFormatted}</p>
+            <p style="margin:0;color:${ACCENT};font-size:32px;font-weight:800;letter-spacing:1px;">${newTimeFormatted}</p>
             <p style="margin:4px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${newDateFormatted}</p>
           </div>
 
           <table style="width:100%;border-collapse:collapse;">
             <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">
-                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/scissors.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Prestation
-              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
               <td style="padding:10px 0;color:${TEXT_PRIMARY};font-size:15px;font-weight:600;text-align:right;">${service_name}</td>
             </tr>
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
             <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
-                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/user.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Barbier
-              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
               <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:14px;text-align:right;">${new_barber_name || barber_name}</td>
             </tr>
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
             <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">
-                <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/map-pin.svg" alt="" style="width:14px;height:14px;vertical-align:middle;margin-right:6px;opacity:0.5;filter:invert(1);">Adresse
-              </td>
+              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
               <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;">${escapeHtml(config.salon.address)}</td>
             </tr>
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
             <tr>
               <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
-              <td style="padding:12px 0 4px;color:${GOLD_LIGHT};font-size:22px;font-weight:800;text-align:right;">${priceFormatted}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
+              <td style="padding:12px 0 4px;color:${ACCENT};font-size:22px;font-weight:800;text-align:right;">${priceFormatted}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
             </tr>
           </table>
         </div>
       </div>
 
-      <!-- CTA -->
       ${manageUrl ? `<div style="text-align:center;margin-bottom:20px;">
-        <a href="${manageUrl}" style="display:inline-block;background:${GOLD};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+        <a href="${manageUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
           G&eacute;rer mon rendez-vous
         </a>
       </div>
@@ -694,45 +643,28 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
   first_name = escapeHtml(first_name);
 
   const html = emailShell(`
-      <!-- Lock icon -->
       <div style="text-align:center;margin-bottom:32px;">
-        <div style="display:inline-block;border:2px solid ${GOLD};border-radius:50%;width:56px;height:56px;line-height:52px;text-align:center;margin-bottom:16px;">
-          <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/lock-keyhole.svg" alt="" style="width:28px;height:28px;vertical-align:middle;filter:invert(62%) sepia(98%) saturate(375%) hue-rotate(11deg) brightness(97%) contrast(89%);">
-        </div>
         <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">R&eacute;initialiser votre mot de passe</h2>
       </div>
 
-      <!-- Card -->
       <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
-        <div style="height:3px;background:linear-gradient(90deg, ${GOLD}, ${GOLD_LIGHT}, ${GOLD});"></div>
+        <div style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});"></div>
         <div style="padding:28px 24px;">
           <p style="margin:0 0 24px;color:${TEXT_SECONDARY};font-size:14px;line-height:1.7;">
             Bonjour${first_name ? ` ${first_name}` : ''},<br><br>
             Vous avez demand&eacute; la r&eacute;initialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.
           </p>
           <div style="text-align:center;">
-            <a href="${resetUrl}" style="display:inline-block;background:${GOLD};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+            <a href="${resetUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
               Nouveau mot de passe
             </a>
           </div>
         </div>
       </div>
 
-      <!-- Security notice -->
-      <div style="text-align:center;padding:16px;background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:12px;">
-        <table style="margin:0 auto;border-collapse:collapse;">
-          <tr>
-            <td style="padding-right:10px;vertical-align:middle;">
-              <img src="https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/shield-check.svg" alt="" style="width:16px;height:16px;opacity:0.4;filter:invert(1);">
-            </td>
-            <td style="vertical-align:middle;">
-              <p style="margin:0;color:${TEXT_MUTED};font-size:11px;line-height:1.6;">
-                Ce lien expire dans 1 heure.<br>
-                Si vous n'avez pas fait cette demande, ignorez cet email.
-              </p>
-            </td>
-          </tr>
-        </table>
+      <div style="text-align:center;color:${TEXT_MUTED};font-size:11px;line-height:1.6;">
+        <p style="margin:0 0 4px;">Ce lien expire dans 1 heure.</p>
+        <p style="margin:0;">Si vous n'avez pas fait cette demande, ignorez cet email.</p>
       </div>`, { showHero: false });
 
   await brevoEmail(email, 'Réinitialisation de votre mot de passe BarberClub', html);
