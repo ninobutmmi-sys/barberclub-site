@@ -489,11 +489,10 @@ async function cancelBooking(bookingId, cancelToken) {
   try {
     await notification.sendCancellationEmail(cancelEmailData);
   } catch (err) {
-    logger.error('Cancellation email failed, retrying in 3s...', { bookingId, error: err.message });
-    setTimeout(async () => {
-      try { await notification.sendCancellationEmail(cancelEmailData); }
-      catch (e) { logger.error('Cancellation email retry failed', { bookingId, error: e.message }); }
-    }, 3000);
+    logger.error('Cancellation email failed, retrying once...', { bookingId, error: err.message });
+    notification.sendCancellationEmail(cancelEmailData).catch(
+      (e) => logger.error('Cancellation email retry failed', { bookingId, error: e.message })
+    );
   }
 
   // Check waitlist — notify clients waiting for this barber/date
@@ -741,11 +740,10 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
   try {
     await notification.sendRescheduleEmail(rescheduleEmailData);
   } catch (err) {
-    logger.error('Reschedule email failed, retrying in 3s...', { bookingId, error: err.message });
-    setTimeout(async () => {
-      try { await notification.sendRescheduleEmail(rescheduleEmailData); }
-      catch (e) { logger.error('Reschedule email retry failed', { bookingId, error: e.message }); }
-    }, 3000);
+    logger.error('Reschedule email failed, retrying once...', { bookingId, error: err.message });
+    notification.sendRescheduleEmail(rescheduleEmailData).catch(
+      (e) => logger.error('Reschedule email retry failed', { bookingId, error: e.message })
+    );
   }
 
   return {

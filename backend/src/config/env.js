@@ -14,6 +14,19 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
+// Warn about critical optional vars in production
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.BREVO_API_KEY) {
+    console.error('WARNING: BREVO_API_KEY is not set — all emails and SMS will silently fail!');
+  }
+  if (!process.env.SITE_URL) {
+    console.error('WARNING: SITE_URL is not set — email links will point to localhost!');
+  }
+  if (!process.env.API_URL) {
+    console.error('WARNING: API_URL is not set — SMS links will point to localhost!');
+  }
+}
+
 module.exports = {
   port: parseInt(process.env.PORT, 10) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',

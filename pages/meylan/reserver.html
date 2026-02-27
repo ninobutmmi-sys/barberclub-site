@@ -2808,7 +2808,7 @@
         'use strict';
 
         // ---- CONFIG ----
-        const API_PROD = 'https://fortunate-benevolence-production-7df2.up.railway.app/api';
+        const API_PROD = 'https://api.barberclub-grenoble.fr/api';
         const API_DEV = 'http://localhost:3000/api';
         const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? API_DEV
@@ -3048,7 +3048,11 @@
                 state.barbers = await api('/barbers');
                 renderBarbers();
             } catch (e) {
-                toast('Impossible de charger les barbers');
+                $('#barberGrid').innerHTML = `
+                    <div style="grid-column:1/-1;text-align:center;padding:24px;">
+                        <p style="font-size:14px;margin-bottom:12px;color:rgba(255,255,255,0.6);">Impossible de charger les barbers</p>
+                        <button onclick="loadBarbers()" style="padding:10px 20px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:10px;font-family:Orbitron,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Réessayer</button>
+                    </div>`;
             }
         }
 
@@ -3135,7 +3139,11 @@
                 state.services = await api('/services' + query);
                 renderServices();
             } catch (e) {
-                toast('Impossible de charger les prestations');
+                $('#serviceList').innerHTML = `
+                    <div style="text-align:center;padding:24px;">
+                        <p style="font-size:14px;margin-bottom:12px;color:rgba(255,255,255,0.6);">Impossible de charger les prestations</p>
+                        <button onclick="loadServices()" style="padding:10px 20px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:10px;font-family:Orbitron,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Réessayer</button>
+                    </div>`;
             }
         }
 
@@ -3279,7 +3287,11 @@
                 state.slots = await api('/availability' + params + barberParam);
                 renderSlots();
             } catch (e) {
-                slotsSection.innerHTML = '<p class="slots-empty">Erreur lors du chargement des créneaux</p>';
+                slotsSection.innerHTML = `
+                    <div style="text-align:center;padding:24px;">
+                        <p class="slots-empty" style="margin-bottom:12px;">Erreur lors du chargement des créneaux</p>
+                        <button onclick="loadSlots()" style="padding:10px 20px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:10px;font-family:Orbitron,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Réessayer</button>
+                    </div>`;
             }
         }
 
@@ -3577,7 +3589,6 @@
             }
 
             actionBtn.classList.add('loading');
-            actionBtn.disabled = true;
 
             try {
                 state.booking = await apiPost('/bookings', body, isConnected);
@@ -3605,7 +3616,6 @@
                     toast(e.message || 'Erreur lors de la réservation');
                 }
                 actionBtn.classList.remove('loading');
-                actionBtn.disabled = false;
             }
         }
 
@@ -3841,31 +3851,40 @@
         });
 
         // ---- ACTION BUTTON ----
+        let actionBusy = false;
         actionBtn.addEventListener('click', async () => {
-            if (actionBtn.disabled) return;
+            if (actionBtn.disabled || actionBusy) return;
+            actionBusy = true;
+            actionBtn.disabled = true;
 
             const n = state.step;
 
-            if (n === 1) {
-                await loadServices();
-                goToStep(2);
-            } else if (n === 2) {
-                // Initialize calendar at current month
-                const now = new Date();
-                state.calendarMonth = now.getMonth();
-                state.calendarYear = now.getFullYear();
-                state.selectedDate = null;
-                state.selectedSlot = null;
-                renderCalendar();
-                $('#slotsSection').innerHTML = '<p class="slots-empty">Sélectionnez une date pour voir les créneaux disponibles</p>';
-                goToStep(3);
-                // Load quick suggestions in background (non-blocking)
-                loadQuickSuggestions();
-            } else if (n === 3) {
-                renderSummary();
-                goToStep(4);
-            } else if (n === 4 && (state.authMode === 'guest' || state.authMode === 'connected')) {
-                await submitBooking();
+            try {
+                if (n === 1) {
+                    await loadServices();
+                    goToStep(2);
+                } else if (n === 2) {
+                    // Initialize calendar at current month
+                    const now = new Date();
+                    state.calendarMonth = now.getMonth();
+                    state.calendarYear = now.getFullYear();
+                    state.selectedDate = null;
+                    state.selectedSlot = null;
+                    renderCalendar();
+                    $('#slotsSection').innerHTML = '<p class="slots-empty">Sélectionnez une date pour voir les créneaux disponibles</p>';
+                    goToStep(3);
+                    // Load quick suggestions in background (non-blocking)
+                    loadQuickSuggestions();
+                } else if (n === 3) {
+                    renderSummary();
+                    goToStep(4);
+                } else if (n === 4 && (state.authMode === 'guest' || state.authMode === 'connected')) {
+                    await submitBooking();
+                }
+            } finally {
+                actionBusy = false;
+                // Re-enable based on current step state (submitBooking manages its own disable)
+                if (state.step !== 5) actionBtn.disabled = false;
             }
         });
 

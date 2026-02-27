@@ -17,6 +17,8 @@ const pool = new Pool({
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
+  statement_timeout: 30000,   // Kill queries running longer than 30s
+  query_timeout: 30000,       // Client-side timeout for query execution
 });
 
 // Log connection events

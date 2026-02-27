@@ -51,8 +51,28 @@ const cronStatus = {
   automationTriggers:    { label: 'Triggers auto',      schedule: '*/10 * * * *', lastRun: null, status: 'idle', error: null },
 };
 
+// Advisory lock IDs — unique per cron to prevent concurrent execution
+const CRON_LOCK_IDS = {
+  processQueue: 100001,
+  queueReminders: 100002,
+  queueReviewRequests: 100003,
+  cleanupNotifications: 100004,
+  cleanupExpiredTokens: 100005,
+  automationTriggers: 100006,
+};
+
 function trackCron(key, fn) {
   return async () => {
+    const db = require('./config/database');
+    const lockId = CRON_LOCK_IDS[key];
+
+    // Try to acquire advisory lock (non-blocking) — skip if another instance is running
+    const lockResult = await db.query('SELECT pg_try_advisory_lock($1) AS acquired', [lockId]);
+    if (!lockResult.rows[0].acquired) {
+      logger.debug(`Cron ${key} skipped — already running on another instance`);
+      return;
+    }
+
     cronStatus[key].status = 'running';
     cronStatus[key].error = null;
     try {
@@ -64,6 +84,8 @@ function trackCron(key, fn) {
       cronStatus[key].error = err.message;
       cronStatus[key].lastRun = new Date().toISOString();
       logger.error(`Cron ${key} failed`, { error: err.message });
+    } finally {
+      await db.query('SELECT pg_advisory_unlock($1)', [lockId]);
     }
   };
 }

@@ -112,45 +112,59 @@ async function sendNotification(notification) {
 // ============================================
 
 async function brevoEmail(to, subject, htmlContent) {
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'api-key': config.brevo.apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      sender: { email: config.brevo.senderEmail, name: config.brevo.senderName },
-      to: [{ email: to }],
-      subject,
-      htmlContent,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': config.brevo.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { email: config.brevo.senderEmail, name: config.brevo.senderName },
+        to: [{ email: to }],
+        subject,
+        htmlContent,
+      }),
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Brevo email API error ${response.status}: ${errorBody}`);
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Brevo email API error ${response.status}: ${errorBody}`);
+    }
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
 async function brevoSMS(phone, content) {
   const recipient = formatPhoneInternational(phone);
-  const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
-    method: 'POST',
-    headers: {
-      'api-key': config.brevo.apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      sender: config.brevo.smsSender,
-      recipient,
-      content,
-      type: 'transactional',
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
+      method: 'POST',
+      headers: {
+        'api-key': config.brevo.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: config.brevo.smsSender,
+        recipient,
+        content,
+        type: 'transactional',
+      }),
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
+    }
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -258,8 +272,8 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// Base URL for hosted assets (Cloudflare Pages)
-const ASSETS_BASE = 'https://barberclub-site.pages.dev';
+// Base URL for hosted assets (production domain)
+const ASSETS_BASE = config.siteUrl || 'https://barberclub-grenoble.fr';
 const LOGO_URL = `${ASSETS_BASE}/assets/images/common/logo-blanc.png`;
 const CROWN_URL = `${ASSETS_BASE}/assets/images/common/couronne.png`;
 const HERO_URL = `${ASSETS_BASE}/assets/images/salons/meylan/salon-meylan-interieur.jpg`;

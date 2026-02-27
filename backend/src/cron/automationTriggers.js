@@ -19,22 +19,29 @@ async function brevoSMS(phone, content) {
     return;
   }
   const recipient = formatPhoneInternational(phone);
-  const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
-    method: 'POST',
-    headers: {
-      'api-key': config.brevo.apiKey,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      sender: config.brevo.smsSender,
-      recipient,
-      content,
-      type: 'transactional',
-    }),
-  });
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
+      method: 'POST',
+      headers: {
+        'api-key': config.brevo.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: config.brevo.smsSender,
+        recipient,
+        content,
+        type: 'transactional',
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
+    }
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

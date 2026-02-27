@@ -129,9 +129,13 @@ router.get('/brevo-status', async (req, res) => {
 
   if (configured) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
       const response = await fetch('https://api.brevo.com/v3/account', {
         headers: { 'api-key': config.brevo.apiKey },
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       if (response.ok) {
         const account = await response.json();
         statusData.accountEmail = account.email;

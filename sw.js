@@ -1,5 +1,7 @@
 // BarberClub Service Worker
-const CACHE_NAME = 'barberclub-v1';
+// Bump version on each deploy to invalidate stale cache
+const CACHE_VERSION = 2;
+const CACHE_NAME = `barberclub-v${CACHE_VERSION}`;
 const OFFLINE_URL = 'index.html';
 
 // Assets to cache on install
@@ -18,25 +20,26 @@ const PRECACHE_ASSETS = [
     '/config/manifest.json'
 ];
 
+// Never cache API calls or booking pages (always need fresh data)
+const NEVER_CACHE = ['/api/', '/pages/meylan/reserver.html', '/pages/meylan/mon-rdv.html'];
+
 // Install event - precache core assets
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => {
-                return cache.addAll(PRECACHE_ASSETS);
-            })
+            .then(cache => cache.addAll(PRECACHE_ASSETS))
             .then(() => self.skipWaiting())
     );
 });
 
-// Activate event - clean old caches
+// Activate event - delete ALL old caches
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames
-                    .filter(cacheName => cacheName !== CACHE_NAME)
-                    .map(cacheName => caches.delete(cacheName))
+                    .filter(name => name !== CACHE_NAME)
+                    .map(name => caches.delete(name))
             );
         }).then(() => self.clients.claim())
     );
@@ -49,6 +52,12 @@ self.addEventListener('fetch', event => {
 
     // Skip external requests
     if (!event.request.url.startsWith(self.location.origin)) return;
+
+    // Never cache API calls or dynamic booking pages
+    const url = new URL(event.request.url);
+    if (NEVER_CACHE.some(path => url.pathname.startsWith(path))) {
+        return; // Let browser handle normally (no SW interception)
+    }
 
     event.respondWith(
         fetch(event.request)

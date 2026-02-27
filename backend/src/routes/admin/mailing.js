@@ -44,6 +44,8 @@ router.post(
 
         const html = buildCampaignHTML(personalBody);
 
+        const controller = new AbortController();
+        const mailTimeout = setTimeout(() => controller.abort(), 15000);
         const response = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
           headers: {
@@ -56,7 +58,9 @@ router.post(
             subject: personalSubject,
             htmlContent: html,
           }),
+          signal: controller.signal,
         });
+        clearTimeout(mailTimeout);
 
         if (response.ok) {
           sent++;
