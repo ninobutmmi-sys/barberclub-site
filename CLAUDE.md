@@ -26,7 +26,7 @@
 |------------|---------|------|
 | express | ^4.21.2 | Framework web |
 | pg | ^8.13.1 | Client PostgreSQL |
-| bcrypt | ^5.1.1 | Hash mots de passe (12 rounds) |
+| bcrypt | ^6.0.0 | Hash mots de passe (12 rounds) |
 | jsonwebtoken | ^9.0.2 | Auth JWT |
 | node-cron | ^3.0.3 | Taches planifiees |
 | express-rate-limit | ^7.5.0 | Rate limiting |
@@ -76,6 +76,7 @@ BarberClub Site/
 │   │   ├── index.html             # Hub navigation salon
 │   │   ├── reserver.html          # Interface reservation 4 etapes (3900 lignes)
 │   │   ├── mon-rdv.html           # Mes reservations client (consulter/annuler)
+│   │   ├── mon-compte.html        # Espace client (profil, RDV, historique)
 │   │   ├── reset-password.html    # Reset mot de passe client
 │   │   ├── barbers.html           # Equipe (Lucas, Julien)
 │   │   ├── prestations.html       # Services & tarifs
@@ -109,7 +110,9 @@ BarberClub Site/
 │   ├── videos/
 │   │   ├── barbers/               # Videos presentation (6x MP4)
 │   │   └── Barbers-coupes/        # Portfolio coupes par barber
-│   └── js/booking-modal.js        # Modal politique annulation
+│   └── js/
+│       ├── booking-modal.js       # Modal politique annulation
+│       └── cookie-consent.js      # Bandeau RGPD cookies (toutes pages)
 │
 ├── config/
 │   ├── manifest.json              # PWA manifest (standalone, portrait)
@@ -125,7 +128,9 @@ BarberClub Site/
 │   ├── database/
 │   │   ├── schema.sql             # Schema complet
 │   │   ├── seed.sql               # Donnees initiales
-│   │   └── migrations/            # 003 → 014 (12 migrations)
+│   │   └── migrations/            # 003 → 015 (13 migrations)
+│   ├── scripts/
+│   │   └── backup-db.sh           # Backup BDD (pg_dump + gzip, retention 30j)
 │   └── src/
 │       ├── index.js               # Entry (routes, CORS, helmet, cron)
 │       ├── config/
@@ -145,7 +150,7 @@ BarberClub Site/
 │       │   ├── availability.js    # Calcul creneaux (30min public, 5min admin)
 │       │   ├── booking.js         # Creation atomique, annulation, recurrence
 │       │   └── notification.js    # Brevo email+SMS, queue+retry, templates HTML
-│       ├── cron/                   # 6 jobs planifies (prod only)
+│       ├── cron/                   # 5 jobs planifies (prod only)
 │       └── utils/                  # ApiError, logger Winston, .ics generator
 │
 └── dashboard/
@@ -217,16 +222,21 @@ BarberClub Site/
 ### Templates email (HTML inline, design monochrome dark)
 | Template | Declencheur | Contenu |
 |----------|-------------|---------|
-| Confirmation | Creation booking | Recap + lien annulation + .ics |
-| Review Google | Cron 10h (J+1 completed) | Merci + bouton avis |
-| Annulation | Client ou admin annule | Confirmation annulation |
+| Confirmation | Creation booking | Recap + lien Google Maps + lien gerer RDV |
+| Annulation | Client ou admin annule | Confirmation annulation + bouton reprendre RDV |
+| Reschedule | Admin deplace RDV | Ancien/nouveau creneau + lien gerer |
+| Reset password | Client forgot-password | Lien reset (expire 1h) |
+| Campagne marketing | Admin mailing | Contenu libre + footer "STOP" desinscription |
+
+**PAS d'email avis Google** — l'avis passe uniquement par SMS.
 
 ### SMS
 | Type | Declencheur | Contenu |
 |------|-------------|---------|
 | Rappel J-1 | Cron 18h la veille | `BarberClub - Rappel RDV le...` |
-| Review Google | Automation 60min post-coupe | `Merci ! Laisse un avis...` (1x par client a vie) |
+| Review Google | Automation 60min post-coupe | `Merci ! Laisse un avis...` (1x par client a vie, SMS uniquement) |
 | Reactivation | Automation inactif 45j+ | `Ca fait un moment ! Ton barber t'attend...` |
+| Waitlist | Automation place liberee | `Une place s'est liberee...` |
 
 ### Design tokens emails
 ```
@@ -244,7 +254,6 @@ Assets heberges : `https://barberclub-site.pages.dev/assets/images/`
 | */2 min | processQueue | Retry notifications (backoff 5→15→60 min, max 3) |
 | */10 min | automationTriggers | Auto-complete bookings passes + review SMS + reactivation + waitlist |
 | 18h daily | queueReminders | SMS rappels pour demain |
-| 10h daily | queueReviewRequests | Email avis Google (J+1 completed) |
 | 03h00 | cleanup notifications | Supprime notifs >30j |
 | 03h30 | cleanup tokens | Supprime refresh tokens expires |
 
@@ -269,12 +278,11 @@ Monitoring via `GET /api/admin/system/status` (in-memory cronStatus)
 
 ## API — URLs de production
 
-| Composant | URL |
-|-----------|-----|
-| Backend Railway | `https://fortunate-benevolence-production-7df2.up.railway.app/api` |
-| Site Cloudflare | `https://barberclub-site.pages.dev` |
-| Dashboard Cloudflare | (a deployer sur `gestion.barberclub-grenoble.fr`) |
-| Domaine final | `barberclub-grenoble.fr` / `api.barberclub-grenoble.fr` |
+| Composant | URL actuelle | URL finale (apres DNS switch) |
+|-----------|-------------|-------------------------------|
+| Backend Railway | `https://fortunate-benevolence-production-7df2.up.railway.app/api` | `https://api.barberclub-grenoble.fr/api` |
+| Site Cloudflare | `https://barberclub-site.pages.dev` | `https://barberclub-grenoble.fr` |
+| Dashboard Cloudflare | `https://barberclub-dashboard-admin.pages.dev` | `https://gestion.barberclub-grenoble.fr` |
 
 Detection auto dans le code : `window.location.hostname === 'localhost'` → dev / sinon → prod
 
@@ -342,36 +350,43 @@ Detection auto dans le code : `window.location.hostname === 'localhost'` → dev
 
 | Service | Hebergeur | Cout | Status |
 |---------|-----------|------|--------|
-| Backend + BDD | Railway Hobby | ~5euros/mois | Deploye |
+| Backend + BDD | Railway Hobby | ~5euros/mois | Deploye (`fortunate-benevolence-production-7df2.up.railway.app`) |
 | Site vitrine | Cloudflare Pages | Gratuit | Deploye (`barberclub-site.pages.dev`) |
-| Dashboard | Cloudflare Pages | Gratuit | A deployer |
-| Email | Brevo | Gratuit (300/j) | Configure |
-| SMS | Brevo | ~0.045euros/SMS | Configure |
-| Domaine | OVH | Deja achete | `barberclub-grenoble.fr` |
+| Dashboard | Cloudflare Pages | Gratuit | Deploye (`barberclub-dashboard-admin.pages.dev`) |
+| Email | Brevo | Gratuit (300/j) | Teste OK |
+| SMS | Brevo | ~0.045euros/SMS | Configure (a tester) |
+| Domaine | OVH | Deja achete | `barberclub-grenoble.fr` (pointe encore vers Framer) |
 
 ### Wrangler / Cloudflare Pages
 - `.wrangler/` dans le projet pour le cache CLI Cloudflare
 - Build site : static files (pas de build step)
 - Build dashboard : `npm run build` → `dist/`
 
-### Variables d'env production
+### Variables d'env production (actuellement sur Railway)
 ```
 PORT=3000
 NODE_ENV=production
 DATABASE_URL=postgresql://...@railway/postgres
 JWT_SECRET=<256-bit>
 JWT_REFRESH_SECRET=<256-bit>
-CORS_ORIGINS=https://barberclub-grenoble.fr,https://gestion.barberclub-grenoble.fr,https://barberclub-site.pages.dev
+CORS_ORIGINS=https://barberclub-site.pages.dev,https://barberclub-dashboard-admin.pages.dev
 BREVO_API_KEY=xkeysib-...
 BREVO_SENDER_EMAIL=noreply@barberclub-grenoble.fr
 BREVO_SENDER_NAME=BarberClub Meylan
 BREVO_SMS_SENDER=BARBERCLUB
 GOOGLE_REVIEW_URL=https://g.page/r/...
-SITE_URL=https://barberclub-grenoble.fr
-API_URL=https://api.barberclub-grenoble.fr
+SITE_URL=https://barberclub-site.pages.dev
+API_URL=https://fortunate-benevolence-production-7df2.up.railway.app
 SALON_NAME=BarberClub Meylan
 SALON_ADDRESS=26 Av. du Gresivaudan, 38700 Corenc
 SALON_PHONE=+33xxxxxxxxx
+```
+
+### Variables a changer lors du switch DNS
+```
+CORS_ORIGINS → ajouter https://barberclub-grenoble.fr,https://gestion.barberclub-grenoble.fr
+SITE_URL → https://barberclub-grenoble.fr
+API_URL → https://api.barberclub-grenoble.fr
 ```
 
 ### DNS prevu
@@ -403,20 +418,22 @@ SALON_PHONE=+33xxxxxxxxx
 
 ## Roadmap deploiement
 
-### Phase 1 — Test Brevo (en cours)
-- [ ] Recharger compte Brevo (100 SMS/emails)
-- [ ] Tester tous les types de notifications (confirmation, rappel, review, annulation, relance)
-- [ ] Tester retry queue
+### Phase 1 — Test Brevo
+- [x] Email confirmation RDV — teste OK
+- [x] Email reset password — teste OK
+- [ ] Tester SMS rappel J-1 (cron 18h, necessite booking pour demain)
+- [ ] Tester SMS review Google (automation trigger, 60min post-coupe)
+- [ ] Tester retry queue (simuler echec notification)
 
-### Phase 2 — Finalisation Railway
-- [ ] Configurer DNS SPF/DKIM pour barberclub-grenoble.fr
-- [ ] Configurer `API_URL` propre (`api.barberclub-grenoble.fr`)
-
-### Phase 3 — Deploy Cloudflare Pages
-- [ ] Deploy dashboard sur Cloudflare Pages
-- [ ] Configurer Cloudflare Access (whitelist emails) si besoin
-- [ ] Bascule DNS `barberclub-grenoble.fr` + `gestion.barberclub-grenoble.fr`
-- [ ] Mettre a jour CORS_ORIGINS
+### Phase 2 — Switch DNS (barberclub-grenoble.fr)
+- [ ] Configurer DNS SPF/DKIM pour barberclub-grenoble.fr (Brevo sender auth)
+- [ ] OVH : A/CNAME `@` → Cloudflare Pages (site)
+- [ ] OVH : CNAME `gestion` → Cloudflare Pages (dashboard)
+- [ ] OVH : CNAME `api` → Railway
+- [ ] Cloudflare Pages : custom domain `barberclub-grenoble.fr` sur site
+- [ ] Cloudflare Pages : custom domain `gestion.barberclub-grenoble.fr` sur dashboard
+- [ ] Railway : mettre a jour SITE_URL, API_URL, CORS_ORIGINS (voir section variables)
+- [ ] Tester tous les flows (reservation, emails, dashboard) sur domaines finaux
 
 ---
 
