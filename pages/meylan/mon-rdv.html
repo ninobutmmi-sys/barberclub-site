@@ -1367,6 +1367,22 @@
                     $('#actionsNote').textContent = 'Ce RDV a déjà été décalé. Vous pouvez toujours l\'annuler jusqu\'à 12h avant.';
                 }
 
+                // Check if less than 12h before RDV — disable cancel/reschedule
+                const rdvDateTime = new Date(booking.date + 'T' + booking.start_time.slice(0, 5) + ':00');
+                const hoursUntil = (rdvDateTime - new Date()) / (1000 * 60 * 60);
+
+                if (hoursUntil < 12) {
+                    $('#cancelBtn').disabled = true;
+                    $('#cancelBtn').style.opacity = '0.4';
+                    $('#cancelBtn').style.cursor = 'not-allowed';
+                    if (!booking.rescheduled) {
+                        $('#rescheduleBtn').disabled = true;
+                        $('#rescheduleBtn').style.opacity = '0.4';
+                        $('#rescheduleBtn').style.cursor = 'not-allowed';
+                    }
+                    $('#actionsNote').innerHTML = '<span style="color:#ef4444;">Annulation/modification impossible moins de 12h avant le RDV.</span>';
+                }
+
                 show('stateBooking');
 
                 // Fetch barber off days for calendar
@@ -1663,6 +1679,7 @@
         loadBooking();
     })();
     </script>
+<script src="../../assets/js/cookie-consent.js" defer></script>
 </body>
 
 </html>

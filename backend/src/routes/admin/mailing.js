@@ -124,6 +124,7 @@ function buildCampaignHTML(bodyText) {
 
     <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08);">
       <p>BarberClub Meylan — 26 Av. du Grésivaudan, 38700 Corenc</p>
+      <p style="font-size:10px;opacity:0.6;margin-top:8px;">Si vous ne souhaitez plus recevoir ces emails, répondez « STOP » à cet email.</p>
     </div>
   </div>
 </body>

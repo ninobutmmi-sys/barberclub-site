@@ -99,9 +99,6 @@ async function sendNotification(notification) {
     case 'reminder_sms':
       await sendReminderSMS(notification);
       break;
-    case 'review_email':
-      await sendReviewEmail(notification);
-      break;
     default:
       throw new Error(`Unknown notification type: ${notification.type}`);
   }
@@ -235,28 +232,6 @@ async function sendReminderSMS(data) {
   );
 }
 
-/**
- * Send Google review request email via Brevo
- */
-async function sendReviewEmail(data) {
-  if (!config.brevo.apiKey || !data.email) {
-    logger.warn('Brevo not configured or no email, skipping review email');
-    return;
-  }
-
-  const html = buildReviewEmailHTML({
-    firstName: data.first_name,
-    barberName: data.barber_name,
-    reviewUrl: config.salon.googleReviewUrl,
-  });
-
-  await brevoEmail(data.email, 'Merci pour votre visite chez BarberClub !', html);
-
-  await db.query(
-    'UPDATE bookings SET review_email_sent = true WHERE id = $1',
-    [data.booking_id]
-  );
-}
 
 // ============================================
 // Email HTML templates
@@ -288,7 +263,7 @@ const TEXT_PRIMARY = '#FAFAF9';
 const TEXT_SECONDARY = '#A8A29E';
 const TEXT_MUTED = '#78716C';
 
-function emailShell(content, { showHero = true } = {}) {
+function emailShell(content, { showHero = true, marketing = false } = {}) {
   return `
 <!DOCTYPE html>
 <html>
@@ -335,6 +310,7 @@ function emailShell(content, { showHero = true } = {}) {
       <img src="${CROWN_URL}" alt="" style="width:16px;height:auto;opacity:0.3;margin-bottom:10px;">
       <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;letter-spacing:0.3px;">BarberClub Meylan &mdash; 26 Av. du Gr&eacute;sivaudan, 38700 Corenc</p>
       <p style="margin:0;color:${TEXT_MUTED};font-size:10px;opacity:0.6;">Paiement sur place uniquement</p>
+      ${marketing ? `<p style="margin:8px 0 0;color:${TEXT_MUTED};font-size:10px;opacity:0.5;">Si vous ne souhaitez plus recevoir ces emails, r&eacute;pondez &laquo;&nbsp;STOP&nbsp;&raquo; &agrave; cet email.</p>` : ''}
     </div>
   </div>
 </body>
@@ -382,7 +358,7 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
             <tr>
               <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
-              <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;">${address}</td>
+              <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;"><a href="https://maps.google.com/?q=26+Av+du+Gr%C3%A9sivaudan+38700+Corenc" style="color:${TEXT_SECONDARY};text-decoration:underline;">${address}</a></td>
             </tr>
             <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
             <tr>
@@ -401,41 +377,6 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
       </div>
       <p style="text-align:center;color:${TEXT_MUTED};font-size:11px;margin:0;">
         Modification ou annulation gratuite jusqu'&agrave; 12h avant
-      </p>`;
-
-  return emailShell(content);
-}
-
-function buildReviewEmailHTML({ firstName, barberName, reviewUrl }) {
-  firstName = escapeHtml(firstName);
-  barberName = escapeHtml(barberName);
-
-  const content = `
-      <div style="text-align:center;margin-bottom:32px;">
-        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">
-          Merci pour votre visite${firstName ? `, ${firstName}` : ''}&nbsp;!
-        </h2>
-        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:10px 0 0;line-height:1.6;">
-          Nous esp&eacute;rons que votre passage avec <strong style="color:${TEXT_PRIMARY};">${barberName}</strong> vous a plu.
-        </p>
-      </div>
-
-      <!-- Review card -->
-      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
-        <div style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});"></div>
-        <div style="padding:28px 24px;text-align:center;">
-          <p style="color:${TEXT_SECONDARY};font-size:14px;margin:0 0 6px;line-height:1.6;">Votre avis compte &eacute;norm&eacute;ment pour nous</p>
-          <p style="color:${TEXT_MUTED};font-size:12px;margin:0 0 24px;line-height:1.6;">
-            Un petit mot sur Google aide d'autres clients &agrave; nous d&eacute;couvrir<br>et nous permet de continuer &agrave; nous am&eacute;liorer.
-          </p>
-          <a href="${reviewUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
-            Laisser un avis Google
-          </a>
-        </div>
-      </div>
-
-      <p style="text-align:center;color:${TEXT_MUTED};font-size:11px;margin:0;opacity:0.6;">
-        Cet email est envoy&eacute; une seule fois apr&egrave;s votre premi&egrave;re visite.
       </p>`;
 
   return emailShell(content);

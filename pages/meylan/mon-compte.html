@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Mon compte BarberClub — profil, rendez-vous et historique">
+    <meta name="theme-color" content="#000000">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Mon Compte | BarberClub</title>
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ======== HEADER ======== */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .header-left {
+            width: 40px;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .back-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .header-center {
+            text-align: center;
+            flex: 1;
+        }
+
+        .header-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .header-title a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .header-subtitle {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-top: 2px;
+        }
+
+        .header-right {
+            width: 40px;
+        }
+
+        /* ======== CONTAINER ======== */
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px 40px;
+            max-width: 560px;
+            margin: 0 auto;
+            width: 100%;
+            gap: 24px;
+        }
+
+        /* ======== SPINNER / LOADING ======== */
+        .loading-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 16px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* ======== SECTION TITLES ======== */
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 12px;
+        }
+
+        /* ======== PROFILE CARD ======== */
+        .profile-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .profile-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .profile-name-group {
+            flex: 1;
+            margin-left: 14px;
+        }
+
+        .profile-name {
+            font-size: 17px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .profile-member-since {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 3px;
+        }
+
+        .btn-edit-profile {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+        }
+
+        .btn-edit-profile:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .btn-edit-profile:active {
+            transform: scale(0.95);
+        }
+
+        .btn-edit-profile svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .profile-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .profile-row:last-child {
+            border-bottom: none;
+        }
+
+        .profile-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .profile-value {
+            font-size: 14px;
+            font-weight: 500;
+            text-align: right;
+        }
+
+        /* ======== PROFILE EDIT MODE ======== */
+        .profile-edit { display: none; }
+        .profile-edit.active { display: block; }
+        .profile-view.hidden { display: none; }
+
+        .edit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .form-input:focus {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .form-input.error {
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        .form-error {
+            font-size: 12px;
+            color: #ef4444;
+            display: none;
+        }
+
+        .form-error.visible {
+            display: block;
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .btn-save {
+            flex: 1;
+            padding: 14px;
+            background: #fff;
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-save:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
+
+        .btn-save:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-cancel-edit {
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-cancel-edit:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .save-feedback {
+            font-size: 13px;
+            text-align: center;
+            margin-top: 8px;
+            min-height: 20px;
+        }
+
+        .save-feedback.success { color: #22c55e; }
+        .save-feedback.error { color: #ef4444; }
+
+        /* ======== BOOKING CARDS ======== */
+        .bookings-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .booking-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .booking-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .booking-date {
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .booking-date-sub {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 2px;
+        }
+
+        .booking-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+        }
+
+        .booking-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .booking-status.confirmed {
+            background: rgba(34, 197, 94, 0.12);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .booking-status.completed {
+            background: rgba(59, 130, 246, 0.12);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .booking-status.cancelled {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .booking-status.no_show {
+            background: rgba(249, 115, 22, 0.12);
+            color: #f97316;
+            border: 1px solid rgba(249, 115, 22, 0.2);
+        }
+
+        .booking-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .booking-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .booking-detail-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .booking-detail-label svg {
+            width: 14px;
+            height: 14px;
+            opacity: 0.5;
+        }
+
+        .booking-detail-value {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .booking-action {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .btn-manage {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-manage:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn-manage svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* ======== EMPTY STATE ======== */
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .empty-state svg {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .btn-book {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: #fff;
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-book:active {
+            transform: scale(0.97);
+            opacity: 0.9;
+        }
+
+        /* ======== PAST BOOKINGS ======== */
+        .past-booking {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .past-booking:last-child {
+            border-bottom: none;
+        }
+
+        .past-booking-left {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .past-booking-date {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .past-booking-service {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .past-booking-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .past-booking-price {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* ======== LOGOUT ======== */
+        .logout-section {
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .btn-logout {
+            width: 100%;
+            padding: 16px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 14px;
+            color: #ef4444;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-logout:active {
+            transform: scale(0.97);
+            background: rgba(239, 68, 68, 0.18);
+        }
+
+        .btn-logout svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ======== TOAST ======== */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            padding: 14px 24px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+            z-index: 200;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* ======== ANIMATIONS ======== */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+
+        .fade-in-delay-1 { animation-delay: 0.05s; }
+        .fade-in-delay-2 { animation-delay: 0.1s; }
+        .fade-in-delay-3 { animation-delay: 0.15s; }
+
+        /* ======== RESPONSIVE ======== */
+        @media (max-width: 768px) {
+            .form-input {
+                font-size: 16px !important;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .container {
+                padding: 32px 24px 48px;
+            }
+
+            .booking-card {
+                padding: 24px;
+            }
+
+            .profile-card {
+                padding: 28px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-left">
+            <a href="./" class="back-btn" aria-label="Retour">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+            </a>
+        </div>
+        <div class="header-center">
+            <div class="header-title"><a href="./">BARBERCLUB</a></div>
+            <div class="header-subtitle">Mon Compte</div>
+        </div>
+        <div class="header-right"></div>
+    </header>
+
+    <!-- LOADING STATE -->
+    <div class="loading-state" id="loadingState">
+        <div class="spinner"></div>
+        <div class="loading-text">Chargement...</div>
+    </div>
+
+    <!-- MAIN CONTENT (hidden until loaded) -->
+    <main class="container" id="mainContent" style="display:none;">
+
+        <!-- PROFILE SECTION -->
+        <section class="fade-in">
+            <div class="section-title">Profil</div>
+            <div class="profile-card">
+                <!-- View Mode -->
+                <div class="profile-view" id="profileView">
+                    <div class="profile-header">
+                        <div class="profile-avatar" id="profileAvatar"></div>
+                        <div class="profile-name-group">
+                            <div class="profile-name" id="profileName"></div>
+                        </div>
+                        <button class="btn-edit-profile" id="btnEditProfile" aria-label="Modifier le profil">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                                <path d="m15 5 4 4"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="profile-info" id="profileInfo">
+                        <div class="profile-row">
+                            <span class="profile-label">Telephone</span>
+                            <span class="profile-value" id="profilePhone"></span>
+                        </div>
+                        <div class="profile-row">
+                            <span class="profile-label">Email</span>
+                            <span class="profile-value" id="profileEmail"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Mode -->
+                <div class="profile-edit" id="profileEdit">
+                    <div class="edit-form">
+                        <div class="form-group">
+                            <label class="form-label" for="editFirstName">Prenom</label>
+                            <input type="text" class="form-input" id="editFirstName" autocomplete="given-name" maxlength="50">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="editLastName">Nom</label>
+                            <input type="text" class="form-input" id="editLastName" autocomplete="family-name" maxlength="50">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="editPhone">Telephone</label>
+                            <input type="tel" class="form-input" id="editPhone" autocomplete="tel" maxlength="14" placeholder="06 12 34 56 78">
+                            <span class="form-error" id="phoneError">Format invalide (ex: 06 12 34 56 78)</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="editEmail">Email</label>
+                            <input type="email" class="form-input" id="editEmail" autocomplete="email" maxlength="100">
+                            <span class="form-error" id="emailError">Email invalide</span>
+                        </div>
+                        <div class="edit-actions">
+                            <button class="btn-save" id="btnSave">Enregistrer</button>
+                            <button class="btn-cancel-edit" id="btnCancelEdit">Annuler</button>
+                        </div>
+                        <div class="save-feedback" id="saveFeedback"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- UPCOMING BOOKINGS -->
+        <section class="fade-in fade-in-delay-1">
+            <div class="section-title">Prochains rendez-vous</div>
+            <div class="bookings-section" id="upcomingBookings"></div>
+        </section>
+
+        <!-- PAST BOOKINGS -->
+        <section class="fade-in fade-in-delay-2">
+            <div class="section-title">Historique</div>
+            <div class="profile-card" id="pastBookingsCard">
+                <div id="pastBookings"></div>
+            </div>
+        </section>
+
+        <!-- LOGOUT -->
+        <section class="fade-in fade-in-delay-3 logout-section">
+            <button class="btn-logout" id="btnLogout">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Deconnexion
+            </button>
+        </section>
+    </main>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ======== CONFIG ========
+        const API_DEV = 'http://localhost:3000/api';
+        const API_PROD = 'https://api.barberclub-grenoble.fr/api';
+        const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? API_DEV : API_PROD;
+
+        const PHONE_REGEX = /^(\+33|0)[1-9]\d{8}$/;
+        const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        // ======== XSS PROTECTION ========
+        function esc(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
+
+        // ======== AUTH ========
+        function getToken() {
+            return localStorage.getItem('bc_client_token');
+        }
+
+        function getRefreshToken() {
+            return localStorage.getItem('bc_client_refresh');
+        }
+
+        function setTokens(access, refresh) {
+            localStorage.setItem('bc_client_token', access);
+            if (refresh) localStorage.setItem('bc_client_refresh', refresh);
+        }
+
+        function clearAuth() {
+            localStorage.removeItem('bc_client_token');
+            localStorage.removeItem('bc_client_refresh');
+        }
+
+        function redirectToLogin() {
+            window.location.href = 'reserver.html';
+        }
+
+        // ======== FETCH WITH AUTH + REFRESH ========
+        async function authFetch(url, options = {}) {
+            const token = getToken();
+            if (!token) {
+                redirectToLogin();
+                return null;
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                ...(options.headers || {})
+            };
+
+            let res = await fetch(url, { ...options, headers });
+
+            // Try refresh on 401
+            if (res.status === 401) {
+                const refreshToken = getRefreshToken();
+                if (!refreshToken) {
+                    clearAuth();
+                    redirectToLogin();
+                    return null;
+                }
+
+                try {
+                    const refreshRes = await fetch(API + '/auth/refresh', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refresh_token: refreshToken })
+                    });
+
+                    if (refreshRes.ok) {
+                        const data = await refreshRes.json();
+                        setTokens(data.access_token, data.refresh_token);
+
+                        // Retry original request with new token
+                        headers['Authorization'] = 'Bearer ' + data.access_token;
+                        res = await fetch(url, { ...options, headers });
+                    } else {
+                        clearAuth();
+                        redirectToLogin();
+                        return null;
+                    }
+                } catch (e) {
+                    clearAuth();
+                    redirectToLogin();
+                    return null;
+                }
+            }
+
+            return res;
+        }
+
+        // ======== FORMATTING ========
+        const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+        const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+        function formatDateFrench(dateStr) {
+            // dateStr = "2026-03-04"
+            const parts = dateStr.split('-');
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10) - 1;
+            const d = parseInt(parts[2], 10);
+            const date = new Date(y, m, d);
+            const dayName = DAYS[date.getDay()];
+            const monthName = MONTHS[date.getMonth()];
+            return dayName.charAt(0).toUpperCase() + dayName.slice(1) + ' ' + d + ' ' + monthName + ' ' + y;
+        }
+
+        function formatDateShort(dateStr) {
+            const parts = dateStr.split('-');
+            const d = parseInt(parts[2], 10);
+            const m = parseInt(parts[1], 10) - 1;
+            return d + ' ' + MONTHS[m].slice(0, 4) + '.';
+        }
+
+        function formatTime(timeStr) {
+            // "09:30:00" or "09:30" -> "9h30"
+            const parts = timeStr.slice(0, 5).split(':');
+            const h = parseInt(parts[0], 10);
+            const min = parts[1];
+            return h + 'h' + min;
+        }
+
+        function formatPrice(cents) {
+            const euros = (cents / 100).toFixed(2).replace('.', ',');
+            return euros + '\u00a0\u20ac';
+        }
+
+        const STATUS_LABELS = {
+            confirmed: 'Confirmé',
+            completed: 'Terminé',
+            cancelled: 'Annulé',
+            no_show: 'Absent'
+        };
+
+        // ======== TOAST ========
+        let toastTimeout;
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('visible');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(function() {
+                toast.classList.remove('visible');
+            }, 3000);
+        }
+
+        // ======== STATE ========
+        let profile = null;
+        let bookingsData = null;
+
+        // ======== DOM REFS ========
+        const loadingState = document.getElementById('loadingState');
+        const mainContent = document.getElementById('mainContent');
+        const profileView = document.getElementById('profileView');
+        const profileEdit = document.getElementById('profileEdit');
+        const profileAvatar = document.getElementById('profileAvatar');
+        const profileName = document.getElementById('profileName');
+        const profilePhone = document.getElementById('profilePhone');
+        const profileEmail = document.getElementById('profileEmail');
+        const btnEditProfile = document.getElementById('btnEditProfile');
+        const btnCancelEdit = document.getElementById('btnCancelEdit');
+        const btnSave = document.getElementById('btnSave');
+        const saveFeedback = document.getElementById('saveFeedback');
+        const editFirstName = document.getElementById('editFirstName');
+        const editLastName = document.getElementById('editLastName');
+        const editPhone = document.getElementById('editPhone');
+        const editEmail = document.getElementById('editEmail');
+        const phoneError = document.getElementById('phoneError');
+        const emailError = document.getElementById('emailError');
+        const upcomingContainer = document.getElementById('upcomingBookings');
+        const pastContainer = document.getElementById('pastBookings');
+        const pastCard = document.getElementById('pastBookingsCard');
+        const btnLogout = document.getElementById('btnLogout');
+
+        // ======== INIT ========
+        async function init() {
+            if (!getToken()) {
+                redirectToLogin();
+                return;
+            }
+
+            try {
+                const [profileRes, bookingsRes] = await Promise.all([
+                    authFetch(API + '/client/profile'),
+                    authFetch(API + '/client/bookings')
+                ]);
+
+                if (!profileRes || !bookingsRes) return;
+
+                if (!profileRes.ok || !bookingsRes.ok) {
+                    showToast('Erreur de chargement');
+                    return;
+                }
+
+                profile = await profileRes.json();
+                bookingsData = await bookingsRes.json();
+
+                renderProfile();
+                renderUpcoming();
+                renderPast();
+
+                loadingState.style.display = 'none';
+                mainContent.style.display = 'flex';
+
+            } catch (e) {
+                showToast('Erreur de connexion');
+            }
+        }
+
+        // ======== RENDER PROFILE ========
+        function renderProfile() {
+            const initials = ((profile.first_name || '').charAt(0) + (profile.last_name || '').charAt(0)).toUpperCase();
+            profileAvatar.textContent = initials || '?';
+            profileName.textContent = (profile.first_name || '') + ' ' + (profile.last_name || '');
+            profilePhone.textContent = profile.phone || '—';
+            profileEmail.textContent = profile.email || '—';
+        }
+
+        // ======== RENDER UPCOMING BOOKINGS ========
+        function renderUpcoming() {
+            const upcoming = bookingsData.upcoming || [];
+
+            if (upcoming.length === 0) {
+                upcomingContainer.innerHTML =
+                    '<div class="empty-state">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+                            '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>' +
+                            '<line x1="16" y1="2" x2="16" y2="6"/>' +
+                            '<line x1="8" y1="2" x2="8" y2="6"/>' +
+                            '<line x1="3" y1="10" x2="21" y2="10"/>' +
+                        '</svg>' +
+                        '<p>Aucun rendez-vous a venir</p>' +
+                        '<a href="reserver.html" class="btn-book">Reserver</a>' +
+                    '</div>';
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < upcoming.length; i++) {
+                var b = upcoming[i];
+                html +=
+                    '<div class="booking-card">' +
+                        '<div class="booking-card-top">' +
+                            '<div>' +
+                                '<div class="booking-date">' + esc(formatDateFrench(b.date)) + '</div>' +
+                                '<div class="booking-date-sub">' + esc(formatTime(b.start_time)) + ' — ' + esc(formatTime(b.end_time)) + '</div>' +
+                            '</div>' +
+                            '<span class="booking-status ' + esc(b.status) + '">' +
+                                '<span class="booking-status-dot"></span>' +
+                                esc(STATUS_LABELS[b.status] || b.status) +
+                            '</span>' +
+                        '</div>' +
+                        '<div class="booking-details">' +
+                            '<div class="booking-detail-row">' +
+                                '<span class="booking-detail-label">' +
+                                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+                                    'Prestation' +
+                                '</span>' +
+                                '<span class="booking-detail-value">' + esc(b.service_name) + '</span>' +
+                            '</div>' +
+                            '<div class="booking-detail-row">' +
+                                '<span class="booking-detail-label">' +
+                                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+                                    'Barbier' +
+                                '</span>' +
+                                '<span class="booking-detail-value">' + esc(b.barber_name) + '</span>' +
+                            '</div>' +
+                            '<div class="booking-detail-row">' +
+                                '<span class="booking-detail-label">' +
+                                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' +
+                                    'Prix' +
+                                '</span>' +
+                                '<span class="booking-detail-value">' + esc(formatPrice(b.price)) + '</span>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="booking-action">' +
+                            '<a href="mon-rdv.html?id=' + encodeURIComponent(b.id) + '&token=' + encodeURIComponent(b.cancel_token) + '" class="btn-manage">' +
+                                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' +
+                                'Gerer' +
+                            '</a>' +
+                        '</div>' +
+                    '</div>';
+            }
+
+            upcomingContainer.innerHTML = html;
+        }
+
+        // ======== RENDER PAST BOOKINGS ========
+        function renderPast() {
+            var past = bookingsData.past || [];
+            past = past.slice(0, 10); // last 10
+
+            if (past.length === 0) {
+                pastCard.style.display = 'none';
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < past.length; i++) {
+                var b = past[i];
+                html +=
+                    '<div class="past-booking">' +
+                        '<div class="past-booking-left">' +
+                            '<div class="past-booking-date">' + esc(formatDateShort(b.date)) + ' — ' + esc(b.barber_name) + '</div>' +
+                            '<div class="past-booking-service">' + esc(b.service_name) + '</div>' +
+                        '</div>' +
+                        '<div class="past-booking-right">' +
+                            '<span class="past-booking-price">' + esc(formatPrice(b.price)) + '</span>' +
+                            '<span class="booking-status ' + esc(b.status) + '" style="font-size:10px;padding:3px 8px;">' +
+                                '<span class="booking-status-dot"></span>' +
+                                esc(STATUS_LABELS[b.status] || b.status) +
+                            '</span>' +
+                        '</div>' +
+                    '</div>';
+            }
+
+            pastContainer.innerHTML = html;
+        }
+
+        // ======== EDIT PROFILE ========
+        function enterEditMode() {
+            editFirstName.value = profile.first_name || '';
+            editLastName.value = profile.last_name || '';
+            editPhone.value = profile.phone || '';
+            editEmail.value = profile.email || '';
+            phoneError.classList.remove('visible');
+            emailError.classList.remove('visible');
+            editPhone.classList.remove('error');
+            editEmail.classList.remove('error');
+            saveFeedback.textContent = '';
+            saveFeedback.className = 'save-feedback';
+
+            profileView.classList.add('hidden');
+            profileEdit.classList.add('active');
+        }
+
+        function exitEditMode() {
+            profileView.classList.remove('hidden');
+            profileEdit.classList.remove('active');
+        }
+
+        function validateForm() {
+            let valid = true;
+            const phone = editPhone.value.replace(/\s/g, '');
+
+            if (!PHONE_REGEX.test(phone)) {
+                editPhone.classList.add('error');
+                phoneError.classList.add('visible');
+                valid = false;
+            } else {
+                editPhone.classList.remove('error');
+                phoneError.classList.remove('visible');
+            }
+
+            const email = editEmail.value.trim();
+            if (email && !EMAIL_REGEX.test(email)) {
+                editEmail.classList.add('error');
+                emailError.classList.add('visible');
+                valid = false;
+            } else {
+                editEmail.classList.remove('error');
+                emailError.classList.remove('visible');
+            }
+
+            return valid;
+        }
+
+        async function saveProfile() {
+            if (!validateForm()) return;
+
+            btnSave.disabled = true;
+            btnSave.textContent = '...';
+            saveFeedback.textContent = '';
+            saveFeedback.className = 'save-feedback';
+
+            const payload = {
+                first_name: editFirstName.value.trim(),
+                last_name: editLastName.value.trim(),
+                phone: editPhone.value.replace(/\s/g, ''),
+                email: editEmail.value.trim()
+            };
+
+            try {
+                const res = await authFetch(API + '/client/profile', {
+                    method: 'PUT',
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res) return;
+
+                if (res.ok) {
+                    const data = await res.json();
+                    profile = { ...profile, ...payload, ...(data || {}) };
+                    renderProfile();
+                    exitEditMode();
+                    showToast('Profil mis a jour');
+                } else {
+                    const err = await res.json().catch(function() { return {}; });
+                    saveFeedback.textContent = err.message || 'Erreur lors de la sauvegarde';
+                    saveFeedback.className = 'save-feedback error';
+                }
+            } catch (e) {
+                saveFeedback.textContent = 'Erreur de connexion';
+                saveFeedback.className = 'save-feedback error';
+            } finally {
+                btnSave.disabled = false;
+                btnSave.textContent = 'Enregistrer';
+            }
+        }
+
+        // ======== LOGOUT ========
+        async function logout() {
+            try {
+                const refreshToken = getRefreshToken();
+                if (refreshToken) {
+                    await fetch(API + '/auth/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refresh_token: refreshToken })
+                    }).catch(function() {});
+                }
+            } catch (e) {
+                // silent
+            }
+            clearAuth();
+            window.location.href = './';
+        }
+
+        // ======== EVENT LISTENERS ========
+        btnEditProfile.addEventListener('click', enterEditMode);
+        btnCancelEdit.addEventListener('click', exitEditMode);
+        btnSave.addEventListener('click', saveProfile);
+        btnLogout.addEventListener('click', logout);
+
+        // Enter key on form inputs
+        [editFirstName, editLastName, editPhone, editEmail].forEach(function(input) {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveProfile();
+                }
+            });
+        });
+
+        // Clear errors on input
+        editPhone.addEventListener('input', function() {
+            editPhone.classList.remove('error');
+            phoneError.classList.remove('visible');
+        });
+
+        editEmail.addEventListener('input', function() {
+            editEmail.classList.remove('error');
+            emailError.classList.remove('visible');
+        });
+
+        // ======== START ========
+        init();
+    })();
+    </script>
+
+    <script src="../../assets/js/cookie-consent.js" defer></script>
+</body>
+
+</html>

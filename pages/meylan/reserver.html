@@ -9,6 +9,33 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Réserver | BarberClub Meylan</title>
+    <link rel="canonical" href="https://barberclub-grenoble.fr/pages/meylan/reserver.html">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "ReserveAction",
+        "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://barberclub-grenoble.fr/pages/meylan/reserver.html",
+            "actionPlatform": ["http://schema.org/DesktopWebPlatform", "http://schema.org/MobileWebPlatform"]
+        },
+        "result": {
+            "@type": "Reservation",
+            "provider": {
+                "@type": "BarberShop",
+                "name": "BarberClub Meylan",
+                "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": "26 Av. du Grésivaudan",
+                    "addressLocality": "Corenc",
+                    "postalCode": "38700",
+                    "addressCountry": "FR"
+                },
+                "telephone": "+33458282175"
+            }
+        }
+    }
+    </script>
     <link rel="manifest" href="../../config/manifest.json">
     <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
     <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
@@ -2488,7 +2515,7 @@
                         <div class="auth-signup-card" id="authSignupBtn">
                             <div class="auth-signup-card-shine"></div>
                             <div class="auth-signup-card-content">
-                                <img src="../../assets/images/common/logo.png" alt="BarberClub" class="auth-signup-logo">
+                                <img loading="lazy" src="../../assets/images/common/logo.png" alt="BarberClub" class="auth-signup-logo">
                                 <div class="auth-signup-perks">
                                     <div class="auth-perk">
                                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
@@ -2521,7 +2548,7 @@
 
                     <div class="auth-form-header">
                         <div class="auth-form-icon">
-                            <img src="../../assets/images/common/favicon.png" alt="B" class="auth-form-favicon">
+                            <img loading="lazy" src="../../assets/images/common/favicon.png" alt="B" class="auth-form-favicon">
                         </div>
                         <h3 class="auth-form-title">Connexion</h3>
                         <p class="auth-form-subtitle">Accédez à votre espace BarberClub</p>
@@ -2698,7 +2725,7 @@
                         </svg>
                     </div>
                     <h2 class="success-title">Confirmé</h2>
-                    <p class="success-text">Votre rendez-vous est confirmé. Vous recevrez un SMS de rappel la veille.</p>
+                    <p class="success-text">Votre rendez-vous est confirmé.<br>Vérifiez vos emails pour la confirmation et le récapitulatif. Vous recevrez un SMS de rappel la veille.</p>
                     <div class="success-details" id="successDetails">
                         <!-- Filled by JS -->
                     </div>
@@ -2814,6 +2841,13 @@
             ? API_DEV
             : API_PROD;
         const MAX_RETRIES = 2;
+
+        // ---- XSS PROTECTION ----
+        function esc(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
 
         // ---- STATE ----
         const state = {
@@ -3085,14 +3119,14 @@
                 const initial = b.name.charAt(0).toUpperCase();
                 const photoSrc = b.photo_url ? `../../assets/images${b.photo_url}` : '';
                 const avatarContent = photoSrc
-                    ? `<img src="${photoSrc}" alt="${b.name}" onerror="this.parentElement.innerHTML='<span class=barber-avatar-placeholder>${initial}</span>'">`
-                    : `<span class="barber-avatar-placeholder">${initial}</span>`;
+                    ? `<img loading="lazy" src="${esc(photoSrc)}" alt="${esc(b.name)}" onerror="this.parentElement.innerHTML='<span class=barber-avatar-placeholder>${esc(initial)}</span>'">`
+                    : `<span class="barber-avatar-placeholder">${esc(initial)}</span>`;
 
                 html += `
-                    <div class="barber-card" data-id="${b.id}" role="radio" tabindex="0" aria-checked="false" aria-label="${b.name}">
+                    <div class="barber-card" data-id="${esc(b.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(b.name)}">
                         <div class="barber-avatar">${avatarContent}</div>
                         <div class="barber-info">
-                            <div class="barber-name">${b.name}</div>
+                            <div class="barber-name">${esc(b.name)}</div>
                         </div>
                         <div class="barber-check">${checkSVG}</div>
                     </div>
@@ -3156,9 +3190,9 @@
             let html = '';
             for (const s of state.services) {
                 html += `
-                    <div class="service-card" data-id="${s.id}" role="radio" tabindex="0" aria-checked="false" aria-label="${s.name} — ${s.duration} minutes — ${formatPrice(s.price)}">
+                    <div class="service-card" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — ${s.duration} minutes — ${formatPrice(s.price)}">
                         <div class="service-left">
-                            <div class="service-name">${s.name}</div>
+                            <div class="service-name">${esc(s.name)}</div>
                             <div class="service-duration">${clockSVG} ${s.duration} min</div>
                         </div>
                         <div class="service-right">
@@ -3295,11 +3329,69 @@
             }
         }
 
+        async function joinWaitlist() {
+            if (!state.selectedBarber || !state.selectedService || !state.selectedDate) {
+                toast('Sélectionnez un barber, une prestation et une date.');
+                return;
+            }
+
+            const barberId = state.selectedBarber.id === 'any'
+                ? state.barbers[0]?.id
+                : state.selectedBarber.id;
+
+            const body = {
+                barber_id: barberId,
+                service_id: state.selectedService.id,
+                preferred_date: state.selectedDate,
+            };
+
+            // If connected, API uses auth token to get client info
+            const isConnected = state.authMode === 'connected' && state.loggedClient;
+            if (!isConnected) {
+                // Need phone + name for guest
+                const phone = $('#phone')?.value?.trim().replace(/[\s.-]/g, '');
+                const firstName = $('#firstName')?.value?.trim();
+                const lastName = $('#lastName')?.value?.trim();
+                if (!phone || !firstName) {
+                    toast('Remplissez vos coordonnées (étape suivante) pour la liste d\'attente.');
+                    return;
+                }
+                body.client_name = `${firstName} ${lastName || ''}`.trim();
+                body.client_phone = phone;
+            }
+
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (isConnected) {
+                    headers['Authorization'] = 'Bearer ' + localStorage.getItem('bc_client_token');
+                }
+                const res = await fetch(`${API}/waitlist`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(body),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    toast('Vous serez prévenu par SMS si une place se libère !');
+                    $('#slotsSection').querySelector('button[onclick]')?.remove();
+                } else {
+                    toast(data.error || 'Erreur');
+                }
+            } catch (e) {
+                toast('Erreur réseau');
+            }
+        }
+
         function renderSlots() {
             const slotsSection = $('#slotsSection');
 
             if (state.slots.length === 0) {
-                slotsSection.innerHTML = '<p class="slots-empty">Aucun créneau disponible ce jour.<br>Essayez une autre date.</p>';
+                slotsSection.innerHTML = `<p class="slots-empty">Aucun créneau disponible ce jour.<br>Essayez une autre date.</p>
+                    <div style="text-align:center;margin-top:12px;">
+                        <button onclick="joinWaitlist()" style="padding:12px 24px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;color:#fff;font-family:Inter,sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .3s ease;">
+                            Me prévenir si une place se libère
+                        </button>
+                    </div>`;
                 return;
             }
 
@@ -3629,11 +3721,11 @@
             $('#successDetails').innerHTML = `
                 <div class="success-detail-row">
                     <span class="success-detail-label">Barber</span>
-                    <span class="success-detail-value">${barberName}</span>
+                    <span class="success-detail-value">${esc(barberName)}</span>
                 </div>
                 <div class="success-detail-row">
                     <span class="success-detail-label">Prestation</span>
-                    <span class="success-detail-value">${state.selectedService.name}</span>
+                    <span class="success-detail-value">${esc(state.selectedService.name)}</span>
                 </div>
                 <div class="success-detail-row">
                     <span class="success-detail-label">Date</span>
@@ -3911,6 +4003,7 @@
         init();
     })();
     </script>
+<script src="../../assets/js/cookie-consent.js" defer></script>
 </body>
 
 </html>

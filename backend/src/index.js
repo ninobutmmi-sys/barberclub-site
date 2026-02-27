@@ -35,7 +35,6 @@ const systemHealthRoutes = require('./routes/admin/systemHealth');
 
 // Cron job imports
 const { queueReminders } = require('./cron/reminders');
-const { queueReviewRequests } = require('./cron/reviews');
 const { processQueue, cleanupOldNotifications, cleanupExpiredTokens } = require('./cron/retryNotifications');
 const { processAutomationTriggers } = require('./cron/automationTriggers');
 
@@ -45,7 +44,6 @@ const { processAutomationTriggers } = require('./cron/automationTriggers');
 const cronStatus = {
   processQueue:          { label: 'File notifications', schedule: '*/2 * * * *', lastRun: null, status: 'idle', error: null },
   queueReminders:        { label: 'SMS rappels J-1',    schedule: '0 18 * * *',  lastRun: null, status: 'idle', error: null },
-  queueReviewRequests:   { label: 'Emails avis Google', schedule: '0 10 * * *',  lastRun: null, status: 'idle', error: null },
   cleanupNotifications:  { label: 'Cleanup notifs 30j', schedule: '0 3 * * *',   lastRun: null, status: 'idle', error: null },
   cleanupExpiredTokens:  { label: 'Cleanup tokens',     schedule: '30 3 * * *',  lastRun: null, status: 'idle', error: null },
   automationTriggers:    { label: 'Triggers auto',      schedule: '*/10 * * * *', lastRun: null, status: 'idle', error: null },
@@ -55,7 +53,6 @@ const cronStatus = {
 const CRON_LOCK_IDS = {
   processQueue: 100001,
   queueReminders: 100002,
-  queueReviewRequests: 100003,
   cleanupNotifications: 100004,
   cleanupExpiredTokens: 100005,
   automationTriggers: 100006,
@@ -256,7 +253,6 @@ app.use((err, req, res, next) => {
 if (config.nodeEnv === 'production') {
   cron.schedule('*/2 * * * *',  trackCron('processQueue', processQueue));
   cron.schedule('0 18 * * *',   trackCron('queueReminders', queueReminders));
-  cron.schedule('0 10 * * *',   trackCron('queueReviewRequests', queueReviewRequests));
   cron.schedule('0 3 * * *',    trackCron('cleanupNotifications', cleanupOldNotifications));
   cron.schedule('30 3 * * *',   trackCron('cleanupExpiredTokens', cleanupExpiredTokens));
   cron.schedule('*/10 * * * *', trackCron('automationTriggers', processAutomationTriggers));
@@ -289,6 +285,11 @@ process.on('SIGTERM', () => {
 
 process.on('unhandledRejection', (reason) => {
   logger.error('Unhandled promise rejection', { reason: reason?.message || reason });
+});
+
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught exception — process will exit', { error: err.message, stack: err.stack });
+  process.exit(1);
 });
 
 module.exports = app;
