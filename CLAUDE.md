@@ -233,6 +233,7 @@ BarberClub Site/
 ### SMS
 | Type | Declencheur | Contenu |
 |------|-------------|---------|
+| Confirmation | Creation booking si <24h | `BarberClub Meylan - Confirmation. Votre RDV le...` |
 | Rappel J-1 | Cron 18h la veille | `BarberClub - Rappel RDV le...` |
 | Review Google | Automation 60min post-coupe | `Merci ! Laisse un avis...` (1x par client a vie, SMS uniquement) |
 | Reactivation | Automation inactif 45j+ | `Ca fait un moment ! Ton barber t'attend...` |
@@ -282,7 +283,7 @@ Monitoring via `GET /api/admin/system/status` (in-memory cronStatus)
 |-----------|-------------|-------------------------------|
 | Backend Railway | `https://fortunate-benevolence-production-7df2.up.railway.app/api` | `https://api.barberclub-grenoble.fr/api` |
 | Site Cloudflare | `https://barberclub-site.pages.dev` | `https://barberclub-grenoble.fr` |
-| Dashboard Cloudflare | `https://barberclub-dashboard-admin.pages.dev` | `https://gestion.barberclub-grenoble.fr` |
+| Dashboard Cloudflare | `https://barberclub-dashboard.pages.dev` | `https://gestion.barberclub-grenoble.fr` |
 
 Detection auto dans le code : `window.location.hostname === 'localhost'` → dev / sinon → prod
 
@@ -352,15 +353,25 @@ Detection auto dans le code : `window.location.hostname === 'localhost'` → dev
 |---------|-----------|------|--------|
 | Backend + BDD | Railway Hobby | ~5euros/mois | Deploye (`fortunate-benevolence-production-7df2.up.railway.app`) |
 | Site vitrine | Cloudflare Pages | Gratuit | Deploye (`barberclub-site.pages.dev`) |
-| Dashboard | Cloudflare Pages | Gratuit | Deploye (`barberclub-dashboard-admin.pages.dev`) |
+| Dashboard | Cloudflare Pages | Gratuit | Deploye (`barberclub-dashboard.pages.dev`) |
 | Email | Brevo | Gratuit (300/j) | Teste OK |
-| SMS | Brevo | ~0.045euros/SMS | Configure (a tester) |
+| SMS | Brevo | ~0.045euros/SMS | Teste OK (confirmation + avis) |
 | Domaine | OVH | Deja achete | `barberclub-grenoble.fr` (pointe encore vers Framer) |
 
-### Wrangler / Cloudflare Pages
-- `.wrangler/` dans le projet pour le cache CLI Cloudflare
-- Build site : static files (pas de build step)
-- Build dashboard : `npm run build` → `dist/`
+### Deploy
+- **Backend Railway** : connecte au repo GitHub, auto-deploy sur `git push` (branche `main`, Root Directory `/backend`). PAS besoin de `railway up`.
+- **Cloudflare Pages** : branche de production = `production` (PAS `main`). Toujours deployer avec `--branch production` :
+```bash
+# Site
+npx wrangler pages deploy . --project-name barberclub-site --branch production --commit-dirty=true
+# Dashboard
+cd dashboard && npm run build && npx wrangler pages deploy dist --project-name barberclub-dashboard --branch production --commit-dirty=true
+```
+
+### API URL temporaire
+Les 5 fichiers frontend pointent vers l'URL Railway directe (pas `api.barberclub-grenoble.fr`) :
+`dashboard/src/api.js`, `pages/meylan/reserver.html`, `mon-rdv.html`, `mon-compte.html`, `reset-password.html`
+→ Lors du switch DNS, remettre `https://api.barberclub-grenoble.fr/api` dans ces fichiers.
 
 ### Variables d'env production (actuellement sur Railway)
 ```
@@ -421,9 +432,11 @@ API_URL → https://api.barberclub-grenoble.fr
 ### Phase 1 — Test Brevo
 - [x] Email confirmation RDV — teste OK
 - [x] Email reset password — teste OK
+- [x] SMS confirmation (<24h) — teste OK
+- [x] SMS avis Google (60min post-coupe) — teste OK
 - [ ] Tester SMS rappel J-1 (cron 18h, necessite booking pour demain)
-- [ ] Tester SMS review Google (automation trigger, 60min post-coupe)
 - [ ] Tester retry queue (simuler echec notification)
+- [x] Import 1052 clients Timify
 
 ### Phase 2 — Switch DNS (barberclub-grenoble.fr)
 - [ ] Configurer DNS SPF/DKIM pour barberclub-grenoble.fr (Brevo sender auth)
@@ -433,6 +446,7 @@ API_URL → https://api.barberclub-grenoble.fr
 - [ ] Cloudflare Pages : custom domain `barberclub-grenoble.fr` sur site
 - [ ] Cloudflare Pages : custom domain `gestion.barberclub-grenoble.fr` sur dashboard
 - [ ] Railway : mettre a jour SITE_URL, API_URL, CORS_ORIGINS (voir section variables)
+- [ ] Frontend : remettre `api.barberclub-grenoble.fr` dans les 5 fichiers (api.js + 4 pages meylan)
 - [ ] Tester tous les flows (reservation, emails, dashboard) sur domaines finaux
 
 ---
