@@ -294,30 +294,25 @@ async function createBooking(data) {
       }
     }
 
-    // 2. Immediate SMS reminder if booking is within 24h (online bookings only, min 2h before)
+    // 2. SMS confirmation if booking is within 24h
     const bookingDateTime = new Date(`${result.date}T${result.start_time.slice(0, 5)}`);
     const now = new Date();
     const hoursUntilBooking = (bookingDateTime - now) / (1000 * 60 * 60);
 
-    if (result.source === 'online' && hoursUntilBooking >= 2 && hoursUntilBooking <= 24 && bookingDetails.client_phone) {
+    if (hoursUntilBooking > 0 && hoursUntilBooking <= 24 && bookingDetails.client_phone) {
       try {
-        await notification.sendReminderSMSDirect({
+        await notification.sendConfirmationSMS({
           booking_id: result.id,
           cancel_token: result.cancel_token,
           phone: bookingDetails.client_phone,
+          barber_name: bookingDetails.barber_name,
           date: bookingDetails.date,
           start_time: bookingDetails.start_time,
         });
         await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [result.id]);
-        logger.info('Immediate SMS reminder sent directly (booking within 24h)', { bookingId: result.id, hoursUntil: Math.round(hoursUntilBooking) });
+        logger.info('Confirmation SMS sent (booking within 24h)', { bookingId: result.id, hoursUntil: Math.round(hoursUntilBooking) });
       } catch (err) {
-        logger.error('Direct reminder SMS failed, queueing for retry', { bookingId: result.id, error: err.message });
-        try {
-          await notification.queueNotification(result.id, 'reminder_sms');
-          await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [result.id]);
-        } catch (qErr) {
-          logger.error('Failed to queue reminder SMS fallback', { bookingId: result.id, error: qErr.message });
-        }
+        logger.error('Confirmation SMS failed', { bookingId: result.id, error: err.message });
       }
     }
   }

@@ -645,11 +645,32 @@ async function sendReminderSMSDirect(data) {
   await brevoSMS(data.phone, message);
 }
 
+/**
+ * Send SMS confirmation directly after booking creation
+ * Sent when booking is within 24h
+ */
+async function sendConfirmationSMS(data) {
+  if (!config.brevo.apiKey) {
+    logger.warn('Brevo not configured, skipping SMS');
+    return;
+  }
+
+  const rdvUrl = `${config.apiUrl}/r/rdv/${data.booking_id}/${data.cancel_token}`;
+  const timeFormatted = formatTime(data.start_time);
+  const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
+
+  const message = `BarberClub Meylan - Confirmation\n\nVotre RDV le ${dateFR} a ${timeFormatted} avec ${data.barber_name} est confirme.\n\n26 Av. du Gresivaudan, Corenc\n\nGerer votre RDV : ${rdvUrl}`;
+
+  await brevoSMS(data.phone, message);
+  logger.info('Confirmation SMS sent', { bookingId: data.booking_id, phone: data.phone });
+}
+
 module.exports = {
   queueNotification,
   processPendingNotifications,
   sendNotification,
   sendConfirmationEmail,
+  sendConfirmationSMS,
   sendReminderSMSDirect,
   sendCancellationEmail,
   sendRescheduleEmail,

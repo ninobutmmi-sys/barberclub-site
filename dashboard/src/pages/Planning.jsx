@@ -88,7 +88,6 @@ const COLOR_PALETTE = [
 ];
 
 const STATUS_OVERRIDES = {
-  completed: { bg: 'var(--status-completed-bg)', border: '#6b7280', text: 'var(--text)' },
   no_show: { bg: 'var(--status-noshow-bg)', border: '#ef4444', text: 'var(--text)' },
   cancelled: { bg: 'var(--status-cancelled-bg)', border: 'var(--status-cancelled-border)', text: 'var(--text-muted)' },
 };
