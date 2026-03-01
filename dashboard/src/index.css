@@ -681,6 +681,48 @@ tr:hover td {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ---- BOOKING DETAIL UNIFIED MODAL ---- */
+.booking-detail-modal {
+  max-width: 540px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.booking-detail-modal .modal-header {
+  padding: 20px 28px;
+  flex-shrink: 0;
+}
+.booking-detail-modal .modal-body {
+  padding: 10px 32px 32px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+}
+.booking-detail-modal .modal-footer {
+  padding: 20px 32px;
+  flex-shrink: 0;
+}
+.bk-section {
+  padding: 24px 28px;
+  background: rgba(var(--overlay), 0.025);
+  border: 1px solid rgba(var(--overlay), 0.07);
+  border-radius: 12px;
+}
+.bk-section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #888);
+  margin-bottom: 16px;
+}
+
 /* ---- BOOKING MODAL PREMIUM ---- */
 .bk-modal {
   background: var(--bg-card);
@@ -726,10 +768,6 @@ tr:hover td {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-.bk-section {
-  padding: 0 24px;
 }
 
 .bk-section-label {
@@ -1152,6 +1190,21 @@ tr:hover td {
   text-align: center;
   user-select: none;
   padding: 0 8px;
+}
+
+.plan-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.plan-month-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+  min-width: 120px;
+  text-align: center;
+  user-select: none;
 }
 
 .plan-today-btn {
@@ -2003,6 +2056,17 @@ select.input {
     z-index: 5;
   }
 
+  /* ---- BOOKING DETAIL MODAL MOBILE ---- */
+  .booking-detail-modal .modal-header { padding: 16px 18px; }
+  .booking-detail-modal .modal-body { padding: 8px 18px 24px; gap: 16px; }
+  .booking-detail-modal .modal-footer { padding: 16px 18px; flex-wrap: wrap; }
+  .bk-section { padding: 16px 18px; border-radius: 10px; }
+  .bk-section-title { margin-bottom: 12px; }
+  .bk-form-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .bk-footer-actions { flex-wrap: wrap; }
+  .bk-footer-actions .btn { flex: 1; min-width: 0; }
+  .bk-footer-actions .btn-save { flex: 1 1 100%; order: -1; }
+
   /* ---- MOBILE CARD LIST (replaces tables) ---- */
   .mob-card-list {
     display: flex;
@@ -2079,7 +2143,7 @@ select.input {
   .plan-header { padding: 12px 16px; gap: 10px; }
   .plan-title-block h2 { font-size: 14px; }
   .plan-nav-label { min-width: 120px; font-size: 12px; }
-  .plan-kpis { display: none; }
+  /* plan-kpis visible on mobile — see .plan-kpi-chip overrides above */
   .booking-card { min-height: 54px; }
 
   /* ---- COLLAPSIBLE FILTERS ---- */
@@ -2112,6 +2176,12 @@ select.input {
   /* ---- ANALYTICS MOBILE ---- */
   .a-kpi { min-width: unset; flex: 0 0 calc(50% - 8px); }
 
+  /* KPI chips visible on mobile too */
+  .plan-kpis { display: flex; }
+  .plan-kpi-chip { padding: 3px 8px; font-size: 10px; gap: 4px; }
+  .plan-kpi-chip svg { width: 10px; height: 10px; }
+  .plan-kpi-chip .plan-kpi-val { font-size: 10px; }
+
   /* ---- ANTI-ZOOM iOS ---- */
   input, select, textarea { font-size: 16px !important; }
 }
@@ -2130,5 +2200,282 @@ select.input {
     border-radius: 16px;
     margin: auto;
   }
+  .booking-detail-modal {
+    max-width: 540px;
+    max-height: 85vh;
+    height: auto;
+    border-radius: 16px;
+  }
+  .booking-detail-modal .modal-body { padding: 10px 28px 28px; }
+  .booking-detail-modal .modal-header { padding: 20px 28px; }
+  .booking-detail-modal .modal-footer { padding: 20px 28px; }
   .modal-backdrop { align-items: center; padding: 20px; }
+}
+
+/* ============================================
+   #7 — Now Indicator pulse dot
+   ============================================ */
+.planning-now-dot {
+  position: absolute;
+  left: 48px;
+  top: -4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: nowDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes nowDotPulse {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(239,68,68,0.5);
+  }
+  50% {
+    box-shadow: 0 0 14px 4px rgba(239,68,68,0.6);
+  }
+}
+
+/* ============================================
+   #1 — Today column highlight
+   ============================================ */
+.planning-day-today {
+  background: rgba(34,197,94,0.025);
+}
+
+.planning-day-today-header {
+  border-top: 2px solid #22c55e;
+}
+
+/* ============================================
+   #4 — KPI chips
+   ============================================ */
+.plan-kpi-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(var(--overlay),0.04);
+  border: 1px solid rgba(var(--overlay),0.08);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.plan-kpi-chip svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.plan-kpi-chip .plan-kpi-val {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+/* ============================================
+   #3 — REPOS day-off badge
+   ============================================ */
+.planning-day-off-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 20px;
+  pointer-events: none;
+}
+
+.planning-day-off-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(var(--overlay),0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: rgba(var(--overlay),0.06);
+  border: 1px solid rgba(var(--overlay),0.08);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.planning-day-off-badge svg {
+  width: 10px;
+  height: 10px;
+  opacity: 0.5;
+}
+
+/* ============================================
+   #8 — View transition (Semaine/Jour)
+   ============================================ */
+@keyframes planGridFadeIn {
+  from { opacity: 0.6; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.planning-grid-animated {
+  animation: planGridFadeIn 0.2s ease-out;
+}
+
+/* ============================================
+   #5 — Sidebar grouped navigation
+   ============================================ */
+.sidebar-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-nav-group + .sidebar-nav-group {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(var(--overlay),0.06);
+}
+
+.sidebar-nav-group-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 6px 14px 4px;
+  opacity: 0.7;
+  user-select: none;
+}
+
+/* Collapsed sidebar: hide labels, keep separator */
+.sidebar.collapsed .sidebar-nav-group-label {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-nav-group + .sidebar-nav-group {
+  padding-top: 6px;
+}
+
+/* ============================================
+   Booking block — Source indicator (online)
+   ============================================ */
+.planning-block-source {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(34,197,94,0.2);
+  border: 1px solid rgba(34,197,94,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: auto;
+}
+
+.planning-block-source svg {
+  color: #22c55e;
+}
+
+/* ============================================
+   Booking block — First visit indicators
+   ============================================ */
+
+/* Gold shimmer bar at top */
+.planning-block-first-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f59e0b, #fbbf24, #f59e0b, transparent);
+  background-size: 200% 100%;
+  animation: firstVisitShimmer 2.5s ease-in-out infinite;
+  z-index: 3;
+  border-radius: 0 4px 0 0;
+}
+
+@keyframes firstVisitShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* "1er RDV" badge inside the block */
+.planning-block-new-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Gold left border accent for first-visit blocks */
+.planning-block-first-visit {
+  box-shadow: inset 0 0 0 0 transparent;
+}
+
+/* ============================================
+   Quick Actions Popover (Timify-style)
+   ============================================ */
+.quick-actions-pop {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--overlay),0.12);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(var(--overlay),0.04);
+  animation: quickActionsIn 0.12s ease-out;
+}
+
+@keyframes quickActionsIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.quick-actions-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(var(--overlay),0.06);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.quick-actions-btn:hover {
+  background: rgba(var(--overlay),0.14);
+  color: var(--qa-color, var(--text));
+  transform: scale(1.1);
+}
+
+.quick-actions-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Color accents on hover */
+.quick-actions-btn[style*="--qa-color"]:hover {
+  background: color-mix(in srgb, var(--qa-color) 15%, transparent);
+  color: var(--qa-color);
 }

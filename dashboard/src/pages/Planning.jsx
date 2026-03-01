@@ -22,6 +22,8 @@ import {
   subDays,
   addWeeks,
   subWeeks,
+  addMonths,
+  subMonths,
   startOfWeek,
   endOfWeek,
   isToday,
@@ -44,9 +46,14 @@ function timeToMinutes(t) {
   return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
 }
 
-const HOUR_START = 9;
+const HOUR_START = 8;
 const HOUR_END = 20;
 const TOTAL_MINUTES = (HOUR_END - HOUR_START) * 60;
+// Off-hours zones (visible but grayed out — bookings still allowed)
+const OFF_HOURS = [
+  { startHour: 8, endHour: 9 },   // Before opening
+  { startHour: 19, endHour: 20 },  // After closing
+];
 const PX_PER_MIN = 3;
 const GRID_HEIGHT = TOTAL_MINUTES * PX_PER_MIN; // 1800px
 const HOUR_HEIGHT = 60 * PX_PER_MIN; // 180px
@@ -223,7 +230,10 @@ function BookingHoverCard({ booking, anchorRect }) {
           <div style={{ display: 'grid', gap: 5 }}>
             <HoverRow label="Service" value={booking.service_name} />
             <HoverRow label="Barber" value={booking.barber_name || '–'} />
-            <HoverRow label="Statut" value={STATUS_LABELS[booking.status] || booking.status} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Statut</span>
+              <span className={`badge badge-${booking.status}`}>{STATUS_LABELS[booking.status] || booking.status}</span>
+            </div>
             {createdAt && <HoverRow label="Créé le" value={createdAt} />}
           </div>
         </div>
@@ -259,9 +269,13 @@ function BookingHoverCard({ booking, anchorRect }) {
           )}
           {booking.is_first_visit && (
             <span style={{
-              fontSize: 9, fontWeight: 800, background: '#3b82f6', color: '#fff',
-              padding: '2px 6px', borderRadius: 4, letterSpacing: '0.05em',
-            }}>NOUVEAU</span>
+              fontSize: 9, fontWeight: 800, background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff',
+              padding: '2px 8px', borderRadius: 4, letterSpacing: '0.05em',
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+            }}>
+              <svg viewBox="0 0 24 24" width="9" height="9" fill="currentColor" stroke="none"><path d="M12 2l2.09 6.26L20.18 9.27l-5.09 3.9L16.18 19.27 12 16l-4.18 3.27 1.09-6.1-5.09-3.9 6.09-1.01z"/></svg>
+              1er RDV
+            </span>
           )}
         </div>
       </div>
@@ -310,6 +324,55 @@ function HoverRow({ label, value }) {
 }
 
 // ---------------------------------------------------------------------------
+// BookingQuickActions — Timify-style action popover on click
+// ---------------------------------------------------------------------------
+
+function BookingQuickActions({ booking, anchorRect, onViewDetail, onDelete, onClose }) {
+  const popRef = useRef(null);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (popRef.current && !popRef.current.contains(e.target)) onClose();
+    }
+    function handleKey(e) { if (e.key === 'Escape') onClose(); }
+    function handleScroll() { onClose(); }
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [onClose]);
+
+  if (!booking || !anchorRect) return null;
+
+  const popW = 44;
+  let left = anchorRect.right + 6;
+  let top = anchorRect.top + (anchorRect.height / 2) - 46;
+  if (left + popW > window.innerWidth - 12) left = anchorRect.left - popW - 6;
+  if (top < 8) top = 8;
+  if (top + 92 > window.innerHeight - 12) top = window.innerHeight - 104;
+
+  return createPortal(
+    <div
+      ref={popRef}
+      className="quick-actions-pop"
+      style={{ position: 'fixed', top, left, zIndex: 9999 }}
+    >
+      <button className="quick-actions-btn" title="Modifier" onClick={(e) => { e.stopPropagation(); onViewDetail(booking); }}>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button className="quick-actions-btn" title="Supprimer" style={{ '--qa-color': '#ef4444' }} onClick={(e) => { e.stopPropagation(); onDelete(booking); }}>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>,
+    document.body
+  );
+}
+
+// ---------------------------------------------------------------------------
 // BookingBlock
 // ---------------------------------------------------------------------------
 
@@ -321,6 +384,7 @@ function BookingBlock({ booking, onClick, isDragging }) {
   const height = duration * PX_PER_MIN;
 
   const color = STATUS_OVERRIDES[booking.status] || hexToBlockStyle(booking.service_color || FALLBACK_COLOR);
+  const isTall = height >= 90;
   const isSmall = height < 50;
   const isTiny = height < 30;
 
@@ -363,12 +427,16 @@ function BookingBlock({ booking, onClick, isDragging }) {
     return () => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current); };
   }, []);
 
+  const isOnline = booking.source === 'online';
+  const isFirstVisit = booking.is_first_visit;
+
   return (
     <>
       <div
         ref={blockRef}
         draggable="true"
         onDragStart={handleDragStart}
+        className={isFirstVisit ? 'planning-block-first-visit' : undefined}
         style={{
           position: 'absolute',
           top,
@@ -376,7 +444,7 @@ function BookingBlock({ booking, onClick, isDragging }) {
           right: 1,
           height: Math.max(height, 26),
           background: color.bg,
-          borderLeft: `3px solid ${color.border}`,
+          borderLeft: `3px solid ${isFirstVisit ? '#f59e0b' : color.border}`,
           borderRadius: '0 4px 4px 0',
           padding: isTiny ? '2px 5px' : '4px 6px',
           cursor: isDragging ? 'grabbing' : 'pointer',
@@ -389,27 +457,39 @@ function BookingBlock({ booking, onClick, isDragging }) {
           transition: 'box-shadow 0.12s, opacity 0.15s',
           opacity: isDragging ? 0.4 : 1,
         }}
-        onClick={(e) => { e.stopPropagation(); setShowHover(false); onClick(booking); }}
+        onClick={(e) => { e.stopPropagation(); setShowHover(false); onClick(booking, blockRef.current?.getBoundingClientRect()); }}
+        onMouseMove={(e) => e.stopPropagation()}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
+        {/* First visit shimmer accent */}
+        {isFirstVisit && (
+          <div className="planning-block-first-shimmer" />
+        )}
+
+        {/* Source indicator — top right */}
+        {isOnline && (
+          <div className="planning-block-source" title="Réservé en ligne">
+            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+        )}
+
         <div style={{ fontWeight: 600, fontSize: 10, opacity: 0.7, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
           {isDragging ? 'Déplacement...' : <>{booking.start_time?.slice(0, 5)} - {booking.end_time?.slice(0, 5)}</>}
         </div>
         {!isTiny && (
-          <div style={{ fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isTall ? 'normal' : 'nowrap', paddingRight: isOnline ? 14 : 0 }}>
             {booking.client_first_name} {booking.client_last_name}
-            {booking.is_first_visit && (
-              <span style={{
-                background: '#3b82f6', color: '#fff', fontSize: 8, fontWeight: 800,
-                padding: '1px 4px', borderRadius: 3, marginLeft: 4, letterSpacing: 0.5,
-                lineHeight: 1, verticalAlign: 'middle',
-              }}>NEW</span>
+            {isFirstVisit && !isTiny && (
+              <span className="planning-block-new-badge">
+                <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor" stroke="none"><path d="M12 2l2.09 6.26L20.18 9.27l-5.09 3.9L16.18 19.27 12 16l-4.18 3.27 1.09-6.1-5.09-3.9 6.09-1.01z"/></svg>
+                1er RDV
+              </span>
             )}
           </div>
         )}
         {!isSmall && (
-          <div style={{ fontSize: 10, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.02em' }}>
+          <div style={{ fontSize: 10, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isTall ? 'normal' : 'nowrap', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.02em' }}>
             {booking.service_name}
           </div>
         )}
@@ -452,6 +532,7 @@ function BlockedSlotBlock({ block, onClick }) {
         boxSizing: 'border-box',
       }}
       onClick={(e) => { e.stopPropagation(); onClick(block); }}
+      onMouseMove={(e) => e.stopPropagation()}
       title={`${block.start_time?.slice(0, 5)} - ${block.end_time?.slice(0, 5)} | ${BLOCK_TYPE_LABELS[block.type] || block.type}${block.reason ? ' — ' + block.reason : ''}`}
     >
       <div style={{ fontWeight: 700, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -489,8 +570,8 @@ function NowIndicator() {
       <div style={{ position: 'absolute', left: 4, top: -9, fontSize: 10, fontWeight: 800, color: '#ef4444', fontFamily: 'var(--font-display, Orbitron, monospace)', fontVariantNumeric: 'tabular-nums', background: 'var(--bg, #0a0a0a)', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.02em' }}>
         {timeStr}
       </div>
-      {/* Circle at the gutter/grid boundary */}
-      <div style={{ position: 'absolute', left: 48, top: -4, width: 9, height: 9, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 6px rgba(239,68,68,0.5)' }} />
+      {/* Circle at the gutter/grid boundary — with pulse animation */}
+      <div className="planning-now-dot" />
       {/* Line across all columns */}
       <div style={{ position: 'absolute', left: 52, right: 0, top: 0, height: 2, background: '#ef4444', boxShadow: '0 0 8px rgba(239,68,68,0.4)' }} />
     </div>
@@ -502,24 +583,42 @@ function NowIndicator() {
 // ---------------------------------------------------------------------------
 
 function BookingDetailModal({ booking, barbers, services, onClose, onStatusChange, onDelete, onDeleteGroup, onReschedule, onNotesUpdated }) {
-  const [subView, setSubView] = useState('detail'); // 'detail' | 'delete' | 'reschedule'
+  const [subView, setSubView] = useState('main'); // 'main' | 'delete'
   const [notifyClient, setNotifyClient] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
-  // Reschedule form state
-  const [rDate, setRDate] = useState('');
-  const [rTime, setRTime] = useState('');
-  const [rBarberId, setRBarberId] = useState('');
-  const [rServiceId, setRServiceId] = useState('');
-  const [rColor, setRColor] = useState('');
-  const [rSaving, setRSaving] = useState(false);
-  const [rError, setRError] = useState('');
+  if (!booking) return null;
 
-  // Filter services by selected barber for reschedule
-  const rFilteredServices = useMemo(() => {
-    if (!rBarberId) return services;
-    return services.filter((s) => s.barbers && s.barbers.some((b) => b.id === rBarberId));
-  }, [services, rBarberId]);
+  const hasEmail = !!booking.client_email;
+  const bookingDateStr = typeof booking.date === 'string' ? booking.date.slice(0, 10) : format(new Date(booking.date), 'yyyy-MM-dd');
+  const initTime = booking.start_time?.slice(0, 5) || '09:00';
+  const initColor = booking.booking_color || booking.service_color || FALLBACK_COLOR;
+  const isEditable = booking.status === 'confirmed';
+
+  // Editable fields — initialized with current booking values
+  const [editDate, setEditDate] = useState(bookingDateStr);
+  const [editTime, setEditTime] = useState(initTime);
+  const [editBarberId, setEditBarberId] = useState(booking.barber_id || '');
+  const [editServiceId, setEditServiceId] = useState(booking.service_id || '');
+  const [editColor, setEditColor] = useState(initColor);
+
+  // Filter services by selected barber
+  const filteredServices = useMemo(() => {
+    if (!editBarberId) return services;
+    return services.filter((s) => s.barbers && s.barbers.some((b) => b.id === editBarberId));
+  }, [services, editBarberId]);
+
+  // Reset service when barber changes and current service is unavailable
+  useEffect(() => {
+    if (editBarberId && filteredServices.length > 0 && !filteredServices.find((s) => s.id === editServiceId)) {
+      setEditServiceId(filteredServices[0].id);
+    }
+  }, [editBarberId, filteredServices]);
+
+  // Dirty detection
+  const isDirty = editDate !== bookingDateStr || editTime !== initTime || editBarberId !== (booking.barber_id || '') || editServiceId !== (booking.service_id || '') || editColor !== initColor;
 
   // Notes state
   const [notes, setNotes] = useState(booking?.client_notes || '');
@@ -527,7 +626,6 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
   const [notesSaved, setNotesSaved] = useState(false);
   const noteTimerRef = useRef(null);
 
-  // Auto-save notes after 800ms of inactivity
   function handleNotesChange(value) {
     setNotes(value);
     setNotesSaved(false);
@@ -545,34 +643,9 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
     }, 800);
   }
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => { if (noteTimerRef.current) clearTimeout(noteTimerRef.current); };
   }, []);
-
-  // Reset service when reschedule barber changes
-  useEffect(() => {
-    if (rBarberId && rFilteredServices.length > 0 && !rFilteredServices.find((s) => s.id === rServiceId)) {
-      setRServiceId(rFilteredServices[0].id);
-    }
-  }, [rBarberId, rFilteredServices]);
-
-  if (!booking) return null;
-
-  const color = hexToBlockStyle(booking.service_color || FALLBACK_COLOR);
-  const hasEmail = !!booking.client_email;
-  const bookingDateStr = typeof booking.date === 'string' ? booking.date.slice(0, 10) : format(new Date(booking.date), 'yyyy-MM-dd');
-
-  function openReschedule() {
-    setRDate(bookingDateStr);
-    setRTime(booking.start_time?.slice(0, 5) || '09:00');
-    setRBarberId(booking.barber_id || '');
-    setRServiceId(booking.service_id || '');
-    setRColor(booking.booking_color || booking.service_color || FALLBACK_COLOR);
-    setNotifyClient(true);
-    setRError('');
-    setSubView('reschedule');
-  }
 
   async function handleDelete() {
     setDeleting(true);
@@ -586,24 +659,25 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
     setDeleting(false);
   }
 
-  async function handleReschedule(e) {
-    e.preventDefault();
-    setRError('');
-    setRSaving(true);
+  async function handleSave() {
+    setSaveError('');
+    setSaving(true);
     try {
       await onReschedule(booking.id, {
-        date: rDate,
-        start_time: rTime,
-        barber_id: rBarberId,
-        service_id: rServiceId,
-        color: rColor || undefined,
+        date: editDate,
+        start_time: editTime,
+        barber_id: editBarberId,
+        service_id: editServiceId,
+        color: editColor || undefined,
         notify_client: notifyClient && hasEmail,
       });
     } catch (err) {
-      setRError(err.message);
-      setRSaving(false);
+      setSaveError(err.message);
+      setSaving(false);
     }
   }
+
+  const sourceLabel = { online: 'En ligne', manual: 'Manuel', phone: 'Tél.', walk_in: 'Sans RDV' }[booking.source] || booking.source || '–';
 
   // ---------- DELETE CONFIRMATION ----------
   if (subView === 'delete') {
@@ -626,12 +700,7 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
             </p>
             {hasEmail && (
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '12px 14px', background: 'rgba(var(--overlay),0.03)', border: '1px solid rgba(var(--overlay),0.08)', borderRadius: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={notifyClient}
-                  onChange={(e) => setNotifyClient(e.target.checked)}
-                  style={{ width: 18, height: 18, accentColor: '#3b82f6', cursor: 'pointer' }}
-                />
+                <input type="checkbox" checked={notifyClient} onChange={(e) => setNotifyClient(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#3b82f6', cursor: 'pointer' }} />
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>Prévenir le client par email</div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>{booking.client_email}</div>
@@ -639,23 +708,15 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
               </label>
             )}
             {!hasEmail && (
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 0' }}>
-                Pas d'email — le client ne sera pas notifié.
-              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 0' }}>Pas d'email — le client ne sera pas notifié.</div>
             )}
           </div>
           <div className="modal-footer" style={{ flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             {booking.recurrence_group_id && (
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center', width: '100%' }}>
-                <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>
-                  Ce RDV uniquement
-                </button>
-                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteGroup(true)} disabled={deleting}>
-                  Tous les futurs
-                </button>
-                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteGroup(false)} disabled={deleting}>
-                  Tout le groupe
-                </button>
+                <button className="btn btn-danger btn-sm" onClick={handleDelete} disabled={deleting}>Ce RDV uniquement</button>
+                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteGroup(true)} disabled={deleting}>Tous les futurs</button>
+                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteGroup(false)} disabled={deleting}>Tout le groupe</button>
               </div>
             )}
             {!booking.recurrence_group_id && (
@@ -663,175 +724,186 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
                 {deleting ? 'Suppression...' : 'Confirmer la suppression'}
               </button>
             )}
-            <button className="btn btn-secondary btn-sm" onClick={() => setSubView('detail')}>Retour</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setSubView('main')}>Retour</button>
           </div>
         </div>
       </div>
     );
   }
 
-  // ---------- RESCHEDULE FORM ----------
-  if (subView === 'reschedule') {
-    return (
-      <div className="modal-backdrop" onClick={onClose}>
-        <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
-          <div className="modal-header">
-            <h3 className="modal-title">Déplacer le RDV</h3>
-            <button className="btn-ghost" onClick={onClose}><CloseIcon /></button>
-          </div>
-          <form onSubmit={handleReschedule}>
-            <div className="modal-body">
-              {rError && (
-                <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', fontSize: 13, marginBottom: 14 }}>{rError}</div>
-              )}
-              <div style={{ background: 'rgba(var(--overlay),0.03)', border: '1px solid rgba(var(--overlay),0.08)', borderRadius: 8, padding: '12px 14px', marginBottom: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{booking.client_first_name} {booking.client_last_name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-                  Actuellement : {booking.date ? format(parseISO(bookingDateStr), 'EEE d MMM', { locale: fr }) : ''} à {booking.start_time?.slice(0, 5)} avec {booking.barber_name}
-                </div>
-              </div>
-
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 8 }}>Nouveau créneau</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div className="form-group">
-                  <label className="label">Date</label>
-                  <input className="input" type="date" value={rDate} onChange={(e) => setRDate(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label className="label">Heure</label>
-                  <input className="input" type="time" value={rTime} onChange={(e) => setRTime(e.target.value)} min="09:00" max="20:00" required />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div className="form-group">
-                  <label className="label">Barber</label>
-                  <select className="input" value={rBarberId} onChange={(e) => setRBarberId(e.target.value)} required>
-                    {barbers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="label">Prestation</label>
-                  <select className="input" value={rServiceId} onChange={(e) => setRServiceId(e.target.value)} required>
-                    {rFilteredServices.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* Color picker */}
-              <div className="form-group">
-                <label className="label">Couleur</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
-                  {COLOR_PALETTE.map((c) => (
-                    <div
-                      key={c}
-                      onClick={() => setRColor(c)}
-                      style={{
-                        width: 22, height: 22, borderRadius: 6, background: c, cursor: 'pointer',
-                        border: rColor === c ? '2px solid #fff' : '2px solid transparent',
-                        boxShadow: rColor === c ? `0 0 0 1px ${c}` : 'none',
-                        transition: 'all 0.15s ease',
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ height: 1, background: 'rgba(var(--overlay),0.08)', margin: '14px 0' }} />
-
-              {hasEmail && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '12px 14px', background: 'rgba(var(--overlay),0.03)', border: '1px solid rgba(var(--overlay),0.08)', borderRadius: 8 }}>
-                  <input
-                    type="checkbox"
-                    checked={notifyClient}
-                    onChange={(e) => setNotifyClient(e.target.checked)}
-                    style={{ width: 18, height: 18, accentColor: '#3b82f6', cursor: 'pointer' }}
-                  />
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>Prévenir le client par email</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>{booking.client_email}</div>
-                  </div>
-                </label>
-              )}
-              {!hasEmail && (
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 0' }}>
-                  Pas d'email — le client ne sera pas notifié.
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSubView('detail')}>Retour</button>
-              <button type="submit" className="btn btn-primary btn-sm" disabled={rSaving}>
-                {rSaving ? 'Déplacement...' : 'Déplacer le RDV'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // ---------- DETAIL VIEW (default) ----------
+  // ---------- UNIFIED DETAIL + EDIT VIEW ----------
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal booking-detail-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">Rendez-vous</h3>
-          <button className="btn-ghost" onClick={onClose}><CloseIcon /></button>
-        </div>
-        <div className="modal-body">
-          <div style={{ display: 'grid', gap: 4 }}>
-            <DetailRow label="Client" value={`${booking.client_first_name} ${booking.client_last_name}`} bold />
-            <DetailRow label="Téléphone" value={booking.client_phone || '–'} />
-            <DetailRow label="Email" value={booking.client_email || '–'} />
-            <DetailRow label="Barber" value={booking.barber_name || '–'} />
-            <DetailRow label="Prestation" value={booking.service_name} bold />
-            <DetailRow label="Horaire" value={`${booking.start_time?.slice(0, 5)} – ${booking.end_time?.slice(0, 5)}`} />
-            <DetailRow label="Date" value={booking.date ? format(parseISO(bookingDateStr), 'EEEE d MMMM yyyy', { locale: fr }) : '–'} />
-            <DetailRow label="Prix" value={formatPrice(booking.price)} valueStyle={{ fontFamily: 'var(--font-display, Orbitron, monospace)', fontWeight: 800 }} />
-            <DetailRow label="Source" value={{ online: 'En ligne', manual: 'Manuel', phone: 'Tél.', walk_in: 'Sans RDV' }[booking.source] || booking.source || '–'} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(var(--overlay),0.04)' }}>
-              <span style={{ color: 'var(--text-muted, #888)', fontSize: 13 }}>Statut</span>
-              <span className={`badge badge-${booking.status}`}>
-                {STATUS_LABELS[booking.status] || booking.status}
-              </span>
-            </div>
-            <div style={{ marginTop: 8, padding: '10px 12px', background: 'rgba(var(--overlay),0.03)', borderRadius: 6, border: '1px solid rgba(var(--overlay),0.08)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted, #888)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Notes client</div>
-                {notesSaving && <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>Sauvegarde...</span>}
-                {notesSaved && <span style={{ fontSize: 10, color: '#22c55e' }}>Sauvegarde</span>}
-              </div>
-              <textarea
-                value={notes}
-                onChange={(e) => handleNotesChange(e.target.value)}
-                placeholder="Ex: Sabot 3mm sur les cotes, fondu bas..."
-                style={{
-                  width: '100%', minHeight: 60, padding: '8px 10px', fontSize: 13,
-                  background: 'rgba(var(--overlay),0.04)', border: '1px solid rgba(var(--overlay),0.1)',
-                  borderRadius: 6, color: 'var(--text)', resize: 'vertical', lineHeight: 1.5,
-                  fontFamily: 'inherit', outline: 'none',
-                }}
-                onFocus={(e) => { e.target.style.borderColor = 'rgba(59,130,246,0.4)'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'rgba(var(--overlay),0.1)'; }}
-              />
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className={`badge badge-${booking.status}`}>{STATUS_LABELS[booking.status] || booking.status}</span>
+            <button className="btn-ghost" onClick={onClose}><CloseIcon /></button>
           </div>
         </div>
-        <div className="modal-footer" style={{ flexWrap: 'wrap', gap: 8 }}>
+        <div className="modal-body">
+          {saveError && (
+            <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, color: '#ef4444', fontSize: 13, marginBottom: 4 }}>{saveError}</div>
+          )}
+
+          {/* CLIENT SECTION */}
+          <div className="bk-section">
+            <div className="bk-section-title">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Client
+            </div>
+            <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 10 }}>{booking.client_first_name} {booking.client_last_name}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 24px', fontSize: 13, color: 'var(--text-secondary)' }}>
+              {booking.client_phone && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  {booking.client_phone}
+                </span>
+              )}
+              {booking.client_email && (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  {booking.client_email}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* CRÉNEAU SECTION — editable if confirmed */}
+          <div className="bk-section">
+            <div className="bk-section-title">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Créneau
+            </div>
+            {isEditable ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className="bk-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Date</label>
+                    <input className="input" type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} required />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Heure</label>
+                    <input className="input" type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} min="08:00" max="20:00" step="300" required />
+                  </div>
+                </div>
+                <div className="bk-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Barber</label>
+                    <select className="input" value={editBarberId} onChange={(e) => setEditBarberId(e.target.value)} required>
+                      {barbers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Prestation</label>
+                    <select className="input" value={editServiceId} onChange={(e) => setEditServiceId(e.target.value)} required>
+                      {filteredServices.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 6 }}>
+                <DetailRow label="Date" value={booking.date ? format(parseISO(bookingDateStr), 'EEEE d MMMM yyyy', { locale: fr }) : '–'} />
+                <DetailRow label="Horaire" value={`${booking.start_time?.slice(0, 5)} – ${booking.end_time?.slice(0, 5)}`} />
+                <DetailRow label="Barber" value={booking.barber_name || '–'} />
+                <DetailRow label="Prestation" value={booking.service_name} bold />
+              </div>
+            )}
+          </div>
+
+          {/* COULEUR — only if editable */}
+          {isEditable && (
+            <div className="bk-section">
+              <div className="bk-section-title">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6.5" cy="13.5" r="2.5"/><circle cx="17.5" cy="13.5" r="2.5"/><circle cx="13.5" cy="20.5" r="2.5"/></svg>
+                Couleur
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                {COLOR_PALETTE.map((c) => (
+                  <div
+                    key={c}
+                    onClick={() => setEditColor(c)}
+                    style={{
+                      width: 28, height: 28, borderRadius: 8, background: c, cursor: 'pointer',
+                      border: editColor === c ? '2.5px solid #fff' : '2.5px solid transparent',
+                      boxShadow: editColor === c ? `0 0 0 1.5px ${c}` : 'none',
+                      transition: 'all 0.15s ease',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* INFOS SECTION */}
+          <div className="bk-section">
+            <div className="bk-section-title">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              Infos
+            </div>
+            <div style={{ display: 'grid', gap: 6 }}>
+              <DetailRow label="Prix" value={formatPrice(booking.price)} valueStyle={{ fontFamily: 'var(--font-display, Orbitron, monospace)', fontWeight: 800 }} />
+              <DetailRow label="Source" value={sourceLabel} />
+              <DetailRow label="Horaire" value={`${booking.start_time?.slice(0, 5)} – ${booking.end_time?.slice(0, 5)}`} />
+            </div>
+          </div>
+
+          {/* NOTES SECTION */}
+          <div className="bk-section">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div className="bk-section-title" style={{ marginBottom: 0 }}>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Notes client
+              </div>
+              {notesSaving && <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>Sauvegarde...</span>}
+              {notesSaved && <span style={{ fontSize: 10, color: '#22c55e' }}>Sauvegardé</span>}
+            </div>
+            <textarea
+              value={notes}
+              onChange={(e) => handleNotesChange(e.target.value)}
+              placeholder="Ex: Sabot 3mm sur les cotés, fondu bas..."
+              style={{
+                width: '100%', minHeight: 70, padding: '12px 14px', fontSize: 13,
+                background: 'rgba(var(--overlay),0.04)', border: '1px solid rgba(var(--overlay),0.1)',
+                borderRadius: 8, color: 'var(--text)', resize: 'vertical', lineHeight: 1.6,
+                fontFamily: 'inherit', outline: 'none',
+              }}
+              onFocus={(e) => { e.target.style.borderColor = 'rgba(59,130,246,0.4)'; }}
+              onBlur={(e) => { e.target.style.borderColor = 'rgba(var(--overlay),0.1)'; }}
+            />
+          </div>
+
+          {/* NOTIFICATION CHECKBOX — shown only if dirty and has email */}
+          {isDirty && hasEmail && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '12px 14px', background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.12)', borderRadius: 10 }}>
+              <input type="checkbox" checked={notifyClient} onChange={(e) => setNotifyClient(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#3b82f6', cursor: 'pointer' }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>Prévenir le client par email</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{booking.client_email}</div>
+              </div>
+            </label>
+          )}
+        </div>
+
+        {/* FOOTER */}
+        <div className="modal-footer bk-footer-actions" style={{ gap: 8 }}>
+          {isDirty && (
+            <button className="btn btn-primary btn-sm btn-save" onClick={handleSave} disabled={saving} style={{ marginLeft: 'auto' }}>
+              {saving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+          )}
           {booking.status === 'confirmed' && (
-            <>
-              <button className="btn btn-primary btn-sm" onClick={() => onStatusChange(booking.id, 'completed')}>Terminé</button>
-              <button className="btn btn-secondary btn-sm" style={{ color: 'var(--warning, #f59e0b)' }} onClick={() => onStatusChange(booking.id, 'no_show')}>No-show</button>
-              <button className="btn btn-secondary btn-sm" onClick={openReschedule}>
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-                Déplacer
-              </button>
-            </>
+            <button className="btn btn-secondary btn-sm" style={{ color: 'var(--warning, #f59e0b)' }} onClick={() => onStatusChange(booking.id, 'no_show')}>No-show</button>
           )}
           {booking.status === 'no_show' && (
             <button className="btn btn-primary btn-sm" onClick={() => onStatusChange(booking.id, 'confirmed')}>Re-confirmer</button>
           )}
-          <button className="btn btn-danger btn-sm" onClick={() => { setNotifyClient(true); setSubView('delete'); }}>Supprimer</button>
+          <button className="btn btn-danger btn-sm" onClick={() => { setNotifyClient(true); setSubView('delete'); }}>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Supprimer
+          </button>
         </div>
       </div>
     </div>
@@ -840,7 +912,7 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
 
 function DetailRow({ label, value, bold, valueStyle }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(var(--overlay),0.04)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid rgba(var(--overlay),0.05)' }}>
       <span style={{ color: 'var(--text-muted, #888)', fontSize: 13 }}>{label}</span>
       <span style={{ fontWeight: bold ? 700 : 600, fontSize: 14, textAlign: 'right', ...valueStyle }}>{value}</span>
     </div>
@@ -1127,7 +1199,7 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
               </div>
               <div className="bk-field">
                 <label>Heure</label>
-                <input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} min="09:00" max="20:00" required />
+                <input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} min="08:00" max="20:00" required />
               </div>
               <div className="bk-field">
                 <label>Durée (min)</label>
@@ -1392,11 +1464,11 @@ function BlockSlotModal({ barbers, onClose, onCreated, initialDate, initialBarbe
             <div style={formRow}>
               <div className="form-group">
                 <label className="label">Début</label>
-                <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} min="09:00" max="20:00" required />
+                <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} min="08:00" max="20:00" required />
               </div>
               <div className="form-group">
                 <label className="label">Fin</label>
-                <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} min="09:00" max="20:00" required />
+                <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} min="08:00" max="20:00" required />
               </div>
             </div>
             <div className="form-group">
@@ -1449,9 +1521,16 @@ function BlockDetailModal({ block, onClose, onDelete }) {
 // MinutePickerPopup
 // ---------------------------------------------------------------------------
 
-function MinutePickerPopup({ hour, position, onSelect, onClose }) {
+function MinutePickerPopup({ hour, position, onSelect, onClose, occupiedSlots }) {
   const popupRef = useRef(null);
-  const minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+  const minutes = [0, 10, 20, 30, 40, 50];
+
+  // Check if a minute is occupied by an existing booking/block
+  function isOccupied(m) {
+    if (!occupiedSlots || occupiedSlots.length === 0) return false;
+    const slotMin = hour * 60 + m;
+    return occupiedSlots.some(({ startMin, endMin }) => slotMin >= startMin && slotMin < endMin);
+  }
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -1515,27 +1594,33 @@ function MinutePickerPopup({ hour, position, onSelect, onClose }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6 }}>
         {minutes.map((m) => {
           const mm = String(m).padStart(2, '0');
+          const occupied = isOccupied(m);
           return (
             <button
               key={m}
-              onClick={() => onSelect(`${hh}:${mm}`)}
+              onClick={() => { if (!occupied) onSelect(`${hh}:${mm}`); }}
+              disabled={occupied}
               style={{
                 padding: '8px 4px',
                 fontSize: 13,
                 fontWeight: 700,
                 fontFamily: 'var(--font-display, Orbitron, monospace)',
-                background: 'rgba(var(--overlay),0.05)',
+                background: occupied ? 'rgba(var(--overlay),0.02)' : 'rgba(var(--overlay),0.05)',
                 border: '1px solid rgba(var(--overlay),0.1)',
                 borderRadius: 6,
-                color: 'var(--text)',
-                cursor: 'pointer',
+                color: occupied ? 'rgba(var(--overlay),0.2)' : 'var(--text)',
+                cursor: occupied ? 'not-allowed' : 'pointer',
+                opacity: occupied ? 0.4 : 1,
                 transition: 'all 0.12s',
+                textDecoration: occupied ? 'line-through' : 'none',
               }}
               onMouseEnter={(e) => {
+                if (occupied) return;
                 e.currentTarget.style.background = 'rgba(var(--overlay),0.15)';
                 e.currentTarget.style.borderColor = 'rgba(var(--overlay),0.3)';
               }}
               onMouseLeave={(e) => {
+                if (occupied) return;
                 e.currentTarget.style.background = 'rgba(var(--overlay),0.05)';
                 e.currentTarget.style.borderColor = 'rgba(var(--overlay),0.1)';
               }}
@@ -1624,7 +1709,7 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
           const dayStr = format(day, 'yyyy-MM-dd');
           const current = isToday(day);
           return (
-            <div key={dayStr} style={{ flex: 1, borderRight: '1px solid rgba(var(--overlay),0.25)', overflow: 'hidden' }}>
+            <div key={dayStr} className={current ? 'planning-day-today-header' : ''} style={{ flex: 1, borderRight: '1px solid rgba(var(--overlay),0.25)', overflow: 'hidden' }}>
               {/* Day label */}
               <div style={{
                 textAlign: 'center',
@@ -1693,7 +1778,7 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
             const current = isToday(day);
 
             return (
-              <div key={dayStr} style={{ flex: 1, borderRight: '1px solid rgba(var(--overlay),0.25)', position: 'relative' }}>
+              <div key={dayStr} className={current ? 'planning-day-today' : ''} style={{ flex: 1, borderRight: '1px solid rgba(var(--overlay),0.25)', position: 'relative' }}>
                 {/* Hour lines */}
                 {hours.map((h, i) => (
                   <div key={`line-${h}`}>
@@ -1723,7 +1808,7 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
                           position: 'relative',
                           borderRight: bIdx < barberCount - 1 ? '1px solid rgba(var(--overlay),0.04)' : 'none',
                           cursor: barberIsOff ? 'default' : 'pointer',
-                          background: barberIsOff ? 'repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(var(--overlay),0.02) 6px, rgba(var(--overlay),0.02) 7px)' : isDragOver ? 'rgba(59,130,246,0.08)' : 'transparent',
+                          background: barberIsOff ? 'repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(var(--overlay),0.035) 6px, rgba(var(--overlay),0.035) 7px)' : isDragOver ? 'rgba(59,130,246,0.08)' : 'transparent',
                           transition: 'background 0.15s',
                         }}
                         onClick={(e) => {
@@ -1787,10 +1872,24 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
                           } catch { /* invalid data */ }
                         }}
                       >
+                        {/* Off-hours zones (hatched like day-off, but clickable) */}
+                        {!barberIsOff && OFF_HOURS.map((zone) => (
+                          <div key={`off-${zone.startHour}`} style={{
+                            position: 'absolute',
+                            top: (zone.startHour - HOUR_START) * 60 * PX_PER_MIN,
+                            left: 0, right: 0,
+                            height: (zone.endHour - zone.startHour) * 60 * PX_PER_MIN,
+                            background: 'repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(var(--overlay),0.035) 6px, rgba(var(--overlay),0.035) 7px)',
+                            pointerEvents: 'none',
+                          }} />
+                        ))}
                         {/* Off-day overlay */}
                         {barberIsOff && (
-                          <div style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 20, pointerEvents: 'none' }}>
-                            <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(var(--overlay),0.25)', textTransform: 'uppercase', letterSpacing: '0.1em', background: 'rgba(0,0,0,0.5)', padding: '3px 8px', borderRadius: 4 }}>Repos</span>
+                          <div className="planning-day-off-overlay">
+                            <span className="planning-day-off-badge">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg>
+                              Repos
+                            </span>
                           </div>
                         )}
                         {/* Hover time indicator */}
@@ -1816,18 +1915,36 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
       </div>
 
       {/* Minute Picker Popup */}
-      {minutePicker && (
-        <MinutePickerPopup
-          hour={minutePicker.hour}
-          position={minutePicker.position}
-          onClose={() => setMinutePicker(null)}
-          onSelect={(time) => {
-            const { dayStr, barberId } = minutePicker;
-            setMinutePicker(null);
-            onSlotClick?.(dayStr, barberId, time);
-          }}
-        />
-      )}
+      {minutePicker && (() => {
+        const pickerKey = `${minutePicker.dayStr}_${minutePicker.barberId}`;
+        const pickerBookings = bookingsByDayBarber[pickerKey] || [];
+        const pickerBlocked = blockedByDayBarber?.[pickerKey] || [];
+        const occupiedSlots = [
+          ...pickerBookings.filter((b) => b.status !== 'cancelled').map((b) => {
+            const [sh, sm] = (b.start_time || '').split(':').map(Number);
+            const [eh, em] = (b.end_time || '').split(':').map(Number);
+            return { startMin: sh * 60 + (sm || 0), endMin: eh * 60 + (em || 0) };
+          }),
+          ...pickerBlocked.map((b) => {
+            const [sh, sm] = (b.start_time || '').split(':').map(Number);
+            const [eh, em] = (b.end_time || '').split(':').map(Number);
+            return { startMin: sh * 60 + (sm || 0), endMin: eh * 60 + (em || 0) };
+          }),
+        ];
+        return (
+          <MinutePickerPopup
+            hour={minutePicker.hour}
+            position={minutePicker.position}
+            occupiedSlots={occupiedSlots}
+            onClose={() => setMinutePicker(null)}
+            onSelect={(time) => {
+              const { dayStr, barberId } = minutePicker;
+              setMinutePicker(null);
+              onSlotClick?.(dayStr, barberId, time);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -1851,9 +1968,13 @@ function MobileWeekStrip({ currentDate, onSelectDate }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {/* Month label + Aujourd'hui */}
+      {/* Month label + nav + Aujourd'hui */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize' }}>{monthLabel}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button className="plan-nav-btn" onClick={() => onSelectDate(subMonths(currentDate, 1))} style={{ width: 26, height: 26, flexShrink: 0 }}><ChevronLeft /></button>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize', minWidth: 90, textAlign: 'center' }}>{monthLabel}</span>
+          <button className="plan-nav-btn" onClick={() => onSelectDate(addMonths(currentDate, 1))} style={{ width: 26, height: 26, flexShrink: 0 }}><ChevronRight /></button>
+        </div>
         <button className="plan-today-btn" style={{ padding: '4px 10px', fontSize: 12, borderColor: 'rgba(255,255,255,0.7)', color: 'var(--text)' }} onClick={() => onSelectDate(new Date())}>Aujourd&apos;hui</button>
       </div>
       {/* Week nav arrows + Day buttons */}
@@ -1923,6 +2044,7 @@ export default function Planning() {
   const [blockDefaults, setBlockDefaults] = useState({});
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
+  const [quickAction, setQuickAction] = useState(null); // { booking, rect }
 
   // Force day view on mobile
   useEffect(() => {
@@ -2020,12 +2142,21 @@ export default function Planning() {
     return `${format(weekStart, 'd MMM', { locale: fr })} \u2013 ${format(weekEnd, 'd MMM yyyy', { locale: fr })}`;
   }, [view, currentDateStr, weekStart, weekEnd]);
 
+  const monthDisplay = useMemo(() => format(currentDate, 'MMMM yyyy', { locale: fr }), [currentDateStr]);
+
   function goToday() { setCurrentDate(new Date()); }
   function goPrev() { setCurrentDate(view === 'week' ? subWeeks(currentDate, 1) : subDays(currentDate, 1)); }
   function goNext() { setCurrentDate(view === 'week' ? addWeeks(currentDate, 1) : addDays(currentDate, 1)); }
+  function goPrevMonth() { setCurrentDate(subMonths(currentDate, 1)); }
+  function goNextMonth() { setCurrentDate(addMonths(currentDate, 1)); }
+
+  // Booking block click → quick actions popover
+  function handleBookingBlockClick(booking, rect) {
+    setQuickAction({ booking, rect });
+  }
 
   async function handleStatusChange(id, status) {
-    try { await updateBookingStatus(id, status); setSelectedBooking(null); loadData(); } catch (err) { alert(err.message); }
+    try { await updateBookingStatus(id, status); setSelectedBooking(null); setQuickAction(null); loadData(); } catch (err) { alert(err.message); }
   }
 
   async function handleDeleteBooking(id, notify = false) {
@@ -2078,6 +2209,20 @@ export default function Planning() {
     try { await deleteBlockedSlot(id); setSelectedBlock(null); loadData(); } catch (err) { alert(err.message); }
   }
 
+  // Keyboard shortcuts: ←/→ = prev/next, T = today
+  useEffect(() => {
+    function handleKeyDown(e) {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (selectedBooking || showCreateModal || showBlockModal || selectedBlock || quickAction) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
+      else if (e.key === 't' || e.key === 'T') { e.preventDefault(); goToday(); }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [view, currentDate, selectedBooking, showCreateModal, showBlockModal, selectedBlock]);
+
   async function handleDragDrop(bookingId, { date, start_time, barber_id }) {
     setDraggingId(bookingId);
     try {
@@ -2098,9 +2243,14 @@ export default function Planning() {
             <div>
               <h2 className="page-title" style={{ fontSize: 18 }}>Planning</h2>
               <div className="plan-kpis">
-                <span className="plan-kpi">RDV <span className="plan-kpi-val">{stats.count}</span></span>
-                <span className="plan-kpi-dot" />
-                <span className="plan-kpi">CA <span className="plan-kpi-val">{formatPrice(stats.revenue)}</span></span>
+                <span className="plan-kpi-chip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span className="plan-kpi-val">{stats.count}</span>
+                </span>
+                <span className="plan-kpi-chip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <span className="plan-kpi-val">{formatPrice(stats.revenue)}</span>
+                </span>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
@@ -2122,10 +2272,23 @@ export default function Planning() {
             <div className="plan-title-block">
               <h2>Planning</h2>
               <div className="plan-kpis">
-                <span className="plan-kpi">RDV <span className="plan-kpi-val">{stats.count}</span></span>
-                <span className="plan-kpi-dot" />
-                <span className="plan-kpi">CA <span className="plan-kpi-val">{formatPrice(stats.revenue)}</span></span>
+                <span className="plan-kpi-chip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  RDV <span className="plan-kpi-val">{stats.count}</span>
+                </span>
+                <span className="plan-kpi-chip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  CA <span className="plan-kpi-val">{formatPrice(stats.revenue)}</span>
+                </span>
               </div>
+            </div>
+
+            <div style={{ width: 1, height: 28, background: 'rgba(var(--overlay),0.08)' }} />
+
+            <div className="plan-month-nav">
+              <button className="plan-nav-btn" onClick={goPrevMonth} style={{ width: 28, height: 28 }}><ChevronLeft /></button>
+              <span className="plan-month-label">{monthDisplay}</span>
+              <button className="plan-nav-btn" onClick={goNextMonth} style={{ width: 28, height: 28 }}><ChevronRight /></button>
             </div>
 
             <div style={{ width: 1, height: 28, background: 'rgba(var(--overlay),0.08)' }} />
@@ -2171,23 +2334,36 @@ export default function Planning() {
         ) : barbers.length === 0 ? (
           <div className="empty-state" style={{ minHeight: 300 }}>Aucun barber configuré.</div>
         ) : (
-          <TimeGrid
-            days={days}
-            barbers={barbers}
-            bookingsByDayBarber={bookingsByDayBarber}
-            blockedByDayBarber={blockedByDayBarber}
-            barberOffDays={barberOffDays}
-            onBookingClick={setSelectedBooking}
-            onBlockClick={setSelectedBlock}
-            onSlotClick={handleSlotClick}
-            view={view}
-            onSwipeLeft={goNext}
-            onSwipeRight={goPrev}
-            onDragDrop={handleDragDrop}
-            draggingId={draggingId}
-          />
+          <div key={view} className="planning-grid-animated">
+            <TimeGrid
+              days={days}
+              barbers={barbers}
+              bookingsByDayBarber={bookingsByDayBarber}
+              blockedByDayBarber={blockedByDayBarber}
+              barberOffDays={barberOffDays}
+              onBookingClick={handleBookingBlockClick}
+              onBlockClick={setSelectedBlock}
+              onSlotClick={handleSlotClick}
+              view={view}
+              onSwipeLeft={goNext}
+              onSwipeRight={goPrev}
+              onDragDrop={handleDragDrop}
+              draggingId={draggingId}
+            />
+          </div>
         )}
       </div>
+
+      {/* Quick Actions Popover */}
+      {quickAction && (
+        <BookingQuickActions
+          booking={quickAction.booking}
+          anchorRect={quickAction.rect}
+          onViewDetail={(bk) => { setQuickAction(null); setSelectedBooking(bk); }}
+          onDelete={(bk) => { setQuickAction(null); setSelectedBooking(bk); }}
+          onClose={() => setQuickAction(null)}
+        />
+      )}
 
       {/* Modals */}
       {selectedBooking && (
