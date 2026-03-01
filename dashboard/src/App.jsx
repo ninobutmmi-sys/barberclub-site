@@ -30,7 +30,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<Analytics />} />
+        <Route index element={<Planning />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="planning" element={<Planning />} />
         <Route path="services" element={<Services />} />
