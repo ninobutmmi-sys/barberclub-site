@@ -29,7 +29,7 @@ function formatTime(timeStr) {
   return timeStr.substring(0, 5);
 }
 
-const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
 // ============================================
 // Accent colors for KPIs
@@ -805,7 +805,7 @@ export default function Analytics() {
   const todayBookings = dashboard?.today?.bookings || 0;
   const todayCancelled = dashboard?.today?.cancelled || 0;
   const todayTotal = todayBookings + todayCancelled;
-  const noShowRate = todayTotal > 0 ? Math.round((todayCancelled / todayTotal) * 100) : 0;
+  const cancelRate = todayTotal > 0 ? Math.round((todayCancelled / todayTotal) * 100) : 0;
 
   const totalRev30 = revenue.reduce((sum, d) => sum + (parseInt(d.revenue) || 0), 0);
   const avgDailyRev = revenue.length > 0 ? Math.round(totalRev30 / revenue.length) : 0;
@@ -875,9 +875,9 @@ export default function Analytics() {
               <KpiCard
                 className="a-stagger a-d4"
                 label="Taux annulation"
-                value={`${noShowRate}%`}
+                value={`${cancelRate}%`}
                 subtitle={`${todayCancelled} annul. / ${todayTotal}`}
-                trend={noShowRate > 10 ? noShowRate : noShowRate > 0 ? -1 : 0}
+                trend={cancelRate > 10 ? cancelRate : cancelRate > 0 ? -1 : 0}
                 color="invert"
                 accent="red"
                 icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>}

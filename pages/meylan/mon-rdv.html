@@ -1666,8 +1666,15 @@
             } catch (e) {
                 btn.disabled = false;
                 btn.textContent = 'Confirmer le nouveau créneau';
-                // Show error inline
-                alert(e.message);
+                // Show error inline below button
+                let errEl = btn.parentElement.querySelector('.reschedule-error');
+                if (!errEl) {
+                    errEl = document.createElement('p');
+                    errEl.className = 'reschedule-error';
+                    errEl.style.cssText = 'color:#ef4444;font-size:13px;margin-top:12px;text-align:center;';
+                    btn.parentElement.appendChild(errEl);
+                }
+                errEl.textContent = e.message || 'Une erreur est survenue';
             }
         }
 

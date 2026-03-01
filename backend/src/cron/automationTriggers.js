@@ -115,7 +115,7 @@ async function processReviewSms(triggerConfig) {
        AND (b.end_time::time + ($1 || ' minutes')::interval) <= (NOW() AT TIME ZONE 'Europe/Paris')::time
        AND NOT EXISTS (
          SELECT 1 FROM notification_queue nq
-         WHERE nq.booking_id = b.id AND nq.type = 'review_email'
+         WHERE nq.booking_id = b.id AND nq.type = 'review_sms'
        )
      LIMIT 20`,
     [delayMinutes]

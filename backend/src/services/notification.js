@@ -196,12 +196,6 @@ async function sendConfirmationEmail(data) {
   });
 
   await brevoEmail(data.email, `Confirmation RDV - ${data.service_name} le ${dateFormatted}`, html);
-
-  // Update booking email tracking
-  await db.query(
-    'UPDATE bookings SET reminder_sent = false WHERE id = $1',
-    [data.booking_id]
-  );
 }
 
 /**

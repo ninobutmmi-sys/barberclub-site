@@ -2094,7 +2094,7 @@ export default function Planning() {
       }));
       setBarberOffDays(offMap);
     } catch (err) {
-      // silently handled
+      console.error('Planning load error:', err);
     }
     setLoading(false);
   }, [apiDateStr, view]);

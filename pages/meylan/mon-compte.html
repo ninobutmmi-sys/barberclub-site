@@ -850,7 +850,7 @@
 
         // ======== AUTH ========
         function getToken() {
-            return localStorage.getItem('bc_client_token');
+            return localStorage.getItem('bc_client_access');
         }
 
         function getRefreshToken() {
@@ -858,12 +858,12 @@
         }
 
         function setTokens(access, refresh) {
-            localStorage.setItem('bc_client_token', access);
+            localStorage.setItem('bc_client_access', access);
             if (refresh) localStorage.setItem('bc_client_refresh', refresh);
         }
 
         function clearAuth() {
-            localStorage.removeItem('bc_client_token');
+            localStorage.removeItem('bc_client_access');
             localStorage.removeItem('bc_client_refresh');
         }
 

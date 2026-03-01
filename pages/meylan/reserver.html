@@ -1217,6 +1217,7 @@
         .form-input {
             width: 100%;
             padding: 14px 16px;
+            font-size: 16px;
             background: rgba(255, 255, 255, 0.03);
             border: 1.5px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
@@ -3248,8 +3249,8 @@
             const isPastMonth = year < now.getFullYear() || (year === now.getFullYear() && month <= now.getMonth());
             $('#calPrev').disabled = isPastMonth;
 
-            // Max 2 months ahead
-            const maxDate = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+            // Max 6 months ahead
+            const maxDate = new Date(now.getFullYear(), now.getMonth() + 6, 1);
             const isFutureLimit = year > maxDate.getFullYear() || (year === maxDate.getFullYear() && month >= maxDate.getMonth());
             $('#calNext').disabled = isFutureLimit;
 
@@ -3352,7 +3353,7 @@
             try {
                 const headers = { 'Content-Type': 'application/json' };
                 if (isConnected) {
-                    headers['Authorization'] = 'Bearer ' + localStorage.getItem('bc_client_token');
+                    headers['Authorization'] = 'Bearer ' + localStorage.getItem('bc_client_access');
                 }
                 const res = await fetch(`${API}/waitlist`, {
                     method: 'POST',
@@ -3988,6 +3989,12 @@
                 `;
             }
         }
+
+        // Expose retry functions for onclick handlers in error templates
+        window.loadBarbers = loadBarbers;
+        window.loadServices = loadServices;
+        window.loadSlots = loadSlots;
+        window.joinWaitlist = joinWaitlist;
 
         init();
     })();
