@@ -105,10 +105,53 @@ async function sendNotification(notification) {
 }
 
 // ============================================
+// Circuit breaker for Brevo API
+// After 3 consecutive failures, short-circuit for 60s to avoid
+// blocking every booking with 15s timeouts.
+// ============================================
+const brevoCircuit = {
+  failures: 0,
+  threshold: 3,
+  cooldownMs: 60000,
+  openedAt: null,
+};
+
+function isCircuitOpen() {
+  if (brevoCircuit.failures < brevoCircuit.threshold) return false;
+  if (!brevoCircuit.openedAt) return false;
+  if (Date.now() - brevoCircuit.openedAt > brevoCircuit.cooldownMs) {
+    // Half-open: allow one attempt through
+    brevoCircuit.failures = 0;
+    brevoCircuit.openedAt = null;
+    logger.info('Brevo circuit breaker reset (cooldown elapsed)');
+    return false;
+  }
+  return true;
+}
+
+function recordBrevoSuccess() {
+  if (brevoCircuit.failures > 0) {
+    brevoCircuit.failures = 0;
+    brevoCircuit.openedAt = null;
+  }
+}
+
+function recordBrevoFailure() {
+  brevoCircuit.failures++;
+  if (brevoCircuit.failures >= brevoCircuit.threshold && !brevoCircuit.openedAt) {
+    brevoCircuit.openedAt = Date.now();
+    logger.warn('Brevo circuit breaker OPEN — skipping calls for 60s', { failures: brevoCircuit.failures });
+  }
+}
+
+// ============================================
 // Brevo API helpers
 // ============================================
 
 async function brevoEmail(to, subject, htmlContent) {
+  if (isCircuitOpen()) {
+    throw new Error('Brevo circuit breaker open — skipping email');
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
@@ -129,14 +172,22 @@ async function brevoEmail(to, subject, htmlContent) {
 
     if (!response.ok) {
       const errorBody = await response.text();
+      recordBrevoFailure();
       throw new Error(`Brevo email API error ${response.status}: ${errorBody}`);
     }
+    recordBrevoSuccess();
+  } catch (err) {
+    if (err.name === 'AbortError') recordBrevoFailure();
+    throw err;
   } finally {
     clearTimeout(timeout);
   }
 }
 
 async function brevoSMS(phone, content) {
+  if (isCircuitOpen()) {
+    throw new Error('Brevo circuit breaker open — skipping SMS');
+  }
   const recipient = formatPhoneInternational(phone);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
@@ -158,8 +209,13 @@ async function brevoSMS(phone, content) {
 
     if (!response.ok) {
       const errorBody = await response.text();
+      recordBrevoFailure();
       throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
     }
+    recordBrevoSuccess();
+  } catch (err) {
+    if (err.name === 'AbortError') recordBrevoFailure();
+    throw err;
   } finally {
     clearTimeout(timeout);
   }

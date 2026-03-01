@@ -19,4 +19,13 @@ router.get('/', async (req, res) => {
   });
 });
 
+/**
+ * GET /api/ping
+ * Ultra-light endpoint for external monitors (UptimeRobot, etc.)
+ * No DB, no auth, no logging overhead — just proves the process is alive.
+ */
+router.get('/ping', (req, res) => {
+  res.send('pong');
+});
+
 module.exports = router;

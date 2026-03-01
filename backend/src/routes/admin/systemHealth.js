@@ -49,6 +49,29 @@ router.get('/health', async (req, res, next) => {
       LIMIT 10
     `);
 
+    // 6. Cron staleness detection (warn if a cron hasn't run in 2x its schedule)
+    const STALE_THRESHOLDS = {
+      processQueue: 4 * 60 * 1000,         // 4 min (schedule: */2)
+      queueReminders: 25 * 60 * 60 * 1000, // 25h (schedule: daily 18h)
+      cleanupNotifications: 25 * 60 * 60 * 1000,
+      cleanupExpiredTokens: 25 * 60 * 60 * 1000,
+      automationTriggers: 20 * 60 * 1000,  // 20 min (schedule: */10)
+    };
+
+    const cronDetails = {};
+    for (const [key, info] of Object.entries(crons)) {
+      const staleThreshold = STALE_THRESHOLDS[key];
+      const isStale = info.lastRun && staleThreshold
+        ? (Date.now() - new Date(info.lastRun).getTime()) > staleThreshold
+        : false;
+      cronDetails[key] = { ...info, stale: isStale };
+    }
+
+    // 7. Queue depth — pending notifications waiting to be processed
+    const queueDepth = await db.query(
+      `SELECT COUNT(*) as total FROM notification_queue WHERE status = 'pending'`
+    );
+
     res.json({
       api: {
         status: 'up',
@@ -66,7 +89,8 @@ router.get('/health', async (req, res, next) => {
         heapTotalMB: Math.round(mem.heapTotal / 1024 / 1024 * 10) / 10,
         rssMB: Math.round(mem.rss / 1024 / 1024 * 10) / 10,
       },
-      crons,
+      crons: cronDetails,
+      queue_depth: parseInt(queueDepth.rows[0].total || 0),
       notifications: {
         sms_sent: parseInt(stats.sms_sent || 0),
         sms_failed: parseInt(stats.sms_failed || 0),

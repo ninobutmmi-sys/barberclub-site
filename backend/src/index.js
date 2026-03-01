@@ -37,6 +37,7 @@ const systemHealthRoutes = require('./routes/admin/systemHealth');
 const { queueReminders } = require('./cron/reminders');
 const { processQueue, cleanupOldNotifications, cleanupExpiredTokens } = require('./cron/retryNotifications');
 const { processAutomationTriggers } = require('./cron/automationTriggers');
+const { dailyBackupSnapshot } = require('./cron/backup');
 
 // ============================================
 // Cron job tracking (in-memory)
@@ -47,6 +48,7 @@ const cronStatus = {
   cleanupNotifications:  { label: 'Cleanup notifs 30j', schedule: '0 3 * * *',   lastRun: null, status: 'idle', error: null },
   cleanupExpiredTokens:  { label: 'Cleanup tokens',     schedule: '30 3 * * *',  lastRun: null, status: 'idle', error: null },
   automationTriggers:    { label: 'Triggers auto',      schedule: '*/10 * * * *', lastRun: null, status: 'idle', error: null },
+  dailyBackup:           { label: 'Backup snapshot',    schedule: '0 4 * * *',   lastRun: null, status: 'idle', error: null },
 };
 
 // Advisory lock IDs — unique per cron to prevent concurrent execution
@@ -56,6 +58,7 @@ const CRON_LOCK_IDS = {
   cleanupNotifications: 100004,
   cleanupExpiredTokens: 100005,
   automationTriggers: 100006,
+  dailyBackup: 100007,
 };
 
 function trackCron(key, fn) {
@@ -251,40 +254,47 @@ if (config.nodeEnv === 'production') {
   cron.schedule('0 3 * * *',    trackCron('cleanupNotifications', cleanupOldNotifications));
   cron.schedule('30 3 * * *',   trackCron('cleanupExpiredTokens', cleanupExpiredTokens));
   cron.schedule('*/10 * * * *', trackCron('automationTriggers', processAutomationTriggers));
+  cron.schedule('0 4 * * *',    trackCron('dailyBackup', dailyBackupSnapshot));
   logger.info('Cron jobs enabled (production)');
 } else {
   logger.info('Cron jobs disabled (development) — only production sends SMS/emails via crons');
 }
 
 // ============================================
-// Start server
+// Start server (skip in test mode — supertest manages its own)
 // ============================================
-const PORT = config.port;
-const { pool } = require('./config/database');
+const { pool, ensureConnection } = require('./config/database');
 
-const server = app.listen(PORT, () => {
-  logger.info(`BarberClub API running on port ${PORT}`, {
-    env: config.nodeEnv,
-    cors: config.corsOrigins,
+if (config.nodeEnv !== 'test') {
+  const PORT = config.port;
+
+  // Verify DB is reachable before accepting traffic
+  ensureConnection().then(() => {
+    const server = app.listen(PORT, () => {
+      logger.info(`BarberClub API running on port ${PORT}`, {
+        env: config.nodeEnv,
+        cors: config.corsOrigins,
+      });
+    });
+
+    // Graceful shutdown — finish in-flight requests + close DB pool
+    process.on('SIGTERM', () => {
+      logger.info('SIGTERM received, shutting down gracefully');
+      server.close(() => {
+        pool.end().then(() => process.exit(0));
+      });
+      setTimeout(() => process.exit(1), 10000); // Force exit after 10s
+    });
   });
-});
 
-// Graceful shutdown — finish in-flight requests + close DB pool
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  server.close(() => {
-    pool.end().then(() => process.exit(0));
+  process.on('unhandledRejection', (reason) => {
+    logger.error('Unhandled promise rejection', { reason: reason?.message || reason });
   });
-  setTimeout(() => process.exit(1), 10000); // Force exit after 10s
-});
 
-process.on('unhandledRejection', (reason) => {
-  logger.error('Unhandled promise rejection', { reason: reason?.message || reason });
-});
-
-process.on('uncaughtException', (err) => {
-  logger.error('Uncaught exception — process will exit', { error: err.message, stack: err.stack });
-  process.exit(1);
-});
+  process.on('uncaughtException', (err) => {
+    logger.error('Uncaught exception — process will exit', { error: err.message, stack: err.stack });
+    process.exit(1);
+  });
+}
 
 module.exports = app;

@@ -92,4 +92,26 @@ async function healthCheck() {
   }
 }
 
-module.exports = { query, getClient, transaction, healthCheck, pool };
+/**
+ * Ensure database is reachable at startup.
+ * Retries up to 5 times with 3s delay — prevents silent crash if Supabase
+ * is temporarily down during Railway restart.
+ */
+async function ensureConnection(maxRetries = 5, delayMs = 3000) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await pool.query('SELECT 1');
+      logger.info('Database connection verified', { attempt });
+      return;
+    } catch (err) {
+      logger.warn(`Database connection attempt ${attempt}/${maxRetries} failed`, { error: err.message });
+      if (attempt === maxRetries) {
+        logger.error('Database unreachable after all retries — starting anyway (queries will fail until DB is back)');
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
+module.exports = { query, getClient, transaction, healthCheck, pool, ensureConnection };
