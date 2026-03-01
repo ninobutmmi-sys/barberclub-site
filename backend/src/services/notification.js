@@ -270,49 +270,65 @@ function emailShell(content, { showHero = true, marketing = false } = {}) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+  <style>
+    :root { color-scheme: dark; }
+    body, .body-bg { background-color: #000000 !important; }
+    .dark-bg { background-color: ${DARK_BG} !important; }
+    .card-bg { background-color: ${CARD_BG} !important; }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#000;font-family:'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
-  <div style="max-width:600px;margin:0 auto;background:${DARK_BG};border-left:1px solid ${CARD_BORDER};border-right:1px solid ${CARD_BORDER};">
+<body class="body-bg" style="margin:0;padding:0;background-color:#000000;font-family:'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;" bgcolor="#000000">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#000000" style="background-color:#000000;">
+    <tr>
+      <td align="center" style="padding:0;">
+        <table role="presentation" class="dark-bg" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="${DARK_BG}" style="max-width:600px;width:100%;background-color:${DARK_BG};border-left:1px solid ${CARD_BORDER};border-right:1px solid ${CARD_BORDER};">
 
     ${showHero ? `
-    <!-- HERO — Salon photo with overlay -->
-    <div style="position:relative;overflow:hidden;height:240px;background:#000;">
-      <img src="${HERO_URL}" alt="" style="width:100%;height:240px;object-fit:cover;object-position:center 65%;display:block;opacity:0.35;">
-      <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg, rgba(12,10,9,0.2) 0%, rgba(12,10,9,0.95) 100%);"></div>
-      <div style="position:absolute;bottom:0;left:0;right:0;text-align:center;padding:0 24px 28px;">
-        <img src="${LOGO_URL}" alt="BarberClub" style="width:200px;height:auto;margin-bottom:4px;">
-        <div style="display:inline-block;margin-top:6px;">
-          <span style="color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</span>
-        </div>
-      </div>
-    </div>
-    <div style="height:2px;background:linear-gradient(90deg, transparent 0%, ${ACCENT_DIM} 30%, ${ACCENT} 50%, ${ACCENT_DIM} 70%, transparent 100%);"></div>
+          <!-- HERO — Logo + salon name on dark bg -->
+          <tr>
+            <td bgcolor="#000000" style="background-color:#000000;text-align:center;padding:40px 24px 32px;">
+              <img src="${LOGO_URL}" alt="BarberClub" width="200" style="width:200px;height:auto;display:inline-block;">
+              <p style="margin:10px 0 0;color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="height:2px;background:linear-gradient(90deg, transparent 0%, ${ACCENT_DIM} 30%, ${ACCENT} 50%, ${ACCENT_DIM} 70%, transparent 100%);font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
     ` : `
-    <!-- Compact header without hero -->
-    <div style="text-align:center;padding:36px 24px 20px;border-bottom:1px solid ${CARD_BORDER};">
-      <img src="${CROWN_URL}" alt="" style="width:28px;height:auto;margin-bottom:8px;opacity:0.7;">
-      <br>
-      <img src="${LOGO_URL}" alt="BarberClub" style="width:170px;height:auto;">
-      <div style="margin-top:8px;">
-        <span style="color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</span>
-      </div>
-    </div>
-    <div style="height:1px;background:linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.15) 50%, transparent 90%);"></div>
+          <!-- Compact header without hero -->
+          <tr>
+            <td bgcolor="${DARK_BG}" style="background-color:${DARK_BG};text-align:center;padding:36px 24px 20px;border-bottom:1px solid ${CARD_BORDER};">
+              <img src="${CROWN_URL}" alt="" width="28" style="width:28px;height:auto;margin-bottom:8px;opacity:0.7;">
+              <br>
+              <img src="${LOGO_URL}" alt="BarberClub" width="170" style="width:170px;height:auto;">
+              <p style="margin:8px 0 0;color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</p>
+            </td>
+          </tr>
     `}
 
-    <!-- CONTENT -->
-    <div style="padding:36px 32px 40px;color:${TEXT_PRIMARY};">
-      ${content}
-    </div>
+          <!-- CONTENT -->
+          <tr>
+            <td bgcolor="${DARK_BG}" style="background-color:${DARK_BG};padding:36px 32px 40px;color:${TEXT_PRIMARY};">
+              ${content}
+            </td>
+          </tr>
 
-    <!-- FOOTER -->
-    <div style="border-top:1px solid ${CARD_BORDER};padding:24px 32px 28px;text-align:center;">
-      <img src="${CROWN_URL}" alt="" style="width:16px;height:auto;opacity:0.3;margin-bottom:10px;">
-      <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;letter-spacing:0.3px;">BarberClub Meylan &mdash; 26 Av. du Gr&eacute;sivaudan, 38700 Corenc</p>
-      <p style="margin:0;color:${TEXT_MUTED};font-size:10px;opacity:0.6;">Paiement sur place uniquement</p>
-      ${marketing ? `<p style="margin:8px 0 0;color:${TEXT_MUTED};font-size:10px;opacity:0.5;">Si vous ne souhaitez plus recevoir ces emails, r&eacute;pondez &laquo;&nbsp;STOP&nbsp;&raquo; &agrave; cet email.</p>` : ''}
-    </div>
-  </div>
+          <!-- FOOTER -->
+          <tr>
+            <td bgcolor="${DARK_BG}" style="background-color:${DARK_BG};border-top:1px solid ${CARD_BORDER};padding:24px 32px 28px;text-align:center;">
+              <img src="${CROWN_URL}" alt="" width="16" style="width:16px;height:auto;opacity:0.3;margin-bottom:10px;">
+              <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;letter-spacing:0.3px;">BarberClub Meylan &mdash; 26 Av. du Gr&eacute;sivaudan, 38700 Corenc</p>
+              <p style="margin:0;color:${TEXT_MUTED};font-size:10px;opacity:0.6;">Paiement sur place uniquement</p>
+              ${marketing ? `<p style="margin:8px 0 0;color:${TEXT_MUTED};font-size:10px;opacity:0.5;">Si vous ne souhaitez plus recevoir ces emails, r&eacute;pondez &laquo;&nbsp;STOP&nbsp;&raquo; &agrave; cet email.</p>` : ''}
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }
@@ -335,43 +351,51 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
       </div>
 
       <!-- Time highlight -->
-      <div style="text-align:center;margin-bottom:28px;padding:20px;background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;">
-        <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;text-transform:uppercase;letter-spacing:2px;">Votre rendez-vous</p>
-        <p style="margin:0;color:${ACCENT};font-size:32px;font-weight:800;letter-spacing:1px;">${time}</p>
-        <p style="margin:4px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${date}</p>
-      </div>
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
+        <tr>
+          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};text-align:center;padding:20px;border-radius:16px;">
+            <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;text-transform:uppercase;letter-spacing:2px;">Votre rendez-vous</p>
+            <p style="margin:0;color:${ACCENT};font-size:32px;font-weight:800;letter-spacing:1px;">${time}</p>
+            <p style="margin:4px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${date}</p>
+          </td>
+        </tr>
+      </table>
 
       <!-- Detail card -->
-      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
-        <div style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});"></div>
-        <div style="padding:24px;">
-          <table style="width:100%;border-collapse:collapse;">
-            <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
-              <td style="padding:10px 0;color:${TEXT_PRIMARY};font-size:15px;font-weight:600;text-align:right;">${serviceName}</td>
-            </tr>
-            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
-            <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
-              <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:14px;text-align:right;">${barberName}</td>
-            </tr>
-            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
-            <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
-              <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;"><a href="https://maps.google.com/?q=26+Av+du+Gr%C3%A9sivaudan+38700+Corenc" style="color:${TEXT_SECONDARY};text-decoration:underline;">${address}</a></td>
-            </tr>
-            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
-            <tr>
-              <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
-              <td style="padding:12px 0 4px;color:${ACCENT};font-size:22px;font-weight:800;text-align:right;">${price}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
-            </tr>
-          </table>
-        </div>
-      </div>
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
+        <tr>
+          <td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
+                <td style="padding:10px 0;color:${TEXT_PRIMARY};font-size:15px;font-weight:600;text-align:right;">${serviceName}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
+                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:14px;text-align:right;">${barberName}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
+                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;"><a href="https://maps.google.com/?q=26+Av+du+Gr%C3%A9sivaudan+38700+Corenc" style="color:${TEXT_SECONDARY};text-decoration:underline;">${address}</a></td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
+              <tr>
+                <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
+                <td style="padding:12px 0 4px;color:${ACCENT};font-size:22px;font-weight:800;text-align:right;">${price}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
 
       <!-- CTA -->
       <div style="text-align:center;margin-bottom:20px;">
-        <a href="${cancelUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+        <a href="${cancelUrl}" style="display:inline-block;background-color:${ACCENT};color:#000000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
           G&eacute;rer mon rendez-vous
         </a>
       </div>
@@ -446,32 +470,34 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
       </div>
 
       <!-- Cancelled details -->
-      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
-        <div style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});"></div>
-        <div style="padding:24px;">
-          <table style="width:100%;border-collapse:collapse;">
-            <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:15px;text-align:right;text-decoration:line-through;">${service_name}</td>
-            </tr>
-            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
-            <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">${barber_name}</td>
-            </tr>
-            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
-            <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Date</td>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">${dateFormatted} &agrave; ${timeFormatted}</td>
-            </tr>
-            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
-            <tr>
-              <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
-              <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:18px;font-weight:700;text-align:right;text-decoration:line-through;">${priceFormatted}<span style="font-size:13px;font-weight:400;"> &euro;</span></td>
-            </tr>
-          </table>
-        </div>
-      </div>
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
+        <tr><td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr>
+          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:15px;text-align:right;text-decoration:line-through;">${service_name}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">${barber_name}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Date</td>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">${dateFormatted} &agrave; ${timeFormatted}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
+              <tr>
+                <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
+                <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:18px;font-weight:700;text-align:right;text-decoration:line-through;">${priceFormatted}<span style="font-size:13px;font-weight:400;"> &euro;</span></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
 
       <!-- CTA -->
       <div style="text-align:center;margin-bottom:20px;">
@@ -520,53 +546,61 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
       </div>
 
       <!-- Ancien cr&eacute;neau -->
-      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:16px;opacity:0.6;">
-        <div style="padding:16px 20px;">
-          <table style="width:100%;border-collapse:collapse;">
-            <tr>
-              <td style="padding:4px 0;color:${TEXT_MUTED};font-size:11px;text-transform:uppercase;letter-spacing:1.5px;">Ancien cr&eacute;neau</td>
-              <td style="padding:4px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">
-                ${oldDateFormatted} &agrave; ${oldTimeFormatted}${old_date !== new_date || barber_name !== new_barber_name ? ` &mdash; ${barber_name}` : ''}
-              </td>
-            </tr>
-          </table>
-        </div>
-      </div>
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:16px;opacity:0.6;">
+        <tr>
+          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:16px 20px;border-radius:16px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td style="padding:4px 0;color:${TEXT_MUTED};font-size:11px;text-transform:uppercase;letter-spacing:1.5px;">Ancien cr&eacute;neau</td>
+                <td style="padding:4px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">
+                  ${oldDateFormatted} &agrave; ${oldTimeFormatted}${old_date !== new_date || barber_name !== new_barber_name ? ` &mdash; ${barber_name}` : ''}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
 
       <!-- Nouveau cr&eacute;neau -->
-      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
-        <div style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});"></div>
-        <div style="padding:24px;">
-          <p style="margin:0 0 16px;color:${ACCENT};font-size:11px;text-transform:uppercase;letter-spacing:2px;font-weight:600;">Nouveau cr&eacute;neau</p>
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
+        <tr><td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr>
+          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:24px;">
+            <p style="margin:0 0 16px;color:${ACCENT};font-size:11px;text-transform:uppercase;letter-spacing:2px;font-weight:600;">Nouveau cr&eacute;neau</p>
 
-          <div style="text-align:center;margin-bottom:20px;padding:16px;background:${DARK_BG};border:1px solid ${CARD_BORDER};border-radius:12px;">
-            <p style="margin:0;color:${ACCENT};font-size:32px;font-weight:800;letter-spacing:1px;">${newTimeFormatted}</p>
-            <p style="margin:4px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${newDateFormatted}</p>
-          </div>
+            <table role="presentation" class="dark-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${DARK_BG}" style="background-color:${DARK_BG};border:1px solid ${CARD_BORDER};border-radius:12px;margin-bottom:20px;">
+              <tr>
+                <td bgcolor="${DARK_BG}" style="background-color:${DARK_BG};text-align:center;padding:16px;border-radius:12px;">
+                  <p style="margin:0;color:${ACCENT};font-size:32px;font-weight:800;letter-spacing:1px;">${newTimeFormatted}</p>
+                  <p style="margin:4px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${newDateFormatted}</p>
+                </td>
+              </tr>
+            </table>
 
-          <table style="width:100%;border-collapse:collapse;">
-            <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
-              <td style="padding:10px 0;color:${TEXT_PRIMARY};font-size:15px;font-weight:600;text-align:right;">${service_name}</td>
-            </tr>
-            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
-            <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
-              <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:14px;text-align:right;">${new_barber_name || barber_name}</td>
-            </tr>
-            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
-            <tr>
-              <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
-              <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;">${escapeHtml(config.salon.address)}</td>
-            </tr>
-            <tr><td colspan="2" style="padding:0;"><div style="border-top:1px solid ${CARD_BORDER};"></div></td></tr>
-            <tr>
-              <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
-              <td style="padding:12px 0 4px;color:${ACCENT};font-size:22px;font-weight:800;text-align:right;">${priceFormatted}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
-            </tr>
-          </table>
-        </div>
-      </div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
+                <td style="padding:10px 0;color:${TEXT_PRIMARY};font-size:15px;font-weight:600;text-align:right;">${service_name}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
+                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:14px;text-align:right;">${new_barber_name || barber_name}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
+                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;">${escapeHtml(config.salon.address)}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
+              <tr>
+                <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
+                <td style="padding:12px 0 4px;color:${ACCENT};font-size:22px;font-weight:800;text-align:right;">${priceFormatted}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
 
       ${manageUrl ? `<div style="text-align:center;margin-bottom:20px;">
         <a href="${manageUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
@@ -602,20 +636,22 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
         <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">R&eacute;initialiser votre mot de passe</h2>
       </div>
 
-      <div style="background:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;overflow:hidden;margin-bottom:28px;">
-        <div style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});"></div>
-        <div style="padding:28px 24px;">
-          <p style="margin:0 0 24px;color:${TEXT_SECONDARY};font-size:14px;line-height:1.7;">
-            Bonjour${first_name ? ` ${first_name}` : ''},<br><br>
-            Vous avez demand&eacute; la r&eacute;initialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.
-          </p>
-          <div style="text-align:center;">
-            <a href="${resetUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
-              Nouveau mot de passe
-            </a>
-          </div>
-        </div>
-      </div>
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
+        <tr><td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr>
+          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:28px 24px;">
+            <p style="margin:0 0 24px;color:${TEXT_SECONDARY};font-size:14px;line-height:1.7;">
+              Bonjour${first_name ? ` ${first_name}` : ''},<br><br>
+              Vous avez demand&eacute; la r&eacute;initialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.
+            </p>
+            <div style="text-align:center;">
+              <a href="${resetUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+                Nouveau mot de passe
+              </a>
+            </div>
+          </td>
+        </tr>
+      </table>
 
       <div style="text-align:center;color:${TEXT_MUTED};font-size:11px;line-height:1.6;">
         <p style="margin:0 0 4px;">Ce lien expire dans 1 heure.</p>

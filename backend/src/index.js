@@ -112,14 +112,9 @@ app.use(helmet({
 // CORS — only allow configured origins
 app.use(cors({
   origin: (origin, callback) => {
-    // In production, reject requests with no Origin header (blocks curl/scripts abuse)
-    // Exception: health check and tracking routes are handled before CORS matters
+    // Allow requests with no Origin header (direct browser navigation, e.g. .ics download)
+    // Security is handled per-route via tokens, JWT auth, and rate limiting
     if (!origin) {
-      if (config.nodeEnv === 'production') {
-        logger.warn('CORS blocked request with no origin (production)');
-        return callback(new Error('Not allowed by CORS'));
-      }
-      // In dev, allow no-origin (Postman, curl, etc.)
       return callback(null, true);
     }
 
