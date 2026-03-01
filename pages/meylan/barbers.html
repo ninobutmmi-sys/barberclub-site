@@ -58,19 +58,22 @@
             right: 0;
             z-index: 100;
             padding: 8px 16px;
+            padding-top: max(8px, env(safe-area-inset-top));
             display: flex;
             align-items: center;
             justify-content: space-between;
             background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
             transition: all 0.3s ease;
         }
 
         .header.scrolled {
             background: rgba(0, 0, 0, 1);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
         }
 
         .back-btn {

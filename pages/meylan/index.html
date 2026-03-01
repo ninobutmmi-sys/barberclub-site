@@ -302,6 +302,8 @@
         .nav-item svg {
             width: 18px;
             height: 18px;
+            min-width: 18px;
+            flex-shrink: 0;
             opacity: 0.8;
             position: relative;
             z-index: 1;
@@ -907,12 +909,12 @@
                 <a href="prestations.html" class="nav-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="6" cy="6" r="3" />
-                        <path d="M8.12 8.12L12 12" />
-                        <path d="M20 4L8.12 15.88" />
+                        <line x1="8.12" y1="8.12" x2="12" y2="12" />
+                        <line x1="20" y1="4" x2="8.12" y2="15.88" />
                         <circle cx="6" cy="18" r="3" />
-                        <path d="M14.8 14.8L20 20" />
+                        <line x1="14.8" y1="14.8" x2="20" y2="20" />
                     </svg>
-                    Prestations
+                    Tarifs
                 </a>
                 <a href="reserver.html" class="nav-item full cta">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
