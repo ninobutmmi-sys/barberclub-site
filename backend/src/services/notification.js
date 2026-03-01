@@ -270,13 +270,18 @@ function emailShell(content, { showHero = true, marketing = false } = {}) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="dark">
-  <meta name="supported-color-schemes" content="dark">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <style>
-    :root { color-scheme: dark; }
+    :root { color-scheme: light dark; }
     body, .body-bg { background-color: #000000 !important; }
     .dark-bg { background-color: ${DARK_BG} !important; }
     .card-bg { background-color: ${CARD_BG} !important; }
+    @media (prefers-color-scheme: dark) {
+      .body-bg { background-color: #000000 !important; }
+      .dark-bg { background-color: ${DARK_BG} !important; }
+      .card-bg { background-color: ${CARD_BG} !important; }
+    }
   </style>
 </head>
 <body class="body-bg" style="margin:0;padding:0;background-color:#000000;font-family:'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;" bgcolor="#000000">
