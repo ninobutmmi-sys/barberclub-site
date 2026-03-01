@@ -3,12 +3,86 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tarifs Coiffeur Grenoble | BarberClub - Prix Coupe Homme & Barbe</title>
     <meta name="description"
         content="Tarifs BarberClub Grenoble : coupe homme dès 25€, dégradé, taille de barbe, coloration. Prix salon de coiffure homme premium en Isère. Découvrez nos prestations !">
     <meta name="keywords"
         content="tarif coiffeur grenoble, prix coupe homme grenoble, tarif barbier grenoble, prix dégradé grenoble, coiffeur homme pas cher grenoble, barbershop grenoble prix">
+    <link rel="canonical" href="https://barberclub-grenoble.fr/pages/grenoble/prestations.html">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Tarifs BarberClub Grenoble - Prix Coupe Homme & Barbe">
+    <meta property="og:description" content="Tarifs BarberClub Grenoble : coupe homme dès 25€, dégradé, barbe, coloration. Salon premium en Isère.">
+    <meta property="og:image" content="https://barberclub-site.pages.dev/assets/images/salons/grenoble/salon-grenoble.jpg">
+    <meta property="og:url" content="https://barberclub-grenoble.fr/pages/grenoble/prestations.html">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="BarberClub">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Tarifs BarberClub Grenoble - Prix Coupe & Barbe">
+    <meta name="twitter:description" content="Tarifs BarberClub Grenoble : coupe homme dès 25€, dégradé, barbe. Salon premium.">
+    <meta name="twitter:image" content="https://barberclub-site.pages.dev/assets/images/salons/grenoble/salon-grenoble.jpg">
+
+    <!-- Schema.org -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BarberShop",
+        "name": "BarberClub Grenoble",
+        "url": "https://barberclub-grenoble.fr/pages/grenoble/",
+        "telephone": "+33956309386",
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "5 Rue Clôt Bey",
+            "addressLocality": "Grenoble",
+            "postalCode": "38000",
+            "addressCountry": "FR"
+        },
+        "priceRange": "€€",
+        "hasOfferCatalog": {
+            "@type": "OfferCatalog",
+            "name": "Prestations BarberClub Grenoble",
+            "itemListElement": [
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "Coupe homme",
+                        "description": "Coupe classique ou tendance"
+                    }
+                },
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "Coupe + Barbe",
+                        "description": "Coupe complète avec taille de barbe"
+                    }
+                },
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "Taille de barbe",
+                        "description": "Taille et entretien de barbe"
+                    }
+                },
+                {
+                    "@type": "Offer",
+                    "itemOffered": {
+                        "@type": "Service",
+                        "name": "Coloration",
+                        "description": "Coloration cheveux ou barbe"
+                    }
+                }
+            ]
+        }
+    }
+    </script>
+
     <link rel="manifest" href="../../config/manifest.json">
     <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
     <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
@@ -831,10 +905,30 @@
                 transform: none;
             }
         }
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #fff;
+            color: #000;
+            padding: 8px 16px;
+            z-index: 10000;
+            font-size: 14px;
+            text-decoration: none;
+            transition: top 0.2s;
+        }
+        .skip-to-content:focus {
+            top: 0;
+        }
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 
 <body>
+    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
     <!-- BACKGROUND FLOUE -->
     <div class="bg-fixed"></div>
 
@@ -846,7 +940,7 @@
                 <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
         </a>
-        <a href="../../" class="logo-link"><img loading="lazy" src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
         <div class="header-spacer"></div>
     </header>
 
@@ -857,7 +951,7 @@
     </div>
 
     <!-- CONTENT -->
-    <div class="content">
+    <div class="content" id="main-content">
 
         <!-- TARIFS -->
         <section class="tarifs-section">

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Tom - Barber chez BarberClub Grenoble">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -587,10 +587,30 @@
                 transition: none !important;
             }
         }
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #fff;
+            color: #000;
+            padding: 8px 16px;
+            z-index: 10000;
+            font-size: 14px;
+            text-decoration: none;
+            transition: top 0.2s;
+        }
+        .skip-to-content:focus {
+            top: 0;
+        }
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 
 <body>
+    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
     <!-- HEADER -->
     <header class="header" id="header">
         <a href="../grenoble/barbers.html" class="back-btn" onclick="if(history.length>1){history.back();return false}">
@@ -599,12 +619,12 @@
                 <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
         </a>
-        <a href="../../" class="logo-link"><img loading="lazy" src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
         <div class="header-spacer"></div>
     </header>
 
     <!-- HERO -->
-    <section class="hero">
+    <section class="hero" id="main-content">
         <video class="hero-video" autoplay loop muted playsinline preload="none">
             <source src="../../assets/videos/barbers/tom.mp4" type="video/mp4">
         </video>

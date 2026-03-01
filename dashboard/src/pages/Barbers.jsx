@@ -77,13 +77,19 @@ export default function Barbers() {
     try {
       setBarbers(await getBarbers());
     } catch (err) {
-      setError('Impossible de charger les barbers. Vérifiez votre connexion.');
+      setError('Impossible de charger les donnees');
     }
     setLoading(false);
   }
 
   return (
     <>
+      {error && (
+        <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
+          <span>{error}</span>
+          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+        </div>
+      )}
       <div className="page-header">
         <h2 className="page-title">Barbers</h2>
       </div>
@@ -91,8 +97,6 @@ export default function Barbers() {
       <div className="page-body">
         {loading ? (
           <div className="empty-state">Chargement...</div>
-        ) : error ? (
-          <div className="empty-state" style={{ color: 'var(--danger, #ef4444)' }}>{error}</div>
         ) : (
           <div
             style={{

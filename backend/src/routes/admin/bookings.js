@@ -394,7 +394,8 @@ router.delete('/group/:groupId',
       // Build date condition: future_only = only today and future bookings
       const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
       const todayStr = now.toISOString().split('T')[0];
-      const dateCondition = futureOnly ? ` AND b.date >= '${todayStr}'` : '';
+      const params = futureOnly ? [groupId, todayStr] : [groupId];
+      const dateCondition = futureOnly ? ` AND b.date >= $2` : '';
 
       // If notify, fetch all bookings info before deleting
       let bookingsInfo = [];
@@ -410,7 +411,7 @@ router.delete('/group/:groupId',
            WHERE b.recurrence_group_id = $1
              AND b.deleted_at IS NULL AND b.status != 'cancelled'
              ${dateCondition}`,
-          [groupId]
+          params
         );
         bookingsInfo = infoResult.rows;
       }
@@ -422,7 +423,7 @@ router.delete('/group/:groupId',
            AND deleted_at IS NULL AND status != 'cancelled'
            ${dateCondition}
          RETURNING id`,
-        [groupId]
+        params
       );
 
       if (result.rows.length === 0) {

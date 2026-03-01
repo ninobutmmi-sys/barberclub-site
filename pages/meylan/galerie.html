@@ -3,12 +3,59 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galerie Coiffures Meylan | BarberClub - Photos Salon Corenc</title>
     <meta name="description"
         content="Galerie BarberClub Meylan : découvrez notre salon près de Corenc en photos. Intérieur, ambiance, produits. Votre barbershop premium en Isère !">
     <meta name="keywords"
         content="galerie coiffeur meylan, photos salon meylan, barbier corenc photos, salon coiffure meylan, barbershop isère">
+    <link rel="canonical" href="https://barberclub-grenoble.fr/pages/meylan/galerie.html">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Galerie BarberClub Meylan - Photos Salon & Coiffures">
+    <meta property="og:description" content="Découvrez notre salon BarberClub Meylan en photos. Intérieur, ambiance, produits. Votre barbershop premium près de Corenc.">
+    <meta property="og:image" content="https://barberclub-site.pages.dev/assets/images/salons/meylan/salon-meylan.jpg">
+    <meta property="og:url" content="https://barberclub-grenoble.fr/pages/meylan/galerie.html">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="BarberClub">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Galerie BarberClub Meylan - Photos Salon">
+    <meta name="twitter:description" content="Découvrez notre salon BarberClub Meylan en photos. Barbershop premium près de Corenc.">
+    <meta name="twitter:image" content="https://barberclub-site.pages.dev/assets/images/salons/meylan/salon-meylan.jpg">
+
+    <!-- Schema.org -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "ImageGallery",
+                "name": "Galerie BarberClub Meylan",
+                "description": "Photos du salon BarberClub Meylan près de Corenc",
+                "url": "https://barberclub-grenoble.fr/pages/meylan/galerie.html"
+            },
+            {
+                "@type": "BarberShop",
+                "name": "BarberClub Meylan",
+                "url": "https://barberclub-grenoble.fr/pages/meylan/",
+                "telephone": "+33458282175",
+                "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": "26 Av. du Grésivaudan",
+                    "addressLocality": "Corenc",
+                    "postalCode": "38700",
+                    "addressCountry": "FR"
+                },
+                "image": "https://barberclub-site.pages.dev/assets/images/salons/meylan/salon-meylan.jpg",
+                "priceRange": "€€"
+            }
+        ]
+    }
+    </script>
+
     <link rel="manifest" href="../../config/manifest.json">
     <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
     <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
@@ -395,10 +442,30 @@
                 transition: none !important;
             }
         }
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #fff;
+            color: #000;
+            padding: 8px 16px;
+            z-index: 10000;
+            font-size: 14px;
+            text-decoration: none;
+            transition: top 0.2s;
+        }
+        .skip-to-content:focus {
+            top: 0;
+        }
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 
 <body>
+    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
     <!-- BACKGROUND FLOUE -->
     <div class="bg-fixed"></div>
 
@@ -410,7 +477,7 @@
                 <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
         </a>
-        <a href="../../" class="logo-link"><img loading="lazy" src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
         <div class="header-spacer"></div>
     </header>
 
@@ -421,7 +488,7 @@
     </div>
 
     <!-- CONTENT -->
-    <div class="content">
+    <div class="content" id="main-content">
         <section>
             <h2 class="section-title">Notre Salon</h2>
 
@@ -477,6 +544,7 @@
                 </div>
             </div>
         </section>
+
     </div>
 
     <!-- LIGHTBOX -->

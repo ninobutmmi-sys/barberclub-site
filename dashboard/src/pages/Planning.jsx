@@ -1151,7 +1151,7 @@ function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate
 
         <form onSubmit={handleSubmit}>
           {error && (
-            <div className="bk-error">
+            <div className="bk-error" role="alert">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
               {error}
             </div>
@@ -1439,7 +1439,7 @@ function BlockSlotModal({ barbers, onClose, onCreated, initialDate, initialBarbe
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && (
-              <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', fontSize: 13, marginBottom: 14 }}>{error}</div>
+              <div role="alert" style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', fontSize: 13, marginBottom: 14 }}>{error}</div>
             )}
             <div style={formRow}>
               <div className="form-group">
@@ -2034,6 +2034,7 @@ export default function Planning() {
   const [barbers, setBarbers] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [barberOffDays, setBarberOffDays] = useState({}); // { barberId: Set([0,6]) }
@@ -2070,6 +2071,7 @@ export default function Planning() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [bk, b, s, bs] = await Promise.all([
         getBookings({ date: apiDateStr, view }),
@@ -2095,6 +2097,7 @@ export default function Planning() {
       setBarberOffDays(offMap);
     } catch (err) {
       console.error('Planning load error:', err);
+      setError('Impossible de charger les donnees');
     }
     setLoading(false);
   }, [apiDateStr, view]);
@@ -2236,6 +2239,12 @@ export default function Planning() {
 
   return (
     <>
+      {error && (
+        <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
+          <span>{error}</span>
+          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+        </div>
+      )}
       {/* Header */}
       {isMobile ? (
         <div className="page-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
@@ -2350,6 +2359,12 @@ export default function Planning() {
               onDragDrop={handleDragDrop}
               draggingId={draggingId}
             />
+            {bookings.filter((b) => b.status !== 'cancelled').length === 0 && (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#a8a29e' }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>📅</div>
+                <p style={{ margin: 0, fontSize: 15 }}>Aucun rendez-vous ce jour</p>
+              </div>
+            )}
           </div>
         )}
       </div>

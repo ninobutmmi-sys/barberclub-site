@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const config = require('../config/env');
 const logger = require('../utils/logger');
+const { BREVO_REQUEST_TIMEOUT_MS } = require('../constants');
 
 function formatPhoneInternational(phone) {
   let cleaned = phone.replace(/[\s.-]/g, '');
@@ -20,7 +21,7 @@ async function brevoSMS(phone, content) {
   }
   const recipient = formatPhoneInternational(phone);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), BREVO_REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
       method: 'POST',
@@ -158,7 +159,7 @@ async function processReactivationSms(triggerConfig) {
 
   if (!message) return;
 
-  // Find clients with 3+ visits, inactive for inactiveDays, not contacted in last 30 days
+  // Find clients with 3+ visits, inactive for inactiveDays, not already contacted recently
   const result = await db.query(
     `SELECT c.id, c.first_name, c.last_name, c.phone,
             MAX(b.date) as last_visit
@@ -168,6 +169,7 @@ async function processReactivationSms(triggerConfig) {
        AND c.deleted_at IS NULL
        AND b.deleted_at IS NULL
        AND b.status IN ('completed', 'confirmed')
+       AND (c.reactivation_sms_sent_at IS NULL OR c.reactivation_sms_sent_at < NOW() - INTERVAL '30 days')
      GROUP BY c.id
      HAVING COUNT(b.id) >= 3
        AND MAX(b.date) < CURRENT_DATE - $1::int
@@ -183,6 +185,7 @@ async function processReactivationSms(triggerConfig) {
 
     try {
       await brevoSMS(client.phone, personalMessage);
+      await db.query('UPDATE clients SET reactivation_sms_sent_at = NOW() WHERE id = $1', [client.id]);
       logger.info('Reactivation SMS sent', { clientId: client.id, phone: client.phone });
     } catch (err) {
       logger.error('Reactivation SMS failed', { clientId: client.id, error: err.message });

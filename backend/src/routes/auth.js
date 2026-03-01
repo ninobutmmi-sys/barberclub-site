@@ -6,19 +6,39 @@ const db = require('../config/database');
 const config = require('../config/env');
 const { handleValidation } = require('../middleware/validate');
 const { authLimiter } = require('../middleware/rateLimiter');
-const { requireAuth, generateAccessToken, generateRefreshToken } = require('../middleware/auth');
+const { generateAccessToken, generateRefreshToken } = require('../middleware/auth');
 const { ApiError } = require('../utils/errors');
 const { sendResetPasswordEmail } = require('../services/notification');
 const logger = require('../utils/logger');
+const { BCRYPT_ROUNDS, MAX_LOGIN_ATTEMPTS, LOCKOUT_MINUTES, RESET_TOKEN_EXPIRY_MS } = require('../constants');
 
 const router = Router();
 
-const BCRYPT_ROUNDS = 12;
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_MINUTES = 15;
+const REFRESH_COOKIE_MAX_AGE = config.jwt.refreshExpiresMs;
 
 // Safe table mapping (prevents SQL injection via dynamic table names)
 const TABLE_MAP = { barber: 'barbers', client: 'clients' };
+
+// Set refresh token as httpOnly cookie
+function setRefreshTokenCookie(res, refreshToken) {
+  res.cookie('bc_refresh_token', refreshToken, {
+    httpOnly: true,
+    secure: config.nodeEnv === 'production',
+    sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
+    path: '/api/auth',
+    maxAge: REFRESH_COOKIE_MAX_AGE,
+  });
+}
+
+// Clear refresh token cookie
+function clearRefreshTokenCookie(res) {
+  res.clearCookie('bc_refresh_token', {
+    httpOnly: true,
+    secure: config.nodeEnv === 'production',
+    sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
+    path: '/api/auth',
+  });
+}
 
 // ============================================
 // POST /api/auth/login
@@ -109,6 +129,10 @@ router.post('/login',
 
       logger.info('User logged in', { userId: user.id, type });
 
+      // Set refresh token as httpOnly cookie (dashboard uses this)
+      setRefreshTokenCookie(res, refreshToken);
+
+      // Also return refresh_token in body for backward compat (site vitrine pages)
       res.json({
         access_token: accessToken,
         refresh_token: refreshToken,
@@ -195,6 +219,8 @@ router.post('/register',
 
       logger.info('Client registered', { clientId });
 
+      setRefreshTokenCookie(res, refreshToken);
+
       res.status(201).json({
         access_token: accessToken,
         refresh_token: refreshToken,
@@ -216,7 +242,8 @@ router.post('/register',
 // ============================================
 router.post('/refresh', authLimiter, async (req, res, next) => {
   try {
-    const { refresh_token } = req.body;
+    // Read refresh token from httpOnly cookie first, fallback to body (site vitrine)
+    const refresh_token = req.cookies?.bc_refresh_token || req.body?.refresh_token;
     if (!refresh_token) {
       throw ApiError.badRequest('Refresh token manquant');
     }
@@ -226,6 +253,7 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
     try {
       decoded = require('jsonwebtoken').verify(refresh_token, config.jwt.refreshSecret);
     } catch {
+      clearRefreshTokenCookie(res);
       throw ApiError.unauthorized('Refresh token invalide ou expiré');
     }
 
@@ -237,6 +265,7 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
     );
 
     if (tokenResult.rows.length === 0) {
+      clearRefreshTokenCookie(res);
       throw ApiError.unauthorized('Session expirée, veuillez vous reconnecter');
     }
 
@@ -249,6 +278,7 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
     );
 
     if (userResult.rows.length === 0) {
+      clearRefreshTokenCookie(res);
       throw ApiError.unauthorized('Utilisateur introuvable');
     }
 
@@ -269,6 +299,9 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
       [user.id, decoded.type, newRefreshToken, expiresAt]
     );
 
+    // Set new refresh token cookie (rotation)
+    setRefreshTokenCookie(res, newRefreshToken);
+
     res.json({
       access_token: newAccessToken,
       refresh_token: newRefreshToken,
@@ -284,26 +317,29 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
 // ============================================
 router.post('/logout', authLimiter, async (req, res, next) => {
   try {
-    const { refresh_token } = req.body;
-    if (!refresh_token) {
-      throw ApiError.badRequest('Refresh token manquant');
-    }
+    // Read refresh token from httpOnly cookie first, fallback to body (site vitrine)
+    const refresh_token = req.cookies?.bc_refresh_token || req.body?.refresh_token;
 
-    // Delete the refresh token (this IS the logout action)
-    const result = await db.query(
-      'DELETE FROM refresh_tokens WHERE token = $1 RETURNING user_id, user_type',
-      [refresh_token]
-    );
-
-    if (result.rows.length > 0) {
-      const { user_id, user_type } = result.rows[0];
-      // Clean up expired tokens for this user
-      await db.query(
-        'DELETE FROM refresh_tokens WHERE user_id = $1 AND user_type = $2 AND expires_at < NOW()',
-        [user_id, user_type]
+    if (refresh_token) {
+      // Delete the refresh token (this IS the logout action)
+      const result = await db.query(
+        'DELETE FROM refresh_tokens WHERE token = $1 RETURNING user_id, user_type',
+        [refresh_token]
       );
-      logger.info('User logged out', { userId: user_id, type: user_type });
+
+      if (result.rows.length > 0) {
+        const { user_id, user_type } = result.rows[0];
+        // Clean up expired tokens for this user
+        await db.query(
+          'DELETE FROM refresh_tokens WHERE user_id = $1 AND user_type = $2 AND expires_at < NOW()',
+          [user_id, user_type]
+        );
+        logger.info('User logged out', { userId: user_id, type: user_type });
+      }
     }
+
+    // Always clear the cookie
+    clearRefreshTokenCookie(res);
 
     res.json({ message: 'Déconnecté avec succès' });
   } catch (error) {
@@ -340,7 +376,7 @@ router.post('/forgot-password',
 
       // Generate reset token (UUID)
       const resetToken = crypto.randomUUID();
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRY_MS);
 
       await db.query(
         'UPDATE clients SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
@@ -424,6 +460,8 @@ router.post('/reset-password',
 
       logger.info('Password reset completed', { clientId: client.id });
 
+      setRefreshTokenCookie(res, refreshToken);
+
       res.json({
         message: 'Mot de passe réinitialisé avec succès',
         access_token: accessToken,
@@ -493,6 +531,8 @@ router.post('/claim-account',
       );
 
       logger.info('Account claimed after booking', { clientId: client_id, bookingId: booking_id });
+
+      setRefreshTokenCookie(res, refreshToken);
 
       res.status(201).json({
         access_token: accessToken,

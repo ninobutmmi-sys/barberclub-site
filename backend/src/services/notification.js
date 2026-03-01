@@ -1,6 +1,13 @@
 const db = require('../config/database');
 const config = require('../config/env');
 const logger = require('../utils/logger');
+const {
+  NOTIFICATION_RETRY_DELAYS,
+  NOTIFICATION_BATCH_SIZE,
+  BREVO_CIRCUIT_THRESHOLD,
+  BREVO_CIRCUIT_COOLDOWN_MS,
+  BREVO_REQUEST_TIMEOUT_MS,
+} = require('../constants');
 
 /**
  * Queue a notification for async sending
@@ -32,7 +39,7 @@ async function processPendingNotifications() {
          AND nq.next_retry_at <= NOW()
          AND nq.attempts < nq.max_attempts
        ORDER BY nq.created_at
-       LIMIT 10
+       LIMIT ${NOTIFICATION_BATCH_SIZE}
        FOR UPDATE SKIP LOCKED
      )
      RETURNING id`
@@ -111,8 +118,8 @@ async function sendNotification(notification) {
 // ============================================
 const brevoCircuit = {
   failures: 0,
-  threshold: 3,
-  cooldownMs: 60000,
+  threshold: BREVO_CIRCUIT_THRESHOLD,
+  cooldownMs: BREVO_CIRCUIT_COOLDOWN_MS,
   openedAt: null,
 };
 
@@ -140,7 +147,7 @@ function recordBrevoFailure() {
   brevoCircuit.failures++;
   if (brevoCircuit.failures >= brevoCircuit.threshold && !brevoCircuit.openedAt) {
     brevoCircuit.openedAt = Date.now();
-    logger.warn('Brevo circuit breaker OPEN — skipping calls for 60s', { failures: brevoCircuit.failures });
+    logger.warn(`Brevo circuit breaker OPEN — skipping calls for ${BREVO_CIRCUIT_COOLDOWN_MS / 1000}s`, { failures: brevoCircuit.failures });
   }
 }
 
@@ -153,7 +160,7 @@ async function brevoEmail(to, subject, htmlContent) {
     throw new Error('Brevo circuit breaker open — skipping email');
   }
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), BREVO_REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -190,7 +197,7 @@ async function brevoSMS(phone, content) {
   }
   const recipient = formatPhoneInternational(phone);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), BREVO_REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
       method: 'POST',
@@ -494,8 +501,7 @@ function formatPhoneInternational(phone) {
 
 function getNextRetryTime(attempts) {
   // Exponential backoff: 5min, 15min, 1h
-  const delays = [5, 15, 60];
-  const delayMinutes = delays[Math.min(attempts - 1, delays.length - 1)];
+  const delayMinutes = NOTIFICATION_RETRY_DELAYS[Math.min(attempts - 1, NOTIFICATION_RETRY_DELAYS.length - 1)];
   const next = new Date();
   next.setMinutes(next.getMinutes() + delayMinutes);
   return next;

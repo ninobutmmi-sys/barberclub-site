@@ -1,18 +1,11 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { login as apiLogin, logout as apiLogout, getStoredUser } from './api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => getStoredUser());
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check if we have a stored user
-    const stored = getStoredUser();
-    setUser(stored);
-    setLoading(false);
-  }, []);
+  const [loading] = useState(false);
 
   const login = async (email, password) => {
     const u = await apiLogin(email, password);

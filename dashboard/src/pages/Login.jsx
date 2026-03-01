@@ -30,7 +30,7 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit}>
-          {error && <div className="login-error">{error}</div>}
+          {error && <div className="login-error" role="alert">{error}</div>}
 
           <div className="form-group">
             <label className="label">Email</label>

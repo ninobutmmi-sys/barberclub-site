@@ -1,5 +1,11 @@
 const db = require('../config/database');
-const logger = require('../utils/logger');
+const { ApiError } = require('../utils/errors');
+const {
+  SLOT_INTERVAL_PUBLIC,
+  SLOT_INTERVAL_ADMIN,
+  ADMIN_SCHEDULE_END,
+  MIN_BOOKING_LEAD_MINUTES,
+} = require('../constants');
 
 /**
  * Get available time slots for a barber on a specific date
@@ -92,11 +98,11 @@ async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = 
     endTime = scheduleResult.rows[0].end_time;
   }
 
-  // Admin can book up to 20:00 even if schedule ends at 19:00
+  // Admin can book up to ADMIN_SCHEDULE_END even if schedule ends earlier
   if (options.adminMode) {
     const endMin = timeToMinutes(endTime);
-    if (endMin < 20 * 60) {
-      endTime = '20:00';
+    if (endMin < timeToMinutes(ADMIN_SCHEDULE_END)) {
+      endTime = ADMIN_SCHEDULE_END;
     }
   }
 
@@ -139,18 +145,18 @@ async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = 
   const endMin = timeToMinutes(endTime);
   const slots = [];
 
-  // For today: skip slots starting within 5 minutes (public only)
+  // For today: skip slots starting within MIN_BOOKING_LEAD_MINUTES (public only)
   let minSlotStart = 0;
   if (!options.adminMode) {
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     if (date === todayStr) {
-      minSlotStart = now.getHours() * 60 + now.getMinutes() + 5;
+      minSlotStart = now.getHours() * 60 + now.getMinutes() + MIN_BOOKING_LEAD_MINUTES;
     }
   }
 
-  // Slots every 30 min for clients (public API), every 5 min for admin
-  const step = options.adminMode ? 5 : 30;
+  // Slots every SLOT_INTERVAL_ADMIN min for admin, SLOT_INTERVAL_PUBLIC min for clients
+  const step = options.adminMode ? SLOT_INTERVAL_ADMIN : SLOT_INTERVAL_PUBLIC;
   for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
     const slotEnd = slotStart + duration;
 
@@ -312,9 +318,64 @@ function addMinutesToTime(timeStr, minutesToAdd) {
   return minutesToTime(totalMinutes);
 }
 
+/**
+ * Validate that a barber can accept a booking at the given date/time.
+ * Checks: schedule overrides, default schedule, blocked slots.
+ * @param {object} dbClient - pg client (inside transaction)
+ * @param {string} barberId - Barber UUID
+ * @param {string} date - YYYY-MM-DD
+ * @param {string} startTime - HH:MM
+ * @param {string} endTime - HH:MM
+ */
+async function validateBarberSlot(dbClient, barberId, date, startTime, endTime) {
+  const dateObj = new Date(date + 'T00:00:00');
+  const jsDay = dateObj.getDay();
+  const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
+
+  // Check schedule override first
+  const overrideCheck = await dbClient.query(
+    'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
+    [barberId, date]
+  );
+
+  if (overrideCheck.rows.length > 0) {
+    const ov = overrideCheck.rows[0];
+    if (ov.is_day_off) {
+      throw ApiError.badRequest('Ce barber ne travaille pas ce jour');
+    }
+    if (startTime < ov.start_time.slice(0, 5) || endTime > ov.end_time.slice(0, 5)) {
+      throw ApiError.badRequest('Horaire en dehors des heures de travail');
+    }
+  } else {
+    const scheduleCheck = await dbClient.query(
+      'SELECT is_working, start_time, end_time FROM schedules WHERE barber_id = $1 AND day_of_week = $2',
+      [barberId, dayOfWeek]
+    );
+    if (scheduleCheck.rows.length === 0 || !scheduleCheck.rows[0].is_working) {
+      throw ApiError.badRequest('Ce barber ne travaille pas ce jour');
+    }
+    const sched = scheduleCheck.rows[0];
+    if (startTime < sched.start_time.slice(0, 5) || endTime > sched.end_time.slice(0, 5)) {
+      throw ApiError.badRequest('Horaire en dehors des heures de travail');
+    }
+  }
+
+  // Check blocked slots
+  const blockedCheck = await dbClient.query(
+    `SELECT id FROM blocked_slots
+     WHERE barber_id = $1 AND date = $2
+       AND start_time < $3 AND end_time > $4`,
+    [barberId, date, endTime, startTime]
+  );
+  if (blockedCheck.rows.length > 0) {
+    throw ApiError.badRequest('Ce créneau est bloqué');
+  }
+}
+
 module.exports = {
   getAvailableSlots,
   isSlotAvailable,
   findBestBarber,
   addMinutesToTime,
+  validateBarberSlot,
 };

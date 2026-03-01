@@ -302,7 +302,7 @@ export default function History() {
 
         {/* -- Error banner -- */}
         {error && (
-          <div style={{
+          <div role="alert" style={{
             background: 'rgba(239,68,68,0.1)',
             border: '1px solid rgba(239,68,68,0.3)',
             borderRadius: 'var(--radius-sm)',
@@ -319,7 +319,10 @@ export default function History() {
         {loading ? (
           <div className="empty-state">Chargement...</div>
         ) : bookings.length === 0 ? (
-          <div className="empty-state">Aucun rendez-vous trouve</div>
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#a8a29e' }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+            <p style={{ margin: 0, fontSize: 15 }}>Aucun historique pour cette période</p>
+          </div>
         ) : (
           <>
             {isMobile ? (

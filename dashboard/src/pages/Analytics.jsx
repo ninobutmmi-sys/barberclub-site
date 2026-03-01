@@ -830,7 +830,7 @@ export default function Analytics() {
 
       <div className="page-body">
         {error && (
-          <div className="login-error" style={{ marginBottom: 20 }}>{error}</div>
+          <div className="login-error" role="alert" style={{ marginBottom: 20 }}>{error}</div>
         )}
 
         {loading ? (

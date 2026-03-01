@@ -4,6 +4,13 @@ const { ApiError } = require('../utils/errors');
 const availability = require('./availability');
 const notification = require('./notification');
 const logger = require('../utils/logger');
+const {
+  MAX_BOOKING_ADVANCE_MONTHS,
+  CANCELLATION_DEADLINE_HOURS,
+  MIN_BOOKING_LEAD_MINUTES,
+  SMS_CONFIRMATION_THRESHOLD_HOURS,
+  MAX_RECURRENCE_OCCURRENCES,
+} = require('../constants');
 
 /**
  * Create a new booking with atomic transaction
@@ -36,16 +43,16 @@ async function createBooking(data) {
       if (requestedDate < today) {
         throw ApiError.badRequest('Impossible de réserver dans le passé');
       }
-      // Reject bookings starting within 5 minutes
-      const minBookingTime = new Date(now.getTime() + 5 * 60 * 1000);
+      // Reject bookings starting within MIN_BOOKING_LEAD_MINUTES
+      const minBookingTime = new Date(now.getTime() + MIN_BOOKING_LEAD_MINUTES * 60 * 1000);
       const requestedDateTime = new Date(`${data.date}T${data.start_time}:00`);
       if (requestedDateTime < minBookingTime) {
-        throw ApiError.badRequest('Impossible de réserver un créneau dans moins de 5 minutes');
+        throw ApiError.badRequest(`Impossible de réserver un créneau dans moins de ${MIN_BOOKING_LEAD_MINUTES} minutes`);
       }
       const maxDate = new Date(today);
-      maxDate.setMonth(maxDate.getMonth() + 6);
+      maxDate.setMonth(maxDate.getMonth() + MAX_BOOKING_ADVANCE_MONTHS);
       if (requestedDate > maxDate) {
-        throw ApiError.badRequest('Impossible de réserver plus de 6 mois à l\'avance');
+        throw ApiError.badRequest(`Impossible de réserver plus de ${MAX_BOOKING_ADVANCE_MONTHS} mois à l'avance`);
       }
     }
 
@@ -95,50 +102,7 @@ async function createBooking(data) {
 
     // 3b. Validate barber schedule (client bookings only — admin can override)
     if (!isAdmin) {
-      const dateObj = new Date(data.date + 'T00:00:00');
-      const jsDay = dateObj.getDay();
-      const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
-
-      // Check schedule override first
-      const overrideCheck = await client.query(
-        'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
-        [barberId, data.date]
-      );
-
-      if (overrideCheck.rows.length > 0) {
-        const ov = overrideCheck.rows[0];
-        if (ov.is_day_off) {
-          throw ApiError.badRequest('Ce barber ne travaille pas ce jour');
-        }
-        // Check time is within override hours
-        if (data.start_time < ov.start_time.slice(0, 5) || endTime > ov.end_time.slice(0, 5)) {
-          throw ApiError.badRequest('Horaire en dehors des heures de travail');
-        }
-      } else {
-        // Check default schedule
-        const scheduleCheck = await client.query(
-          'SELECT is_working, start_time, end_time FROM schedules WHERE barber_id = $1 AND day_of_week = $2',
-          [barberId, dayOfWeek]
-        );
-        if (scheduleCheck.rows.length === 0 || !scheduleCheck.rows[0].is_working) {
-          throw ApiError.badRequest('Ce barber ne travaille pas ce jour');
-        }
-        const sched = scheduleCheck.rows[0];
-        if (data.start_time < sched.start_time.slice(0, 5) || endTime > sched.end_time.slice(0, 5)) {
-          throw ApiError.badRequest('Horaire en dehors des heures de travail');
-        }
-      }
-
-      // Check blocked slots
-      const blockedCheck = await client.query(
-        `SELECT id FROM blocked_slots
-         WHERE barber_id = $1 AND date = $2
-           AND start_time < $3 AND end_time > $4`,
-        [barberId, data.date, endTime, data.start_time]
-      );
-      if (blockedCheck.rows.length > 0) {
-        throw ApiError.badRequest('Ce créneau est bloqué');
-      }
+      await availability.validateBarberSlot(client, barberId, data.date, data.start_time, endTime);
 
       // Prevent client double-booking (same client, overlapping time, same day)
       const clientDoubleCheck = await client.query(
@@ -299,7 +263,7 @@ async function createBooking(data) {
     const now = new Date();
     const hoursUntilBooking = (bookingDateTime - now) / (1000 * 60 * 60);
 
-    if (hoursUntilBooking > 0 && hoursUntilBooking <= 24 && bookingDetails.client_phone) {
+    if (hoursUntilBooking > 0 && hoursUntilBooking <= SMS_CONFIRMATION_THRESHOLD_HOURS && bookingDetails.client_phone) {
       try {
         await notification.sendConfirmationSMS({
           booking_id: result.id,
@@ -334,8 +298,8 @@ function computeRecurringDates(startDate, recurrence) {
   const dates = [];
   const start = new Date(startDate + 'T00:00:00');
   const maxOccurrences = recurrence.end_type === 'occurrences'
-    ? Math.min(recurrence.occurrences || 6, 52)
-    : 52; // safety cap
+    ? Math.min(recurrence.occurrences || 6, MAX_RECURRENCE_OCCURRENCES)
+    : MAX_RECURRENCE_OCCURRENCES; // safety cap
   const endDate = recurrence.end_type === 'end_date' && recurrence.end_date
     ? new Date(recurrence.end_date + 'T23:59:59')
     : null;
@@ -448,14 +412,14 @@ async function cancelBooking(bookingId, cancelToken) {
       throw ApiError.badRequest('Ce rendez-vous ne peut plus être annulé');
     }
 
-    // 2. Check 12-hour cancellation window (Paris timezone, consistent with reschedule)
+    // 2. Check cancellation deadline (Paris timezone, consistent with reschedule)
     const bookingDateTime = new Date(`${bk.date}T${bk.start_time}`);
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
     const hoursUntil = (bookingDateTime - now) / (1000 * 60 * 60);
 
-    if (hoursUntil < 12) {
+    if (hoursUntil < CANCELLATION_DEADLINE_HOURS) {
       throw ApiError.badRequest(
-        'Les annulations doivent être effectuées au moins 12 heures avant le rendez-vous'
+        `Les annulations doivent être effectuées au moins ${CANCELLATION_DEADLINE_HOURS} heures avant le rendez-vous`
       );
     }
 
@@ -598,14 +562,14 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
       throw ApiError.badRequest('Ce rendez-vous a déjà été décalé une fois. Vous pouvez toujours l\'annuler.');
     }
 
-    // 2. Check 12h minimum rule (same as cancel)
+    // 2. Check cancellation/reschedule deadline (same as cancel)
     const bookingDateTime = new Date(`${booking.date}T${booking.start_time}`);
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
     const hoursUntil = (bookingDateTime - now) / (1000 * 60 * 60);
 
-    if (hoursUntil < 12) {
+    if (hoursUntil < CANCELLATION_DEADLINE_HOURS) {
       throw ApiError.badRequest(
-        'Les modifications doivent être effectuées au moins 12 heures avant le rendez-vous'
+        `Les modifications doivent être effectuées au moins ${CANCELLATION_DEADLINE_HOURS} heures avant le rendez-vous`
       );
     }
 
@@ -616,62 +580,22 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
     if (requestedDate < today) {
       throw ApiError.badRequest('Impossible de déplacer dans le passé');
     }
-    const minBookingTime = new Date(now.getTime() + 5 * 60 * 1000);
+    const minBookingTime = new Date(now.getTime() + MIN_BOOKING_LEAD_MINUTES * 60 * 1000);
     const newDateTime = new Date(`${newDate}T${newStartTime}:00`);
     if (newDateTime < minBookingTime) {
-      throw ApiError.badRequest('Impossible de déplacer sur un créneau dans moins de 5 minutes');
+      throw ApiError.badRequest(`Impossible de déplacer sur un créneau dans moins de ${MIN_BOOKING_LEAD_MINUTES} minutes`);
     }
     const maxDate = new Date(today);
-    maxDate.setMonth(maxDate.getMonth() + 6);
+    maxDate.setMonth(maxDate.getMonth() + MAX_BOOKING_ADVANCE_MONTHS);
     if (requestedDate > maxDate) {
-      throw ApiError.badRequest('Impossible de réserver plus de 6 mois à l\'avance');
+      throw ApiError.badRequest(`Impossible de réserver plus de ${MAX_BOOKING_ADVANCE_MONTHS} mois à l'avance`);
     }
 
     // 4. Calculate new end time
     const newEndTime = availability.addMinutesToTime(newStartTime, booking.service_duration);
 
-    // 5. Validate barber schedule for new date
-    const dateObj = new Date(newDate + 'T00:00:00');
-    const jsDay = dateObj.getDay();
-    const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1;
-
-    const overrideCheck = await client.query(
-      'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
-      [booking.barber_id, newDate]
-    );
-
-    if (overrideCheck.rows.length > 0) {
-      const ov = overrideCheck.rows[0];
-      if (ov.is_day_off) {
-        throw ApiError.badRequest('Le barber ne travaille pas ce jour');
-      }
-      if (newStartTime < ov.start_time.slice(0, 5) || newEndTime > ov.end_time.slice(0, 5)) {
-        throw ApiError.badRequest('Horaire en dehors des heures de travail');
-      }
-    } else {
-      const scheduleCheck = await client.query(
-        'SELECT is_working, start_time, end_time FROM schedules WHERE barber_id = $1 AND day_of_week = $2',
-        [booking.barber_id, dayOfWeek]
-      );
-      if (scheduleCheck.rows.length === 0 || !scheduleCheck.rows[0].is_working) {
-        throw ApiError.badRequest('Le barber ne travaille pas ce jour');
-      }
-      const sched = scheduleCheck.rows[0];
-      if (newStartTime < sched.start_time.slice(0, 5) || newEndTime > sched.end_time.slice(0, 5)) {
-        throw ApiError.badRequest('Horaire en dehors des heures de travail');
-      }
-    }
-
-    // 6. Check blocked slots
-    const blockedCheck = await client.query(
-      `SELECT id FROM blocked_slots
-       WHERE barber_id = $1 AND date = $2
-         AND start_time < $3 AND end_time > $4`,
-      [booking.barber_id, newDate, newEndTime, newStartTime]
-    );
-    if (blockedCheck.rows.length > 0) {
-      throw ApiError.badRequest('Ce créneau est bloqué');
-    }
+    // 5-6. Validate barber schedule + blocked slots for new date
+    await availability.validateBarberSlot(client, booking.barber_id, newDate, newStartTime, newEndTime);
 
     // 7. Check new slot is available (excluding current booking)
     const conflictCheck = await client.query(

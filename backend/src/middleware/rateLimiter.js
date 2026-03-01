@@ -1,12 +1,17 @@
 const rateLimit = require('express-rate-limit');
+const {
+  RATE_LIMIT_PUBLIC_WINDOW_MS, RATE_LIMIT_PUBLIC_MAX,
+  RATE_LIMIT_AUTH_WINDOW_MS, RATE_LIMIT_AUTH_MAX,
+  RATE_LIMIT_ADMIN_WINDOW_MS, RATE_LIMIT_ADMIN_MAX,
+} = require('../constants');
 
 /**
  * Rate limiter for public routes (booking, barbers list, etc.)
  * 60 requests per minute per IP
  */
 const publicLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 60,
+  windowMs: RATE_LIMIT_PUBLIC_WINDOW_MS,
+  max: RATE_LIMIT_PUBLIC_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -20,8 +25,8 @@ const publicLimiter = rateLimit({
  * Uses IP + target email to prevent X-Forwarded-For bypass
  */
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
+  windowMs: RATE_LIMIT_AUTH_WINDOW_MS,
+  max: RATE_LIMIT_AUTH_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
@@ -38,8 +43,8 @@ const authLimiter = rateLimit({
  * 200 requests per minute per IP
  */
 const adminLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 200,
+  windowMs: RATE_LIMIT_ADMIN_WINDOW_MS,
+  max: RATE_LIMIT_ADMIN_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

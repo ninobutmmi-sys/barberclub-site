@@ -6,11 +6,13 @@ const config = require('./config/env');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const cron = require('node-cron');
 const logger = require('./utils/logger');
 const { ApiError } = require('./utils/errors');
 const { publicLimiter, adminLimiter } = require('./middleware/rateLimiter');
 const { requireAuth, requireBarber } = require('./middleware/auth');
+const { GRACEFUL_SHUTDOWN_TIMEOUT_MS } = require('./constants');
 
 // Route imports
 const healthRoutes = require('./routes/health');
@@ -105,8 +107,10 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
     },
   },
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -132,6 +136,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Cookie parsing (for httpOnly refresh token cookie)
+app.use(cookieParser());
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }));
@@ -278,13 +285,15 @@ if (config.nodeEnv !== 'test') {
     });
 
     // Graceful shutdown — finish in-flight requests + close DB pool
-    process.on('SIGTERM', () => {
-      logger.info('SIGTERM received, shutting down gracefully');
+    const gracefulShutdown = (signal) => {
+      logger.info(`${signal} received, shutting down gracefully`);
       server.close(() => {
         pool.end().then(() => process.exit(0));
       });
-      setTimeout(() => process.exit(1), 10000); // Force exit after 10s
-    });
+      setTimeout(() => process.exit(1), GRACEFUL_SHUTDOWN_TIMEOUT_MS);
+    };
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   });
 
   process.on('unhandledRejection', (reason) => {

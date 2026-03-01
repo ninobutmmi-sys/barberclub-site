@@ -10,16 +10,20 @@ export default function Campaigns() {
   const isMobile = useMobile();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedROI, setSelectedROI] = useState(null);
 
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
+    setError(null);
     try {
       const c = await getCampaigns();
       setCampaigns(c);
-    } catch (err) { /* silently handled */ }
+    } catch (err) {
+      setError('Impossible de charger les donnees');
+    }
     setLoading(false);
   }
 
@@ -32,6 +36,12 @@ export default function Campaigns() {
 
   return (
     <>
+      {error && (
+        <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
+          <span>{error}</span>
+          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+        </div>
+      )}
       <div className="page-header">
         <div>
           <h2 className="page-title">Campagnes</h2>

@@ -118,7 +118,7 @@ function RecordPaymentModal({ bookings, onClose, onRecorded, isClosed }) {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && (
-              <div style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', fontSize: 13, marginBottom: 14 }}>{error}</div>
+              <div role="alert" style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', fontSize: 13, marginBottom: 14 }}>{error}</div>
             )}
             <div className="form-group">
               <label className="label">Lier à un RDV (optionnel)</label>
@@ -170,6 +170,7 @@ export default function Caisse() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showPayModal, setShowPayModal] = useState(false);
   const [closingNotes, setClosingNotes] = useState('');
   const [closing, setClosing] = useState(false);
@@ -180,11 +181,12 @@ export default function Caisse() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const result = await getDailyCash(dateStr);
       setData(result);
     } catch (err) {
-      // silently handled
+      setError('Impossible de charger les donnees');
     }
     setLoading(false);
   }, [dateStr]);
@@ -226,6 +228,12 @@ export default function Caisse() {
 
   return (
     <>
+      {error && (
+        <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
+          <span>{error}</span>
+          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+        </div>
+      )}
       {/* Header */}
       <div className="page-header" style={isMobile ? { flexDirection: 'column', alignItems: 'stretch', gap: 10 } : undefined}>
         <div>
@@ -345,8 +353,9 @@ export default function Caisse() {
 
             {/* Empty state */}
             {bookings.length === 0 && standalone.length === 0 && (
-              <div className="card" style={{ padding: 40, textAlign: 'center' }}>
-                <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Aucun encaissement pour cette journée</div>
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#a8a29e' }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>💰</div>
+                <p style={{ margin: 0, fontSize: 15 }}>Aucune transaction ce jour</p>
               </div>
             )}
 

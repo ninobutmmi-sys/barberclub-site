@@ -8,6 +8,7 @@ const availabilityService = require('../services/availability');
 const { generateICS } = require('../utils/ics');
 const { ApiError } = require('../utils/errors');
 const db = require('../config/database');
+const { MAX_BOOKING_ADVANCE_MONTHS } = require('../constants');
 
 const router = Router();
 
@@ -108,11 +109,11 @@ router.get('/availability',
         throw new ApiError(400, 'La date doit être aujourd\'hui ou dans le futur');
       }
 
-      // Validate date is not more than 6 months in the future
+      // Validate date is not more than MAX_BOOKING_ADVANCE_MONTHS in the future
       const maxDate = new Date(today);
-      maxDate.setMonth(maxDate.getMonth() + 6);
+      maxDate.setMonth(maxDate.getMonth() + MAX_BOOKING_ADVANCE_MONTHS);
       if (requestedDate > maxDate) {
-        throw new ApiError(400, 'Réservation possible jusqu\'à 6 mois à l\'avance maximum');
+        throw new ApiError(400, `Réservation possible jusqu'à ${MAX_BOOKING_ADVANCE_MONTHS} mois à l'avance maximum`);
       }
 
       // If date is today, filter out past slots
@@ -159,7 +160,15 @@ router.post('/bookings',
     body('last_name').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
     body('phone').optional({ values: 'falsy' }).trim()
       .matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numéro de téléphone français invalide'),
-    body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('Email invalide').normalizeEmail(),
+    body('email').trim().custom((value, { req }) => {
+      if (!req.headers.authorization && !value) {
+        throw new Error('Email requis pour une réservation en invité');
+      }
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        throw new Error('Email invalide');
+      }
+      return true;
+    }),
   ],
   handleValidation,
   async (req, res, next) => {

@@ -37,6 +37,13 @@ async function loginAsBarber() {
  * Get next working date for Lucas (Tuesday-Saturday, 0=Mon convention)
  * Returns YYYY-MM-DD string, at least 2 days in the future
  */
+function toLocalDateStr(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function getNextWorkingDate(daysAhead = 7) {
   const date = new Date();
   date.setDate(date.getDate() + daysAhead);
@@ -51,7 +58,7 @@ function getNextWorkingDate(daysAhead = 7) {
   if (dayOfWeek === 0) date.setDate(date.getDate() + 1); // Mon → Tue
   else if (dayOfWeek === 6) date.setDate(date.getDate() + 2); // Sun → Tue
 
-  return date.toISOString().slice(0, 10);
+  return toLocalDateStr(date);
 }
 
 /**
@@ -66,7 +73,7 @@ function getLucasDayOff(daysAhead = 7) {
   const daysUntilMonday = (8 - jsDay) % 7 || 7;
   date.setDate(date.getDate() + daysUntilMonday);
 
-  return date.toISOString().slice(0, 10);
+  return toLocalDateStr(date);
 }
 
 /**

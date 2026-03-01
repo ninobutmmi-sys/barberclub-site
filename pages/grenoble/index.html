@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- SEO Meta Tags -->
     <title>Barber Grenoble | BarberClub - Coiffeur Homme & Barbier Grenoble Centre</title>
@@ -860,10 +860,30 @@
                 transition: none !important;
             }
         }
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #fff;
+            color: #000;
+            padding: 8px 16px;
+            z-index: 10000;
+            font-size: 14px;
+            text-decoration: none;
+            transition: top 0.2s;
+        }
+        .skip-to-content:focus {
+            top: 0;
+        }
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 
 <body>
+    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
     <div class="page">
         <div class="bg"></div>
         <div class="bg-overlay"></div>
@@ -875,15 +895,15 @@
                     <path d="M19 12H5M12 19l-7-7 7-7" />
                 </svg>
             </a>
-            <a href="../../" class="logo-link"><img loading="lazy" src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="header-logo"></a>
+            <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="header-logo"></a>
         </header>
 
         <div class="logo-container">
-            <a href="../../" class="logo-link"><img loading="lazy" src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+            <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
             <h1 class="title">Grenoble</h1>
         </div>
 
-        <nav class="nav">
+        <nav class="nav" id="main-content">
             <div class="nav-grid">
                 <a href="barbers.html" class="nav-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -933,7 +953,7 @@
     </div>
 
     <!-- BOOKING MODAL -->
-    <div class="booking-modal" id="bookingModal">
+    <div class="booking-modal" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <div class="modal-header">
@@ -942,7 +962,7 @@
                     <line x1="12" y1="8" x2="12" y2="12"></line>
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
-                <h2 class="modal-title">INFORMATIONS</h2>
+                <h2 class="modal-title" id="modalTitle">INFORMATIONS</h2>
             </div>
             <div class="modal-body">
                 <p>Tout retard supérieur à 5 minutes pourra entraîner l'annulation de votre rendez-vous afin de
@@ -959,34 +979,47 @@
         const modal = document.getElementById('bookingModal');
         const modalConfirm = document.getElementById('modalConfirm');
         const bookingButtons = document.querySelectorAll('a[href="reserver.html"]');
+        let lastFocusedElement = null;
+
+        function openModal() {
+            lastFocusedElement = document.activeElement;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            modalConfirm.focus();
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            if (lastFocusedElement) lastFocusedElement.focus();
+        }
 
         // Intercept booking button clicks
         bookingButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
+                openModal();
             });
         });
 
         // Confirm button
         modalConfirm.addEventListener('click', () => {
-            modal.classList.remove('active');
-            document.body.style.overflow = '';
+            closeModal();
             window.location.href = 'reserver.html';
         });
 
         // Close on overlay click
-        modal.querySelector('.modal-overlay').addEventListener('click', () => {
-            modal.classList.remove('active');
-            document.body.style.overflow = '';
-        });
+        modal.querySelector('.modal-overlay').addEventListener('click', closeModal);
 
-        // Close on Escape key
+        // Close on Escape key + focus trap
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && modal.classList.contains('active')) {
-                modal.classList.remove('active');
-                document.body.style.overflow = '';
+            if (!modal.classList.contains('active')) return;
+            if (e.key === 'Escape') {
+                closeModal();
+            } else if (e.key === 'Tab') {
+                // Trap focus inside modal
+                e.preventDefault();
+                modalConfirm.focus();
             }
         });
     </script>

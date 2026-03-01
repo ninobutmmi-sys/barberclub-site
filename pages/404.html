@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 - Page introuvable | BarberClub</title>
     <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#000000">
@@ -214,14 +214,34 @@
                 width: 100%;
             }
         }
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #fff;
+            color: #000;
+            padding: 8px 16px;
+            z-index: 10000;
+            font-size: 14px;
+            text-decoration: none;
+            transition: top 0.2s;
+        }
+        .skip-to-content:focus {
+            top: 0;
+        }
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 
 <body>
+    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
     <div class="bg-glow"></div>
 
-    <div class="container">
-        <img loading="lazy" src="../assets/images/common/couronne.png" alt="BarberClub" class="crown">
+    <div class="container" id="main-content">
+        <img src="../assets/images/common/couronne.png" alt="BarberClub" class="crown">
 
         <div class="card">
             <div class="error-code">404</div>

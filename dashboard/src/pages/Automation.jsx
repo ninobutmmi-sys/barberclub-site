@@ -34,6 +34,7 @@ export default function Automation() {
   const [barbers, setBarbers] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editTrigger, setEditTrigger] = useState(null);
   const [addWlModal, setAddWlModal] = useState(false);
 
@@ -63,6 +64,7 @@ export default function Automation() {
 
   async function loadData() {
     setLoading(true);
+    setError(null);
     try {
       const [t, wl, wlc, b, s] = await Promise.all([
         getAutomationTriggers(),
@@ -76,7 +78,9 @@ export default function Automation() {
       setWaitlistCount(wlc.count ?? 0);
       setBarbers(b);
       setServices(s);
-    } catch (err) { /* silently handled */ }
+    } catch (err) {
+      setError('Impossible de charger les donnees');
+    }
     setLoading(false);
   }
 
@@ -104,6 +108,12 @@ export default function Automation() {
 
   return (
     <>
+      {error && (
+        <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
+          <span>{error}</span>
+          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+        </div>
+      )}
       <div className="page-header">
         <div>
           <h2 className="page-title">Automatisation</h2>
@@ -437,7 +447,7 @@ function TriggerConfigModal({ trigger, onClose, onSaved }) {
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            {error && <div className="login-error" style={{ marginBottom: 16 }}>{error}</div>}
+            {error && <div className="login-error" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
 
             <div className="form-group">
               <label className="label">Message SMS</label>
@@ -529,7 +539,7 @@ function AddWaitlistModal({ barbers, services, onClose, onSaved }) {
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            {error && <div className="login-error" style={{ marginBottom: 16 }}>{error}</div>}
+            {error && <div className="login-error" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
             <div className="input-row">
               <div className="form-group">
                 <label className="label">Nom du client</label>

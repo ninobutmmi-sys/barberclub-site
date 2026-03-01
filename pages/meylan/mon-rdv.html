@@ -3,13 +3,15 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Gérer votre rendez-vous BarberClub — annuler ou décaler">
     <meta name="theme-color" content="#000000">
     <title>Mon RDV | BarberClub</title>
     <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fortunate-benevolence-production-7df2.up.railway.app">
+    <link rel="preconnect" href="https://fortunate-benevolence-production-7df2.up.railway.app" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         @font-face {
@@ -1068,10 +1070,30 @@
                 font-size: 14px;
             }
         }
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #fff;
+            color: #000;
+            padding: 8px 16px;
+            z-index: 10000;
+            font-size: 14px;
+            text-decoration: none;
+            transition: top 0.2s;
+        }
+        .skip-to-content:focus {
+            top: 0;
+        }
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
     </style>
 </head>
 
 <body>
+    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
     <div class="header">
         <div class="header-center">
             <div class="header-title">BarberClub</div>
@@ -1079,7 +1101,7 @@
         </div>
     </div>
 
-    <div class="container">
+    <div class="container" id="main-content">
         <!-- Loading -->
         <div class="state active" id="stateLoading">
             <div class="spinner"></div>

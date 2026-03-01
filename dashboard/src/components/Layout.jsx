@@ -210,7 +210,7 @@ export default function Layout() {
         {/* Logo + collapse toggle */}
         <div className="sidebar-logo">
           <img src="/logo.png" alt="BarberClub" className="sidebar-logo-img" style={{ filter: 'var(--logo-filter, invert(1))' }} />
-          <button className="sidebar-collapse-btn" onClick={toggleSidebar} title={collapsed ? 'Ouvrir le menu' : 'Réduire le menu'}>
+          <button className="sidebar-collapse-btn" onClick={toggleSidebar} title={collapsed ? 'Ouvrir le menu' : 'Réduire le menu'} aria-label={collapsed ? 'Ouvrir le menu' : 'Réduire le menu'}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               {collapsed ? <polyline points="9 18 15 12 9 6" /> : <polyline points="15 18 9 12 15 6" />}
             </svg>
@@ -234,7 +234,7 @@ export default function Layout() {
             </button>
 
             {dropdownOpen && (
-              <div className="notif-dropdown">
+              <div className="notif-dropdown" role="region" aria-label="Notifications" aria-live="polite">
                 <div className="notif-dropdown-header">
                   <span className="notif-dropdown-title">Nouvelles reservations</span>
                   {hasNew && (
@@ -275,6 +275,7 @@ export default function Layout() {
               className={`sidebar-icon-btn${hasNew ? ' has-notif' : ''}`}
               onClick={toggleDropdown}
               title="Notifications"
+              aria-label="Notifications"
             >
               <BellIcon />
               {hasNew && <span className="sidebar-icon-badge">{newCount > 9 ? '9+' : newCount}</span>}
@@ -334,14 +335,14 @@ export default function Layout() {
         <div className="sidebar-bottom">
           {collapsed ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <div className="sidebar-icon-btn" onClick={() => { if (window.confirm('Se déconnecter ?')) logout(); }} title={user?.name || 'Déconnexion'}>
+              <button className="sidebar-icon-btn" onClick={() => { if (window.confirm('Se déconnecter ?')) logout(); }} title={user?.name || 'Déconnexion'} aria-label="Déconnexion">
                 {user?.photo_url ? (
                   <img src={user.photo_url} alt={user.name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
                   <span style={{ fontSize: 12, fontWeight: 700 }}>{user?.name?.charAt(0)?.toUpperCase() || '?'}</span>
                 )}
-              </div>
-              <button className="sidebar-icon-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}>
+              </button>
+              <button className="sidebar-icon-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'} aria-label={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}>
                 {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
             </div>
@@ -364,7 +365,7 @@ export default function Layout() {
                   <div className="sidebar-user-role">Déconnexion</div>
                 </div>
               </div>
-              <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}>
+              <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'} aria-label={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}>
                 {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
               </button>
             </div>
@@ -457,7 +458,7 @@ export default function Layout() {
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Déconnexion</div>
                     </div>
                   </div>
-                  <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}>
+                  <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'} aria-label={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}>
                     {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
                   </button>
                 </div>

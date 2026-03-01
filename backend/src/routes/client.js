@@ -1,9 +1,11 @@
 const { Router } = require('express');
+const bcrypt = require('bcrypt');
 const { body } = require('express-validator');
 const { handleValidation } = require('../middleware/validate');
 const { requireAuth, requireClient } = require('../middleware/auth');
 const { ApiError } = require('../utils/errors');
 const db = require('../config/database');
+const logger = require('../utils/logger');
 
 const router = Router();
 
@@ -106,5 +108,121 @@ router.get('/bookings', async (req, res, next) => {
     next(error);
   }
 });
+
+// ============================================
+// GET /api/client/export-data (RGPD Art. 20)
+// ============================================
+router.get('/export-data', async (req, res, next) => {
+  try {
+    // Profile
+    const profile = await db.query(
+      `SELECT first_name, last_name, phone, email, created_at
+       FROM clients WHERE id = $1 AND deleted_at IS NULL`,
+      [req.user.id]
+    );
+    if (profile.rows.length === 0) {
+      throw ApiError.notFound('Profil introuvable');
+    }
+
+    // Bookings
+    const bookings = await db.query(
+      `SELECT b.date, b.start_time, b.end_time, b.status, b.price,
+              s.name as service_name, br.name as barber_name
+       FROM bookings b
+       JOIN services s ON b.service_id = s.id
+       JOIN barbers br ON b.barber_id = br.id
+       WHERE b.client_id = $1 AND b.deleted_at IS NULL
+       ORDER BY b.date DESC`,
+      [req.user.id]
+    );
+
+    // Payments
+    const payments = await db.query(
+      `SELECT p.amount, p.method, p.created_at
+       FROM payments p
+       JOIN bookings b ON p.booking_id = b.id
+       WHERE b.client_id = $1`,
+      [req.user.id]
+    );
+
+    logger.info('Client data exported (RGPD)', { clientId: req.user.id });
+
+    res.json({
+      exported_at: new Date().toISOString(),
+      profile: profile.rows[0],
+      bookings: bookings.rows.map(b => ({
+        ...b,
+        price: b.price ? (b.price / 100).toFixed(2) + ' €' : null,
+      })),
+      payments: payments.rows.map(p => ({
+        ...p,
+        amount: p.amount ? (p.amount / 100).toFixed(2) + ' €' : null,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// DELETE /api/client/delete-account (RGPD Art. 17)
+// ============================================
+router.delete('/delete-account',
+  [
+    body('password').notEmpty().withMessage('Mot de passe requis pour confirmer la suppression'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { password } = req.body;
+
+      // Verify password
+      const client = await db.query(
+        'SELECT id, password_hash FROM clients WHERE id = $1 AND deleted_at IS NULL',
+        [req.user.id]
+      );
+      if (client.rows.length === 0) {
+        throw ApiError.notFound('Compte introuvable');
+      }
+      if (!client.rows[0].password_hash) {
+        throw ApiError.badRequest('Ce compte n\'a pas de mot de passe configuré');
+      }
+
+      const valid = await bcrypt.compare(password, client.rows[0].password_hash);
+      if (!valid) {
+        throw ApiError.unauthorized('Mot de passe incorrect');
+      }
+
+      // Cancel upcoming bookings
+      await db.query(
+        `UPDATE bookings SET status = 'cancelled', deleted_at = NOW()
+         WHERE client_id = $1 AND status = 'confirmed' AND date >= CURRENT_DATE AND deleted_at IS NULL`,
+        [req.user.id]
+      );
+
+      // Soft-delete client (preserve data for legal accounting, anonymize PII)
+      await db.query(
+        `UPDATE clients SET
+          first_name = 'Supprimé', last_name = 'RGPD',
+          email = NULL, phone = 'SUPPRIME-' || id::text, password_hash = NULL,
+          has_account = false, deleted_at = NOW()
+         WHERE id = $1`,
+        [req.user.id]
+      );
+
+      // Revoke all sessions
+      await db.query(
+        'DELETE FROM refresh_tokens WHERE user_id = $1 AND user_type = $2',
+        [req.user.id, 'client']
+      );
+
+      logger.info('Client account deleted (RGPD)', { clientId: req.user.id });
+
+      res.json({ message: 'Votre compte a été supprimé. Vos données personnelles ont été anonymisées.' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 module.exports = router;

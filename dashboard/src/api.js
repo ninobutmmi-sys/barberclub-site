@@ -11,29 +11,27 @@ const API_BASE = window.location.hostname === 'localhost' || window.location.hos
 function getTokens() {
   return {
     access: localStorage.getItem('bc_access_token'),
-    refresh: localStorage.getItem('bc_refresh_token'),
+    // refresh token is now in httpOnly cookie — not accessible from JS
   };
 }
 
-function setTokens(access, refresh) {
+function setTokens(access) {
   localStorage.setItem('bc_access_token', access);
-  localStorage.setItem('bc_refresh_token', refresh);
+  // refresh token is set as httpOnly cookie by the backend
 }
 
 function clearTokens() {
   localStorage.removeItem('bc_access_token');
-  localStorage.removeItem('bc_refresh_token');
+  localStorage.removeItem('bc_refresh_token'); // cleanup legacy
   localStorage.removeItem('bc_user');
 }
 
 async function refreshAccessToken() {
-  const { refresh } = getTokens();
-  if (!refresh) throw new Error('No refresh token');
-
+  // Refresh token is sent automatically via httpOnly cookie
   const res = await fetch(`${API_BASE}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh_token: refresh }),
+    credentials: 'include',
   });
 
   if (!res.ok) {
@@ -42,7 +40,7 @@ async function refreshAccessToken() {
   }
 
   const data = await res.json();
-  setTokens(data.access_token, data.refresh_token);
+  setTokens(data.access_token);
   return data.access_token;
 }
 
@@ -57,14 +55,14 @@ async function request(path, options = {}) {
     headers['Authorization'] = `Bearer ${access}`;
   }
 
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  let res = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: 'include' });
 
   // Auto-refresh on 401
   if (res.status === 401 && access) {
     try {
       const newToken = await refreshAccessToken();
       headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+      res = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: 'include' });
     } catch {
       clearTokens();
       window.location.reload();
@@ -87,6 +85,7 @@ export async function login(email, password) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, type: 'barber' }),
+    credentials: 'include', // receive httpOnly refresh token cookie
   });
 
   if (!res.ok) {
@@ -95,17 +94,16 @@ export async function login(email, password) {
   }
 
   const data = await res.json();
-  setTokens(data.access_token, data.refresh_token);
+  setTokens(data.access_token);
   localStorage.setItem('bc_user', JSON.stringify(data.user));
   return data.user;
 }
 
 export async function logout() {
-  const { refresh } = getTokens();
   try {
+    // refresh token is sent automatically via httpOnly cookie
     await request('/auth/logout', {
       method: 'POST',
-      body: JSON.stringify({ refresh_token: refresh }),
     });
   } catch { /* ignore */ }
   clearTokens();

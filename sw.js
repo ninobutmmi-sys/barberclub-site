@@ -1,6 +1,6 @@
 // BarberClub Service Worker
 // Bump version on each deploy to invalidate stale cache
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 const CACHE_NAME = `barberclub-v${CACHE_VERSION}`;
 const OFFLINE_URL = 'index.html';
 
@@ -21,7 +21,7 @@ const PRECACHE_ASSETS = [
 ];
 
 // Never cache API calls or booking pages (always need fresh data)
-const NEVER_CACHE = ['/api/', '/pages/meylan/reserver.html', '/pages/meylan/mon-rdv.html'];
+const NEVER_CACHE = ['/api/', '/pages/meylan/reserver.html', '/pages/meylan/mon-rdv.html', '/pages/meylan/mon-compte.html', '/pages/meylan/reset-password.html'];
 
 // Install event - precache core assets
 self.addEventListener('install', event => {

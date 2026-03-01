@@ -16,6 +16,7 @@ export default function Clients() {
   const [clients, setClients] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('last_visit');
   const [visible, setVisible] = useState(PAGE_SIZE);
@@ -29,6 +30,7 @@ export default function Clients() {
 
   async function loadData() {
     setLoading(true);
+    setError(null);
     setVisible(PAGE_SIZE);
     try {
       const params = { sort, order: 'desc', limit: 100 };
@@ -37,7 +39,7 @@ export default function Clients() {
       setClients(data.clients);
       setTotal(data.total);
     } catch (err) {
-      // silently handled
+      setError('Impossible de charger les donnees');
     }
     setLoading(false);
   }
@@ -60,6 +62,12 @@ export default function Clients() {
 
   return (
     <>
+      {error && (
+        <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
+          <span>{error}</span>
+          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+        </div>
+      )}
       <div className="page-header">
         <div>
           <h2 className="page-title">Clients</h2>
@@ -97,7 +105,10 @@ export default function Clients() {
         {loading ? (
           <div className="empty-state">Chargement...</div>
         ) : clients.length === 0 ? (
-          <div className="empty-state">Aucun client trouvé</div>
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#a8a29e' }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>👥</div>
+            <p style={{ margin: 0, fontSize: 15 }}>Aucun client trouvé</p>
+          </div>
         ) : (
           <div style={{ position: 'relative' }}>
             {isMobile ? (

@@ -1,20 +1,30 @@
+import { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
-import Login from './pages/Login';
-import Analytics from './pages/Analytics';
-import Planning from './pages/Planning';
-import Services from './pages/Services';
-import Barbers from './pages/Barbers';
-import Clients from './pages/Clients';
-import ClientDetail from './pages/ClientDetail';
-import History from './pages/History';
-import Sms from './pages/Sms';
-import Mailing from './pages/Mailing';
-import SystemHealth from './pages/SystemHealth';
-import Automation from './pages/Automation';
-import Campaigns from './pages/Campaigns';
-import Caisse from './pages/Caisse';
+
+// Lazy-loaded pages (code splitting per route)
+const Login = lazy(() => import('./pages/Login'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Planning = lazy(() => import('./pages/Planning'));
+const Services = lazy(() => import('./pages/Services'));
+const Barbers = lazy(() => import('./pages/Barbers'));
+const Clients = lazy(() => import('./pages/Clients'));
+const ClientDetail = lazy(() => import('./pages/ClientDetail'));
+const History = lazy(() => import('./pages/History'));
+const Sms = lazy(() => import('./pages/Sms'));
+const Mailing = lazy(() => import('./pages/Mailing'));
+const SystemHealth = lazy(() => import('./pages/SystemHealth'));
+const Automation = lazy(() => import('./pages/Automation'));
+const Campaigns = lazy(() => import('./pages/Campaigns'));
+const Caisse = lazy(() => import('./pages/Caisse'));
+
+const PageLoader = () => (
+  <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e' }}>
+    Chargement...
+  </div>
+);
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -24,26 +34,30 @@ function AppRoutes() {
   }
 
   if (!user) {
-    return <Login />;
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <Login />
+      </Suspense>
+    );
   }
 
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route index element={<Planning />} />
-        <Route path="analytics" element={<Analytics />} />
-        <Route path="planning" element={<Planning />} />
-        <Route path="services" element={<Services />} />
-        <Route path="barbers" element={<Barbers />} />
-        <Route path="clients" element={<Clients />} />
-        <Route path="clients/:id" element={<ClientDetail />} />
-        <Route path="history" element={<History />} />
-        <Route path="sms" element={<Sms />} />
-        <Route path="mailing" element={<Mailing />} />
-        <Route path="system" element={<SystemHealth />} />
-        <Route path="automation" element={<Automation />} />
-        <Route path="campaigns" element={<Campaigns />} />
-        <Route path="caisse" element={<Caisse />} />
+        <Route index element={<Suspense fallback={<PageLoader />}><Planning /></Suspense>} />
+        <Route path="analytics" element={<Suspense fallback={<PageLoader />}><Analytics /></Suspense>} />
+        <Route path="planning" element={<Suspense fallback={<PageLoader />}><Planning /></Suspense>} />
+        <Route path="services" element={<Suspense fallback={<PageLoader />}><Services /></Suspense>} />
+        <Route path="barbers" element={<Suspense fallback={<PageLoader />}><Barbers /></Suspense>} />
+        <Route path="clients" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
+        <Route path="clients/:id" element={<Suspense fallback={<PageLoader />}><ClientDetail /></Suspense>} />
+        <Route path="history" element={<Suspense fallback={<PageLoader />}><History /></Suspense>} />
+        <Route path="sms" element={<Suspense fallback={<PageLoader />}><Sms /></Suspense>} />
+        <Route path="mailing" element={<Suspense fallback={<PageLoader />}><Mailing /></Suspense>} />
+        <Route path="system" element={<Suspense fallback={<PageLoader />}><SystemHealth /></Suspense>} />
+        <Route path="automation" element={<Suspense fallback={<PageLoader />}><Automation /></Suspense>} />
+        <Route path="campaigns" element={<Suspense fallback={<PageLoader />}><Campaigns /></Suspense>} />
+        <Route path="caisse" element={<Suspense fallback={<PageLoader />}><Caisse /></Suspense>} />
       </Route>
     </Routes>
   );
@@ -51,10 +65,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <HashRouter>
-        <AppRoutes />
-      </HashRouter>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <HashRouter>
+          <AppRoutes />
+        </HashRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
