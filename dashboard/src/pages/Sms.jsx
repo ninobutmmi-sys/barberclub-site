@@ -43,9 +43,11 @@ export default function Sms() {
   const [template, setTemplate] = useState(SMS_TEMPLATES[0]);
   const [message, setMessage] = useState(SMS_TEMPLATES[0].text);
   const [sender, setSender] = useState('BARBERCLUB');
-  const [recipientMode, setRecipientMode] = useState('manual'); // 'manual' | 'clients'
+  const [recipientMode, setRecipientMode] = useState('manual'); // 'manual' | 'clients' | 'all'
   const [manualNumbers, setManualNumbers] = useState('');
   const [selectedClients, setSelectedClients] = useState([]);
+  const [allClients, setAllClients] = useState([]);
+  const [loadingAll, setLoadingAll] = useState(false);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -105,7 +107,18 @@ export default function Sms() {
     if (recipientMode === 'manual') {
       return manualNumbers.split('\n').filter((n) => n.trim()).length;
     }
+    if (recipientMode === 'all') return allClients.length;
     return selectedClients.length;
+  }
+
+  async function loadAllClients() {
+    setLoadingAll(true);
+    try {
+      const data = await getClients({ limit: 9999 });
+      const withPhone = (data.clients || []).filter((c) => c.phone);
+      setAllClients(withPhone);
+    } catch { setAllClients([]); }
+    setLoadingAll(false);
   }
 
   async function handleSend() {
@@ -117,6 +130,12 @@ export default function Sms() {
     let recipients = [];
     if (recipientMode === 'manual') {
       recipients = manualNumbers.split('\n').filter((n) => n.trim()).map((n) => ({ phone: n.trim() }));
+    } else if (recipientMode === 'all') {
+      recipients = allClients.map((c) => ({
+        phone: c.phone,
+        first_name: c.first_name,
+        last_name: c.last_name,
+      }));
     } else {
       recipients = selectedClients.filter((c) => c.phone).map((c) => ({
         phone: c.phone,
@@ -193,20 +212,34 @@ export default function Sms() {
             Envoi de SMS via Brevo
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {loadingStatus ? (
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Verification...</span>
-          ) : (
-            <>
-              <div style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: isConfigured ? '#22c55e' : '#ef4444',
-              }} />
-              <span style={{ fontSize: 12, color: isConfigured ? '#22c55e' : '#ef4444' }}>
-                {isConfigured ? 'Brevo connecte' : 'Non configure'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {!loadingStatus && isConfigured && brevoStatus?.smsCredits != null && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(var(--overlay),0.04)', border: '1px solid rgba(var(--overlay),0.08)', borderRadius: 8 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Credits SMS</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: brevoStatus.smsCredits > 10 ? '#22c55e' : brevoStatus.smsCredits > 0 ? '#f59e0b' : '#ef4444' }}>
+                {brevoStatus.smsCredits}
               </span>
-            </>
+              <a href="https://app.brevo.com/billing/plan/sms" target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 11, fontWeight: 600, color: '#3b82f6', textDecoration: 'none', marginLeft: 4 }}>
+                Recharger
+              </a>
+            </div>
           )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {loadingStatus ? (
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Verification...</span>
+            ) : (
+              <>
+                <div style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: isConfigured ? '#22c55e' : '#ef4444',
+                }} />
+                <span style={{ fontSize: 12, color: isConfigured ? '#22c55e' : '#ef4444' }}>
+                  {isConfigured ? 'Brevo connecte' : 'Non configure'}
+                </span>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -281,15 +314,19 @@ export default function Sms() {
               <div className="card" style={{ marginBottom: 16 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Destinataires</h3>
 
-                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
                   {[
                     { id: 'manual', label: 'Numeros manuels' },
                     { id: 'clients', label: 'Selectionner clients' },
+                    { id: 'all', label: 'Toute la base' },
                   ].map((m) => (
                     <button
                       key={m.id}
                       className={`btn btn-sm ${recipientMode === m.id ? 'btn-primary' : 'btn-secondary'}`}
-                      onClick={() => setRecipientMode(m.id)}
+                      onClick={() => {
+                        setRecipientMode(m.id);
+                        if (m.id === 'all' && allClients.length === 0) loadAllClients();
+                      }}
                     >
                       {m.label}
                     </button>
@@ -307,6 +344,23 @@ export default function Sms() {
                       style={{ resize: 'vertical', fontFamily: 'monospace', fontSize: 13 }}
                       placeholder={"+33612345678\n0698765432"}
                     />
+                  </div>
+                )}
+
+                {recipientMode === 'all' && (
+                  <div style={{ padding: '14px 16px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                    {loadingAll ? (
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Chargement des clients...</span>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 13 }}>
+                          <strong>{allClients.length}</strong> client{allClients.length !== 1 ? 's' : ''} avec numero de telephone
+                        </span>
+                        <button className="btn btn-sm btn-secondary" onClick={loadAllClients} style={{ fontSize: 11 }}>
+                          Actualiser
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -563,6 +617,28 @@ export default function Sms() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
                       <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Plan</span>
                       <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.plan}</span>
+                    </div>
+                  )}
+                  {brevoStatus.smsCredits != null && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Credits SMS</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: brevoStatus.smsCredits > 10 ? '#22c55e' : brevoStatus.smsCredits > 0 ? '#f59e0b' : '#ef4444' }}>
+                          {brevoStatus.smsCredits}
+                        </span>
+                        <a href="https://app.brevo.com/billing/plan/sms" target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 11, fontWeight: 600, color: '#000', background: '#3b82f6', padding: '4px 10px', borderRadius: 6, textDecoration: 'none' }}>
+                          Recharger
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {brevoStatus.emailCredits != null && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Credits Email</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: brevoStatus.emailCredits > 50 ? '#22c55e' : brevoStatus.emailCredits > 0 ? '#f59e0b' : '#ef4444' }}>
+                        {brevoStatus.emailCredits}
+                      </span>
                     </div>
                   )}
                 </div>
