@@ -535,6 +535,55 @@
             opacity: 1;
         }
 
+        /* Category headers */
+        .service-category {
+            margin-bottom: 6px;
+        }
+
+        .service-category:not(:first-child) {
+            margin-top: 18px;
+        }
+
+        .service-category-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .service-category-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9px;
+            flex-shrink: 0;
+        }
+
+        .service-category-icon svg {
+            width: 15px;
+            height: 15px;
+            opacity: 0.7;
+        }
+
+        .service-category-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        .service-category-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.12), transparent);
+        }
+
         /* ========================================
            STEP 3: QUICK SUGGESTIONS
            ======================================== */
@@ -3200,9 +3249,36 @@
 
             const clockSVG = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
 
-            let html = '';
+            // Categorize services
+            function getCategory(name) {
+                const n = name.toLowerCase();
+                if (n.includes('enfant') || n.includes('étude') || n.includes('partenaire') || n.includes('(ce)')) return 'reduced';
+                if (n.startsWith('barbe') || (n.includes('soin') && !n.includes('coupe'))) return 'beard';
+                return 'cuts';
+            }
+
+            const categories = [
+                { key: 'cuts', title: 'Coupes', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>' },
+                { key: 'beard', title: 'Barbe & Soins', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>' },
+                { key: 'reduced', title: 'Tarifs Réduits', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>' },
+            ];
+
+            const grouped = { cuts: [], beard: [], reduced: [] };
             for (const s of state.services) {
-                html += `
+                grouped[getCategory(s.name)].push(s);
+            }
+
+            let html = '';
+            for (const cat of categories) {
+                if (grouped[cat.key].length === 0) continue;
+                html += `<div class="service-category">
+                    <div class="service-category-header">
+                        <span class="service-category-icon">${cat.icon}</span>
+                        <span class="service-category-title">${cat.title}</span>
+                        <span class="service-category-line"></span>
+                    </div>`;
+                for (const s of grouped[cat.key]) {
+                    html += `
                     <div class="service-card" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — ${s.duration} minutes — ${formatPrice(s.price)}">
                         <div class="service-left">
                             <div class="service-name">${esc(s.name)}</div>
@@ -3212,8 +3288,9 @@
                             <div class="service-price">${formatPrice(s.price)}</div>
                             <div class="service-check">${checkSVG}</div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
+                }
+                html += `</div>`;
             }
 
             list.innerHTML = html;
