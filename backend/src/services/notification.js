@@ -156,6 +156,10 @@ function recordBrevoFailure() {
 // ============================================
 
 async function brevoEmail(to, subject, htmlContent) {
+  if (config.nodeEnv === 'test') {
+    logger.debug('Brevo email skipped (test mode)', { to, subject });
+    return;
+  }
   if (isCircuitOpen()) {
     throw new Error('Brevo circuit breaker open — skipping email');
   }
@@ -192,6 +196,10 @@ async function brevoEmail(to, subject, htmlContent) {
 }
 
 async function brevoSMS(phone, content) {
+  if (config.nodeEnv === 'test') {
+    logger.debug('Brevo SMS skipped (test mode)', { phone });
+    return;
+  }
   if (isCircuitOpen()) {
     throw new Error('Brevo circuit breaker open — skipping SMS');
   }
