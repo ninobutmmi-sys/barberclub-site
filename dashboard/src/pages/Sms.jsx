@@ -114,9 +114,17 @@ export default function Sms() {
   async function loadAllClients() {
     setLoadingAll(true);
     try {
-      const data = await getClients({ limit: 9999 });
-      const withPhone = (data.clients || []).filter((c) => c.phone);
-      setAllClients(withPhone);
+      let all = [];
+      let offset = 0;
+      const limit = 100;
+      while (true) {
+        const data = await getClients({ limit, offset });
+        const batch = data.clients || [];
+        all = all.concat(batch);
+        if (batch.length < limit) break;
+        offset += limit;
+      }
+      setAllClients(all.filter((c) => c.phone));
     } catch { setAllClients([]); }
     setLoadingAll(false);
   }
