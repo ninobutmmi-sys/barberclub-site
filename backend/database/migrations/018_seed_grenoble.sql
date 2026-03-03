@@ -169,7 +169,7 @@ INSERT INTO automation_triggers (type, is_active, config, salon_id) VALUES
 (
     'review_sms',
     true,
-    '{"delay_minutes": 60, "message": "Merci pour ta visite {prenom} ! Laisse-nous un avis : {lien_avis}", "google_review_url": "https://g.page/r/PLACEHOLDER_GRENOBLE"}',
+    '{"delay_minutes": 60, "message": "Merci pour ta visite {prenom} ! Laisse-nous un avis : {lien_avis}", "google_review_url": "https://g.page/r/CQITc4NCTyzhEAE/review"}',
     'grenoble'
 ),
 (

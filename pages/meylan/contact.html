@@ -13,6 +13,18 @@
     <link rel="manifest" href="../../config/manifest.json">
     <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
     <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+    <link rel="canonical" href="https://barberclub-grenoble.fr/pages/meylan/contact.html">
+    <!-- Open Graph -->
+    <meta property="og:title" content="Contact Barbier Meylan & Corenc | BarberClub - Adresse, Horaires">
+    <meta property="og:description" content="Contactez BarberClub Meylan : 26 Av. du Grésivaudan, 38700 Corenc. Horaires, téléphone, plan d'accès. Ouvert lun-sam 9h-19h. Votre barbier près de Meylan !">
+    <meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/meylan/salon-meylan.jpg">
+    <meta property="og:url" content="https://barberclub-grenoble.fr/pages/meylan/contact.html">
+    <meta property="og:type" content="website">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Contact Barbier Meylan & Corenc | BarberClub - Adresse, Horaires">
+    <meta name="twitter:description" content="Contactez BarberClub Meylan : 26 Av. du Grésivaudan, 38700 Corenc. Horaires, téléphone, plan d'accès. Ouvert lun-sam 9h-19h. Votre barbier près de Meylan !">
+    <meta name="twitter:image" content="https://barberclub-grenoble.fr/assets/images/salons/meylan/salon-meylan.jpg">
     <!-- Leaflet CSS pour la carte -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -741,6 +753,28 @@
             outline-offset: 2px;
         }
     </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BarberShop",
+      "name": "BarberClub Meylan",
+      "image": "https://barberclub-grenoble.fr/assets/images/salons/meylan/salon-meylan.jpg",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "26 Av. du Grésivaudan",
+        "addressLocality": "Corenc",
+        "postalCode": "38700",
+        "addressCountry": "FR"
+      },
+      "url": "https://barberclub-grenoble.fr/pages/meylan/",
+      "openingHoursSpecification": [
+        {"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Thursday","Friday"], "opens": "09:00", "closes": "19:00"},
+        {"@type": "OpeningHoursSpecification", "dayOfWeek": "Wednesday", "opens": "09:00", "closes": "19:00"},
+        {"@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "09:00", "closes": "18:00"}
+      ],
+      "priceRange": "€€"
+    }
+    </script>
 </head>
 
 <body>
