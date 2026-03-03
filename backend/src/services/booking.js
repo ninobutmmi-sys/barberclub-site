@@ -164,6 +164,12 @@ async function createBooking(data) {
       clientId = newClient.rows[0].id;
     }
 
+    // 5b. Link client to salon (for per-salon campaigns)
+    await client.query(
+      `INSERT INTO client_salons (client_id, salon_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [clientId, salonId]
+    );
+
     // 6. Check if first visit (for NEW badge)
     const existingBookings = await client.query(
       'SELECT 1 FROM bookings WHERE client_id = $1 AND deleted_at IS NULL AND status != $2 LIMIT 1',

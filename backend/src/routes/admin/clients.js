@@ -32,7 +32,7 @@ router.get('/',
         offset = 0,
       } = req.query;
 
-      let whereConditions = ['c.deleted_at IS NULL'];
+      let whereConditions = ['c.deleted_at IS NULL', 'EXISTS (SELECT 1 FROM client_salons cs WHERE cs.client_id = c.id AND cs.salon_id = $1)'];
       let params = [salonId];
       let paramIndex = 2;
 
