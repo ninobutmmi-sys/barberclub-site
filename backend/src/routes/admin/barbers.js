@@ -15,7 +15,7 @@ router.get('/', async (req, res, next) => {
     const salonId = req.user.salon_id;
     const result = await db.query(
       `SELECT id, name, role, photo_url, email, is_active, sort_order
-       FROM barbers WHERE deleted_at IS NULL AND salon_id = $1
+       FROM barbers WHERE deleted_at IS NULL AND is_active = true AND salon_id = $1
        ORDER BY sort_order`,
       [salonId]
     );
