@@ -2935,6 +2935,7 @@
             selectedService: null,  // { id, name, price, duration }
             selectedDate: null,     // 'YYYY-MM-DD'
             selectedSlot: null,     // { time, barber_id, barber_name }
+            wantWaitlist: false,    // true when user wants waitlist notification
             calendarMonth: new Date().getMonth(),
             calendarYear: new Date().getFullYear(),
             booking: null,          // Response from POST /api/bookings
@@ -3141,13 +3142,15 @@
                 actionBtn.disabled = !state.selectedService;
                 actionBtn.querySelector('.btn-text').textContent = 'Continuer';
             } else if (n === 3) {
-                actionBtn.disabled = !state.selectedSlot;
+                actionBtn.disabled = !state.selectedSlot && !state.wantWaitlist;
                 actionBtn.querySelector('.btn-text').textContent = 'Continuer';
             } else if (n === 4) {
                 if (state.authMode === 'guest' || state.authMode === 'connected') {
                     actionBar.style.display = '';
                     actionBtn.disabled = false;
-                    actionBtn.querySelector('.btn-text').textContent = 'Confirmer le rendez-vous';
+                    actionBtn.querySelector('.btn-text').textContent = state.wantWaitlist
+                        ? 'Rejoindre la liste d\'attente'
+                        : 'Confirmer le rendez-vous';
                 } else {
                     // Hide action bar until user picks guest/login/signup
                     actionBar.style.display = 'none';
@@ -3454,12 +3457,17 @@
             }
         }
 
-        async function joinWaitlist() {
+        function joinWaitlist() {
             if (!state.selectedBarber || !state.selectedService || !state.selectedDate) {
                 toast('Sélectionnez un barber, une prestation et une date.');
                 return;
             }
+            state.wantWaitlist = true;
+            updateActionBtn();
+            goToStep(4);
+        }
 
+        async function submitWaitlist() {
             const barberId = state.selectedBarber.id === 'any'
                 ? state.barbers[0]?.id
                 : state.selectedBarber.id;
@@ -3470,15 +3478,13 @@
                 preferred_date: state.selectedDate,
             };
 
-            // If connected, API uses auth token to get client info
             const isConnected = state.authMode === 'connected' && state.loggedClient;
             if (!isConnected) {
-                // Need phone + name for guest
                 const phone = $('#phone')?.value?.trim().replace(/[\s.-]/g, '');
                 const firstName = $('#firstName')?.value?.trim();
                 const lastName = $('#lastName')?.value?.trim();
                 if (!phone || !firstName) {
-                    toast('Remplissez vos coordonnées (étape suivante) pour la liste d\'attente.');
+                    toast('Remplissez vos coordonnées.');
                     return;
                 }
                 body.client_name = `${firstName} ${lastName || ''}`.trim();
@@ -3498,7 +3504,8 @@
                 const data = await res.json();
                 if (res.ok) {
                     toast('Vous serez prévenu par SMS si une place se libère !');
-                    $('#slotsSection').querySelector('button[onclick]')?.remove();
+                    state.wantWaitlist = false;
+                    setTimeout(() => { window.location.reload(); }, 2000);
                 } else {
                     toast(data.error || 'Erreur');
                 }
@@ -4096,7 +4103,11 @@
                     renderSummary();
                     goToStep(4);
                 } else if (n === 4 && (state.authMode === 'guest' || state.authMode === 'connected')) {
-                    await submitBooking();
+                    if (state.wantWaitlist) {
+                        await submitWaitlist();
+                    } else {
+                        await submitBooking();
+                    }
                 }
             } finally {
                 actionBusy = false;
