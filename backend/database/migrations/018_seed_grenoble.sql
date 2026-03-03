@@ -5,8 +5,25 @@
 -- ============================================
 
 -- ============================================
--- BARBERS (4)
+-- ADMIN ACCOUNT (dashboard login)
 -- Password: "Barberclot1968@@"
+-- ============================================
+INSERT INTO barbers (id, name, role, photo_url, email, password_hash, is_active, sort_order, salon_id) VALUES
+(
+    'b2000000-0000-0000-0000-000000000001',
+    'Admin',
+    'Admin',
+    '/barbers/julien.jpg',
+    'barberclotbey@gmail.com',
+    '$2b$12$vq79qE1ejRAagS3mWru/6.dn9dOJRiPb1c0Yi.z0LQISqTraqVpVu',
+    false,
+    0,
+    'grenoble'
+);
+
+-- ============================================
+-- BARBERS (4)
+-- No dashboard login — managed via Admin account
 -- ============================================
 INSERT INTO barbers (id, name, role, photo_url, email, password_hash, is_active, sort_order, salon_id) VALUES
 (
@@ -14,7 +31,7 @@ INSERT INTO barbers (id, name, role, photo_url, email, password_hash, is_active,
     'Tom',
     'Barber',
     '/barbers/tom.png',
-    'barberclotbey@gmail.com',
+    'tom.barber@barberclub-grenoble.fr',
     '$2b$12$jU/8su0A//PmOQn1X.zVnelJwdT.GOHd3atetPPyurk8tciqozAki',
     true,
     1,
