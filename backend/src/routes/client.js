@@ -77,16 +77,21 @@ router.put('/profile',
 // ============================================
 router.get('/bookings', async (req, res, next) => {
   try {
+    // Optional salon_id filter — if provided, only show bookings for that salon
+    const salonId = req.query.salon_id;
+    const salonFilter = salonId ? ' AND b.salon_id = $2' : '';
+    const params = salonId ? [req.user.id, salonId] : [req.user.id];
+
     const result = await db.query(
-      `SELECT b.id, b.date, b.start_time, b.end_time, b.status, b.price, b.cancel_token,
+      `SELECT b.id, b.date, b.start_time, b.end_time, b.status, b.price, b.cancel_token, b.salon_id,
               s.name as service_name, s.duration as service_duration,
               br.name as barber_name, br.photo_url as barber_photo
        FROM bookings b
        JOIN services s ON b.service_id = s.id
        JOIN barbers br ON b.barber_id = br.id
-       WHERE b.client_id = $1 AND b.deleted_at IS NULL
+       WHERE b.client_id = $1 AND b.deleted_at IS NULL${salonFilter}
        ORDER BY b.date DESC, b.start_time DESC`,
-      [req.user.id]
+      params
     );
 
     // Split into upcoming and past

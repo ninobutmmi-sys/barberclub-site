@@ -21,6 +21,7 @@ function requireAuth(req, res, next) {
       type: decoded.type, // 'barber' or 'client'
       email: decoded.email,
       name: decoded.name,
+      salon_id: decoded.salon_id || 'meylan',
     };
 
     next();
@@ -77,6 +78,7 @@ function optionalAuth(req, res, next) {
       type: decoded.type,
       email: decoded.email,
       name: decoded.name,
+      salon_id: decoded.salon_id || 'meylan',
     };
   } catch {
     // Invalid token — continue without user
@@ -94,6 +96,7 @@ function generateAccessToken(user) {
       type: user.type,
       email: user.email,
       name: user.name,
+      salon_id: user.salon_id || 'meylan',
     },
     config.jwt.secret,
     { expiresIn: config.jwt.accessExpiresIn }

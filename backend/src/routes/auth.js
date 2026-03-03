@@ -49,21 +49,25 @@ router.post('/login',
     body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
     body('password').notEmpty().withMessage('Mot de passe requis'),
     body('type').isIn(['barber', 'client']).withMessage('Type invalide'),
+    body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { email, password, type } = req.body;
+      const salonId = req.body.salon_id || 'meylan';
       const table = TABLE_MAP[type];
       if (!table) throw ApiError.badRequest('Type invalide');
 
-      // Find user by email
+      // Find user by email (barbers are salon-specific, clients are global)
+      const salonFilter = type === 'barber' ? ' AND salon_id = $2' : '';
+      const params = type === 'barber' ? [email, salonId] : [email];
       const result = await db.query(
         `SELECT id, email, password_hash, failed_login_attempts, locked_until,
-                ${type === 'barber' ? 'name, photo_url' : 'first_name || \' \' || last_name as name, NULL as photo_url'}
+                ${type === 'barber' ? 'name, photo_url, salon_id' : 'first_name || \' \' || last_name as name, NULL as photo_url'}
          FROM ${table}
-         WHERE email = $1 AND deleted_at IS NULL`,
-        [email]
+         WHERE email = $1${salonFilter} AND deleted_at IS NULL`,
+        params
       );
 
       if (result.rows.length === 0) {
@@ -114,8 +118,9 @@ router.post('/login',
         [user.id]
       );
 
-      // Generate tokens
-      const tokenPayload = { id: user.id, type, email: user.email, name: user.name, photo_url: user.photo_url || null };
+      // Generate tokens (barbers carry their salon_id, clients use the requested one)
+      const userSalonId = type === 'barber' ? (user.salon_id || salonId) : salonId;
+      const tokenPayload = { id: user.id, type, email: user.email, name: user.name, photo_url: user.photo_url || null, salon_id: userSalonId };
       const accessToken = generateAccessToken(tokenPayload);
       const refreshToken = generateRefreshToken(tokenPayload);
 
@@ -127,7 +132,7 @@ router.post('/login',
         [user.id, type, refreshToken, expiresAt]
       );
 
-      logger.info('User logged in', { userId: user.id, type });
+      logger.info('User logged in', { userId: user.id, type, salonId: userSalonId });
 
       // Set refresh token as httpOnly cookie (dashboard uses this)
       setRefreshTokenCookie(res, refreshToken);
@@ -142,6 +147,7 @@ router.post('/login',
           email: user.email,
           name: user.name,
           photo_url: user.photo_url || null,
+          salon_id: userSalonId,
         },
       });
     } catch (error) {
@@ -271,7 +277,7 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
 
     // Get current user info
     const table = decoded.type === 'barber' ? 'barbers' : 'clients';
-    const nameCol = decoded.type === 'barber' ? 'name, photo_url' : "first_name || ' ' || last_name as name, NULL as photo_url";
+    const nameCol = decoded.type === 'barber' ? 'name, photo_url, salon_id' : "first_name || ' ' || last_name as name, NULL as photo_url";
     const userResult = await db.query(
       `SELECT id, email, ${nameCol} FROM ${table} WHERE id = $1 AND deleted_at IS NULL`,
       [decoded.id]
@@ -283,7 +289,8 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
     }
 
     const user = userResult.rows[0];
-    const tokenPayload = { id: user.id, type: decoded.type, email: user.email, name: user.name, photo_url: user.photo_url || null };
+    const userSalonId = decoded.type === 'barber' ? (user.salon_id || 'meylan') : (decoded.salon_id || 'meylan');
+    const tokenPayload = { id: user.id, type: decoded.type, email: user.email, name: user.name, photo_url: user.photo_url || null, salon_id: userSalonId };
 
     // Delete old refresh token
     await db.query('DELETE FROM refresh_tokens WHERE token = $1', [refresh_token]);
@@ -354,11 +361,13 @@ router.post('/forgot-password',
   authLimiter,
   [
     body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+    body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { email } = req.body;
+      const salonId = req.body.salon_id || 'meylan';
 
       // Always return success to prevent email enumeration
       const successMsg = 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.';
@@ -383,8 +392,10 @@ router.post('/forgot-password',
         [resetToken, expiresAt, client.id]
       );
 
-      // Build reset URL
-      const resetUrl = `${config.siteUrl}/pages/meylan/reset-password.html?token=${resetToken}`;
+      // Build reset URL (dynamic per salon)
+      const { getSalonConfig } = config;
+      const salonCfg = getSalonConfig(salonId);
+      const resetUrl = `${config.siteUrl}${salonCfg.bookingPath}/reset-password.html?token=${resetToken}`;
 
       // Send email (async, don't block response, with single retry)
       const resetEmailData = { email: client.email, first_name: client.first_name, resetUrl };

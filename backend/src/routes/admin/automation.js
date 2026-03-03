@@ -14,10 +14,13 @@ const VALID_TRIGGER_TYPES = ['review_sms', 'reactivation_sms', 'waitlist_notify'
 // ============================================
 router.get('/', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
     const result = await db.query(
       `SELECT id, type, is_active, config, updated_at, created_at
        FROM automation_triggers
-       ORDER BY created_at ASC`
+       WHERE salon_id = $1
+       ORDER BY created_at ASC`,
+      [salonId]
     );
 
     res.json(result.rows);
@@ -62,10 +65,11 @@ router.put('/:type',
       // Always update updated_at
       fields.push('updated_at = NOW()');
 
-      values.push(type);
+      const salonId = req.user.salon_id;
+      values.push(type, salonId);
       const result = await db.query(
         `UPDATE automation_triggers SET ${fields.join(', ')}
-         WHERE type = $${paramIndex}
+         WHERE type = $${paramIndex} AND salon_id = $${paramIndex + 1}
          RETURNING *`,
         values
       );

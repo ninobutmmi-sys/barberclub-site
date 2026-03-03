@@ -1343,6 +1343,71 @@ tr:hover td {
   margin-bottom: 16px;
 }
 
+/* ---- SALON SELECTOR ---- */
+.salon-card {
+  width: 100%;
+  padding: 20px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--font);
+  transition: all 0.2s ease;
+}
+.salon-card:hover {
+  border-color: var(--border-focus);
+  background: var(--bg-hover);
+}
+.salon-card:active { transform: scale(0.98); }
+.salon-card-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.salon-card-address {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.salon-card-barbers {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.salon-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 0 12px 8px;
+  background: rgba(var(--overlay), 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.salon-badge:hover { background: rgba(var(--overlay), 0.08); }
+.salon-badge-name {
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.salon-badge-change {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 /* ---- PLANNING ---- */
 .planning-toolbar {
   display: flex;

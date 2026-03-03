@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Gérer votre rendez-vous BarberClub — annuler ou décaler">
+    <meta name="description" content="Gérer votre rendez-vous BarberClub Grenoble — annuler ou décaler">
     <meta name="theme-color" content="#000000">
-    <title>Mon RDV | BarberClub</title>
+    <title>Mon RDV | BarberClub Grenoble</title>
     <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1274,7 +1274,6 @@
         const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? API_DEV
             : API_PROD;
-        const SALON_ID = 'meylan';
 
         const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
         const DAYS_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
@@ -1359,7 +1358,7 @@
             }
 
             try {
-                const res = await fetch(`${API}/bookings/${bookingId}?token=${token}&salon_id=${SALON_ID}`);
+                const res = await fetch(`${API}/bookings/${bookingId}?token=${token}&salon_id=grenoble`);
                 if (!res.ok) {
                     const data = await res.json().catch(() => ({}));
                     throw new Error(data.error || 'Rendez-vous introuvable');
@@ -1419,7 +1418,7 @@
 
         async function loadBarberOffDays() {
             try {
-                const res = await fetch(`${API}/barbers?salon_id=${SALON_ID}`);
+                const res = await fetch(`${API}/barbers?salon_id=grenoble`);
                 if (res.ok) {
                     const barbers = await res.json();
                     const b = barbers.find(b => b.id === booking.barber_id);
@@ -1446,7 +1445,7 @@
                 const res = await fetch(`${API}/bookings/${bookingId}/cancel`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token, salon_id: SALON_ID }),
+                    body: JSON.stringify({ token, salon_id: 'grenoble' }),
                 });
 
                 if (!res.ok) {
@@ -1592,7 +1591,7 @@
             section.innerHTML = '<div class="slots-loading"><div class="mini-spinner"></div>Chargement des créneaux...</div>';
 
             try {
-                const res = await fetch(`${API}/availability?service_id=${booking.service_id}&date=${selectedDate}&barber_id=${booking.barber_id}&salon_id=${SALON_ID}`);
+                const res = await fetch(`${API}/availability?service_id=${booking.service_id}&date=${selectedDate}&barber_id=${booking.barber_id}&salon_id=grenoble`);
                 if (!res.ok) throw new Error('Erreur');
                 slots = await res.json();
                 renderSlots();
@@ -1645,7 +1644,7 @@
                         token,
                         date: selectedDate,
                         start_time: selectedSlot,
-                        salon_id: SALON_ID,
+                        salon_id: 'grenoble',
                     }),
                 });
 

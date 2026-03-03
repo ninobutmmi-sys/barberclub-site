@@ -18,6 +18,7 @@ router.get('/daily',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const targetDate = req.query.date || new Date().toISOString().split('T')[0];
 
       // 1. Get completed bookings for the date with any linked payment
@@ -36,10 +37,11 @@ router.get('/daily',
          JOIN clients c ON b.client_id = c.id
          LEFT JOIN payments p ON p.booking_id = b.id
          WHERE b.date = $1
+           AND b.salon_id = $2
            AND b.status = 'completed'
            AND b.deleted_at IS NULL
          ORDER BY b.start_time`,
-        [targetDate]
+        [targetDate, salonId]
       );
 
       // 2. Get standalone payments (not linked to a booking) for the date
@@ -49,9 +51,10 @@ router.get('/daily',
          FROM payments p
          JOIN barbers br ON p.recorded_by = br.id
          WHERE p.booking_id IS NULL
-           AND p.paid_at::date = $1
+           AND p.salon_id = $1
+           AND p.paid_at::date = $2
          ORDER BY p.paid_at`,
-        [targetDate]
+        [salonId, targetDate]
       );
 
       // 3. Calculate totals from all payments for the date
@@ -64,14 +67,14 @@ router.get('/daily',
            COALESCE(SUM(amount), 0) as grand_total,
            COUNT(*) as payment_count
          FROM payments
-         WHERE paid_at::date = $1`,
-        [targetDate]
+         WHERE salon_id = $1 AND paid_at::date = $2`,
+        [salonId, targetDate]
       );
 
       // 4. Check if day is closed
       const closingResult = await db.query(
-        'SELECT * FROM register_closings WHERE date = $1',
-        [targetDate]
+        'SELECT * FROM register_closings WHERE salon_id = $1 AND date = $2',
+        [salonId, targetDate]
       );
 
       res.json({
@@ -100,14 +103,15 @@ router.post('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { booking_id, amount, method, note } = req.body;
       const recorded_by = req.user.id;
 
-      // If linked to a booking, check that it exists and has no payment yet
+      // If linked to a booking, check that it exists and belongs to this salon
       if (booking_id) {
         const bookingCheck = await db.query(
-          'SELECT id FROM bookings WHERE id = $1 AND deleted_at IS NULL',
-          [booking_id]
+          'SELECT id FROM bookings WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
+          [booking_id, salonId]
         );
         if (bookingCheck.rows.length === 0) {
           throw ApiError.notFound('Réservation introuvable');
@@ -121,18 +125,18 @@ router.post('/',
       const paidAt = new Date();
       const dateStr = paidAt.toISOString().split('T')[0];
       const closingCheck = await db.query(
-        'SELECT id FROM register_closings WHERE date = $1',
-        [dateStr]
+        'SELECT id FROM register_closings WHERE salon_id = $1 AND date = $2',
+        [salonId, dateStr]
       );
       if (closingCheck.rows.length > 0) {
         throw ApiError.badRequest('La caisse est déjà clôturée pour cette date');
       }
 
       const result = await db.query(
-        `INSERT INTO payments (booking_id, amount, method, note, recorded_by, paid_at)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO payments (booking_id, amount, method, note, recorded_by, paid_at, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
-        [booking_id || null, amount, method, note || null, recorded_by, paidAt]
+        [booking_id || null, amount, method, note || null, recorded_by, paidAt, salonId]
       );
 
       res.status(201).json(result.rows[0]);
@@ -150,10 +154,11 @@ router.delete('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       // Check that the payment's date is not closed
       const payment = await db.query(
-        'SELECT id, paid_at FROM payments WHERE id = $1',
-        [req.params.id]
+        'SELECT id, paid_at FROM payments WHERE id = $1 AND salon_id = $2',
+        [req.params.id, salonId]
       );
       if (payment.rows.length === 0) {
         throw ApiError.notFound('Paiement introuvable');
@@ -161,14 +166,14 @@ router.delete('/:id',
 
       const dateStr = new Date(payment.rows[0].paid_at).toISOString().split('T')[0];
       const closingCheck = await db.query(
-        'SELECT id FROM register_closings WHERE date = $1',
-        [dateStr]
+        'SELECT id FROM register_closings WHERE salon_id = $1 AND date = $2',
+        [salonId, dateStr]
       );
       if (closingCheck.rows.length > 0) {
         throw ApiError.badRequest('La caisse est déjà clôturée pour cette date');
       }
 
-      await db.query('DELETE FROM payments WHERE id = $1', [req.params.id]);
+      await db.query('DELETE FROM payments WHERE id = $1 AND salon_id = $2', [req.params.id, salonId]);
       res.json({ message: 'Paiement supprimé' });
     } catch (error) {
       next(error);
@@ -187,13 +192,14 @@ router.post('/close',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { date, notes } = req.body;
       const closed_by = req.user.id;
 
       // Check not already closed
       const existing = await db.query(
-        'SELECT id FROM register_closings WHERE date = $1',
-        [date]
+        'SELECT id FROM register_closings WHERE salon_id = $1 AND date = $2',
+        [salonId, date]
       );
       if (existing.rows.length > 0) {
         throw ApiError.badRequest('La caisse est déjà clôturée pour cette date');
@@ -206,8 +212,8 @@ router.post('/close',
            COALESCE(SUM(CASE WHEN method = 'cash' THEN amount ELSE 0 END), 0) as total_cash,
            COALESCE(SUM(CASE WHEN method NOT IN ('cb', 'cash') THEN amount ELSE 0 END), 0) as total_other
          FROM payments
-         WHERE paid_at::date = $1`,
-        [date]
+         WHERE salon_id = $1 AND paid_at::date = $2`,
+        [salonId, date]
       );
 
       // Count bookings with payments for that date
@@ -215,18 +221,19 @@ router.post('/close',
         `SELECT COUNT(DISTINCT p.booking_id) as cnt
          FROM payments p
          WHERE p.booking_id IS NOT NULL
-           AND p.paid_at::date = $1`,
-        [date]
+           AND p.salon_id = $1
+           AND p.paid_at::date = $2`,
+        [salonId, date]
       );
 
       const { total_cb, total_cash, total_other } = totals.rows[0];
       const booking_count = parseInt(bookingCount.rows[0].cnt, 10);
 
       const result = await db.query(
-        `INSERT INTO register_closings (date, total_cb, total_cash, total_other, booking_count, notes, closed_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO register_closings (date, total_cb, total_cash, total_other, booking_count, notes, closed_by, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-        [date, total_cb, total_cash, total_other, booking_count, notes || null, closed_by]
+        [date, total_cb, total_cash, total_other, booking_count, notes || null, closed_by, salonId]
       );
 
       res.status(201).json(result.rows[0]);
@@ -247,9 +254,10 @@ router.get('/closings',
   handleValidation,
   async (req, res, next) => {
     try {
-      const conditions = [];
-      const params = [];
-      let paramIndex = 1;
+      const salonId = req.user.salon_id;
+      const conditions = [`rc.salon_id = $1`];
+      const params = [salonId];
+      let paramIndex = 2;
 
       if (req.query.from) {
         conditions.push(`rc.date >= $${paramIndex}`);
@@ -263,9 +271,7 @@ router.get('/closings',
         paramIndex++;
       }
 
-      const whereClause = conditions.length > 0
-        ? 'WHERE ' + conditions.join(' AND ')
-        : '';
+      const whereClause = 'WHERE ' + conditions.join(' AND ');
 
       const result = await db.query(
         `SELECT rc.*, br.name as closed_by_name

@@ -18,17 +18,23 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 // ============================================
 // GET /api/barbers — List active barbers
 // ============================================
-router.get('/barbers', publicLimiter, async (req, res, next) => {
+router.get('/barbers', publicLimiter,
+  [query('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide')],
+  handleValidation,
+  async (req, res, next) => {
   try {
+    const salonId = req.query.salon_id || 'meylan';
     const result = await db.query(
       `SELECT id, name, role, photo_url
        FROM barbers
-       WHERE is_active = true AND deleted_at IS NULL
-       ORDER BY sort_order`
+       WHERE is_active = true AND deleted_at IS NULL AND salon_id = $1
+       ORDER BY sort_order`,
+      [salonId]
     );
     // Attach off-days for each barber (day_of_week where is_working=false)
     const schedResult = await db.query(
-      `SELECT barber_id, day_of_week FROM schedules WHERE is_working = false`
+      `SELECT barber_id, day_of_week FROM schedules WHERE is_working = false AND salon_id = $1`,
+      [salonId]
     );
     const offMap = {};
     for (const row of schedResult.rows) {
@@ -49,11 +55,15 @@ router.get('/barbers', publicLimiter, async (req, res, next) => {
 // GET /api/services — List services (optionally filtered by barber)
 // ============================================
 router.get('/services', publicLimiter,
-  [query('barber_id').optional().custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide')],
+  [
+    query('barber_id').optional().custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide'),
+    query('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+  ],
   handleValidation,
   async (req, res, next) => {
   try {
     const { barber_id } = req.query;
+    const salonId = req.query.salon_id || 'meylan';
 
     let queryText;
     let params;
@@ -64,17 +74,17 @@ router.get('/services', publicLimiter,
         SELECT s.id, s.name, s.price, s.duration
         FROM services s
         JOIN barber_services bs ON s.id = bs.service_id
-        WHERE bs.barber_id = $1 AND s.is_active = true AND s.deleted_at IS NULL
+        WHERE bs.barber_id = $1 AND s.is_active = true AND s.deleted_at IS NULL AND s.salon_id = $2
         ORDER BY s.sort_order`;
-      params = [barber_id];
+      params = [barber_id, salonId];
     } else {
       // All active services
       queryText = `
         SELECT id, name, price, duration
         FROM services
-        WHERE is_active = true AND deleted_at IS NULL
+        WHERE is_active = true AND deleted_at IS NULL AND salon_id = $1
         ORDER BY sort_order`;
-      params = [];
+      params = [salonId];
     }
 
     const result = await db.query(queryText, params);
@@ -94,11 +104,13 @@ router.get('/availability',
     query('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide (format: YYYY-MM-DD)')
       .custom((val) => !isNaN(new Date(val + 'T00:00:00').getTime())).withMessage('Date invalide'),
     query('barber_id').optional().custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide'),
+    query('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { barber_id, service_id, date } = req.query;
+      const salonId = req.query.salon_id || 'meylan';
 
       // Validate date is not in the past
       const requestedDate = new Date(date + 'T00:00:00');
@@ -122,7 +134,8 @@ router.get('/availability',
       const slots = await availabilityService.getAvailableSlots(
         barber_id || 'any',
         service_id,
-        date
+        date,
+        { salonId }
       );
 
       if (isToday) {
@@ -169,11 +182,13 @@ router.post('/bookings',
       }
       return true;
     }),
+    body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
-      let bookingData = { ...req.body, source: 'online' };
+      const salonId = req.body.salon_id || 'meylan';
+      let bookingData = { ...req.body, source: 'online', salon_id: salonId };
 
       if (req.user && req.user.type === 'client') {
         // Authenticated client: get info from database
@@ -340,11 +355,13 @@ router.post('/waitlist',
       .matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numero de telephone francais invalide'),
     body('preferred_time_start').optional({ values: 'falsy' }).matches(/^([01]\d|2[0-3]):[0-5]\d$/),
     body('preferred_time_end').optional({ values: 'falsy' }).matches(/^([01]\d|2[0-3]):[0-5]\d$/),
+    body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { barber_id, service_id, preferred_date, preferred_time_start, preferred_time_end } = req.body;
+      const salonId = req.body.salon_id || 'meylan';
       let { client_name, client_phone } = req.body;
 
       // Resolve client info: authenticated client → fetch from DB
@@ -387,10 +404,10 @@ router.post('/waitlist',
       }
 
       const result = await db.query(
-        `INSERT INTO waitlist (client_id, client_name, client_phone, barber_id, service_id, preferred_date, preferred_time_start, preferred_time_end)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO waitlist (client_id, client_name, client_phone, barber_id, service_id, preferred_date, preferred_time_start, preferred_time_end, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING id, status, created_at`,
-        [clientId, client_name, client_phone, barber_id, service_id, preferred_date, preferred_time_start || null, preferred_time_end || null]
+        [clientId, client_name, client_phone, barber_id, service_id, preferred_date, preferred_time_start || null, preferred_time_end || null, salonId]
       );
 
       res.status(201).json({

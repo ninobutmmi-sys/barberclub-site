@@ -15,12 +15,15 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 // ============================================
 router.get('/', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
     const result = await db.query(
       `SELECT id, type, name, tracking_code, message_preview, recipients_count,
               cost_cents, clicks, bookings_generated, revenue_generated,
               sent_at, created_at
        FROM campaigns
-       ORDER BY sent_at DESC`
+       WHERE salon_id = $1
+       ORDER BY sent_at DESC`,
+      [salonId]
     );
     res.json(result.rows);
   } catch (error) {
@@ -42,14 +45,15 @@ router.post('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { type, name, message_preview, recipients_count, cost_cents } = req.body;
       const tracking_code = crypto.randomBytes(4).toString('hex');
 
       const result = await db.query(
-        `INSERT INTO campaigns (type, name, tracking_code, message_preview, recipients_count, cost_cents, sent_at)
-         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        `INSERT INTO campaigns (type, name, tracking_code, message_preview, recipients_count, cost_cents, sent_at, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
          RETURNING *`,
-        [type, name, tracking_code, message_preview || null, recipients_count, cost_cents]
+        [type, name, tracking_code, message_preview || null, recipients_count, cost_cents, salonId]
       );
 
       logger.info('Campaign created', { id: result.rows[0].id, type, name, tracking_code });
@@ -68,13 +72,14 @@ router.get('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const result = await db.query(
         `SELECT id, type, name, tracking_code, message_preview, recipients_count,
                 cost_cents, clicks, bookings_generated, revenue_generated,
                 sent_at, created_at
          FROM campaigns
-         WHERE id = $1`,
-        [req.params.id]
+         WHERE id = $1 AND salon_id = $2`,
+        [req.params.id, salonId]
       );
 
       if (result.rows.length === 0) {
@@ -98,10 +103,11 @@ router.get('/:id/roi',
     try {
       const { id } = req.params;
 
+      const salonId = req.user.salon_id;
       // Fetch the campaign
       const campaignResult = await db.query(
-        'SELECT id, clicks, cost_cents FROM campaigns WHERE id = $1',
-        [id]
+        'SELECT id, clicks, cost_cents FROM campaigns WHERE id = $1 AND salon_id = $2',
+        [id, salonId]
       );
 
       if (campaignResult.rows.length === 0) {
@@ -155,17 +161,17 @@ trackRouter.get('/t/:tracking_code', async (req, res, next) => {
 
     // Find campaign by tracking code
     const campaignResult = await db.query(
-      'SELECT id FROM campaigns WHERE tracking_code = $1',
+      'SELECT id, salon_id FROM campaigns WHERE tracking_code = $1',
       [tracking_code]
     );
 
     if (campaignResult.rows.length === 0) {
       logger.warn('Click on unknown tracking code', { tracking_code });
-      // Still redirect to booking page even if campaign not found
       return res.redirect(302, `https://barberclub-grenoble.fr/pages/meylan/reserver.html?ref=${tracking_code}`);
     }
 
     const campaign_id = campaignResult.rows[0].id;
+    const campaignSalon = campaignResult.rows[0].salon_id || 'meylan';
     const ip_address = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
     const user_agent = req.headers['user-agent'] || null;
 
@@ -184,9 +190,8 @@ trackRouter.get('/t/:tracking_code', async (req, res, next) => {
 
     logger.info('Campaign click tracked', { campaign_id, tracking_code });
 
-    res.redirect(302, `https://barberclub-grenoble.fr/pages/meylan/reserver.html?ref=${tracking_code}`);
+    res.redirect(302, `https://barberclub-grenoble.fr/pages/${campaignSalon}/reserver.html?ref=${tracking_code}`);
   } catch (error) {
-    // On error, still redirect so the user experience is not broken
     logger.error('Error tracking campaign click', { error: error.message, tracking_code: req.params.tracking_code });
     res.redirect(302, `https://barberclub-grenoble.fr/pages/meylan/reserver.html?ref=${req.params.tracking_code}`);
   }

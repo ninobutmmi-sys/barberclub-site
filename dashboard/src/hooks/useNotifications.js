@@ -7,7 +7,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { getBookings } from '../api';
 
 const POLL_INTERVAL = 30_000; // 30 seconds
-const STORAGE_KEY = 'bc_seen_booking_ids';
+
+function getStorageKey() {
+  const salon = localStorage.getItem('bc_salon') || 'meylan';
+  return `bc_seen_booking_ids_${salon}`;
+}
 
 /**
  * Formats today's date as YYYY-MM-DD for the API query.
@@ -27,7 +31,7 @@ function getTodayISO() {
  */
 function loadSeenIds() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(getStorageKey());
     if (!raw) return new Set();
     return new Set(JSON.parse(raw));
   } catch {
@@ -40,7 +44,7 @@ function loadSeenIds() {
  * @param {Set<string>} ids
  */
 function saveSeenIds(ids) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids]));
+  localStorage.setItem(getStorageKey(), JSON.stringify([...ids]));
 }
 
 /**

@@ -22,6 +22,7 @@ router.get('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { date, barber_id, view } = req.query;
       const targetDate = date || new Date().toISOString().split('T')[0];
       const viewType = view || 'day';
@@ -69,9 +70,10 @@ router.get('/',
          JOIN barbers br ON b.barber_id = br.id
          JOIN clients c ON b.client_id = c.id
          WHERE ${dateCondition} ${barberCondition}
+           AND b.salon_id = $${paramIndex}
            AND b.status != 'cancelled' AND b.deleted_at IS NULL
          ORDER BY b.start_time`,
-        params
+        [...params, salonId]
       );
 
       res.json(result.rows);
@@ -99,15 +101,16 @@ router.get('/history',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const {
         from, to, barber_id, status, search,
         limit = 50, offset = 0,
         sort = 'date', order = 'desc',
       } = req.query;
 
-      const conditions = ['b.deleted_at IS NULL'];
-      const params = [];
-      let paramIndex = 1;
+      const conditions = ['b.deleted_at IS NULL', `b.salon_id = $1`];
+      const params = [salonId];
+      let paramIndex = 2;
 
       if (from) {
         conditions.push(`b.date >= $${paramIndex}`);
@@ -225,11 +228,12 @@ router.post('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { recurrence, ...bookingData } = req.body;
 
       if (recurrence && recurrence.type) {
         const result = await bookingService.createRecurringBookings(
-          { ...bookingData, source: 'manual' },
+          { ...bookingData, source: 'manual', salon_id: salonId },
           recurrence
         );
         res.status(201).json(result);
@@ -237,6 +241,7 @@ router.post('/',
         const booking = await bookingService.createBooking({
           ...bookingData,
           source: 'manual',
+          salon_id: salonId,
         });
         res.status(201).json(booking);
       }
@@ -262,6 +267,7 @@ router.put('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { id } = req.params;
       const { date, start_time, barber_id, service_id, color, notify_client } = req.body;
 
@@ -273,8 +279,8 @@ router.put('/:id',
          JOIN clients c ON b.client_id = c.id
          JOIN services s ON b.service_id = s.id
          JOIN barbers br ON b.barber_id = br.id
-         WHERE b.id = $1 AND b.deleted_at IS NULL`,
-        [id]
+         WHERE b.id = $1 AND b.salon_id = $2 AND b.deleted_at IS NULL`,
+        [id, salonId]
       );
       if (current.rows.length === 0) {
         throw ApiError.notFound('RDV introuvable');
@@ -371,7 +377,8 @@ router.patch('/:id/status',
   handleValidation,
   async (req, res, next) => {
     try {
-      const result = await bookingService.updateBookingStatus(req.params.id, req.body.status);
+      const salonId = req.user.salon_id;
+      const result = await bookingService.updateBookingStatus(req.params.id, req.body.status, salonId);
       res.json(result);
     } catch (error) {
       next(error);
@@ -387,6 +394,7 @@ router.delete('/group/:groupId',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { groupId } = req.params;
       const notify = req.query.notify === 'true';
       const futureOnly = req.query.future_only === 'true';
@@ -394,8 +402,10 @@ router.delete('/group/:groupId',
       // Build date condition: future_only = only today and future bookings
       const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
       const todayStr = now.toISOString().split('T')[0];
-      const params = futureOnly ? [groupId, todayStr] : [groupId];
+      const salonParamIndex = futureOnly ? 3 : 2;
+      const params = futureOnly ? [groupId, todayStr, salonId] : [groupId, salonId];
       const dateCondition = futureOnly ? ` AND b.date >= $2` : '';
+      const salonCondition = ` AND b.salon_id = $${salonParamIndex}`;
 
       // If notify, fetch all bookings info before deleting
       let bookingsInfo = [];
@@ -410,7 +420,7 @@ router.delete('/group/:groupId',
            JOIN clients c ON b.client_id = c.id
            WHERE b.recurrence_group_id = $1
              AND b.deleted_at IS NULL AND b.status != 'cancelled'
-             ${dateCondition}`,
+             ${dateCondition}${salonCondition}`,
           params
         );
         bookingsInfo = infoResult.rows;
@@ -421,7 +431,7 @@ router.delete('/group/:groupId',
         `UPDATE bookings b SET deleted_at = NOW(), status = 'cancelled'
          WHERE recurrence_group_id = $1
            AND deleted_at IS NULL AND status != 'cancelled'
-           ${dateCondition}
+           ${dateCondition}${salonCondition}
          RETURNING id`,
         params
       );
@@ -464,6 +474,7 @@ router.delete('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const notify = req.query.notify === 'true';
 
       // If notify, fetch booking + client info before deleting
@@ -477,16 +488,16 @@ router.delete('/:id',
            JOIN services s ON b.service_id = s.id
            JOIN barbers br ON b.barber_id = br.id
            JOIN clients c ON b.client_id = c.id
-           WHERE b.id = $1 AND b.deleted_at IS NULL`,
-          [req.params.id]
+           WHERE b.id = $1 AND b.salon_id = $2 AND b.deleted_at IS NULL`,
+          [req.params.id, salonId]
         );
         if (infoResult.rows.length > 0) bookingInfo = infoResult.rows[0];
       }
 
       const result = await db.query(
         `UPDATE bookings SET deleted_at = NOW(), status = 'cancelled'
-         WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
-        [req.params.id]
+         WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL RETURNING id`,
+        [req.params.id, salonId]
       );
 
       if (result.rows.length === 0) {

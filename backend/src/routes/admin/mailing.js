@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const config = require('../../config/env');
+const { getSalonConfig } = require('../../config/env');
 const logger = require('../../utils/logger');
 
 const router = express.Router();
@@ -21,17 +22,20 @@ router.post(
     body('from_name').optional().isString().isLength({ max: 100 }),
   ],
   async (req, res) => {
+    const salonId = req.user.salon_id;
+    const salon = getSalonConfig(salonId);
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ error: errors.array()[0].msg });
     }
 
-    if (!config.brevo.apiKey) {
+    const brevoConfig = salon.brevo || config.brevo;
+    if (!brevoConfig.apiKey) {
       return res.status(500).json({ error: 'Brevo API key non configuree' });
     }
 
     const { recipients, subject, body: emailBody, from_name } = req.body;
-    const senderName = from_name || config.brevo.senderName;
+    const senderName = from_name || brevoConfig.senderName;
 
     let sent = 0;
     let failed = 0;
@@ -42,18 +46,18 @@ router.post(
         const personalSubject = replaceVars(subject, recipient);
         const personalBody = replaceVars(emailBody, recipient);
 
-        const html = buildCampaignHTML(personalBody);
+        const html = buildCampaignHTML(personalBody, salon);
 
         const controller = new AbortController();
         const mailTimeout = setTimeout(() => controller.abort(), 15000);
         const response = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
           headers: {
-            'api-key': config.brevo.apiKey,
+            'api-key': brevoConfig.apiKey,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            sender: { email: config.brevo.senderEmail, name: senderName },
+            sender: { email: brevoConfig.senderEmail, name: senderName },
             to: [{ email: recipient.email }],
             subject: personalSubject,
             htmlContent: html,
@@ -96,7 +100,12 @@ function replaceVars(text, recipient) {
     .replace(/\{nom\}/gi, escapeHtml(recipient.last_name || ''));
 }
 
-function buildCampaignHTML(bodyText) {
+function buildCampaignHTML(bodyText, salon) {
+  const salonName = salon ? salon.name : 'BarberClub Meylan';
+  const salonAddress = salon ? salon.address : '26 Av. du Grésivaudan, 38700 Corenc';
+  // Extract short location name from full salon name (e.g. "BarberClub Meylan" -> "Meylan")
+  const shortLocation = salonName.replace(/^BarberClub\s*/i, '') || 'Meylan';
+
   // Convert line breaks to HTML paragraphs
   const paragraphs = bodyText
     .split('\n\n')
@@ -115,7 +124,7 @@ function buildCampaignHTML(bodyText) {
       <h1 style="font-family:'Orbitron',monospace;font-size:24px;font-weight:800;margin:0;letter-spacing:0.05em;">
         BARBERCLUB
       </h1>
-      <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:4px 0 0;">Meylan</p>
+      <p style="color:rgba(255,255,255,0.5);font-size:13px;margin:4px 0 0;">${escapeHtml(shortLocation)}</p>
     </div>
 
     <div style="color:rgba(255,255,255,0.9);font-size:15px;">
@@ -123,7 +132,7 @@ function buildCampaignHTML(bodyText) {
     </div>
 
     <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.08);">
-      <p>BarberClub Meylan — 26 Av. du Grésivaudan, 38700 Corenc</p>
+      <p>${escapeHtml(salonName)} — ${escapeHtml(salonAddress)}</p>
       <p style="font-size:10px;opacity:0.6;margin-top:8px;">Si vous ne souhaitez plus recevoir ces emails, répondez « STOP » à cet email.</p>
     </div>
   </div>

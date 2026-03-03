@@ -3,6 +3,7 @@
 // ============================================
 
 const config = require('./config/env');
+const db = require('./config/database');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -198,11 +199,26 @@ app.use('/api/track', campaignTrackRoutes);
 // Short redirect URLs (for SMS links)
 // ============================================
 app.get('/r/avis', (req, res) => {
-  res.redirect(302, config.salon.googleReviewUrl || 'https://barberclub-grenoble.fr');
+  // Support ?salon=grenoble for per-salon Google Review links
+  const salonId = req.query.salon || 'meylan';
+  const salon = config.getSalonConfig(salonId);
+  res.redirect(302, salon.googleReviewUrl || 'https://barberclub-grenoble.fr');
 });
 
-app.get('/r/rdv/:id/:token', (req, res) => {
-  res.redirect(302, `${config.siteUrl}/pages/meylan/mon-rdv.html?id=${req.params.id}&token=${req.params.token}`);
+app.get('/r/rdv/:id/:token', async (req, res) => {
+  // Fetch booking to determine which salon page to redirect to
+  try {
+    const result = await db.query(
+      'SELECT salon_id FROM bookings WHERE id = $1 AND cancel_token = $2 AND deleted_at IS NULL',
+      [req.params.id, req.params.token]
+    );
+    const salonId = result.rows.length > 0 ? (result.rows[0].salon_id || 'meylan') : 'meylan';
+    const salon = config.getSalonConfig(salonId);
+    res.redirect(302, `${config.siteUrl}${salon.bookingPath}/mon-rdv.html?id=${req.params.id}&token=${req.params.token}`);
+  } catch {
+    // Fallback to meylan on error
+    res.redirect(302, `${config.siteUrl}/pages/meylan/mon-rdv.html?id=${req.params.id}&token=${req.params.token}`);
+  }
 });
 
 // ============================================

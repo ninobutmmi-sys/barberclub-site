@@ -27,6 +27,46 @@ if (process.env.NODE_ENV === 'production') {
   }
 }
 
+// ============================================
+// Salon configuration (multi-salon support)
+// ============================================
+const SALONS = {
+  meylan: {
+    name: process.env.SALON_NAME || 'BarberClub Meylan',
+    address: process.env.SALON_ADDRESS || '26 Av. du Grésivaudan, 38700 Corenc',
+    phone: process.env.SALON_PHONE || '',
+    googleReviewUrl: process.env.GOOGLE_REVIEW_URL || '',
+    bookingPath: '/pages/meylan',
+    mapsUrl: 'https://maps.google.com/?q=26+Av+du+Gr%C3%A9sivaudan+38700+Corenc',
+    heroImage: '/assets/images/salons/meylan/salon-meylan-interieur.jpg',
+    brevo: {
+      apiKey: process.env.BREVO_API_KEY || '',
+      senderEmail: process.env.BREVO_SENDER_EMAIL || 'noreply@barberclub-grenoble.fr',
+      senderName: process.env.BREVO_SENDER_NAME || 'BarberClub Meylan',
+      smsSender: process.env.BREVO_SMS_SENDER || 'BARBERCLUB',
+    },
+  },
+  grenoble: {
+    name: process.env.SALON_GRENOBLE_NAME || 'BarberClub Grenoble',
+    address: process.env.SALON_GRENOBLE_ADDRESS || '5 Rue Clôt Bey, 38000 Grenoble',
+    phone: process.env.SALON_GRENOBLE_PHONE || '09 56 30 93 86',
+    googleReviewUrl: process.env.GOOGLE_REVIEW_URL_GRENOBLE || '',
+    bookingPath: '/pages/grenoble',
+    mapsUrl: 'https://maps.google.com/?q=5+Rue+Cl%C3%B4t+Bey+38000+Grenoble',
+    heroImage: '/assets/images/salons/grenoble/salon-grenoble-interieur.jpg',
+    brevo: {
+      apiKey: process.env.BREVO_API_KEY_GRENOBLE || '',
+      senderEmail: process.env.BREVO_SENDER_EMAIL_GRENOBLE || 'noreply@barberclub-grenoble.fr',
+      senderName: process.env.BREVO_SENDER_NAME_GRENOBLE || 'BarberClub Grenoble',
+      smsSender: process.env.BREVO_SMS_SENDER_GRENOBLE || 'BARBERCLUB',
+    },
+  },
+};
+
+function getSalonConfig(salonId) {
+  return SALONS[salonId] || SALONS.meylan;
+}
+
 module.exports = {
   port: parseInt(process.env.PORT, 10) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -55,4 +95,6 @@ module.exports = {
     phone: process.env.SALON_PHONE || '',
     googleReviewUrl: process.env.GOOGLE_REVIEW_URL || '',
   },
+  getSalonConfig,
+  SALONS,
 };

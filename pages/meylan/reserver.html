@@ -2985,8 +2985,11 @@
             }
         }
 
+        const SALON_ID = 'meylan';
+
         async function api(path) {
-            return fetchWithRetry(API + path);
+            const separator = path.includes('?') ? '&' : '?';
+            return fetchWithRetry(API + path + separator + 'salon_id=' + SALON_ID);
         }
 
         async function apiPost(path, body, auth = false) {
@@ -2998,7 +3001,7 @@
             return fetchWithRetry(API + path, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify(body),
+                body: JSON.stringify({ ...body, salon_id: SALON_ID }),
             });
         }
 
@@ -3461,7 +3464,7 @@
                 const res = await fetch(`${API}/waitlist`, {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify(body),
+                    body: JSON.stringify({ ...body, salon_id: SALON_ID }),
                 });
                 const data = await res.json();
                 if (res.ok) {

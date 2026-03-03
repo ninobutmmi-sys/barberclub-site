@@ -28,13 +28,14 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   // 2. Determine which barbers to check
   let barberIds;
   if (barberId === 'any') {
-    // Get all active barbers that offer this service
+    const salonId = options.salonId || 'meylan';
+    // Get all active barbers that offer this service in this salon
     const barbersResult = await db.query(
       `SELECT b.id FROM barbers b
        JOIN barber_services bs ON b.id = bs.barber_id
-       WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL
+       WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
        ORDER BY b.sort_order`,
-      [serviceId]
+      [serviceId, salonId]
     );
     barberIds = barbersResult.rows.map((r) => r.id);
   } else {
@@ -223,14 +224,14 @@ async function isSlotAvailable(barberId, date, startTime, duration, client = nul
  * For "any barber" mode: find the best barber for a given slot
  * Prefers the barber with fewer bookings that day (load balancing)
  */
-async function findBestBarber(serviceId, date, startTime, duration) {
-  // Get all barbers that offer this service
+async function findBestBarber(serviceId, date, startTime, duration, salonId = 'meylan') {
+  // Get all barbers that offer this service in this salon
   const barbersResult = await db.query(
     `SELECT b.id, b.name FROM barbers b
      JOIN barber_services bs ON b.id = bs.barber_id
-     WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL
+     WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
      ORDER BY b.sort_order`,
-    [serviceId]
+    [serviceId, salonId]
   );
 
   const endTime = addMinutesToTime(startTime, duration);

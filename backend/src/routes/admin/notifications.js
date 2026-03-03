@@ -20,9 +20,10 @@ router.get('/logs', async (req, res) => {
       to,
     } = req.query;
 
-    const conditions = [];
-    const params = [];
-    let paramIndex = 1;
+    const salonId = req.user.salon_id;
+    const conditions = [`nq.salon_id = $1`];
+    const params = [salonId];
+    let paramIndex = 2;
 
     if (type) {
       conditions.push(`nq.type = $${paramIndex++}`);
@@ -41,7 +42,7 @@ router.get('/logs', async (req, res) => {
       params.push(to);
     }
 
-    const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
+    const where = 'WHERE ' + conditions.join(' AND ');
 
     const countResult = await db.query(
       `SELECT COUNT(*) FROM notification_queue nq ${where}`,
@@ -85,6 +86,7 @@ router.get('/stats', async (req, res) => {
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
 
+    const salonId = req.user.salon_id;
     const result = await db.query(
       `SELECT
          COUNT(*) FILTER (WHERE type = 'reminder_sms' AND status = 'sent') AS sms_sent,
@@ -93,8 +95,8 @@ router.get('/stats', async (req, res) => {
          COUNT(*) FILTER (WHERE type IN ('confirmation_email', 'review_email') AND status = 'failed') AS emails_failed,
          COUNT(*) FILTER (WHERE status = 'pending') AS pending
        FROM notification_queue
-       WHERE created_at >= $1`,
-      [monthStart.toISOString()]
+       WHERE created_at >= $1 AND salon_id = $2`,
+      [monthStart.toISOString(), salonId]
     );
 
     const stats = result.rows[0];
@@ -119,12 +121,15 @@ router.get('/stats', async (req, res) => {
  * Vérifie la configuration Brevo
  */
 router.get('/brevo-status', async (req, res) => {
-  const configured = !!config.brevo.apiKey;
+  const salonId = req.user.salon_id;
+  const salonConfig = config.getSalonConfig(salonId);
+  const brevo = salonConfig.brevo || config.brevo;
+  const configured = !!brevo.apiKey;
   const statusData = {
     configured,
-    senderEmail: config.brevo.senderEmail,
-    senderName: config.brevo.senderName,
-    smsSender: config.brevo.smsSender,
+    senderEmail: brevo.senderEmail,
+    senderName: brevo.senderName,
+    smsSender: brevo.smsSender,
   };
 
   if (configured) {
@@ -132,7 +137,7 @@ router.get('/brevo-status', async (req, res) => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 15000);
       const response = await fetch('https://api.brevo.com/v3/account', {
-        headers: { 'api-key': config.brevo.apiKey },
+        headers: { 'api-key': brevo.apiKey },
         signal: controller.signal,
       });
       clearTimeout(timeout);
@@ -166,8 +171,10 @@ router.get('/brevo-status', async (req, res) => {
  */
 router.delete('/failed', async (req, res) => {
   try {
+    const salonId = req.user.salon_id;
     const result = await db.query(
-      `DELETE FROM notification_queue WHERE status = 'failed'`
+      `DELETE FROM notification_queue WHERE status = 'failed' AND salon_id = $1`,
+      [salonId]
     );
     res.json({ deleted: result.rowCount });
   } catch (err) {

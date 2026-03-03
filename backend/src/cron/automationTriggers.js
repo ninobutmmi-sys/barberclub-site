@@ -2,6 +2,7 @@ const db = require('../config/database');
 const config = require('../config/env');
 const logger = require('../utils/logger');
 const { BREVO_REQUEST_TIMEOUT_MS } = require('../constants');
+const { getBrevoConfig } = require('../services/notification');
 
 function formatPhoneInternational(phone) {
   let cleaned = phone.replace(/[\s.-]/g, '');
@@ -14,9 +15,10 @@ function formatPhoneInternational(phone) {
   return cleaned;
 }
 
-async function brevoSMS(phone, content) {
-  if (!config.brevo.apiKey) {
-    logger.warn('Brevo API key not configured, skipping SMS');
+async function brevoSMS(phone, content, salonId = 'meylan') {
+  const brevo = getBrevoConfig(salonId);
+  if (!brevo.apiKey) {
+    logger.warn('Brevo API key not configured, skipping SMS', { salonId });
     return;
   }
   const recipient = formatPhoneInternational(phone);
@@ -26,11 +28,11 @@ async function brevoSMS(phone, content) {
     const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
       method: 'POST',
       headers: {
-        'api-key': config.brevo.apiKey,
+        'api-key': brevo.apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        sender: config.brevo.smsSender,
+        sender: brevo.smsSender,
         recipient,
         content,
         type: 'transactional',
@@ -49,10 +51,11 @@ async function brevoSMS(phone, content) {
 /**
  * Process automation triggers (runs every 10 minutes)
  * Checks each trigger type if active and processes accordingly
+ * Handles both salons — triggers are per-salon in automation_triggers table
  */
 async function processAutomationTriggers() {
   try {
-    // Auto-complete past bookings (confirmed + end_time passed today)
+    // Auto-complete past bookings (confirmed + end_time passed today) — all salons
     const autoCompleted = await db.query(
       `UPDATE bookings SET status = 'completed'
        WHERE status = 'confirmed'
@@ -65,23 +68,25 @@ async function processAutomationTriggers() {
       logger.info(`Auto-completed ${autoCompleted.rowCount} past bookings`);
     }
 
+    // Fetch all active triggers (each has a salon_id)
     const triggers = await db.query('SELECT * FROM automation_triggers WHERE is_active = true');
 
     for (const trigger of triggers.rows) {
       try {
+        const salonId = trigger.salon_id || 'meylan';
         switch (trigger.type) {
           case 'review_sms':
-            await processReviewSms(trigger.config);
+            await processReviewSms(trigger.config, salonId);
             break;
           case 'reactivation_sms':
-            await processReactivationSms(trigger.config);
+            await processReactivationSms(trigger.config, salonId);
             break;
           case 'waitlist_notify':
-            await processWaitlistNotify(trigger.config);
+            await processWaitlistNotify(trigger.config, salonId);
             break;
         }
       } catch (err) {
-        logger.error(`Automation trigger ${trigger.type} failed`, { error: err.message });
+        logger.error(`Automation trigger ${trigger.type} failed`, { error: err.message, salonId: trigger.salon_id });
       }
     }
   } catch (err) {
@@ -91,16 +96,16 @@ async function processAutomationTriggers() {
 
 /**
  * Review SMS: Send SMS X minutes after a booking is completed
- * Looks for bookings completed recently that haven't been sent a review SMS
+ * Filtered by salon_id
  */
-async function processReviewSms(triggerConfig) {
+async function processReviewSms(triggerConfig, salonId) {
   const delayMinutes = triggerConfig.delay_minutes || 60;
   const message = triggerConfig.message || '';
   const googleReviewUrl = triggerConfig.google_review_url || '';
 
   if (!message) return;
 
-  // Find bookings completed more than delayMinutes ago
+  // Find bookings completed more than delayMinutes ago (for this salon)
   // Only for clients who have NEVER received a review SMS (once per lifetime)
   const result = await db.query(
     `SELECT b.id, b.client_id, b.date, b.start_time,
@@ -110,6 +115,7 @@ async function processReviewSms(triggerConfig) {
      WHERE b.status = 'completed'
        AND b.deleted_at IS NULL
        AND b.review_email_sent = false
+       AND b.salon_id = $2
        AND c.phone IS NOT NULL
        AND c.review_requested = false
        AND b.date = (NOW() AT TIME ZONE 'Europe/Paris')::date
@@ -119,11 +125,11 @@ async function processReviewSms(triggerConfig) {
          WHERE nq.booking_id = b.id AND nq.type = 'review_sms'
        )
      LIMIT 20`,
-    [delayMinutes]
+    [delayMinutes, salonId]
   );
 
   const apiUrl = config.apiUrl || 'https://barberclub-grenoble.fr';
-  const reviewLink = apiUrl + '/r/avis';
+  const reviewLink = apiUrl + '/r/avis?salon=' + salonId;
 
   for (const booking of result.rows) {
     const personalMessage = message
@@ -132,8 +138,8 @@ async function processReviewSms(triggerConfig) {
       .replace(/\{lien_avis\}/gi, reviewLink);
 
     try {
-      await brevoSMS(booking.phone, personalMessage);
-      logger.info('Review SMS sent', { bookingId: booking.id, phone: booking.phone });
+      await brevoSMS(booking.phone, personalMessage, salonId);
+      logger.info('Review SMS sent', { bookingId: booking.id, phone: booking.phone, salonId });
       // Mark client as already contacted for review (lifetime flag)
       await db.query('UPDATE clients SET review_requested = true WHERE id = $1', [booking.client_id]);
     } catch (err) {
@@ -145,21 +151,24 @@ async function processReviewSms(triggerConfig) {
   }
 
   if (result.rows.length > 0) {
-    logger.info(`Review SMS: processed ${result.rows.length} bookings`);
+    logger.info(`Review SMS (${salonId}): processed ${result.rows.length} bookings`);
   }
 }
 
 /**
  * Reactivation SMS: Send to clients inactive for X days
- * Uses a simple approach: check clients table for last booking
+ * Filtered by salon — only counts bookings from this salon
  */
-async function processReactivationSms(triggerConfig) {
+async function processReactivationSms(triggerConfig, salonId) {
   const inactiveDays = triggerConfig.inactive_days || 45;
   const message = triggerConfig.message || '';
 
   if (!message) return;
 
-  // Find clients with 3+ visits, inactive for inactiveDays, not already contacted recently
+  const salon = config.getSalonConfig(salonId);
+  const bookingUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
+
+  // Find clients with 3+ visits at THIS salon, inactive for inactiveDays
   const result = await db.query(
     `SELECT c.id, c.first_name, c.last_name, c.phone,
             MAX(b.date) as last_visit
@@ -168,44 +177,44 @@ async function processReactivationSms(triggerConfig) {
      WHERE c.phone IS NOT NULL
        AND c.deleted_at IS NULL
        AND b.deleted_at IS NULL
+       AND b.salon_id = $2
        AND b.status IN ('completed', 'confirmed')
        AND (c.reactivation_sms_sent_at IS NULL OR c.reactivation_sms_sent_at < NOW() - INTERVAL '30 days')
      GROUP BY c.id
      HAVING COUNT(b.id) >= 3
        AND MAX(b.date) < CURRENT_DATE - $1::int
        AND MAX(b.date) > CURRENT_DATE - ($1::int + 30)`,
-    [inactiveDays]
+    [inactiveDays, salonId]
   );
 
   for (const client of result.rows) {
     const personalMessage = message
       .replace(/\{prenom\}/gi, client.first_name || '')
       .replace(/\{nom\}/gi, client.last_name || '')
-      .replace(/\{lien_reservation\}/gi, 'https://barberclub-grenoble.fr/pages/meylan/reserver.html');
+      .replace(/\{lien_reservation\}/gi, bookingUrl);
 
     try {
-      await brevoSMS(client.phone, personalMessage);
+      await brevoSMS(client.phone, personalMessage, salonId);
       await db.query('UPDATE clients SET reactivation_sms_sent_at = NOW() WHERE id = $1', [client.id]);
-      logger.info('Reactivation SMS sent', { clientId: client.id, phone: client.phone });
+      logger.info('Reactivation SMS sent', { clientId: client.id, phone: client.phone, salonId });
     } catch (err) {
       logger.error('Reactivation SMS failed', { clientId: client.id, error: err.message });
     }
   }
 
   if (result.rows.length > 0) {
-    logger.info(`Reactivation SMS: found ${result.rows.length} inactive clients`);
+    logger.info(`Reactivation SMS (${salonId}): found ${result.rows.length} inactive clients`);
   }
 }
 
 /**
- * Waitlist Notify: When a booking is cancelled, check if someone is on the waitlist
- * for that barber/date and notify them
+ * Waitlist Notify: Notify clients on the waitlist for this salon
  */
-async function processWaitlistNotify(triggerConfig) {
+async function processWaitlistNotify(triggerConfig, salonId) {
   const message = triggerConfig.message || '';
   if (!message) return;
 
-  // Find waiting entries for today or upcoming dates where slots may have opened
+  // Find waiting entries for today or upcoming dates (for this salon)
   const result = await db.query(
     `SELECT w.id, w.client_name, w.client_phone, w.preferred_date,
             w.preferred_time_start, w.preferred_time_end,
@@ -214,9 +223,11 @@ async function processWaitlistNotify(triggerConfig) {
      JOIN barbers b ON w.barber_id = b.id
      JOIN services s ON w.service_id = s.id
      WHERE w.status = 'waiting'
+       AND w.salon_id = $1
        AND w.preferred_date >= CURRENT_DATE
      ORDER BY w.created_at ASC
-     LIMIT 10`
+     LIMIT 10`,
+    [salonId]
   );
 
   for (const entry of result.rows) {
@@ -226,8 +237,8 @@ async function processWaitlistNotify(triggerConfig) {
       .replace(/\{prestation\}/gi, entry.service_name || '');
 
     try {
-      await brevoSMS(entry.client_phone, personalMessage);
-      logger.info('Waitlist SMS sent', { waitlistId: entry.id, phone: entry.client_phone });
+      await brevoSMS(entry.client_phone, personalMessage, salonId);
+      logger.info('Waitlist SMS sent', { waitlistId: entry.id, phone: entry.client_phone, salonId });
       await db.query("UPDATE waitlist SET status = 'notified' WHERE id = $1", [entry.id]);
     } catch (err) {
       logger.error('Waitlist SMS failed', { waitlistId: entry.id, error: err.message });
@@ -235,7 +246,7 @@ async function processWaitlistNotify(triggerConfig) {
   }
 
   if (result.rows.length > 0) {
-    logger.info(`Waitlist: notified ${result.rows.length} clients`);
+    logger.info(`Waitlist (${salonId}): notified ${result.rows.length} clients`);
   }
 }
 

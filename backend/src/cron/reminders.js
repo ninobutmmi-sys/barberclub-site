@@ -6,6 +6,7 @@ const logger = require('../utils/logger');
  * Send SMS reminders for tomorrow's bookings
  * Runs every day at 18:00 (sends reminder the evening before)
  * Sends directly via Brevo (queue fallback if direct fails)
+ * Handles both salons — uses booking.salon_id for correct SMS content
  */
 async function queueReminders() {
   try {
@@ -15,7 +16,7 @@ async function queueReminders() {
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
     const result = await db.query(
-      `SELECT b.id, b.date, b.start_time, b.cancel_token,
+      `SELECT b.id, b.date, b.start_time, b.cancel_token, b.salon_id,
               c.phone
        FROM bookings b
        JOIN clients c ON b.client_id = c.id
@@ -43,6 +44,7 @@ async function queueReminders() {
           phone: booking.phone,
           date: booking.date,
           start_time: booking.start_time,
+          salon_id: booking.salon_id || 'meylan',
         });
         await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [booking.id]);
         sent++;

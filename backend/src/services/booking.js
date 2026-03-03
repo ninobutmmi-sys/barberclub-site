@@ -4,6 +4,7 @@ const { ApiError } = require('../utils/errors');
 const availability = require('./availability');
 const notification = require('./notification');
 const logger = require('../utils/logger');
+const config = require('../config/env');
 const {
   MAX_BOOKING_ADVANCE_MONTHS,
   CANCELLATION_DEADLINE_HOURS,
@@ -30,6 +31,7 @@ const {
  */
 async function createBooking(data) {
   const isAdmin = data.source === 'manual';
+  const salonId = data.salon_id || 'meylan';
 
   let result;
   try {
@@ -75,7 +77,8 @@ async function createBooking(data) {
         data.service_id,
         data.date,
         data.start_time,
-        service.duration
+        service.duration,
+        salonId
       );
       if (!best) {
         throw ApiError.conflict('Aucun barber disponible pour ce créneau');
@@ -170,10 +173,10 @@ async function createBooking(data) {
 
     // 7. Insert the booking
     const bookingResult = await client.query(
-      `INSERT INTO bookings (client_id, barber_id, service_id, date, start_time, end_time, price, source, recurrence_group_id, is_first_visit, color)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO bookings (client_id, barber_id, service_id, date, start_time, end_time, price, source, recurrence_group_id, is_first_visit, color, salon_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
-      [clientId, barberId, data.service_id, data.date, data.start_time, endTime, service.price, data.source || 'online', data.recurrence_group_id || null, isFirstVisit, data.color || null]
+      [clientId, barberId, data.service_id, data.date, data.start_time, endTime, service.price, data.source || 'online', data.recurrence_group_id || null, isFirstVisit, data.color || null, salonId]
     );
 
     const booking = bookingResult.rows[0];
@@ -248,6 +251,7 @@ async function createBooking(data) {
           date: bookingDetails.date,
           start_time: bookingDetails.start_time,
           price: bookingDetails.price,
+          salon_id: salonId,
         });
         logger.info('Confirmation email sent directly', { bookingId: result.id });
       } catch (err) {
@@ -272,6 +276,7 @@ async function createBooking(data) {
           barber_name: bookingDetails.barber_name,
           date: bookingDetails.date,
           start_time: bookingDetails.start_time,
+          salon_id: salonId,
         });
         await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [result.id]);
         logger.info('Confirmation SMS sent (booking within 24h)', { bookingId: result.id, hoursUntil: Math.round(hoursUntilBooking) });
@@ -387,7 +392,7 @@ async function cancelBooking(bookingId, cancelToken) {
   const booking = await db.transaction(async (client) => {
     // 1. Lock the booking row
     const result = await client.query(
-      `SELECT b.*, s.name as service_name, br.name as barber_name,
+      `SELECT b.*, b.salon_id, s.name as service_name, br.name as barber_name,
               c.first_name, c.email as client_email
        FROM bookings b
        JOIN services s ON b.service_id = s.id
@@ -444,6 +449,7 @@ async function cancelBooking(bookingId, cancelToken) {
     date: booking.date,
     start_time: booking.start_time,
     price: booking.price,
+    salon_id: booking.salon_id || 'meylan',
   };
   try {
     await notification.sendCancellationEmail(cancelEmailData);
@@ -638,6 +644,7 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
       first_name: booking.first_name,
       price: booking.service_price,
       cancelToken: booking.cancel_token,
+      salonId: booking.salon_id || 'meylan',
     };
   });
 
@@ -655,6 +662,7 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
     price: result.price,
     cancel_token: result.cancelToken,
     booking_id: bookingId,
+    salon_id: result.salonId,
   };
   try {
     await notification.sendRescheduleEmail(rescheduleEmailData);

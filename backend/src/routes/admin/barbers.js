@@ -12,10 +12,12 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 // ============================================
 router.get('/', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
     const result = await db.query(
       `SELECT id, name, role, photo_url, email, is_active, sort_order
-       FROM barbers WHERE deleted_at IS NULL
-       ORDER BY sort_order`
+       FROM barbers WHERE deleted_at IS NULL AND salon_id = $1
+       ORDER BY sort_order`,
+      [salonId]
     );
     res.json(result.rows);
   } catch (error) {

@@ -12,6 +12,7 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 // ============================================
 router.get('/', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
     const result = await db.query(
       `SELECT s.id, s.name, s.description, s.price, s.duration, s.is_active, s.sort_order, s.color,
               COALESCE(
@@ -21,9 +22,10 @@ router.get('/', async (req, res, next) => {
        FROM services s
        LEFT JOIN barber_services bs ON s.id = bs.service_id
        LEFT JOIN barbers b ON bs.barber_id = b.id AND b.deleted_at IS NULL
-       WHERE s.deleted_at IS NULL
+       WHERE s.deleted_at IS NULL AND s.salon_id = $1
        GROUP BY s.id
-       ORDER BY s.sort_order`
+       ORDER BY s.sort_order`,
+      [salonId]
     );
     res.json(result.rows);
   } catch (error) {
@@ -47,17 +49,19 @@ router.post('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { name, description, price, duration, color, barber_ids } = req.body;
 
       // Get max sort order
       const maxOrder = await db.query(
-        'SELECT COALESCE(MAX(sort_order), 0) + 1 as next FROM services WHERE deleted_at IS NULL'
+        'SELECT COALESCE(MAX(sort_order), 0) + 1 as next FROM services WHERE deleted_at IS NULL AND salon_id = $1',
+        [salonId]
       );
 
       const result = await db.query(
-        `INSERT INTO services (name, description, price, duration, sort_order, color)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [name, description || null, price, duration, maxOrder.rows[0].next, color || '#22c55e']
+        `INSERT INTO services (name, description, price, duration, sort_order, color, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [name, description || null, price, duration, maxOrder.rows[0].next, color || '#22c55e', salonId]
       );
 
       const service = result.rows[0];
@@ -98,6 +102,7 @@ router.put('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { id } = req.params;
       const { name, description, price, duration, is_active, sort_order, color, barber_ids } = req.body;
 
@@ -114,9 +119,9 @@ router.put('/:id',
       if (color !== undefined) { fields.push(`color = $${paramIndex++}`); values.push(color); }
 
       if (fields.length > 0) {
-        values.push(id);
+        values.push(id, salonId);
         await db.query(
-          `UPDATE services SET ${fields.join(', ')} WHERE id = $${paramIndex} AND deleted_at IS NULL`,
+          `UPDATE services SET ${fields.join(', ')} WHERE id = $${paramIndex} AND salon_id = $${paramIndex + 1} AND deleted_at IS NULL`,
           values
         );
       }
@@ -141,9 +146,9 @@ router.put('/:id',
          FROM services s
          LEFT JOIN barber_services bs ON s.id = bs.service_id
          LEFT JOIN barbers b ON bs.barber_id = b.id AND b.deleted_at IS NULL
-         WHERE s.id = $1 AND s.deleted_at IS NULL
+         WHERE s.id = $1 AND s.salon_id = $2 AND s.deleted_at IS NULL
          GROUP BY s.id`,
-        [id]
+        [id, salonId]
       );
 
       if (result.rows.length === 0) {
@@ -165,9 +170,10 @@ router.delete('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const result = await db.query(
-        'UPDATE services SET deleted_at = NOW(), is_active = false WHERE id = $1 AND deleted_at IS NULL RETURNING id',
-        [req.params.id]
+        'UPDATE services SET deleted_at = NOW(), is_active = false WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL RETURNING id',
+        [req.params.id, salonId]
       );
 
       if (result.rows.length === 0) {

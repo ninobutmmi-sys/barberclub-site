@@ -29,7 +29,6 @@ async function queueNotification(bookingId, type) {
  */
 async function processPendingNotifications() {
   // Atomically claim pending notifications by setting status = 'processing'
-  // This prevents duplicate sends if the cron overlaps or runs concurrently
   const claimed = await db.query(
     `UPDATE notification_queue
      SET status = 'processing'
@@ -49,9 +48,9 @@ async function processPendingNotifications() {
 
   const claimedIds = claimed.rows.map(r => r.id);
 
-  // Now fetch full data for claimed notifications
+  // Now fetch full data for claimed notifications (include salon_id from booking)
   const result = await db.query(
-    `SELECT nq.*, b.date, b.start_time, b.end_time, b.price, b.cancel_token,
+    `SELECT nq.*, b.date, b.start_time, b.end_time, b.price, b.cancel_token, b.salon_id,
             s.name as service_name,
             br.name as barber_name,
             c.first_name, c.last_name, c.phone, c.email
@@ -112,56 +111,80 @@ async function sendNotification(notification) {
 }
 
 // ============================================
-// Circuit breaker for Brevo API
-// After 3 consecutive failures, short-circuit for 60s to avoid
-// blocking every booking with 15s timeouts.
+// Circuit breaker for Brevo API (per salon)
+// After 3 consecutive failures, short-circuit for 60s
 // ============================================
-const brevoCircuit = {
-  failures: 0,
-  threshold: BREVO_CIRCUIT_THRESHOLD,
-  cooldownMs: BREVO_CIRCUIT_COOLDOWN_MS,
-  openedAt: null,
-};
+const brevoCircuits = {};
 
-function isCircuitOpen() {
-  if (brevoCircuit.failures < brevoCircuit.threshold) return false;
-  if (!brevoCircuit.openedAt) return false;
-  if (Date.now() - brevoCircuit.openedAt > brevoCircuit.cooldownMs) {
-    // Half-open: allow one attempt through
-    brevoCircuit.failures = 0;
-    brevoCircuit.openedAt = null;
-    logger.info('Brevo circuit breaker reset (cooldown elapsed)');
+function getCircuit(salonId) {
+  if (!brevoCircuits[salonId]) {
+    brevoCircuits[salonId] = {
+      failures: 0,
+      threshold: BREVO_CIRCUIT_THRESHOLD,
+      cooldownMs: BREVO_CIRCUIT_COOLDOWN_MS,
+      openedAt: null,
+    };
+  }
+  return brevoCircuits[salonId];
+}
+
+function isCircuitOpen(salonId = 'meylan') {
+  const circuit = getCircuit(salonId);
+  if (circuit.failures < circuit.threshold) return false;
+  if (!circuit.openedAt) return false;
+  if (Date.now() - circuit.openedAt > circuit.cooldownMs) {
+    circuit.failures = 0;
+    circuit.openedAt = null;
+    logger.info('Brevo circuit breaker reset (cooldown elapsed)', { salonId });
     return false;
   }
   return true;
 }
 
-function recordBrevoSuccess() {
-  if (brevoCircuit.failures > 0) {
-    brevoCircuit.failures = 0;
-    brevoCircuit.openedAt = null;
+function recordBrevoSuccess(salonId = 'meylan') {
+  const circuit = getCircuit(salonId);
+  if (circuit.failures > 0) {
+    circuit.failures = 0;
+    circuit.openedAt = null;
   }
 }
 
-function recordBrevoFailure() {
-  brevoCircuit.failures++;
-  if (brevoCircuit.failures >= brevoCircuit.threshold && !brevoCircuit.openedAt) {
-    brevoCircuit.openedAt = Date.now();
-    logger.warn(`Brevo circuit breaker OPEN — skipping calls for ${BREVO_CIRCUIT_COOLDOWN_MS / 1000}s`, { failures: brevoCircuit.failures });
+function recordBrevoFailure(salonId = 'meylan') {
+  const circuit = getCircuit(salonId);
+  circuit.failures++;
+  if (circuit.failures >= circuit.threshold && !circuit.openedAt) {
+    circuit.openedAt = Date.now();
+    logger.warn(`Brevo circuit breaker OPEN — skipping calls for ${BREVO_CIRCUIT_COOLDOWN_MS / 1000}s`, { salonId, failures: circuit.failures });
   }
 }
 
 // ============================================
-// Brevo API helpers
+// Salon-aware Brevo credentials helper
+// ============================================
+function getBrevoConfig(salonId) {
+  const salon = config.getSalonConfig(salonId);
+  // Fallback to global config.brevo for backward compat
+  return salon.brevo && salon.brevo.apiKey
+    ? salon.brevo
+    : config.brevo;
+}
+
+// ============================================
+// Brevo API helpers (salon-aware)
 // ============================================
 
-async function brevoEmail(to, subject, htmlContent) {
+async function brevoEmail(to, subject, htmlContent, salonId = 'meylan') {
   if (config.nodeEnv === 'test') {
     logger.debug('Brevo email skipped (test mode)', { to, subject });
     return;
   }
-  if (isCircuitOpen()) {
+  if (isCircuitOpen(salonId)) {
     throw new Error('Brevo circuit breaker open — skipping email');
+  }
+  const brevo = getBrevoConfig(salonId);
+  if (!brevo.apiKey) {
+    logger.warn('Brevo API key not configured, skipping email', { salonId });
+    return;
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), BREVO_REQUEST_TIMEOUT_MS);
@@ -169,11 +192,11 @@ async function brevoEmail(to, subject, htmlContent) {
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'api-key': config.brevo.apiKey,
+        'api-key': brevo.apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        sender: { email: config.brevo.senderEmail, name: config.brevo.senderName },
+        sender: { email: brevo.senderEmail, name: brevo.senderName },
         to: [{ email: to }],
         subject,
         htmlContent,
@@ -183,25 +206,30 @@ async function brevoEmail(to, subject, htmlContent) {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      recordBrevoFailure();
+      recordBrevoFailure(salonId);
       throw new Error(`Brevo email API error ${response.status}: ${errorBody}`);
     }
-    recordBrevoSuccess();
+    recordBrevoSuccess(salonId);
   } catch (err) {
-    if (err.name === 'AbortError') recordBrevoFailure();
+    if (err.name === 'AbortError') recordBrevoFailure(salonId);
     throw err;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function brevoSMS(phone, content) {
+async function brevoSMS(phone, content, salonId = 'meylan') {
   if (config.nodeEnv === 'test') {
     logger.debug('Brevo SMS skipped (test mode)', { phone });
     return;
   }
-  if (isCircuitOpen()) {
+  if (isCircuitOpen(salonId)) {
     throw new Error('Brevo circuit breaker open — skipping SMS');
+  }
+  const brevo = getBrevoConfig(salonId);
+  if (!brevo.apiKey) {
+    logger.warn('Brevo API key not configured, skipping SMS', { salonId });
+    return;
   }
   const recipient = formatPhoneInternational(phone);
   const controller = new AbortController();
@@ -210,11 +238,11 @@ async function brevoSMS(phone, content) {
     const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
       method: 'POST',
       headers: {
-        'api-key': config.brevo.apiKey,
+        'api-key': brevo.apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        sender: config.brevo.smsSender,
+        sender: brevo.smsSender,
         recipient,
         content,
         type: 'transactional',
@@ -224,12 +252,12 @@ async function brevoSMS(phone, content) {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      recordBrevoFailure();
+      recordBrevoFailure(salonId);
       throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
     }
-    recordBrevoSuccess();
+    recordBrevoSuccess(salonId);
   } catch (err) {
-    if (err.name === 'AbortError') recordBrevoFailure();
+    if (err.name === 'AbortError') recordBrevoFailure(salonId);
     throw err;
   } finally {
     clearTimeout(timeout);
@@ -240,16 +268,15 @@ async function brevoSMS(phone, content) {
  * Send confirmation email via Brevo
  */
 async function sendConfirmationEmail(data) {
-  if (!config.brevo.apiKey) {
-    logger.warn('Brevo API key not configured, skipping email');
-    return;
-  }
+  const salonId = data.salon_id || 'meylan';
+  const salon = config.getSalonConfig(salonId);
+
   if (!data.email) {
     logger.info('No client email, skipping confirmation email', { bookingId: data.booking_id });
     return;
   }
 
-  const cancelUrl = `${config.siteUrl}/pages/meylan/mon-rdv.html?id=${data.booking_id}&token=${data.cancel_token}`;
+  const cancelUrl = `${config.siteUrl}${salon.bookingPath}/mon-rdv.html?id=${data.booking_id}&token=${data.cancel_token}`;
 
   const dateFormatted = formatDateFR(data.date);
   const timeFormatted = formatTime(data.start_time);
@@ -263,20 +290,22 @@ async function sendConfirmationEmail(data) {
     time: timeFormatted,
     price: priceFormatted,
     cancelUrl,
-    address: config.salon.address,
+    address: salon.address,
+    mapsUrl: salon.mapsUrl,
+    salonName: salon.name,
+    salonId,
   });
 
-  await brevoEmail(data.email, `Confirmation RDV - ${data.service_name} le ${dateFormatted}`, html);
+  await brevoEmail(data.email, `Confirmation RDV - ${data.service_name} le ${dateFormatted}`, html, salonId);
 }
 
 /**
  * Send SMS reminder via Brevo
  */
 async function sendReminderSMS(data) {
-  if (!config.brevo.apiKey) {
-    logger.warn('Brevo not configured, skipping SMS');
-    return;
-  }
+  const salonId = data.salon_id || 'meylan';
+  const salon = config.getSalonConfig(salonId);
+
   if (!data.phone) {
     logger.info('No client phone, skipping reminder SMS', { bookingId: data.booking_id });
     return;
@@ -286,9 +315,9 @@ async function sendReminderSMS(data) {
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `BarberClub Meylan - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au 26 Av. du Gresivaudan, Corenc.\n\nGerer votre RDV : ${rdvUrl}`;
+  const message = `${salon.name} - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.\n\nGerer votre RDV : ${rdvUrl}`;
 
-  await brevoSMS(data.phone, message);
+  await brevoSMS(data.phone, message, salonId);
 
   // Mark reminder as sent on the booking
   await db.query(
@@ -316,7 +345,6 @@ function escapeHtml(str) {
 const ASSETS_BASE = config.siteUrl || 'https://barberclub-grenoble.fr';
 const LOGO_URL = `${ASSETS_BASE}/assets/images/common/logo-blanc.png`;
 const CROWN_URL = `${ASSETS_BASE}/assets/images/common/couronne.png`;
-const HERO_URL = `${ASSETS_BASE}/assets/images/salons/meylan/salon-meylan-interieur.jpg`;
 
 // Design tokens — monochrome dark luxury
 const ACCENT = '#FFFFFF';
@@ -328,7 +356,17 @@ const TEXT_PRIMARY = '#FAFAF9';
 const TEXT_SECONDARY = '#A8A29E';
 const TEXT_MUTED = '#78716C';
 
-function emailShell(content, { showHero = true, marketing = false } = {}) {
+/**
+ * Extract display label from salon name (e.g. "BarberClub Meylan" → "Meylan")
+ */
+function getSalonLabel(salonId) {
+  return salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
+}
+
+function emailShell(content, { showHero = true, marketing = false, salonId = 'meylan' } = {}) {
+  const salon = config.getSalonConfig(salonId);
+  const salonLabel = getSalonLabel(salonId);
+
   return `
 <!DOCTYPE html>
 <html>
@@ -360,7 +398,7 @@ function emailShell(content, { showHero = true, marketing = false } = {}) {
           <tr>
             <td bgcolor="#000000" style="background-color:#000000;text-align:center;padding:40px 24px 32px;">
               <img src="${LOGO_URL}" alt="BarberClub" width="200" style="width:200px;height:auto;display:inline-block;">
-              <p style="margin:10px 0 0;color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</p>
+              <p style="margin:10px 0 0;color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">${salonLabel}</p>
             </td>
           </tr>
           <tr>
@@ -373,7 +411,7 @@ function emailShell(content, { showHero = true, marketing = false } = {}) {
               <img src="${CROWN_URL}" alt="" width="28" style="width:28px;height:auto;margin-bottom:8px;opacity:0.7;">
               <br>
               <img src="${LOGO_URL}" alt="BarberClub" width="170" style="width:170px;height:auto;">
-              <p style="margin:8px 0 0;color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">Meylan</p>
+              <p style="margin:8px 0 0;color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">${salonLabel}</p>
             </td>
           </tr>
     `}
@@ -389,7 +427,7 @@ function emailShell(content, { showHero = true, marketing = false } = {}) {
           <tr>
             <td bgcolor="${DARK_BG}" style="background-color:${DARK_BG};border-top:1px solid ${CARD_BORDER};padding:24px 32px 28px;text-align:center;">
               <img src="${CROWN_URL}" alt="" width="16" style="width:16px;height:auto;opacity:0.3;margin-bottom:10px;">
-              <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;letter-spacing:0.3px;">BarberClub Meylan &mdash; 26 Av. du Gr&eacute;sivaudan, 38700 Corenc</p>
+              <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;letter-spacing:0.3px;">${escapeHtml(salon.name)} &mdash; ${escapeHtml(salon.address)}</p>
               <p style="margin:0;color:${TEXT_MUTED};font-size:10px;opacity:0.6;">Paiement sur place uniquement</p>
               ${marketing ? `<p style="margin:8px 0 0;color:${TEXT_MUTED};font-size:10px;opacity:0.5;">Si vous ne souhaitez plus recevoir ces emails, r&eacute;pondez &laquo;&nbsp;STOP&nbsp;&raquo; &agrave; cet email.</p>` : ''}
             </td>
@@ -403,7 +441,7 @@ function emailShell(content, { showHero = true, marketing = false } = {}) {
 </html>`;
 }
 
-function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, time, price, cancelUrl, address }) {
+function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, time, price, cancelUrl, address, mapsUrl, salonId = 'meylan' }) {
   firstName = escapeHtml(firstName);
   serviceName = escapeHtml(serviceName);
   barberName = escapeHtml(barberName);
@@ -411,6 +449,7 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
   time = escapeHtml(time);
   price = escapeHtml(price);
   address = escapeHtml(address);
+  mapsUrl = mapsUrl || '#';
 
   const content = `
       <div style="text-align:center;margin-bottom:32px;">
@@ -451,7 +490,7 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
               <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
               <tr>
                 <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
-                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;"><a href="https://maps.google.com/?q=26+Av+du+Gr%C3%A9sivaudan+38700+Corenc" style="color:${TEXT_SECONDARY};text-decoration:underline;">${address}</a></td>
+                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;"><a href="${mapsUrl}" style="color:${TEXT_SECONDARY};text-decoration:underline;">${address}</a></td>
               </tr>
               <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
               <tr>
@@ -473,7 +512,7 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
         Modification ou annulation gratuite jusqu'&agrave; 12h avant
       </p>`;
 
-  return emailShell(content);
+  return emailShell(content, { salonId });
 }
 
 // ============================================
@@ -518,9 +557,12 @@ function getNextRetryTime(attempts) {
 /**
  * Send cancellation email directly (admin-triggered, not queued)
  */
-async function sendCancellationEmail({ email, first_name, service_name, barber_name, date, start_time, price }) {
-  if (!config.brevo.apiKey || !email) {
-    logger.warn('Brevo not configured or no email, skipping cancellation email');
+async function sendCancellationEmail({ email, first_name, service_name, barber_name, date, start_time, price, salon_id }) {
+  const salonId = salon_id || 'meylan';
+  const salon = config.getSalonConfig(salonId);
+
+  if (!email) {
+    logger.warn('No email, skipping cancellation email');
     return;
   }
 
@@ -529,6 +571,8 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
   const priceFormatted = escapeHtml((price / 100).toFixed(2).replace('.', ','));
   service_name = escapeHtml(service_name);
   barber_name = escapeHtml(barber_name);
+
+  const bookAgainUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
 
   const html = emailShell(`
       <div style="text-align:center;margin-bottom:32px;">
@@ -571,25 +615,28 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
       <!-- CTA -->
       <div style="text-align:center;margin-bottom:20px;">
         <p style="color:${TEXT_SECONDARY};font-size:13px;margin:0 0 20px;">N'h&eacute;sitez pas &agrave; reprendre rendez-vous en ligne.</p>
-        <a href="${config.siteUrl}/pages/meylan/reserver.html" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+        <a href="${bookAgainUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
           Reprendre rendez-vous
         </a>
-      </div>`, { showHero: false });
+      </div>`, { showHero: false, salonId });
 
   try {
-    await brevoEmail(email, `RDV annulé - ${service_name} le ${dateFormatted}`, html);
-    logger.info('Cancellation email sent', { email });
+    await brevoEmail(email, `RDV annulé - ${service_name} le ${dateFormatted}`, html, salonId);
+    logger.info('Cancellation email sent', { email, salonId });
   } catch (err) {
-    logger.error('Cancellation email failed', { error: err.message });
+    logger.error('Cancellation email failed', { error: err.message, salonId });
   }
 }
 
 /**
  * Send reschedule email directly (admin-triggered, not queued)
  */
-async function sendRescheduleEmail({ email, first_name, service_name, barber_name, old_date, old_time, new_date, new_time, new_barber_name, price, cancel_token, booking_id }) {
-  if (!config.brevo.apiKey || !email) {
-    logger.warn('Brevo not configured or no email, skipping reschedule email');
+async function sendRescheduleEmail({ email, first_name, service_name, barber_name, old_date, old_time, new_date, new_time, new_barber_name, price, cancel_token, booking_id, salon_id }) {
+  const salonId = salon_id || 'meylan';
+  const salon = config.getSalonConfig(salonId);
+
+  if (!email) {
+    logger.warn('No email, skipping reschedule email');
     return;
   }
 
@@ -603,7 +650,7 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
   new_barber_name = escapeHtml(new_barber_name);
 
   const manageUrl = cancel_token && booking_id
-    ? `${config.siteUrl}/pages/meylan/mon-rdv.html?id=${booking_id}&token=${cancel_token}`
+    ? `${config.siteUrl}${salon.bookingPath}/mon-rdv.html?id=${booking_id}&token=${cancel_token}`
     : null;
 
   const html = emailShell(`
@@ -659,7 +706,7 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
               <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
               <tr>
                 <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
-                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;">${escapeHtml(config.salon.address)}</td>
+                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;">${escapeHtml(salon.address)}</td>
               </tr>
               <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
               <tr>
@@ -678,21 +725,23 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
       </div>
       <p style="text-align:center;color:${TEXT_MUTED};font-size:11px;margin:0;">
         Modification ou annulation gratuite jusqu'&agrave; 12h avant
-      </p>` : ''}`, { showHero: false });
+      </p>` : ''}`, { showHero: false, salonId });
 
   try {
-    await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html);
-    logger.info('Reschedule email sent', { email });
+    await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html, salonId);
+    logger.info('Reschedule email sent', { email, salonId });
   } catch (err) {
-    logger.error('Reschedule email failed', { error: err.message });
+    logger.error('Reschedule email failed', { error: err.message, salonId });
   }
 }
 
 /**
  * Send password reset email directly (not queued)
  */
-async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
-  if (!config.brevo.apiKey) {
+async function sendResetPasswordEmail({ email, first_name, resetUrl, salon_id }) {
+  const salonId = salon_id || 'meylan';
+  const brevo = getBrevoConfig(salonId);
+  if (!brevo.apiKey) {
     logger.warn('Brevo API key not configured, logging reset URL instead');
     logger.info('Password reset URL', { email, resetUrl });
     return;
@@ -725,29 +774,26 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl }) {
       <div style="text-align:center;color:${TEXT_MUTED};font-size:11px;line-height:1.6;">
         <p style="margin:0 0 4px;">Ce lien expire dans 1 heure.</p>
         <p style="margin:0;">Si vous n'avez pas fait cette demande, ignorez cet email.</p>
-      </div>`, { showHero: false });
+      </div>`, { showHero: false, salonId });
 
-  await brevoEmail(email, 'Réinitialisation de votre mot de passe BarberClub', html);
-  logger.info('Reset password email sent', { email });
+  await brevoEmail(email, 'Réinitialisation de votre mot de passe BarberClub', html, salonId);
+  logger.info('Reset password email sent', { email, salonId });
 }
 
 /**
  * Send SMS reminder directly (without DB update — caller handles it)
- * Used for immediate reminders when booking is within 24h
  */
 async function sendReminderSMSDirect(data) {
-  if (!config.brevo.apiKey) {
-    logger.warn('Brevo not configured, skipping SMS');
-    return;
-  }
+  const salonId = data.salon_id || 'meylan';
+  const salon = config.getSalonConfig(salonId);
 
   const rdvUrl = `${config.apiUrl}/r/rdv/${data.booking_id}/${data.cancel_token}`;
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `BarberClub Meylan - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au 26 Av. du Gresivaudan, Corenc.\n\nGerer votre RDV : ${rdvUrl}`;
+  const message = `${salon.name} - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.\n\nGerer votre RDV : ${rdvUrl}`;
 
-  await brevoSMS(data.phone, message);
+  await brevoSMS(data.phone, message, salonId);
 }
 
 /**
@@ -755,19 +801,17 @@ async function sendReminderSMSDirect(data) {
  * Sent when booking is within 24h
  */
 async function sendConfirmationSMS(data) {
-  if (!config.brevo.apiKey) {
-    logger.warn('Brevo not configured, skipping SMS');
-    return;
-  }
+  const salonId = data.salon_id || 'meylan';
+  const salon = config.getSalonConfig(salonId);
 
   const rdvUrl = `${config.apiUrl}/r/rdv/${data.booking_id}/${data.cancel_token}`;
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `BarberClub Meylan - Confirmation\n\nVotre RDV le ${dateFR} a ${timeFormatted} avec ${data.barber_name} est confirme.\n\n26 Av. du Gresivaudan, Corenc\n\nGerer votre RDV : ${rdvUrl}`;
+  const message = `${salon.name} - Confirmation\n\nVotre RDV le ${dateFR} a ${timeFormatted} avec ${data.barber_name} est confirme.\n\n${salon.address}\n\nGerer votre RDV : ${rdvUrl}`;
 
-  await brevoSMS(data.phone, message);
-  logger.info('Confirmation SMS sent', { bookingId: data.booking_id, phone: data.phone });
+  await brevoSMS(data.phone, message, salonId);
+  logger.info('Confirmation SMS sent', { bookingId: data.booking_id, phone: data.phone, salonId });
 }
 
 module.exports = {
@@ -785,4 +829,8 @@ module.exports = {
   brevoSMS,
   brevoEmail,
   formatPhoneInternational,
+  emailShell,
+  escapeHtml,
+  getBrevoConfig,
+  getSalonLabel,
 };

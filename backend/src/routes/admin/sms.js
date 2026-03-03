@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { brevoSMS, formatPhoneInternational } = require('../../services/notification');
+const { getSalonConfig } = require('../../config/env');
 const logger = require('../../utils/logger');
 
 const router = express.Router();
@@ -21,6 +22,8 @@ router.post(
   ],
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
+      const salon = getSalonConfig(salonId);
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ error: errors.array()[0].msg });
@@ -42,7 +45,7 @@ router.post(
             personalMessage = personalMessage.replace(/\{nom\}/gi, recipient.last_name);
           }
 
-          await brevoSMS(recipient.phone, personalMessage);
+          await brevoSMS(recipient.phone, personalMessage, salonId);
           sent++;
         } catch (err) {
           failed++;

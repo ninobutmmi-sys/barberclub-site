@@ -21,11 +21,12 @@ router.get('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { category, low_stock } = req.query;
 
-      const conditions = [];
-      const params = [];
-      let paramIndex = 1;
+      const conditions = [`p.salon_id = $1`];
+      const params = [salonId];
+      let paramIndex = 2;
 
       if (category) {
         conditions.push(`p.category = $${paramIndex}`);
@@ -37,9 +38,7 @@ router.get('/',
         conditions.push('p.stock_quantity <= p.alert_threshold');
       }
 
-      const whereClause = conditions.length > 0
-        ? 'WHERE ' + conditions.join(' AND ')
-        : '';
+      const whereClause = 'WHERE ' + conditions.join(' AND ');
 
       const result = await db.query(
         `SELECT p.id, p.name, p.description, p.category, p.buy_price, p.sell_price,
@@ -69,11 +68,12 @@ router.get('/sales',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { from, to } = req.query;
 
-      const conditions = [];
-      const params = [];
-      let paramIndex = 1;
+      const conditions = [`p.salon_id = $1`];
+      const params = [salonId];
+      let paramIndex = 2;
 
       if (from) {
         conditions.push(`ps.sold_at >= $${paramIndex}::date`);
@@ -87,9 +87,7 @@ router.get('/sales',
         paramIndex++;
       }
 
-      const whereClause = conditions.length > 0
-        ? 'WHERE ' + conditions.join(' AND ')
-        : '';
+      const whereClause = 'WHERE ' + conditions.join(' AND ');
 
       const salesResult = await db.query(
         `SELECT ps.id, ps.quantity, ps.unit_price, ps.total_price, ps.payment_method,
@@ -111,6 +109,7 @@ router.get('/sales',
         `SELECT COALESCE(SUM(ps.total_price), 0) as total_revenue,
                 COUNT(*) as sale_count
          FROM product_sales ps
+         JOIN products p ON ps.product_id = p.id
          ${whereClause}`,
         params
       );
@@ -131,6 +130,7 @@ router.get('/sales',
 // ============================================
 router.get('/gift-cards', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
     const result = await db.query(
       `SELECT gc.id, gc.code, gc.initial_amount, gc.balance, gc.buyer_name,
               gc.recipient_name, gc.recipient_email, gc.payment_method,
@@ -140,7 +140,9 @@ router.get('/gift-cards', async (req, res, next) => {
        FROM gift_cards gc
        LEFT JOIN barbers b ON gc.sold_by = b.id
        LEFT JOIN clients c ON gc.buyer_client_id = c.id
-       ORDER BY gc.created_at DESC`
+       WHERE gc.salon_id = $1
+       ORDER BY gc.created_at DESC`,
+      [salonId]
     );
 
     res.json(result.rows);
@@ -154,32 +156,39 @@ router.get('/gift-cards', async (req, res, next) => {
 // ============================================
 router.get('/stats', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
     const today = new Date().toISOString().split('T')[0];
 
     // Revenue today
     const todayResult = await db.query(
-      `SELECT COALESCE(SUM(total_price), 0) as revenue_today,
+      `SELECT COALESCE(SUM(ps.total_price), 0) as revenue_today,
               COUNT(*) as sales_today
-       FROM product_sales
-       WHERE sold_at::date = $1`,
-      [today]
+       FROM product_sales ps
+       JOIN products p ON ps.product_id = p.id
+       WHERE p.salon_id = $1 AND ps.sold_at::date = $2`,
+      [salonId, today]
     );
 
     // Revenue this month
     const monthResult = await db.query(
-      `SELECT COALESCE(SUM(total_price), 0) as revenue_month,
+      `SELECT COALESCE(SUM(ps.total_price), 0) as revenue_month,
               COUNT(*) as sales_month
-       FROM product_sales
-       WHERE sold_at >= date_trunc('month', CURRENT_DATE)
-         AND sold_at < date_trunc('month', CURRENT_DATE) + INTERVAL '1 month'`
+       FROM product_sales ps
+       JOIN products p ON ps.product_id = p.id
+       WHERE p.salon_id = $1
+         AND ps.sold_at >= date_trunc('month', CURRENT_DATE)
+         AND ps.sold_at < date_trunc('month', CURRENT_DATE) + INTERVAL '1 month'`,
+      [salonId]
     );
 
     // Low stock alerts count
     const lowStockResult = await db.query(
       `SELECT COUNT(*) as low_stock_count
        FROM products
-       WHERE stock_quantity <= alert_threshold
-         AND is_active = true`
+       WHERE salon_id = $1
+         AND stock_quantity <= alert_threshold
+         AND is_active = true`,
+      [salonId]
     );
 
     res.json({
@@ -211,11 +220,12 @@ router.post('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku } = req.body;
 
       const result = await db.query(
-        `INSERT INTO products (name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO products (name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
         [
           name,
@@ -226,6 +236,7 @@ router.post('/',
           stock_quantity,
           alert_threshold != null ? alert_threshold : 5,
           sku || null,
+          salonId,
         ]
       );
 
@@ -254,6 +265,7 @@ router.post('/gift-cards',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const {
         initial_amount, buyer_name, buyer_client_id,
         recipient_name, recipient_email, payment_method,
@@ -276,8 +288,8 @@ router.post('/gift-cards',
 
       const result = await db.query(
         `INSERT INTO gift_cards (code, initial_amount, balance, buyer_name, buyer_client_id,
-                                 recipient_name, recipient_email, payment_method, sold_by, expires_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                                 recipient_name, recipient_email, payment_method, sold_by, expires_at, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING *`,
         [
           code,
@@ -290,6 +302,7 @@ router.post('/gift-cards',
           payment_method,
           sold_by,
           expires_at || null,
+          salonId,
         ]
       );
 
@@ -320,6 +333,7 @@ router.put('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { id } = req.params;
       const { name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, is_active } = req.body;
 
@@ -341,10 +355,10 @@ router.put('/:id',
         throw ApiError.badRequest('Aucune donnee a mettre a jour');
       }
 
-      values.push(id);
+      values.push(id, salonId);
       const result = await db.query(
         `UPDATE products SET ${fields.join(', ')}
-         WHERE id = $${paramIndex}
+         WHERE id = $${paramIndex} AND salon_id = $${paramIndex + 1}
          RETURNING *`,
         values
       );
@@ -376,6 +390,7 @@ router.put('/gift-cards/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { id } = req.params;
       const { balance, is_active, recipient_name, recipient_email, expires_at } = req.body;
 
@@ -393,10 +408,10 @@ router.put('/gift-cards/:id',
         throw ApiError.badRequest('Aucune donnee a mettre a jour');
       }
 
-      values.push(id);
+      values.push(id, salonId);
       const result = await db.query(
         `UPDATE gift_cards SET ${fields.join(', ')}
-         WHERE id = $${paramIndex}
+         WHERE id = $${paramIndex} AND salon_id = $${paramIndex + 1}
          RETURNING *`,
         values
       );
@@ -427,13 +442,14 @@ router.post('/:id/sale',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { id } = req.params;
       const { quantity, payment_method, sold_by, client_id } = req.body;
 
       // Get product and check availability
       const productResult = await db.query(
-        'SELECT id, name, sell_price, stock_quantity, is_active FROM products WHERE id = $1',
-        [id]
+        'SELECT id, name, sell_price, stock_quantity, is_active FROM products WHERE id = $1 AND salon_id = $2',
+        [id, salonId]
       );
 
       if (productResult.rows.length === 0) {
@@ -496,9 +512,10 @@ router.delete('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const result = await db.query(
-        'UPDATE products SET is_active = false WHERE id = $1 AND is_active = true RETURNING id, name',
-        [req.params.id]
+        'UPDATE products SET is_active = false WHERE id = $1 AND salon_id = $2 AND is_active = true RETURNING id, name',
+        [req.params.id, salonId]
       );
 
       if (result.rows.length === 0) {

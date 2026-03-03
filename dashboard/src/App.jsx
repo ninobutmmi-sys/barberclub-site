@@ -5,6 +5,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 
 // Lazy-loaded pages (code splitting per route)
+const SalonSelector = lazy(() => import('./pages/SalonSelector'));
 const Login = lazy(() => import('./pages/Login'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Planning = lazy(() => import('./pages/Planning'));
@@ -27,10 +28,18 @@ const PageLoader = () => (
 );
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
+  const { user, salon, loading } = useAuth();
 
   if (loading) {
     return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#0a0a0a',color:'#fff',fontFamily:'sans-serif'}}>Chargement...</div>;
+  }
+
+  if (!salon) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <SalonSelector />
+      </Suspense>
+    );
   }
 
   if (!user) {

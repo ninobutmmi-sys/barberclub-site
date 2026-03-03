@@ -20,6 +20,7 @@ router.get('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { date, barber_id, view } = req.query;
       const targetDate = date || new Date().toISOString().split('T')[0];
       const viewType = view || 'day';
@@ -53,13 +54,18 @@ router.get('/',
         paramIndex += 1;
       }
 
+      // Add salon filter through barber
+      const salonCondition = `AND br.salon_id = $${paramIndex}`;
+      params.push(salonId);
+      paramIndex++;
+
       const result = await db.query(
         `SELECT bs.id, bs.barber_id, bs.date, bs.start_time, bs.end_time,
                 bs.reason, bs.type, bs.created_at,
                 br.name as barber_name
          FROM blocked_slots bs
          JOIN barbers br ON bs.barber_id = br.id
-         WHERE ${dateCondition} ${barberCondition}
+         WHERE ${dateCondition} ${barberCondition} ${salonCondition}
          ORDER BY bs.date, bs.start_time`,
         params
       );
@@ -86,6 +92,7 @@ router.post('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { barber_id, date, start_time, end_time, reason, type } = req.body;
 
       // Validate that end_time > start_time
@@ -93,10 +100,10 @@ router.post('/',
         throw ApiError.badRequest('L\'heure de fin doit être après l\'heure de début');
       }
 
-      // Check barber exists
+      // Check barber exists and belongs to salon
       const barberResult = await db.query(
-        'SELECT id, name FROM barbers WHERE id = $1 AND deleted_at IS NULL',
-        [barber_id]
+        'SELECT id, name FROM barbers WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
+        [barber_id, salonId]
       );
       if (barberResult.rows.length === 0) {
         throw ApiError.badRequest('Barber introuvable');
@@ -150,9 +157,12 @@ router.delete('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const result = await db.query(
-        'DELETE FROM blocked_slots WHERE id = $1 RETURNING id',
-        [req.params.id]
+        `DELETE FROM blocked_slots
+         WHERE id = $1 AND barber_id IN (SELECT id FROM barbers WHERE salon_id = $2)
+         RETURNING id`,
+        [req.params.id, salonId]
       );
 
       if (result.rows.length === 0) {

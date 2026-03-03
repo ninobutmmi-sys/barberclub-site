@@ -22,6 +22,7 @@ router.get('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const {
         search,
         sort = 'last_visit',
@@ -32,8 +33,8 @@ router.get('/',
       } = req.query;
 
       let whereConditions = ['c.deleted_at IS NULL'];
-      let params = [];
-      let paramIndex = 1;
+      let params = [salonId];
+      let paramIndex = 2;
 
       // Search by name, phone, or email
       if (search) {
@@ -52,6 +53,7 @@ router.get('/',
           `NOT EXISTS (
             SELECT 1 FROM bookings b2
             WHERE b2.client_id = c.id
+              AND b2.salon_id = $1
               AND b2.status IN ('confirmed', 'completed')
               AND b2.deleted_at IS NULL
               AND b2.date >= CURRENT_DATE - ($${paramIndex} || ' weeks')::INTERVAL
@@ -78,7 +80,7 @@ router.get('/',
                 COALESCE(SUM(b.price) FILTER (WHERE b.status IN ('completed', 'confirmed')), 0) as total_spent,
                 MAX(b.date) FILTER (WHERE b.status IN ('completed', 'confirmed')) as last_visit
          FROM clients c
-         LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL
+         LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $1
          WHERE ${whereConditions.join(' AND ')}
          GROUP BY c.id
          ORDER BY ${sortCol} ${sortOrder} NULLS LAST
@@ -90,7 +92,7 @@ router.get('/',
       const countResult = await db.query(
         `SELECT COUNT(DISTINCT c.id) as total
          FROM clients c
-         LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL
+         LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $1
          WHERE ${whereConditions.join(' AND ')}`,
         params
       );
@@ -112,19 +114,21 @@ router.get('/',
 // ============================================
 router.get('/inactive', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
     const result = await db.query(
       `SELECT c.id, c.first_name, c.last_name, c.phone,
               COUNT(b.id) FILTER (WHERE b.status = 'completed') AS visit_count,
               MAX(b.date) FILTER (WHERE b.status = 'completed') AS last_visit,
               CURRENT_DATE - MAX(b.date) FILTER (WHERE b.status = 'completed') AS days_since_visit
        FROM clients c
-       JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL
+       JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $1
        WHERE c.deleted_at IS NULL
        GROUP BY c.id
        HAVING COUNT(b.id) FILTER (WHERE b.status = 'completed') >= 5
           AND MAX(b.date) FILTER (WHERE b.status = 'completed') <= CURRENT_DATE - INTERVAL '45 days'
        ORDER BY days_since_visit DESC
-       LIMIT 20`
+       LIMIT 20`,
+      [salonId]
     );
 
     res.json({ clients: result.rows });
@@ -141,9 +145,10 @@ router.get('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { id } = req.params;
 
-      // Client info with aggregated stats
+      // Client info with aggregated stats (booking stats filtered by salon)
       const clientResult = await db.query(
         `SELECT c.id, c.first_name, c.last_name, c.phone, c.email,
                 c.has_account, c.notes, c.created_at,
@@ -153,10 +158,10 @@ router.get('/:id',
                 COALESCE(SUM(b.price) FILTER (WHERE b.status IN ('completed', 'confirmed')), 0) as total_spent,
                 MAX(b.date) FILTER (WHERE b.status IN ('completed', 'confirmed')) as last_visit
          FROM clients c
-         LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL
+         LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $2
          WHERE c.id = $1 AND c.deleted_at IS NULL
          GROUP BY c.id`,
-        [id]
+        [id, salonId]
       );
 
       if (clientResult.rows.length === 0) {
@@ -165,37 +170,37 @@ router.get('/:id',
 
       const client = clientResult.rows[0];
 
-      // Favourite service
+      // Favourite service (this salon only)
       const favServiceResult = await db.query(
         `SELECT s.name, COUNT(*) as count
          FROM bookings b
          JOIN services s ON b.service_id = s.id
-         WHERE b.client_id = $1 AND b.status IN ('completed', 'confirmed') AND b.deleted_at IS NULL
+         WHERE b.client_id = $1 AND b.salon_id = $2 AND b.status IN ('completed', 'confirmed') AND b.deleted_at IS NULL
          GROUP BY s.name ORDER BY count DESC LIMIT 1`,
-        [id]
+        [id, salonId]
       );
 
-      // Favourite barber
+      // Favourite barber (this salon only)
       const favBarberResult = await db.query(
         `SELECT br.name, COUNT(*) as count
          FROM bookings b
          JOIN barbers br ON b.barber_id = br.id
-         WHERE b.client_id = $1 AND b.status IN ('completed', 'confirmed') AND b.deleted_at IS NULL
+         WHERE b.client_id = $1 AND b.salon_id = $2 AND b.status IN ('completed', 'confirmed') AND b.deleted_at IS NULL
          GROUP BY br.name ORDER BY count DESC LIMIT 1`,
-        [id]
+        [id, salonId]
       );
 
-      // Booking history
+      // Booking history (this salon only)
       const historyResult = await db.query(
         `SELECT b.id, b.date, b.start_time, b.end_time, b.status, b.price, b.source,
                 s.name as service_name, br.name as barber_name
          FROM bookings b
          JOIN services s ON b.service_id = s.id
          JOIN barbers br ON b.barber_id = br.id
-         WHERE b.client_id = $1 AND b.deleted_at IS NULL
+         WHERE b.client_id = $1 AND b.salon_id = $2 AND b.deleted_at IS NULL
          ORDER BY b.date DESC, b.start_time DESC
          LIMIT 50`,
-        [id]
+        [id, salonId]
       );
 
       res.json({

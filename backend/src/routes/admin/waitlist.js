@@ -13,8 +13,10 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 // ============================================
 router.get('/count', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
     const result = await db.query(
-      `SELECT COUNT(*) as count FROM waitlist WHERE status = 'waiting'`
+      `SELECT COUNT(*) as count FROM waitlist WHERE status = 'waiting' AND salon_id = $1`,
+      [salonId]
     );
 
     res.json({ count: parseInt(result.rows[0].count, 10) });
@@ -35,11 +37,12 @@ router.get('/',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const { status, date, barber_id } = req.query;
 
-      const conditions = [];
-      const params = [];
-      let paramIndex = 1;
+      const conditions = [`w.salon_id = $1`];
+      const params = [salonId];
+      let paramIndex = 2;
 
       if (status) {
         conditions.push(`w.status = $${paramIndex}`);
@@ -59,9 +62,7 @@ router.get('/',
         paramIndex++;
       }
 
-      const whereClause = conditions.length > 0
-        ? 'WHERE ' + conditions.join(' AND ')
-        : '';
+      const whereClause = 'WHERE ' + conditions.join(' AND ');
 
       const result = await db.query(
         `SELECT w.id, w.client_id, w.client_name, w.client_phone,
@@ -132,11 +133,12 @@ router.post('/',
         throw ApiError.notFound('Prestation introuvable');
       }
 
+      const salonId = req.user.salon_id;
       const result = await db.query(
         `INSERT INTO waitlist
            (client_id, client_name, client_phone, barber_id, service_id,
-            preferred_date, preferred_time_start, preferred_time_end, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'waiting')
+            preferred_date, preferred_time_start, preferred_time_end, status, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'waiting', $9)
          RETURNING *`,
         [
           client_id || null,
@@ -147,6 +149,7 @@ router.post('/',
           preferred_date,
           preferred_time_start || null,
           preferred_time_end || null,
+          salonId,
         ]
       );
 
@@ -219,10 +222,11 @@ router.put('/:id',
         throw ApiError.badRequest('Aucune donnée à mettre à jour');
       }
 
-      values.push(id);
+      const salonId = req.user.salon_id;
+      values.push(id, salonId);
       const result = await db.query(
         `UPDATE waitlist SET ${fields.join(', ')}
-         WHERE id = $${paramIndex}
+         WHERE id = $${paramIndex} AND salon_id = $${paramIndex + 1}
          RETURNING *`,
         values
       );
@@ -248,9 +252,10 @@ router.delete('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const result = await db.query(
-        'DELETE FROM waitlist WHERE id = $1 RETURNING id',
-        [req.params.id]
+        'DELETE FROM waitlist WHERE id = $1 AND salon_id = $2 RETURNING id',
+        [req.params.id, salonId]
       );
 
       if (result.rows.length === 0) {

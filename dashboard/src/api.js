@@ -44,25 +44,44 @@ async function refreshAccessToken() {
   return data.access_token;
 }
 
+function getSalonId() {
+  return localStorage.getItem('bc_salon') || 'meylan';
+}
+
 async function request(path, options = {}) {
   const { access } = getTokens();
+  const salonId = getSalonId();
+
+  // Auto-inject salon_id into the path (GET requests)
+  const separator = path.includes('?') ? '&' : '?';
+  const fullPath = `${path}${separator}salon_id=${salonId}`;
+
+  // Auto-inject salon_id into POST/PUT/PATCH body
+  let finalOptions = { ...options };
+  if (options.body && ['POST', 'PUT', 'PATCH'].includes((options.method || '').toUpperCase())) {
+    try {
+      const parsed = JSON.parse(options.body);
+      finalOptions.body = JSON.stringify({ ...parsed, salon_id: salonId });
+    } catch { /* not JSON, leave as-is */ }
+  }
+
   const headers = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...finalOptions.headers,
   };
 
   if (access) {
     headers['Authorization'] = `Bearer ${access}`;
   }
 
-  let res = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: 'include' });
+  let res = await fetch(`${API_BASE}${fullPath}`, { ...finalOptions, headers, credentials: 'include' });
 
   // Auto-refresh on 401
   if (res.status === 401 && access) {
     try {
       const newToken = await refreshAccessToken();
       headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers, credentials: 'include' });
+      res = await fetch(`${API_BASE}${fullPath}`, { ...finalOptions, headers, credentials: 'include' });
     } catch {
       clearTokens();
       window.location.reload();
@@ -81,10 +100,11 @@ async function request(path, options = {}) {
 
 // ---- Auth ----
 export async function login(email, password) {
+  const salonId = getSalonId();
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, type: 'barber' }),
+    body: JSON.stringify({ email, password, type: 'barber', salon_id: salonId }),
     credentials: 'include', // receive httpOnly refresh token cookie
   });
 

@@ -10,6 +10,7 @@ const router = Router();
 // ============================================
 router.get('/dashboard', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
     const today = new Date().toISOString().split('T')[0];
     const firstOfMonth = today.substring(0, 8) + '01';
 
@@ -20,8 +21,8 @@ router.get('/dashboard', async (req, res, next) => {
          COALESCE(SUM(price) FILTER (WHERE status IN ('confirmed', 'completed')), 0) as revenue_today,
          COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_today
        FROM bookings
-       WHERE date = $1 AND deleted_at IS NULL`,
-      [today]
+       WHERE date = $1 AND deleted_at IS NULL AND salon_id = $2`,
+      [today, salonId]
     );
 
     // Monthly stats
@@ -30,15 +31,16 @@ router.get('/dashboard', async (req, res, next) => {
          COUNT(*) FILTER (WHERE status IN ('confirmed', 'completed')) as bookings_month,
          COALESCE(SUM(price) FILTER (WHERE status IN ('confirmed', 'completed')), 0) as revenue_month
        FROM bookings
-       WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL`,
-      [firstOfMonth, today]
+       WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL AND salon_id = $3`,
+      [firstOfMonth, today, salonId]
     );
 
-    // New clients this month
+    // New clients this month (clients are global but count those who booked at this salon)
     const newClients = await db.query(
-      `SELECT COUNT(*) as count FROM clients
-       WHERE created_at >= $1 AND deleted_at IS NULL`,
-      [firstOfMonth]
+      `SELECT COUNT(DISTINCT c.id) as count FROM clients c
+       JOIN bookings b ON c.id = b.client_id
+       WHERE c.created_at >= $1 AND c.deleted_at IS NULL AND b.salon_id = $2`,
+      [firstOfMonth, salonId]
     );
 
     // Next bookings for each barber
@@ -52,18 +54,18 @@ router.get('/dashboard', async (req, res, next) => {
        JOIN barbers br ON b.barber_id = br.id
        JOIN services s ON b.service_id = s.id
        JOIN clients c ON b.client_id = c.id
-       WHERE b.date = $1 AND b.status = 'confirmed' AND b.deleted_at IS NULL
+       WHERE b.date = $1 AND b.status = 'confirmed' AND b.deleted_at IS NULL AND b.salon_id = $2
          AND b.start_time >= CURRENT_TIME
        ORDER BY b.barber_id, b.start_time`,
-      [today]
+      [today, salonId]
     );
 
     // Empty slots today (hours with no bookings)
     const todayBookings = await db.query(
       `SELECT barber_id, start_time, end_time
        FROM bookings
-       WHERE date = $1 AND status IN ('confirmed', 'completed') AND deleted_at IS NULL`,
-      [today]
+       WHERE date = $1 AND status IN ('confirmed', 'completed') AND deleted_at IS NULL AND salon_id = $2`,
+      [today, salonId]
     );
 
     const t = todayStats.rows[0];
@@ -118,6 +120,7 @@ router.get('/revenue',
         groupBy = 'date';
       }
 
+      const salonId = req.user.salon_id;
       const result = await db.query(
         `SELECT ${dateExpr} as period,
                 COUNT(*) as booking_count,
@@ -125,10 +128,10 @@ router.get('/revenue',
          FROM bookings
          WHERE date >= $1 AND date <= $2
            AND status IN ('confirmed', 'completed')
-           AND deleted_at IS NULL
+           AND deleted_at IS NULL AND salon_id = $3
          GROUP BY ${groupBy}
          ORDER BY ${groupBy}`,
-        [fromDate, toDate]
+        [fromDate, toDate, salonId]
       );
 
       res.json(result.rows);
@@ -159,16 +162,17 @@ router.get('/bookings-count',
         : "TO_CHAR(date, 'YYYY-MM-DD')";
       const groupBy = period === 'month' ? "TO_CHAR(date, 'YYYY-MM')" : 'date';
 
+      const salonId = req.user.salon_id;
       const result = await db.query(
         `SELECT ${dateExpr} as period,
                 COUNT(*) FILTER (WHERE status IN ('confirmed', 'completed')) as confirmed,
                 COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled,
                 COUNT(*) FILTER (WHERE status = 'no_show') as no_show
          FROM bookings
-         WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL
+         WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL AND salon_id = $3
          GROUP BY ${groupBy}
          ORDER BY ${groupBy}`,
-        [fromDate, toDate]
+        [fromDate, toDate, salonId]
       );
 
       res.json(result.rows);
@@ -189,6 +193,7 @@ router.get('/peak-hours',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const toDate = req.query.to || new Date().toISOString().split('T')[0];
       const fromDate = req.query.from || getDefaultFrom('month');
 
@@ -201,10 +206,10 @@ router.get('/peak-hours',
          FROM bookings
          WHERE date >= $1 AND date <= $2
            AND status IN ('confirmed', 'completed')
-           AND deleted_at IS NULL
+           AND deleted_at IS NULL AND salon_id = $3
          GROUP BY EXTRACT(DOW FROM date), EXTRACT(HOUR FROM start_time)
          ORDER BY day_of_week, hour`,
-        [fromDate, toDate]
+        [fromDate, toDate, salonId]
       );
 
       // Best days of the week
@@ -216,10 +221,10 @@ router.get('/peak-hours',
          FROM bookings
          WHERE date >= $1 AND date <= $2
            AND status IN ('confirmed', 'completed')
-           AND deleted_at IS NULL
+           AND deleted_at IS NULL AND salon_id = $3
          GROUP BY EXTRACT(DOW FROM date)
          ORDER BY revenue DESC`,
-        [fromDate, toDate]
+        [fromDate, toDate, salonId]
       );
 
       res.json({
@@ -246,9 +251,12 @@ router.get('/occupancy',
       const toDate = req.query.to || new Date().toISOString().split('T')[0];
       const fromDate = req.query.from || getDefaultFrom('month');
 
+      const salonId = req.user.salon_id;
+
       // Count active barbers
       const barbersResult = await db.query(
-        'SELECT COUNT(*) as count FROM barbers WHERE is_active = true AND deleted_at IS NULL'
+        'SELECT COUNT(*) as count FROM barbers WHERE is_active = true AND deleted_at IS NULL AND salon_id = $1',
+        [salonId]
       );
       const barberCount = parseInt(barbersResult.rows[0].count);
 
@@ -260,8 +268,8 @@ router.get('/occupancy',
       const daysResult = await db.query(
         `SELECT COUNT(DISTINCT date) as days
          FROM bookings
-         WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL`,
-        [fromDate, toDate]
+         WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL AND salon_id = $3`,
+        [fromDate, toDate, salonId]
       );
       const workingDays = Math.max(parseInt(daysResult.rows[0].days), 1);
 
@@ -271,8 +279,8 @@ router.get('/occupancy',
          FROM bookings
          WHERE date >= $1 AND date <= $2
            AND status IN ('confirmed', 'completed')
-           AND deleted_at IS NULL`,
-        [fromDate, toDate]
+           AND deleted_at IS NULL AND salon_id = $3`,
+        [fromDate, toDate, salonId]
       );
 
       const totalBookings = parseInt(bookingsResult.rows[0].count);
@@ -306,6 +314,7 @@ router.get('/services',
       const toDate = req.query.to || new Date().toISOString().split('T')[0];
       const fromDate = req.query.from || getDefaultFrom('month');
 
+      const salonId = req.user.salon_id;
       const result = await db.query(
         `SELECT s.name,
                 COUNT(b.id) as booking_count,
@@ -316,10 +325,10 @@ router.get('/services',
            AND b.date >= $1 AND b.date <= $2
            AND b.status IN ('confirmed', 'completed')
            AND b.deleted_at IS NULL
-         WHERE s.deleted_at IS NULL
+         WHERE s.deleted_at IS NULL AND s.salon_id = $3
          GROUP BY s.id, s.name
          ORDER BY booking_count DESC`,
-        [fromDate, toDate]
+        [fromDate, toDate, salonId]
       );
 
       // Trend per service (monthly)
@@ -329,10 +338,10 @@ router.get('/services',
          JOIN services s ON b.service_id = s.id
          WHERE b.date >= $1 AND b.date <= $2
            AND b.status IN ('confirmed', 'completed')
-           AND b.deleted_at IS NULL
+           AND b.deleted_at IS NULL AND b.salon_id = $3
          GROUP BY s.name, TO_CHAR(b.date, 'YYYY-MM')
          ORDER BY s.name, month`,
-        [fromDate, toDate]
+        [fromDate, toDate, salonId]
       );
 
       res.json({
@@ -359,6 +368,7 @@ router.get('/barbers',
       const toDate = req.query.to || new Date().toISOString().split('T')[0];
       const fromDate = req.query.from || getDefaultFrom('month');
 
+      const salonId = req.user.salon_id;
       const result = await db.query(
         `SELECT br.name,
                 COUNT(b.id) as booking_count,
@@ -370,10 +380,10 @@ router.get('/barbers',
            AND b.date >= $1 AND b.date <= $2
            AND b.deleted_at IS NULL
            AND b.status IN ('confirmed', 'completed', 'no_show')
-         WHERE br.deleted_at IS NULL
+         WHERE br.deleted_at IS NULL AND br.salon_id = $3
          GROUP BY br.id, br.name
          ORDER BY revenue DESC`,
-        [fromDate, toDate]
+        [fromDate, toDate, salonId]
       );
 
       // Loyalty rate per barber (clients who came back to same barber)
@@ -392,9 +402,9 @@ router.get('/barbers',
          LEFT JOIN bookings b ON br.id = b.barber_id
            AND b.status IN ('confirmed', 'completed')
            AND b.deleted_at IS NULL
-         WHERE br.deleted_at IS NULL
+         WHERE br.deleted_at IS NULL AND br.salon_id = $1
          GROUP BY br.id, br.name`,
-        []
+        [salonId]
       );
 
       res.json({
@@ -412,12 +422,14 @@ router.get('/barbers',
 // ============================================
 router.get('/clients', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
+
     // New vs returning clients per month
     const newVsReturning = await db.query(
       `WITH first_visits AS (
          SELECT client_id, MIN(date) as first_date
          FROM bookings
-         WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL
+         WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL AND salon_id = $1
          GROUP BY client_id
        )
        SELECT TO_CHAR(b.date, 'YYYY-MM') as month,
@@ -429,10 +441,11 @@ router.get('/clients', async (req, res, next) => {
               ) as new_clients,
               COUNT(DISTINCT b.client_id) as total_clients
        FROM bookings b
-       WHERE b.status IN ('confirmed', 'completed') AND b.deleted_at IS NULL
+       WHERE b.status IN ('confirmed', 'completed') AND b.deleted_at IS NULL AND b.salon_id = $1
          AND b.date >= CURRENT_DATE - INTERVAL '12 months'
        GROUP BY TO_CHAR(b.date, 'YYYY-MM')
-       ORDER BY month`
+       ORDER BY month`,
+      [salonId]
     );
 
     // Top 10 clients by revenue
@@ -443,11 +456,12 @@ router.get('/clients', async (req, res, next) => {
               MAX(b.date) as last_visit
        FROM clients c
        JOIN bookings b ON c.id = b.client_id
-       WHERE b.status IN ('confirmed', 'completed') AND b.deleted_at IS NULL
+       WHERE b.status IN ('confirmed', 'completed') AND b.deleted_at IS NULL AND b.salon_id = $1
          AND c.deleted_at IS NULL
        GROUP BY c.id
        ORDER BY total_spent DESC
-       LIMIT 10`
+       LIMIT 10`,
+      [salonId]
     );
 
     // Average visit frequency (days between visits)
@@ -456,19 +470,21 @@ router.get('/clients', async (req, res, next) => {
          SELECT client_id, date,
                 LAG(date) OVER (PARTITION BY client_id ORDER BY date) as prev_date
          FROM bookings
-         WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL
+         WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL AND salon_id = $1
        )
        SELECT ROUND(AVG(date - prev_date)) as avg_days_between_visits
        FROM client_visits
-       WHERE prev_date IS NOT NULL`
+       WHERE prev_date IS NOT NULL`,
+      [salonId]
     );
 
     // Total active clients
     const totalActive = await db.query(
       `SELECT COUNT(DISTINCT client_id) as count
        FROM bookings
-       WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL
-         AND date >= CURRENT_DATE - INTERVAL '3 months'`
+       WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL AND salon_id = $1
+         AND date >= CURRENT_DATE - INTERVAL '3 months'`,
+      [salonId]
     );
 
     res.json({
@@ -487,6 +503,8 @@ router.get('/clients', async (req, res, next) => {
 // ============================================
 router.get('/trends', async (req, res, next) => {
   try {
+    const salonId = req.user.salon_id;
+
     // Monthly revenue for last 12 months
     const monthlyRevenue = await db.query(
       `SELECT TO_CHAR(date, 'YYYY-MM') as month,
@@ -495,9 +513,10 @@ router.get('/trends', async (req, res, next) => {
        FROM bookings
        WHERE date >= CURRENT_DATE - INTERVAL '12 months'
          AND status IN ('confirmed', 'completed')
-         AND deleted_at IS NULL
+         AND deleted_at IS NULL AND salon_id = $1
        GROUP BY TO_CHAR(date, 'YYYY-MM')
-       ORDER BY month`
+       ORDER BY month`,
+      [salonId]
     );
 
     // Current month projection
@@ -511,8 +530,8 @@ router.get('/trends', async (req, res, next) => {
        FROM bookings
        WHERE TO_CHAR(date, 'YYYY-MM') = $1
          AND status IN ('confirmed', 'completed')
-         AND deleted_at IS NULL`,
-      [currentMonth]
+         AND deleted_at IS NULL AND salon_id = $2`,
+      [currentMonth, salonId]
     );
 
     // Future bookings this month
@@ -523,8 +542,8 @@ router.get('/trends', async (req, res, next) => {
        WHERE TO_CHAR(date, 'YYYY-MM') = $1
          AND date > CURRENT_DATE
          AND status = 'confirmed'
-         AND deleted_at IS NULL`,
-      [currentMonth]
+         AND deleted_at IS NULL AND salon_id = $2`,
+      [currentMonth, salonId]
     );
 
     const revenueSoFar = parseInt(currentMonthData.rows[0].revenue_so_far);
@@ -540,10 +559,11 @@ router.get('/trends', async (req, res, next) => {
               ROUND(COUNT(*) FILTER (WHERE status = 'no_show')::numeric / NULLIF(COUNT(*), 0) * 100, 1) as rate
        FROM bookings
        WHERE date >= CURRENT_DATE - INTERVAL '6 months'
-         AND deleted_at IS NULL
+         AND deleted_at IS NULL AND salon_id = $1
          AND status != 'cancelled'
        GROUP BY TO_CHAR(date, 'YYYY-MM')
-       ORDER BY month`
+       ORDER BY month`,
+      [salonId]
     );
 
     res.json({
@@ -568,22 +588,27 @@ router.get('/trends', async (req, res, next) => {
 // ============================================
 router.get('/members', async (req, res, next) => {
   try {
-    // Total clients vs members
+    const salonId = req.user.salon_id;
+
+    // Total clients vs members (scoped to clients who have bookings at this salon)
     const counts = await db.query(
       `SELECT
-         COUNT(*) as total_clients,
-         COUNT(*) FILTER (WHERE has_account = true) as total_members
-       FROM clients
-       WHERE deleted_at IS NULL`
+         COUNT(DISTINCT c.id) as total_clients,
+         COUNT(DISTINCT c.id) FILTER (WHERE c.has_account = true) as total_members
+       FROM clients c
+       JOIN bookings b ON c.id = b.client_id
+       WHERE c.deleted_at IS NULL AND b.salon_id = $1`,
+      [salonId]
     );
 
     // New members this month
     const firstOfMonth = new Date().toISOString().substring(0, 8) + '01';
     const newMembers = await db.query(
-      `SELECT COUNT(*) as count FROM clients
-       WHERE has_account = true AND deleted_at IS NULL
-         AND created_at >= $1`,
-      [firstOfMonth]
+      `SELECT COUNT(DISTINCT c.id) as count FROM clients c
+       JOIN bookings b ON c.id = b.client_id
+       WHERE c.has_account = true AND c.deleted_at IS NULL
+         AND c.created_at >= $1 AND b.salon_id = $2`,
+      [firstOfMonth, salonId]
     );
 
     // Revenue comparison: members vs guests (last 3 months)
@@ -596,8 +621,9 @@ router.get('/members', async (req, res, next) => {
        FROM bookings b
        JOIN clients c ON b.client_id = c.id
        WHERE b.status IN ('confirmed', 'completed')
-         AND b.deleted_at IS NULL
-         AND b.date >= CURRENT_DATE - INTERVAL '3 months'`
+         AND b.deleted_at IS NULL AND b.salon_id = $1
+         AND b.date >= CURRENT_DATE - INTERVAL '3 months'`,
+      [salonId]
     );
 
     // Average spend per visit: members vs guests
@@ -608,8 +634,9 @@ router.get('/members', async (req, res, next) => {
        FROM bookings b
        JOIN clients c ON b.client_id = c.id
        WHERE b.status IN ('confirmed', 'completed')
-         AND b.deleted_at IS NULL
-         AND b.date >= CURRENT_DATE - INTERVAL '3 months'`
+         AND b.deleted_at IS NULL AND b.salon_id = $1
+         AND b.date >= CURRENT_DATE - INTERVAL '3 months'`,
+      [salonId]
     );
 
     // Average visits per client: members vs guests (last 3 months)
@@ -622,22 +649,26 @@ router.get('/members', async (req, res, next) => {
          FROM clients c
          JOIN bookings b ON c.id = b.client_id
          WHERE b.status IN ('confirmed', 'completed')
-           AND b.deleted_at IS NULL
+           AND b.deleted_at IS NULL AND b.salon_id = $1
            AND b.date >= CURRENT_DATE - INTERVAL '3 months'
            AND c.deleted_at IS NULL
          GROUP BY c.id, c.has_account
-       ) sub`
+       ) sub`,
+      [salonId]
     );
 
-    // Monthly member signups (last 6 months)
+    // Monthly member signups (last 6 months) — scoped to clients with bookings at this salon
     const monthlySignups = await db.query(
-      `SELECT TO_CHAR(created_at, 'YYYY-MM') as month,
-              COUNT(*) as signups
-       FROM clients
-       WHERE has_account = true AND deleted_at IS NULL
-         AND created_at >= CURRENT_DATE - INTERVAL '6 months'
-       GROUP BY TO_CHAR(created_at, 'YYYY-MM')
-       ORDER BY month`
+      `SELECT TO_CHAR(c.created_at, 'YYYY-MM') as month,
+              COUNT(DISTINCT c.id) as signups
+       FROM clients c
+       JOIN bookings b ON c.id = b.client_id
+       WHERE c.has_account = true AND c.deleted_at IS NULL
+         AND c.created_at >= CURRENT_DATE - INTERVAL '6 months'
+         AND b.salon_id = $1
+       GROUP BY TO_CHAR(c.created_at, 'YYYY-MM')
+       ORDER BY month`,
+      [salonId]
     );
 
     const c = counts.rows[0];

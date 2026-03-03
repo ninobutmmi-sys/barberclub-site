@@ -155,8 +155,10 @@ const DRAWER_NAV = [
   { to: '/campaigns', label: 'Campagnes', icon: NAV.find(n => n.to === '/campaigns').icon },
 ];
 
+const SALON_LABELS = { meylan: 'Meylan', grenoble: 'Grenoble' };
+
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, salon, logout, clearSalon } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMobile();
@@ -217,6 +219,14 @@ export default function Layout() {
           </button>
         </div>
 
+        {/* ---- Salon badge ---- */}
+        {!collapsed && salon && (
+          <button className="salon-badge" onClick={() => { if (window.confirm('Changer de salon ? Vous serez deconnecte.')) { clearSalon(); logout(); } }} title="Changer de salon">
+            <span className="salon-badge-name">{SALON_LABELS[salon] || salon}</span>
+            <span className="salon-badge-change">Changer</span>
+          </button>
+        )}
+
         {/* ---- Notification bell ---- */}
         {!collapsed && (
           <div className="notif-area" ref={dropdownRef}>
@@ -266,6 +276,19 @@ export default function Layout() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Collapsed: salon initial */}
+        {collapsed && salon && (
+          <button
+            className="sidebar-icon-btn"
+            onClick={() => { if (window.confirm('Changer de salon ? Vous serez deconnecte.')) { clearSalon(); logout(); } }}
+            title={`Salon: ${SALON_LABELS[salon] || salon} — Cliquer pour changer`}
+            aria-label="Changer de salon"
+            style={{ fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.04em' }}
+          >
+            {(SALON_LABELS[salon] || salon).charAt(0)}
+          </button>
         )}
 
         {/* Collapsed: small bell icon */}
@@ -441,6 +464,23 @@ export default function Layout() {
                     </span>
                   )}
                 </button>
+
+                <div className="mob-drawer-sep" />
+
+                {/* Salon switch */}
+                {salon && (
+                  <button
+                    className="mob-drawer-link"
+                    onClick={() => { setPlusOpen(false); if (window.confirm('Changer de salon ? Vous serez deconnecte.')) { clearSalon(); logout(); } }}
+                    style={{ border: 'none', width: '100%', background: 'none', cursor: 'pointer', fontFamily: 'var(--font)' }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <span style={{ flex: 1, textAlign: 'left' }}>
+                      Salon: <strong>{SALON_LABELS[salon] || salon}</strong>
+                    </span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Changer</span>
+                  </button>
+                )}
 
                 <div className="mob-drawer-sep" />
 
