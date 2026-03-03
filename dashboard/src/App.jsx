@@ -19,8 +19,6 @@ const Mailing = lazy(() => import('./pages/Mailing'));
 const SystemHealth = lazy(() => import('./pages/SystemHealth'));
 const Automation = lazy(() => import('./pages/Automation'));
 const Campaigns = lazy(() => import('./pages/Campaigns'));
-const Caisse = lazy(() => import('./pages/Caisse'));
-
 const PageLoader = () => (
   <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e' }}>
     Chargement...
@@ -66,7 +64,7 @@ function AppRoutes() {
         <Route path="system" element={<Suspense fallback={<PageLoader />}><SystemHealth /></Suspense>} />
         <Route path="automation" element={<Suspense fallback={<PageLoader />}><Automation /></Suspense>} />
         <Route path="campaigns" element={<Suspense fallback={<PageLoader />}><Campaigns /></Suspense>} />
-        <Route path="caisse" element={<Suspense fallback={<PageLoader />}><Caisse /></Suspense>} />
+
       </Route>
     </Routes>
   );

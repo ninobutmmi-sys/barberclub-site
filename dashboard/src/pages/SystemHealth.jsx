@@ -291,6 +291,30 @@ export default function SystemHealth() {
           )}
         </div>
       </div>
+
+      {/* ---- Liens externes ---- */}
+      <div className="card" style={{ marginTop: 20, padding: '20px 24px' }}>
+        <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16, color: 'var(--text-secondary)' }}>
+          Accès services externes
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <a href="https://app.brevo.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 10, background: 'rgba(var(--overlay), 0.03)', border: '1px solid rgba(var(--overlay), 0.06)', textDecoration: 'none', color: 'var(--text)', fontSize: 13, fontWeight: 500, transition: 'background 0.2s' }}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+            <span style={{ flex: 1 }}>Brevo — Meylan</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Email + SMS</span>
+          </a>
+          <a href="https://app.brevo.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 10, background: 'rgba(var(--overlay), 0.03)', border: '1px solid rgba(var(--overlay), 0.06)', textDecoration: 'none', color: 'var(--text)', fontSize: 13, fontWeight: 500, transition: 'background 0.2s' }}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
+            <span style={{ flex: 1 }}>Brevo — Grenoble</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Email + SMS</span>
+          </a>
+          <a href="https://railway.com/project/ae37a882-edb0-44f4-917c-ef185f77c394" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 10, background: 'rgba(var(--overlay), 0.03)', border: '1px solid rgba(var(--overlay), 0.06)', textDecoration: 'none', color: 'var(--text)', fontSize: 13, fontWeight: 500, transition: 'background 0.2s' }}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            <span style={{ flex: 1 }}>Railway — Backend</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Serveur + BDD</span>
+          </a>
+        </div>
+      </div>
     </>
   );
 }
