@@ -479,10 +479,10 @@ router.post('/:id/sale',
 
       // Create sale record
       const saleResult = await db.query(
-        `INSERT INTO product_sales (product_id, quantity, unit_price, total_price, payment_method, sold_by, client_id, sold_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        `INSERT INTO product_sales (product_id, quantity, unit_price, total_price, payment_method, sold_by, client_id, sold_at, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
          RETURNING *`,
-        [id, quantity, unit_price, total_price, payment_method, sold_by, client_id || null]
+        [id, quantity, unit_price, total_price, payment_method, sold_by, client_id || null, salonId]
       );
 
       logger.info('Product sale recorded', {

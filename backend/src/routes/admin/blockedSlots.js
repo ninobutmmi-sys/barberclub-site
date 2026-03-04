@@ -133,10 +133,10 @@ router.post('/',
       }
 
       const result = await db.query(
-        `INSERT INTO blocked_slots (barber_id, date, start_time, end_time, reason, type)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO blocked_slots (barber_id, date, start_time, end_time, reason, type, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
-        [barber_id, date, start_time, end_time, reason || null, type]
+        [barber_id, date, start_time, end_time, reason || null, type, salonId]
       );
 
       const slot = result.rows[0];

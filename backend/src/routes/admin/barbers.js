@@ -130,9 +130,9 @@ router.put('/:id/schedule',
         const startTime = schedule.is_working ? (schedule.start_time || '09:00').slice(0, 5) : '09:00';
         const endTime = schedule.is_working ? (schedule.end_time || '19:00').slice(0, 5) : '19:00';
         await db.query(
-          `INSERT INTO schedules (barber_id, day_of_week, start_time, end_time, is_working)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [id, schedule.day_of_week, startTime, endTime, schedule.is_working]
+          `INSERT INTO schedules (barber_id, day_of_week, start_time, end_time, is_working, salon_id)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [id, schedule.day_of_week, startTime, endTime, schedule.is_working, req.user.salon_id]
         );
       }
 
@@ -167,12 +167,12 @@ router.post('/:id/overrides',
       const { date, is_day_off, start_time, end_time, reason } = req.body;
 
       const result = await db.query(
-        `INSERT INTO schedule_overrides (barber_id, date, is_day_off, start_time, end_time, reason)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO schedule_overrides (barber_id, date, is_day_off, start_time, end_time, reason, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (barber_id, date) DO UPDATE SET
            is_day_off = $3, start_time = $4, end_time = $5, reason = $6
          RETURNING *`,
-        [id, date, is_day_off, is_day_off ? null : start_time, is_day_off ? null : end_time, reason]
+        [id, date, is_day_off, is_day_off ? null : start_time, is_day_off ? null : end_time, reason, req.user.salon_id]
       );
 
       res.status(201).json(result.rows[0]);
