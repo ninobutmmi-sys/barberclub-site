@@ -8,6 +8,27 @@ const {
 } = require('../constants');
 
 /**
+ * Check if a barber has a guest assignment on a given date
+ * @returns {object|null} { host_salon_id, start_time, end_time } or null
+ */
+async function getGuestAssignment(barberId, date, queryFn = null) {
+  const fn = queryFn || db.query;
+  const result = await fn(
+    'SELECT host_salon_id, start_time, end_time FROM guest_assignments WHERE barber_id = $1 AND date = $2',
+    [barberId, date]
+  );
+  return result.rows.length > 0 ? result.rows[0] : null;
+}
+
+/**
+ * Get the home salon_id for a barber
+ */
+async function getBarberHomeSalon(barberId) {
+  const result = await db.query('SELECT salon_id FROM barbers WHERE id = $1', [barberId]);
+  return result.rows[0]?.salon_id || null;
+}
+
+/**
  * Get available time slots for a barber on a specific date
  * @param {string} barberId - Barber UUID (or 'any' for all barbers)
  * @param {string} serviceId - Service UUID (to know duration)
@@ -26,10 +47,10 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   const duration = serviceResult.rows[0].duration;
 
   // 2. Determine which barbers to check
+  const salonId = options.salonId || 'meylan';
   let barberIds;
   if (barberId === 'any') {
-    const salonId = options.salonId || 'meylan';
-    // Get all active barbers that offer this service in this salon
+    // Resident barbers that offer this service
     const barbersResult = await db.query(
       `SELECT b.id FROM barbers b
        JOIN barber_services bs ON b.id = bs.barber_id
@@ -38,6 +59,23 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
       [serviceId, salonId]
     );
     barberIds = barbersResult.rows.map((r) => r.id);
+
+    // Also include guest barbers that have an assignment in this salon on this date
+    // and offer this service (in their home salon)
+    const guestResult = await db.query(
+      `SELECT DISTINCT b.id FROM barbers b
+       JOIN guest_assignments ga ON b.id = ga.barber_id
+       JOIN barber_services bs ON b.id = bs.barber_id
+       WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL
+         AND ga.host_salon_id = $2 AND ga.date = $3
+         AND b.salon_id != $2`,
+      [serviceId, salonId, date]
+    );
+    const guestIds = guestResult.rows.map((r) => r.id);
+    // Merge without duplicates
+    for (const gId of guestIds) {
+      if (!barberIds.includes(gId)) barberIds.push(gId);
+    }
   } else {
     barberIds = [barberId];
   }
@@ -53,7 +91,7 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   const allSlots = [];
 
   for (const bId of barberIds) {
-    const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration, options);
+    const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration, { ...options, salonId });
     allSlots.push(...slots);
   }
 
@@ -65,8 +103,37 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
 
 /**
  * Get available slots for a single barber on a date
+ * Now handles guest assignments:
+ * - If barber is a guest in THIS salon on this date → use guest_assignment hours
+ * - If barber is a resident but has a guest_assignment ELSEWHERE → return [] (absent)
+ * - Otherwise → normal schedule logic
  */
 async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = {}) {
+  const salonId = options.salonId || 'meylan';
+
+  // Check guest assignment for this barber on this date
+  const guestAssignment = await getGuestAssignment(barberId, date);
+
+  if (guestAssignment) {
+    const homeSalon = await getBarberHomeSalon(barberId);
+    if (guestAssignment.host_salon_id === salonId) {
+      // Barber is a guest HERE today → use guest assignment hours
+      return await generateSlots(barberId, date, guestAssignment.start_time, guestAssignment.end_time, duration, options);
+    } else if (homeSalon === salonId) {
+      // Barber is a resident here but is guesting ELSEWHERE → absent
+      return [];
+    }
+    // Barber is guesting somewhere else and we're not that salon nor their home → skip
+    return [];
+  }
+
+  // No guest assignment → normal schedule logic (only if barber belongs to this salon)
+  const homeSalon = await getBarberHomeSalon(barberId);
+  if (homeSalon !== salonId) {
+    // Barber doesn't belong to this salon and has no guest assignment here today
+    return [];
+  }
+
   // Check for schedule override first
   const overrideResult = await db.query(
     `SELECT start_time, end_time, is_day_off
@@ -99,6 +166,13 @@ async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = 
     endTime = scheduleResult.rows[0].end_time;
   }
 
+  return await generateSlots(barberId, date, startTime, endTime, duration, options);
+}
+
+/**
+ * Generate time slots for a barber given start/end times
+ */
+async function generateSlots(barberId, date, startTime, endTime, duration, options = {}) {
   // Admin can book up to ADMIN_SCHEDULE_END even if schedule ends earlier
   if (options.adminMode) {
     const endMin = timeToMinutes(endTime);
@@ -223,9 +297,10 @@ async function isSlotAvailable(barberId, date, startTime, duration, client = nul
 /**
  * For "any barber" mode: find the best barber for a given slot
  * Prefers the barber with fewer bookings that day (load balancing)
+ * Includes guest barbers assigned to this salon on the given date
  */
 async function findBestBarber(serviceId, date, startTime, duration, salonId = 'meylan') {
-  // Get all barbers that offer this service in this salon
+  // Get resident barbers that offer this service in this salon
   const barbersResult = await db.query(
     `SELECT b.id, b.name FROM barbers b
      JOIN barber_services bs ON b.id = bs.barber_id
@@ -233,6 +308,22 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
      ORDER BY b.sort_order`,
     [serviceId, salonId]
   );
+
+  // Get guest barbers for this date+salon that offer this service
+  const guestResult = await db.query(
+    `SELECT b.id, b.name FROM barbers b
+     JOIN guest_assignments ga ON b.id = ga.barber_id
+     JOIN barber_services bs ON b.id = bs.barber_id
+     WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL
+       AND ga.host_salon_id = $2 AND ga.date = $3
+       AND b.salon_id != $2`,
+    [serviceId, salonId, date]
+  );
+
+  const allBarbers = [...barbersResult.rows];
+  for (const g of guestResult.rows) {
+    if (!allBarbers.find(b => b.id === g.id)) allBarbers.push(g);
+  }
 
   const endTime = addMinutesToTime(startTime, duration);
   const dateObj = new Date(date + 'T00:00:00');
@@ -242,9 +333,9 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
   let bestBarber = null;
   let fewestBookings = Infinity;
 
-  for (const barber of barbersResult.rows) {
-    // Check if barber works at this time (schedule/overrides)
-    const worksAtTime = await barberWorksAtTime(barber.id, date, dayOfWeek, startTime, endTime);
+  for (const barber of allBarbers) {
+    // Check if barber works at this time (schedule/overrides/guest assignments)
+    const worksAtTime = await barberWorksAtTime(barber.id, date, dayOfWeek, startTime, endTime, salonId);
     if (!worksAtTime) continue;
 
     // Check if this barber is available at this time (no conflicting bookings/blocks)
@@ -271,9 +362,31 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
 
 /**
  * Check if a barber works at the given time on a given date
+ * Now handles guest assignments
  */
-async function barberWorksAtTime(barberId, date, dayOfWeek, startTime, endTime) {
-  // Check schedule override first
+async function barberWorksAtTime(barberId, date, dayOfWeek, startTime, endTime, salonId = null) {
+  // Check guest assignment first
+  const guestAssignment = await getGuestAssignment(barberId, date);
+  if (guestAssignment) {
+    if (salonId && guestAssignment.host_salon_id !== salonId) {
+      // Barber is guesting elsewhere → not available here
+      return false;
+    }
+    if (salonId && guestAssignment.host_salon_id === salonId) {
+      // Barber is guesting here → check guest assignment hours
+      return startTime >= guestAssignment.start_time.slice(0, 5) && endTime <= guestAssignment.end_time.slice(0, 5);
+    }
+    // No salonId context → check guest assignment hours
+    return startTime >= guestAssignment.start_time.slice(0, 5) && endTime <= guestAssignment.end_time.slice(0, 5);
+  }
+
+  // No guest assignment → check if barber belongs to requested salon
+  if (salonId) {
+    const homeSalon = await getBarberHomeSalon(barberId);
+    if (homeSalon !== salonId) return false;
+  }
+
+  // Check schedule override
   const overrideResult = await db.query(
     'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
     [barberId, date]
@@ -297,6 +410,80 @@ async function barberWorksAtTime(barberId, date, dayOfWeek, startTime, endTime) 
   return startTime >= sched.start_time.slice(0, 5) && endTime <= sched.end_time.slice(0, 5);
 }
 
+/**
+ * Validate that a barber can accept a booking at the given date/time.
+ * Checks: guest assignments, schedule overrides, default schedule, blocked slots.
+ * @param {object} dbClient - pg client (inside transaction)
+ * @param {string} barberId - Barber UUID
+ * @param {string} date - YYYY-MM-DD
+ * @param {string} startTime - HH:MM
+ * @param {string} endTime - HH:MM
+ * @param {string} salonId - optional salon context
+ */
+async function validateBarberSlot(dbClient, barberId, date, startTime, endTime, salonId = null) {
+  const dateObj = new Date(date + 'T00:00:00');
+  const jsDay = dateObj.getDay();
+  const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
+
+  // Check guest assignment first
+  const gaResult = await dbClient.query(
+    'SELECT host_salon_id, start_time, end_time FROM guest_assignments WHERE barber_id = $1 AND date = $2',
+    [barberId, date]
+  );
+
+  if (gaResult.rows.length > 0) {
+    const ga = gaResult.rows[0];
+    if (salonId && ga.host_salon_id !== salonId) {
+      // Barber is guesting at a different salon → can't book here
+      throw ApiError.badRequest('Ce barber est dans un autre salon ce jour');
+    }
+    // Validate against guest assignment hours
+    if (startTime < ga.start_time.slice(0, 5) || endTime > ga.end_time.slice(0, 5)) {
+      throw ApiError.badRequest('Horaire en dehors des heures de travail');
+    }
+  } else {
+    // No guest assignment → normal schedule check
+    // Check schedule override first
+    const overrideCheck = await dbClient.query(
+      'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
+      [barberId, date]
+    );
+
+    if (overrideCheck.rows.length > 0) {
+      const ov = overrideCheck.rows[0];
+      if (ov.is_day_off) {
+        throw ApiError.badRequest('Ce barber ne travaille pas ce jour');
+      }
+      if (startTime < ov.start_time.slice(0, 5) || endTime > ov.end_time.slice(0, 5)) {
+        throw ApiError.badRequest('Horaire en dehors des heures de travail');
+      }
+    } else {
+      const scheduleCheck = await dbClient.query(
+        'SELECT is_working, start_time, end_time FROM schedules WHERE barber_id = $1 AND day_of_week = $2',
+        [barberId, dayOfWeek]
+      );
+      if (scheduleCheck.rows.length === 0 || !scheduleCheck.rows[0].is_working) {
+        throw ApiError.badRequest('Ce barber ne travaille pas ce jour');
+      }
+      const sched = scheduleCheck.rows[0];
+      if (startTime < sched.start_time.slice(0, 5) || endTime > sched.end_time.slice(0, 5)) {
+        throw ApiError.badRequest('Horaire en dehors des heures de travail');
+      }
+    }
+  }
+
+  // Check blocked slots
+  const blockedCheck = await dbClient.query(
+    `SELECT id FROM blocked_slots
+     WHERE barber_id = $1 AND date = $2
+       AND start_time < $3 AND end_time > $4`,
+    [barberId, date, endTime, startTime]
+  );
+  if (blockedCheck.rows.length > 0) {
+    throw ApiError.badRequest('Ce créneau est bloqué');
+  }
+}
+
 // ============================================
 // Time helpers
 // ============================================
@@ -317,60 +504,6 @@ function minutesToTime(minutes) {
 function addMinutesToTime(timeStr, minutesToAdd) {
   const totalMinutes = timeToMinutes(timeStr) + minutesToAdd;
   return minutesToTime(totalMinutes);
-}
-
-/**
- * Validate that a barber can accept a booking at the given date/time.
- * Checks: schedule overrides, default schedule, blocked slots.
- * @param {object} dbClient - pg client (inside transaction)
- * @param {string} barberId - Barber UUID
- * @param {string} date - YYYY-MM-DD
- * @param {string} startTime - HH:MM
- * @param {string} endTime - HH:MM
- */
-async function validateBarberSlot(dbClient, barberId, date, startTime, endTime) {
-  const dateObj = new Date(date + 'T00:00:00');
-  const jsDay = dateObj.getDay();
-  const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
-
-  // Check schedule override first
-  const overrideCheck = await dbClient.query(
-    'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
-    [barberId, date]
-  );
-
-  if (overrideCheck.rows.length > 0) {
-    const ov = overrideCheck.rows[0];
-    if (ov.is_day_off) {
-      throw ApiError.badRequest('Ce barber ne travaille pas ce jour');
-    }
-    if (startTime < ov.start_time.slice(0, 5) || endTime > ov.end_time.slice(0, 5)) {
-      throw ApiError.badRequest('Horaire en dehors des heures de travail');
-    }
-  } else {
-    const scheduleCheck = await dbClient.query(
-      'SELECT is_working, start_time, end_time FROM schedules WHERE barber_id = $1 AND day_of_week = $2',
-      [barberId, dayOfWeek]
-    );
-    if (scheduleCheck.rows.length === 0 || !scheduleCheck.rows[0].is_working) {
-      throw ApiError.badRequest('Ce barber ne travaille pas ce jour');
-    }
-    const sched = scheduleCheck.rows[0];
-    if (startTime < sched.start_time.slice(0, 5) || endTime > sched.end_time.slice(0, 5)) {
-      throw ApiError.badRequest('Horaire en dehors des heures de travail');
-    }
-  }
-
-  // Check blocked slots
-  const blockedCheck = await dbClient.query(
-    `SELECT id FROM blocked_slots
-     WHERE barber_id = $1 AND date = $2
-       AND start_time < $3 AND end_time > $4`,
-    [barberId, date, endTime, startTime]
-  );
-  if (blockedCheck.rows.length > 0) {
-    throw ApiError.badRequest('Ce créneau est bloqué');
-  }
 }
 
 module.exports = {

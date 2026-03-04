@@ -24,14 +24,28 @@ router.get('/barbers', publicLimiter,
   async (req, res, next) => {
   try {
     const salonId = req.query.salon_id || 'meylan';
+    // Resident barbers
     const result = await db.query(
-      `SELECT id, name, role, photo_url
+      `SELECT id, name, role, photo_url, FALSE as is_guest
        FROM barbers
        WHERE is_active = true AND deleted_at IS NULL AND salon_id = $1
        ORDER BY sort_order`,
       [salonId]
     );
-    // Attach off-days for each barber (day_of_week where is_working=false)
+    // Guest barbers with future assignments in this salon
+    const guestResult = await db.query(
+      `SELECT DISTINCT b.id, b.name, b.role, b.photo_url, b.sort_order, TRUE as is_guest
+       FROM barbers b
+       JOIN guest_assignments ga ON b.id = ga.barber_id
+       WHERE b.is_active = true AND b.deleted_at IS NULL
+         AND ga.host_salon_id = $1 AND ga.date >= CURRENT_DATE
+         AND b.salon_id != $1
+       ORDER BY b.sort_order`,
+      [salonId]
+    );
+    const allBarbers = [...result.rows, ...guestResult.rows];
+
+    // Attach off-days for resident barbers
     const schedResult = await db.query(
       `SELECT barber_id, day_of_week FROM schedules WHERE is_working = false AND salon_id = $1`,
       [salonId]
@@ -41,9 +55,26 @@ router.get('/barbers', publicLimiter,
       if (!offMap[row.barber_id]) offMap[row.barber_id] = [];
       offMap[row.barber_id].push(row.day_of_week);
     }
-    const barbers = result.rows.map((b) => ({
+
+    // For guest barbers, load their guest assignment dates
+    const guestIds = guestResult.rows.map(b => b.id);
+    let guestDatesMap = {};
+    if (guestIds.length > 0) {
+      const gaDates = await db.query(
+        `SELECT barber_id, date FROM guest_assignments
+         WHERE host_salon_id = $1 AND date >= CURRENT_DATE AND barber_id = ANY($2)`,
+        [salonId, guestIds]
+      );
+      for (const row of gaDates.rows) {
+        if (!guestDatesMap[row.barber_id]) guestDatesMap[row.barber_id] = [];
+        guestDatesMap[row.barber_id].push(row.date);
+      }
+    }
+
+    const barbers = allBarbers.map((b) => ({
       ...b,
       off_days: offMap[b.id] || [],
+      guest_dates: guestDatesMap[b.id] || undefined,
     }));
     res.json(barbers);
   } catch (error) {
@@ -69,14 +100,22 @@ router.get('/services', publicLimiter,
     let params;
 
     if (barber_id && barber_id !== 'any') {
-      // Services offered by this specific barber
+      // Check if this barber is a guest (their home salon != requested salon)
+      const barberCheck = await db.query(
+        'SELECT salon_id FROM barbers WHERE id = $1 AND is_active = true AND deleted_at IS NULL',
+        [barber_id]
+      );
+      const barberHomeSalon = barberCheck.rows[0]?.salon_id || salonId;
+      // Use the barber's home salon services (guest keeps their own tarifs)
+      const serviceSalonId = barberHomeSalon !== salonId ? barberHomeSalon : salonId;
+
       queryText = `
         SELECT s.id, s.name, s.price, s.duration
         FROM services s
         JOIN barber_services bs ON s.id = bs.service_id
         WHERE bs.barber_id = $1 AND s.is_active = true AND s.deleted_at IS NULL AND s.salon_id = $2
         ORDER BY s.sort_order`;
-      params = [barber_id, salonId];
+      params = [barber_id, serviceSalonId];
     } else {
       // All active services
       queryText = `

@@ -1,5 +1,5 @@
 const { Router } = require('express');
-const { body, param } = require('express-validator');
+const { body, param, query } = require('express-validator');
 const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
@@ -8,15 +8,50 @@ const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ============================================
-// GET /api/admin/barbers — All barbers
+// GET /api/admin/barbers — All barbers (residents + guests for the current view)
 // ============================================
 router.get('/', async (req, res, next) => {
   try {
     const salonId = req.user.salon_id;
+    // Resident barbers
     const result = await db.query(
-      `SELECT id, name, role, photo_url, email, is_active, sort_order
+      `SELECT id, name, role, photo_url, email, is_active, sort_order, salon_id, FALSE as is_guest
        FROM barbers WHERE deleted_at IS NULL AND is_active = true AND salon_id = $1
        ORDER BY sort_order`,
+      [salonId]
+    );
+    // Guest barbers with future assignments in this salon
+    const guestResult = await db.query(
+      `SELECT DISTINCT b.id, b.name, b.role, b.photo_url, b.email, b.is_active, b.sort_order, b.salon_id, TRUE as is_guest
+       FROM barbers b
+       JOIN guest_assignments ga ON b.id = ga.barber_id
+       WHERE b.is_active = true AND b.deleted_at IS NULL
+         AND ga.host_salon_id = $1 AND ga.date >= CURRENT_DATE
+         AND b.salon_id != $1
+       ORDER BY b.sort_order`,
+      [salonId]
+    );
+    res.json([...result.rows, ...guestResult.rows]);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// GET /api/admin/barbers/guest-assignments/list — All guest assignments for this salon
+// (Must be defined BEFORE /:id routes to avoid param collision)
+// ============================================
+router.get('/guest-assignments/list', async (req, res, next) => {
+  try {
+    const salonId = req.user.salon_id;
+    const result = await db.query(
+      `SELECT ga.id, ga.barber_id, ga.host_salon_id, ga.date, ga.start_time, ga.end_time,
+              b.name as barber_name, b.salon_id as home_salon_id
+       FROM guest_assignments ga
+       JOIN barbers b ON ga.barber_id = b.id
+       WHERE ga.date >= CURRENT_DATE
+         AND (ga.host_salon_id = $1 OR b.salon_id = $1)
+       ORDER BY ga.date`,
       [salonId]
     );
     res.json(result.rows);
@@ -200,6 +235,96 @@ router.delete('/overrides/:id',
       }
 
       res.json({ message: 'Exception supprimée' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /api/admin/barbers/:id/guest-days — List guest assignments for a barber
+// ============================================
+router.get('/:id/guest-days',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const result = await db.query(
+        `SELECT id, barber_id, host_salon_id, date, start_time, end_time, created_at
+         FROM guest_assignments
+         WHERE barber_id = $1 AND date >= CURRENT_DATE
+         ORDER BY date`,
+        [req.params.id]
+      );
+      res.json(result.rows);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// POST /api/admin/barbers/:id/guest-days — Add a guest day
+// ============================================
+router.post('/:id/guest-days',
+  [
+    param('id').matches(uuidRegex),
+    body('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide'),
+    body('host_salon_id').isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    body('start_time').optional().matches(/^\d{2}:\d{2}$/).withMessage('Heure debut invalide'),
+    body('end_time').optional().matches(/^\d{2}:\d{2}$/).withMessage('Heure fin invalide'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { date, host_salon_id, start_time, end_time } = req.body;
+
+      // Verify barber exists
+      const barberCheck = await db.query(
+        'SELECT id, salon_id FROM barbers WHERE id = $1 AND is_active = true AND deleted_at IS NULL',
+        [id]
+      );
+      if (barberCheck.rows.length === 0) {
+        throw ApiError.notFound('Barber introuvable');
+      }
+      // Cannot be guest in own salon
+      if (barberCheck.rows[0].salon_id === host_salon_id) {
+        throw ApiError.badRequest('Le barber est deja dans ce salon');
+      }
+
+      const result = await db.query(
+        `INSERT INTO guest_assignments (barber_id, host_salon_id, date, start_time, end_time)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (barber_id, date) DO UPDATE SET
+           host_salon_id = $2, start_time = $4, end_time = $5
+         RETURNING *`,
+        [id, host_salon_id, date, (start_time || '09:00').slice(0, 5), (end_time || '19:00').slice(0, 5)]
+      );
+
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// DELETE /api/admin/guest-days/:id — Remove a guest day
+// ============================================
+router.delete('/guest-days/:id',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const result = await db.query(
+        'DELETE FROM guest_assignments WHERE id = $1 RETURNING id',
+        [req.params.id]
+      );
+      if (result.rows.length === 0) {
+        throw ApiError.notFound('Jour invite introuvable');
+      }
+      res.json({ message: 'Jour invite supprime' });
     } catch (error) {
       next(error);
     }

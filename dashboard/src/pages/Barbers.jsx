@@ -6,6 +6,9 @@ import {
   updateBarberSchedule,
   addBarberOverride,
   deleteBarberOverride,
+  getBarberGuestDays,
+  addBarberGuestDay,
+  deleteBarberGuestDay,
 } from '../api';
 import useMobile from '../hooks/useMobile';
 
@@ -66,6 +69,7 @@ export default function Barbers() {
   const [error, setError] = useState(null);
   const [editBarber, setEditBarber] = useState(null);
   const [scheduleBarber, setScheduleBarber] = useState(null);
+  const [guestBarber, setGuestBarber] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -161,12 +165,16 @@ export default function Barbers() {
                       {b.role || 'Barber'}
                     </div>
                   </div>
-                  <span
-                    className={`badge badge-${b.is_active ? 'active' : 'inactive'}`}
-                    style={{ marginLeft: 'auto' }}
-                  >
-                    {b.is_active ? 'Actif' : 'Inactif'}
-                  </span>
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <span className={`badge badge-${b.is_active ? 'active' : 'inactive'}`}>
+                      {b.is_active ? 'Actif' : 'Inactif'}
+                    </span>
+                    {b.is_guest && (
+                      <span style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', background: 'rgba(59,130,246,0.12)', padding: '1px 8px', borderRadius: 10 }}>
+                        Invite
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div
@@ -179,7 +187,7 @@ export default function Barbers() {
                   {b.email}
                 </div>
 
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button
                     className="btn btn-secondary btn-sm"
                     style={{ flex: 1 }}
@@ -194,6 +202,15 @@ export default function Barbers() {
                   >
                     Horaires
                   </button>
+                  {!b.is_guest && (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      style={{ flex: 1, minWidth: 'fit-content' }}
+                      onClick={() => setGuestBarber(b)}
+                    >
+                      Jours invite
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -216,6 +233,13 @@ export default function Barbers() {
         <ScheduleModal
           barber={scheduleBarber}
           onClose={() => setScheduleBarber(null)}
+        />
+      )}
+
+      {guestBarber && (
+        <GuestDaysModal
+          barber={guestBarber}
+          onClose={() => setGuestBarber(null)}
         />
       )}
     </>
@@ -932,5 +956,214 @@ function OverridesEditor({
         </form>
       )}
     </>
+  );
+}
+
+// ============================================
+// Guest Days Modal — Manage cross-salon assignments
+// ============================================
+
+const SALON_OPTIONS = [
+  { id: 'grenoble', label: 'Grenoble' },
+  { id: 'meylan', label: 'Meylan' },
+];
+
+function GuestDaysModal({ barber, onClose }) {
+  const [guestDays, setGuestDays] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  // Form state
+  const [gdDate, setGdDate] = useState('');
+  const [gdSalon, setGdSalon] = useState('');
+  const [gdStartTime, setGdStartTime] = useState('09:00');
+  const [gdEndTime, setGdEndTime] = useState('19:00');
+  const [adding, setAdding] = useState(false);
+
+  const flash = useCallback((type, message) => {
+    setStatus({ type, message });
+    const timer = setTimeout(() => setStatus(null), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Filter out barber's own salon from destination choices
+  const destinations = SALON_OPTIONS.filter(s => s.id !== barber.salon_id);
+
+  useEffect(() => {
+    loadGuestDays();
+  }, []);
+
+  async function loadGuestDays() {
+    setLoading(true);
+    try {
+      const data = await getBarberGuestDays(barber.id);
+      setGuestDays(Array.isArray(data) ? data : []);
+    } catch {
+      setGuestDays([]);
+    }
+    setLoading(false);
+  }
+
+  async function handleAdd(e) {
+    e.preventDefault();
+    setAdding(true);
+    try {
+      await addBarberGuestDay(barber.id, {
+        date: gdDate,
+        host_salon_id: gdSalon || destinations[0]?.id,
+        start_time: gdStartTime,
+        end_time: gdEndTime,
+      });
+      setGdDate('');
+      setGdStartTime('09:00');
+      setGdEndTime('19:00');
+      setShowForm(false);
+      flash('success', 'Jour invite ajoute');
+      await loadGuestDays();
+    } catch (err) {
+      flash('error', err.message);
+    }
+    setAdding(false);
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('Supprimer ce jour invite ?')) return;
+    try {
+      await deleteBarberGuestDay(id);
+      flash('success', 'Jour invite supprime');
+      await loadGuestDays();
+    } catch (err) {
+      flash('error', err.message);
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Jours invite — {barber.name}</h3>
+          <button className="btn-ghost" onClick={onClose}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="modal-body">
+          <InlineStatus status={status} />
+
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5 }}>
+            Planifier des jours ou {barber.name} travaille dans un autre salon. Il sera automatiquement bloque ici ces jours-la.
+          </div>
+
+          {loading ? (
+            <div className="empty-state">Chargement...</div>
+          ) : guestDays.length === 0 && !showForm ? (
+            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+              Aucun jour invite programme.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+              {guestDays.map((gd) => (
+                <div
+                  key={gd.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    fontSize: 13,
+                    padding: '10px 14px',
+                    background: 'rgba(59,130,246,0.04)',
+                    border: '1px solid rgba(59,130,246,0.12)',
+                    borderRadius: 8,
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                      {formatDateFr(gd.date)}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                      <span style={{
+                        display: 'inline-block', padding: '1px 8px', borderRadius: 10,
+                        fontSize: 11, fontWeight: 600, background: 'rgba(59,130,246,0.12)', color: '#3b82f6',
+                      }}>
+                        {gd.host_salon_id === 'grenoble' ? 'Grenoble' : 'Meylan'}
+                      </span>
+                      <span style={{ color: 'var(--text-secondary)' }}>
+                        {(gd.start_time || '09:00').slice(0, 5)} - {(gd.end_time || '19:00').slice(0, 5)}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    className="btn-ghost"
+                    style={{ color: 'var(--danger)', flexShrink: 0, padding: 6 }}
+                    onClick={() => handleDelete(gd.id)}
+                    title="Supprimer"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!showForm ? (
+            <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => { setGdSalon(destinations[0]?.id || ''); setShowForm(true); }}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Ajouter un jour invite
+            </button>
+          ) : (
+            <form
+              onSubmit={handleAdd}
+              style={{ padding: 16, background: 'rgba(var(--overlay),0.02)', border: '1px solid var(--border)', borderRadius: 10 }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <label className="label" style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                  Nouveau jour invite
+                </label>
+                <button type="button" className="btn-ghost" style={{ padding: 4 }} onClick={() => setShowForm(false)}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="form-group">
+                <label className="label">Salon destination</label>
+                <select className="input" value={gdSalon} onChange={(e) => setGdSalon(e.target.value)} required style={{ fontSize: 13 }}>
+                  {destinations.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="label">Date</label>
+                <input className="input" type="date" value={gdDate} onChange={(e) => setGdDate(e.target.value)} required style={{ fontSize: 13 }} />
+              </div>
+
+              <div className="form-group">
+                <label className="label">Horaires</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input className="input" type="time" value={gdStartTime} onChange={(e) => setGdStartTime(e.target.value)} required style={{ flex: 1, fontSize: 13, textAlign: 'center' }} />
+                  <span style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}>a</span>
+                  <input className="input" type="time" value={gdEndTime} onChange={(e) => setGdEndTime(e.target.value)} required style={{ flex: 1, fontSize: 13, textAlign: 'center' }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowForm(false)} style={{ flex: 1 }}>Annuler</button>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={adding} style={{ flex: 1 }}>
+                  {adding ? '...' : 'Ajouter'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

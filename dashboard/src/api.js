@@ -182,6 +182,16 @@ export const addBarberOverride = (id, body) =>
 export const deleteBarberOverride = (id) =>
   request(`/admin/barbers/overrides/${id}`, { method: 'DELETE' });
 
+// ---- Admin: Guest Assignments ----
+export const getBarberGuestDays = (id) =>
+  request(`/admin/barbers/${id}/guest-days`);
+export const addBarberGuestDay = (id, body) =>
+  request(`/admin/barbers/${id}/guest-days`, { method: 'POST', body: JSON.stringify(body) });
+export const deleteBarberGuestDay = (id) =>
+  request(`/admin/barbers/guest-days/${id}`, { method: 'DELETE' });
+export const getGuestAssignments = () =>
+  request('/admin/barbers/guest-assignments/list');
+
 // ---- Admin: Clients ----
 export const getClients = (params) => {
   const qs = new URLSearchParams(params).toString();

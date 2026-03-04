@@ -15,6 +15,7 @@ import {
   deleteBlockedSlot,
   updateClient,
   getBarberSchedule,
+  getGuestAssignments,
 } from '../api';
 import {
   format,
@@ -154,7 +155,7 @@ function BookingHoverCard({ booking, anchorRect }) {
 
   const SOURCE_LABELS = { online: 'Réservé en ligne', manual: 'Ajouté manuellement', phone: 'Par téléphone', walk_in: 'Sans RDV' };
   const cardW = 380;
-  const cardH = 320;
+  const cardH = booking.client_notes ? 380 : 320;
 
   // Position: prefer right of block, fallback left if overflows
   let left = anchorRect.right + 8;
@@ -309,6 +310,21 @@ function BookingHoverCard({ booking, anchorRect }) {
           </div>
         </div>
       </div>
+
+      {/* Client notes */}
+      {booking.client_notes && (
+        <div style={{
+          padding: '8px 16px 12px', borderTop: '1px solid rgba(var(--overlay),0.06)',
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Notes
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.4, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {booking.client_notes}
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );
@@ -773,40 +789,60 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
             </div>
           </div>
 
-          {/* CRÉNEAU SECTION — editable if confirmed */}
+          {/* CRÉNEAU SECTION — editable if confirmed or completed */}
           <div className="bk-section">
             <div className="bk-section-title">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               Créneau
             </div>
             {isEditable ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Date</label>
-                  <input className="input" type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} required />
-                </div>
-                <div className="bk-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Date + Début + Fin — 3 colonnes */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.9fr 0.9fr', gap: 10 }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Début</label>
+                    <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>Date</label>
+                    <input className="input" type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} required />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>Début</label>
                     <input className="input" type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} min="08:00" max="20:00" step="300" required />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Fin</label>
+                    <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>Fin</label>
                     <input className="input" type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)} min="08:00" max="21:00" step="300" required />
                   </div>
                 </div>
-                <div className="bk-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                {/* Barber + Prestation */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Barber</label>
+                    <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>Barber</label>
                     <select className="input" value={editBarberId} onChange={(e) => setEditBarberId(e.target.value)} required>
                       {barbers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Prestation</label>
+                    <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>Prestation</label>
                     <select className="input" value={editServiceId} onChange={(e) => setEditServiceId(e.target.value)} required>
                       {filteredServices.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
+                  </div>
+                </div>
+                {/* Couleur — intégrée dans créneau */}
+                <div>
+                  <label className="label" style={{ fontSize: 11, marginBottom: 6, color: 'var(--text-muted)', display: 'block' }}>Couleur</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {COLOR_PALETTE.map((c) => (
+                      <div
+                        key={c}
+                        onClick={() => setEditColor(c)}
+                        style={{
+                          width: 24, height: 24, borderRadius: 6, background: c, cursor: 'pointer',
+                          border: editColor === c ? '2.5px solid #fff' : '2.5px solid transparent',
+                          boxShadow: editColor === c ? `0 0 0 1.5px ${c}` : 'none',
+                          transition: 'all 0.15s ease',
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
@@ -820,30 +856,6 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
             )}
           </div>
 
-          {/* COULEUR — only if editable */}
-          {isEditable && (
-            <div className="bk-section">
-              <div className="bk-section-title">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="6.5" cy="13.5" r="2.5"/><circle cx="17.5" cy="13.5" r="2.5"/><circle cx="13.5" cy="20.5" r="2.5"/></svg>
-                Couleur
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                {COLOR_PALETTE.map((c) => (
-                  <div
-                    key={c}
-                    onClick={() => setEditColor(c)}
-                    style={{
-                      width: 28, height: 28, borderRadius: 8, background: c, cursor: 'pointer',
-                      border: editColor === c ? '2.5px solid #fff' : '2.5px solid transparent',
-                      boxShadow: editColor === c ? `0 0 0 1.5px ${c}` : 'none',
-                      transition: 'all 0.15s ease',
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* INFOS SECTION */}
           <div className="bk-section">
             <div className="bk-section-title">
@@ -853,7 +865,6 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
             <div style={{ display: 'grid', gap: 6 }}>
               <DetailRow label="Prix" value={formatPrice(booking.price)} valueStyle={{ fontFamily: 'var(--font-display, Orbitron, monospace)', fontWeight: 800 }} />
               <DetailRow label="Source" value={sourceLabel} />
-              <DetailRow label="Horaire" value={`${booking.start_time?.slice(0, 5)} – ${booking.end_time?.slice(0, 5)}`} />
             </div>
           </div>
 
@@ -1654,12 +1665,34 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
   const dayCount = days.length;
 
   // Check if a barber is off on a given date (0=Monday convention)
+  // Also handles guest assignments: resident away = off, guest without assignment = off
   function isBarberOff(barberId, date) {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const barber = barbers.find(b => b.id === barberId);
+
+    // Check if this barber has a guest assignment on this date
+    const ga = guestAssignments.find(g => g.barber_id === barberId && g.date === dateStr);
+
+    if (barber?.is_guest) {
+      // Guest barber: only "on" if they have a guest assignment on this specific date
+      return !ga;
+    }
+
+    // Resident barber: if they have a guest assignment elsewhere → off
+    if (ga) return true;
+
+    // Normal off-day check
     const offSet = barberOffDays?.[barberId];
     if (!offSet || offSet.size === 0) return false;
     const jsDay = date.getDay(); // 0=Sunday
     const dow = jsDay === 0 ? 6 : jsDay - 1; // Convert to 0=Monday
     return offSet.has(dow);
+  }
+
+  // Get guest assignment info for a barber on a specific date
+  function getGuestInfo(barberId, date) {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return guestAssignments.find(g => g.barber_id === barberId && g.date === dateStr) || null;
   }
 
   // Minute picker state
@@ -1735,12 +1768,35 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
                 <div style={{ display: 'flex', borderTop: '1px solid rgba(var(--overlay),0.06)' }}>
                   {barbers.map((b) => {
                     const off = isBarberOff(b.id, day);
+                    const gi = getGuestInfo(b.id, day);
+                    // Resident barber guesting elsewhere
+                    const isAway = !b.is_guest && gi;
+                    // Guest barber present today
+                    const isGuestHere = b.is_guest && gi;
                     return (
-                      <div key={b.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3px 1px', fontSize: 10, fontWeight: 700, color: off ? 'var(--text-muted)' : 'var(--text-secondary)', borderRight: '1px solid rgba(var(--overlay),0.04)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: off ? 0.5 : 1 }}>
+                      <div key={b.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3px 1px', fontSize: 10, fontWeight: 700, color: off ? 'var(--text-muted)' : isGuestHere ? '#3b82f6' : 'var(--text-secondary)', borderRight: '1px solid rgba(var(--overlay),0.04)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: off ? 0.5 : 1 }}>
                         {b.photo_url && (
-                          <img src={b.photo_url} alt={b.name} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', marginBottom: 1, filter: off ? 'grayscale(1) opacity(0.4)' : 'none' }} />
+                          <img src={b.photo_url} alt={b.name} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', marginBottom: 1, filter: off ? 'grayscale(1) opacity(0.4)' : 'none', border: isGuestHere ? '2px solid #3b82f6' : 'none' }} />
                         )}
-                        {off ? <s>{b.name.split(' ')[0]}</s> : b.name.split(' ')[0]}
+                        {isAway ? (
+                          <span title={`A ${gi.host_salon_id === 'grenoble' ? 'Grenoble' : 'Meylan'}`}>
+                            <s>{b.name.split(' ')[0]}</s>
+                            <span style={{ display: 'block', fontSize: 8, color: '#f59e0b', fontWeight: 600, lineHeight: 1 }}>
+                              {gi.host_salon_id === 'grenoble' ? 'Grenoble' : 'Meylan'}
+                            </span>
+                          </span>
+                        ) : isGuestHere ? (
+                          <span>
+                            {b.name.split(' ')[0]}
+                            <span style={{ display: 'block', fontSize: 8, color: '#3b82f6', fontWeight: 600, lineHeight: 1 }}>
+                              Invite
+                            </span>
+                          </span>
+                        ) : off ? (
+                          <s>{b.name.split(' ')[0]}</s>
+                        ) : (
+                          b.name.split(' ')[0]
+                        )}
                       </div>
                     );
                   })}
@@ -2045,6 +2101,7 @@ export default function Planning() {
   const [refreshing, setRefreshing] = useState(false);
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [barberOffDays, setBarberOffDays] = useState({}); // { barberId: Set([0,6]) }
+  const [guestAssignments, setGuestAssignments] = useState([]); // [{ barber_id, host_salon_id, date, barber_name, home_salon_id }]
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createDefaults, setCreateDefaults] = useState({});
@@ -2080,17 +2137,19 @@ export default function Planning() {
     setLoading(true);
     setError(null);
     try {
-      const [bk, b, s, bs] = await Promise.all([
+      const [bk, b, s, bs, ga] = await Promise.all([
         getBookings({ date: apiDateStr, view }),
         getBarbers(),
         getServices(),
         getBlockedSlots({ date: apiDateStr, view }),
+        getGuestAssignments().catch(() => []),
       ]);
       setBookings(Array.isArray(bk) ? bk : []);
       const barberList = Array.isArray(b) ? b : [];
       setBarbers(barberList);
       setServices(Array.isArray(s) ? s : []);
       setBlockedSlots(Array.isArray(bs) ? bs : []);
+      setGuestAssignments(Array.isArray(ga) ? ga : []);
       // Load schedules for all barbers to know off-days
       const offMap = {};
       await Promise.all(barberList.map(async (br) => {
