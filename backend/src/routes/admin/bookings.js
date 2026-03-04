@@ -153,13 +153,13 @@ router.get('/history',
 
       // Mapping for sort columns
       const sortMap = {
-        date: 'b.date DESC, b.start_time',
+        date: 'b.date, b.start_time',
         price: 'b.price',
         client_last_name: 'c.last_name',
         barber_name: 'br.name',
         status: 'b.status',
       };
-      const sortCol = sortMap[sort] || 'b.date DESC, b.start_time';
+      const sortCol = sortMap[sort] || 'b.date, b.start_time';
       const sortOrder = order === 'asc' ? 'ASC' : 'DESC';
 
       // Count query

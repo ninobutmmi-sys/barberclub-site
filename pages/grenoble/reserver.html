@@ -395,6 +395,14 @@
             margin-top: 3px;
         }
 
+        .barber-guest-badge {
+            font-size: 10px;
+            color: #f59e0b;
+            margin-top: 4px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+
         .barber-check {
             width: 24px;
             height: 24px;
@@ -3218,11 +3226,16 @@
                     ? `<img loading="lazy" src="${esc(photoSrc)}" alt="${esc(b.name)}" onerror="this.parentElement.innerHTML='<span class=barber-avatar-placeholder>${esc(initial)}</span>'">`
                     : `<span class="barber-avatar-placeholder">${esc(initial)}</span>`;
 
+                const guestBadge = b.is_guest
+                    ? '<div class="barber-guest-badge">Disponible certains jours</div>'
+                    : '';
+
                 html += `
-                    <div class="barber-card" data-id="${esc(b.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(b.name)}">
+                    <div class="barber-card${b.is_guest ? ' guest-barber' : ''}" data-id="${esc(b.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(b.name)}">
                         <div class="barber-avatar">${avatarContent}</div>
                         <div class="barber-info">
                             <div class="barber-name">${esc(b.name)}</div>
+                            ${guestBadge}
                         </div>
                         <div class="barber-check">${checkSVG}</div>
                     </div>
@@ -3375,16 +3388,25 @@
         function isOffDay(dateObj) {
             const jsDay = dateObj.getDay(); // 0=Sunday
             const dow = jsDay === 0 ? 6 : jsDay - 1; // Convert to 0=Monday
+            const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
 
             if (state.selectedBarber.id === 'any') {
                 // All barbers off on this day? Check if ALL barbers have this dow in off_days
+                // Guest barbers count as available only on their guest_dates
                 return state.barbers.length === 0 || state.barbers.every(b => {
+                    if (b.is_guest) {
+                        return !(b.guest_dates || []).includes(dateStr);
+                    }
                     const offs = (b.off_days || []).map(Number);
                     return offs.includes(dow);
                 });
             } else {
                 const barber = state.barbers.find(b => b.id === state.selectedBarber.id);
                 if (!barber) return true;
+                // Guest barber: only available on guest_dates
+                if (barber.is_guest) {
+                    return !(barber.guest_dates || []).includes(dateStr);
+                }
                 const offs = (barber.off_days || []).map(Number);
                 return offs.includes(dow);
             }
@@ -3482,48 +3504,58 @@
         }
 
         async function submitWaitlist() {
-            const barberId = state.selectedBarber.id === 'any'
-                ? state.barbers[0]?.id
-                : state.selectedBarber.id;
-
-            const body = {
-                barber_id: barberId,
-                service_id: state.selectedService.id,
-                preferred_date: state.selectedDate,
-            };
+            const barberIds = state.selectedBarber.id === 'any'
+                ? state.barbers.map(b => b.id)
+                : [state.selectedBarber.id];
 
             const isConnected = state.authMode === 'connected' && state.loggedClient;
+            let clientName, clientPhone;
             if (!isConnected) {
-                const phone = $('#phone')?.value?.trim().replace(/[\s.-]/g, '');
+                clientPhone = $('#phone')?.value?.trim().replace(/[\s.-]/g, '');
                 const firstName = $('#firstName')?.value?.trim();
                 const lastName = $('#lastName')?.value?.trim();
-                if (!phone || !firstName) {
+                if (!clientPhone || !firstName) {
                     toast('Remplissez vos coordonnées.');
                     return;
                 }
-                body.client_name = `${firstName} ${lastName || ''}`.trim();
-                body.client_phone = phone;
+                clientName = `${firstName} ${lastName || ''}`.trim();
             }
 
-            try {
-                const headers = { 'Content-Type': 'application/json' };
-                if (isConnected) {
-                    headers['Authorization'] = 'Bearer ' + localStorage.getItem('bc_client_access');
+            let anySuccess = false;
+            for (const barberId of barberIds) {
+                const body = {
+                    barber_id: barberId,
+                    service_id: state.selectedService.id,
+                    preferred_date: state.selectedDate,
+                };
+                if (!isConnected) {
+                    body.client_name = clientName;
+                    body.client_phone = clientPhone;
                 }
-                const res = await fetch(`${API}/waitlist`, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({ ...body, salon_id: SALON_ID }),
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    toast('Vous serez prévenu par SMS si une place se libère !');
-                    state.wantWaitlist = false;
-                    setTimeout(() => { window.location.reload(); }, 2000);
-                } else {
-                    toast(data.error || 'Erreur');
+
+                try {
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (isConnected) {
+                        headers['Authorization'] = 'Bearer ' + localStorage.getItem('bc_client_access');
+                    }
+                    const res = await fetch(`${API}/waitlist`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ ...body, salon_id: SALON_ID }),
+                    });
+                    if (res.ok) {
+                        anySuccess = true;
+                    }
+                } catch (e) {
+                    // Continue to next barber
                 }
-            } catch (e) {
+            }
+
+            if (anySuccess) {
+                toast('Vous serez prévenu par SMS si une place se libère !');
+                state.wantWaitlist = false;
+                setTimeout(() => { window.location.reload(); }, 2000);
+            } else {
                 toast('Erreur réseau');
             }
         }

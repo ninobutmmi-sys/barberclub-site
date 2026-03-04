@@ -44,7 +44,8 @@ function loadSeenIds() {
  * @param {Set<string>} ids
  */
 function saveSeenIds(ids) {
-  localStorage.setItem(getStorageKey(), JSON.stringify([...ids]));
+  const arr = [...ids].slice(-500);
+  localStorage.setItem(getStorageKey(), JSON.stringify(arr));
 }
 
 /**

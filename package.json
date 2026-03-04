@@ -1,0 +1,27 @@
+{
+  "name": "barberclub-site",
+  "version": "1.0.0",
+  "main": "sw.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:e2e": "npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:site": "npx playwright test --project=site",
+    "test:e2e:dashboard": "npx playwright test --project=dashboard"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ninobutmmi-sys/barberclub-site.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ninobutmmi-sys/barberclub-site/issues"
+  },
+  "homepage": "https://github.com/ninobutmmi-sys/barberclub-site#readme",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

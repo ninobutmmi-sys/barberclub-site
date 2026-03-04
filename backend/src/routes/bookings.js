@@ -167,25 +167,12 @@ router.get('/availability',
         throw new ApiError(400, `Réservation possible jusqu'à ${MAX_BOOKING_ADVANCE_MONTHS} mois à l'avance maximum`);
       }
 
-      // If date is today, filter out past slots
-      const isToday = requestedDate.getTime() === today.getTime();
-
       const slots = await availabilityService.getAvailableSlots(
         barber_id || 'any',
         service_id,
         date,
         { salonId }
       );
-
-      if (isToday) {
-        const now = new Date();
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        const filtered = slots.filter((slot) => {
-          const [h, m] = slot.time.split(':').map(Number);
-          return h * 60 + m > currentMinutes;
-        });
-        return res.json(filtered);
-      }
 
       res.json(slots);
     } catch (error) {

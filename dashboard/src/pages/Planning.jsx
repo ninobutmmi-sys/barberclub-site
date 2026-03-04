@@ -633,7 +633,7 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
     if (editBarberId && filteredServices.length > 0 && !filteredServices.find((s) => s.id === editServiceId)) {
       setEditServiceId(filteredServices[0].id);
     }
-  }, [editBarberId, filteredServices]);
+  }, [editBarberId, filteredServices, editServiceId]);
 
   // Dirty detection
   const isDirty = editDate !== bookingDateStr || editTime !== initTime || editEndTime !== initEndTime || editBarberId !== (booking.barber_id || '') || editServiceId !== (booking.service_id || '') || editColor !== initColor;
@@ -667,14 +667,20 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
 
   async function handleDelete() {
     setDeleting(true);
-    await onDelete(booking.id, notifyClient && hasEmail);
-    setDeleting(false);
+    try {
+      await onDelete(booking.id, notifyClient && hasEmail);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function handleDeleteGroup(futureOnly = false) {
     setDeleting(true);
-    await onDeleteGroup(booking.recurrence_group_id, notifyClient && hasEmail, futureOnly);
-    setDeleting(false);
+    try {
+      await onDeleteGroup(booking.recurrence_group_id, notifyClient && hasEmail, futureOnly);
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function handleSave() {
@@ -1656,7 +1662,7 @@ function MinutePickerPopup({ hour, position, onSelect, onClose, occupiedSlots })
 // TimeGrid
 // ---------------------------------------------------------------------------
 
-function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, onBookingClick, onBlockClick, onSlotClick, view, onSwipeLeft, onSwipeRight, onDragDrop, draggingId }) {
+function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, guestAssignments, onBookingClick, onBlockClick, onSlotClick, view, onSwipeLeft, onSwipeRight, onDragDrop, draggingId }) {
   const scrollRef = useRef(null);
   const gridBodyRef = useRef(null);
   const touchRef = useRef(null);
@@ -1671,7 +1677,7 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
     const barber = barbers.find(b => b.id === barberId);
 
     // Check if this barber has a guest assignment on this date
-    const ga = guestAssignments.find(g => g.barber_id === barberId && g.date === dateStr);
+    const ga = (guestAssignments || []).find(g => g.barber_id === barberId && g.date === dateStr);
 
     if (barber?.is_guest) {
       // Guest barber: only "on" if they have a guest assignment on this specific date
@@ -1692,7 +1698,7 @@ function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barb
   // Get guest assignment info for a barber on a specific date
   function getGuestInfo(barberId, date) {
     const dateStr = format(date, 'yyyy-MM-dd');
-    return guestAssignments.find(g => g.barber_id === barberId && g.date === dateStr) || null;
+    return (guestAssignments || []).find(g => g.barber_id === barberId && g.date === dateStr) || null;
   }
 
   // Minute picker state
@@ -2133,7 +2139,7 @@ export default function Planning() {
     [view, weekStart, currentDateStr]
   );
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (signal) => {
     setLoading(true);
     setError(null);
     try {
@@ -2144,6 +2150,7 @@ export default function Planning() {
         getBlockedSlots({ date: apiDateStr, view }),
         getGuestAssignments().catch(() => []),
       ]);
+      if (signal?.aborted) return;
       setBookings(Array.isArray(bk) ? bk : []);
       const barberList = Array.isArray(b) ? b : [];
       setBarbers(barberList);
@@ -2160,15 +2167,21 @@ export default function Planning() {
           offMap[br.id] = offSet;
         } catch { offMap[br.id] = new Set(); }
       }));
+      if (signal?.aborted) return;
       setBarberOffDays(offMap);
     } catch (err) {
+      if (signal?.aborted) return;
       console.error('Planning load error:', err);
       setError('Impossible de charger les donnees');
     }
-    setLoading(false);
+    if (!signal?.aborted) setLoading(false);
   }, [apiDateStr, view]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
+  }, [loadData]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -2424,6 +2437,7 @@ export default function Planning() {
               onSwipeRight={goPrev}
               onDragDrop={handleDragDrop}
               draggingId={draggingId}
+              guestAssignments={guestAssignments}
             />
             {bookings.filter((b) => b.status !== 'cancelled').length === 0 && (
               <div style={{ padding: '40px 20px', textAlign: 'center', color: '#a8a29e' }}>

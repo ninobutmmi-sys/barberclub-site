@@ -140,14 +140,11 @@ async function processReviewSms(triggerConfig, salonId) {
     try {
       await brevoSMS(booking.phone, personalMessage, salonId);
       logger.info('Review SMS sent', { bookingId: booking.id, phone: booking.phone, salonId });
-      // Mark client as already contacted for review (lifetime flag)
       await db.query('UPDATE clients SET review_requested = true WHERE id = $1', [booking.client_id]);
+      await db.query('UPDATE bookings SET review_email_sent = true WHERE id = $1', [booking.id]);
     } catch (err) {
       logger.error('Review SMS failed', { bookingId: booking.id, error: err.message });
     }
-
-    // Mark booking as processed
-    await db.query('UPDATE bookings SET review_email_sent = true WHERE id = $1', [booking.id]);
   }
 
   if (result.rows.length > 0) {

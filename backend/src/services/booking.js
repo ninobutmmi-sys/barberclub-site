@@ -78,7 +78,8 @@ async function createBooking(data) {
         data.date,
         data.start_time,
         service.duration,
-        salonId
+        salonId,
+        client
       );
       if (!best) {
         throw ApiError.conflict('Aucun barber disponible pour ce créneau');
@@ -269,9 +270,11 @@ async function createBooking(data) {
     }
 
     // 2. SMS confirmation if booking is within 24h
-    const bookingDateTime = new Date(`${result.date}T${result.start_time.slice(0, 5)}`);
-    const now = new Date();
-    const hoursUntilBooking = (bookingDateTime - now) / (1000 * 60 * 60);
+    const smsNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const [smsY, smsM, smsD] = result.date.split('-').map(Number);
+    const [smsH, smsMn] = result.start_time.slice(0, 5).split(':').map(Number);
+    const smsBookingDateTime = new Date(smsY, smsM - 1, smsD, smsH, smsMn, 0);
+    const hoursUntilBooking = (smsBookingDateTime - smsNow) / (1000 * 60 * 60);
 
     if (hoursUntilBooking > 0 && hoursUntilBooking <= SMS_CONFIRMATION_THRESHOLD_HOURS && bookingDetails.client_phone) {
       try {
@@ -424,8 +427,10 @@ async function cancelBooking(bookingId, cancelToken) {
     }
 
     // 2. Check cancellation deadline (Paris timezone, consistent with reschedule)
-    const bookingDateTime = new Date(`${bk.date}T${bk.start_time}`);
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const [bkY, bkM, bkD] = bk.date.split('-').map(Number);
+    const [bkH, bkMn] = bk.start_time.slice(0, 5).split(':').map(Number);
+    const bookingDateTime = new Date(bkY, bkM - 1, bkD, bkH, bkMn, 0);
     const hoursUntil = (bookingDateTime - now) / (1000 * 60 * 60);
 
     if (hoursUntil < CANCELLATION_DEADLINE_HOURS) {
@@ -602,8 +607,10 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
     }
 
     // 2. Check cancellation/reschedule deadline (same as cancel)
-    const bookingDateTime = new Date(`${booking.date}T${booking.start_time}`);
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const [rsY, rsM, rsD] = booking.date.split('-').map(Number);
+    const [rsH, rsMn] = booking.start_time.slice(0, 5).split(':').map(Number);
+    const bookingDateTime = new Date(rsY, rsM - 1, rsD, rsH, rsMn, 0);
     const hoursUntil = (bookingDateTime - now) / (1000 * 60 * 60);
 
     if (hoursUntil < CANCELLATION_DEADLINE_HOURS) {

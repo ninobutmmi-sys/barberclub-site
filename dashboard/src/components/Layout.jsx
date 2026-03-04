@@ -154,7 +154,8 @@ export default function Layout() {
   const isMobile = useMobile();
   const { hasNew, newCount, bookings, markSeen } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const expandedDropdownRef = useRef(null);
+  const collapsedDropdownRef = useRef(null);
   const { theme, toggle: toggleTheme } = useTheme();
   const [plusOpen, setPlusOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
@@ -172,7 +173,8 @@ export default function Layout() {
   // Close the dropdown when clicking anywhere outside it
   useEffect(() => {
     function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      const activeRef = collapsed ? collapsedDropdownRef : expandedDropdownRef;
+      if (activeRef.current && !activeRef.current.contains(e.target)) {
         setDropdownOpen(false);
       }
     }
@@ -180,7 +182,7 @@ export default function Layout() {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [dropdownOpen]);
+  }, [dropdownOpen, collapsed]);
 
   function toggleDropdown() {
     setDropdownOpen((prev) => !prev);
@@ -219,7 +221,7 @@ export default function Layout() {
 
         {/* ---- Notification bell ---- */}
         {!collapsed && (
-          <div className="notif-area" ref={dropdownRef}>
+          <div className="notif-area" ref={expandedDropdownRef}>
             <button
               className={`notif-bell-btn${hasNew ? ' notif-bell-btn--active' : ''}`}
               onClick={toggleDropdown}
@@ -283,7 +285,7 @@ export default function Layout() {
 
         {/* Collapsed: small bell icon */}
         {collapsed && (
-          <div className="sidebar-collapsed-bell" ref={dropdownRef}>
+          <div className="sidebar-collapsed-bell" ref={collapsedDropdownRef}>
             <button
               className={`sidebar-icon-btn${hasNew ? ' has-notif' : ''}`}
               onClick={toggleDropdown}

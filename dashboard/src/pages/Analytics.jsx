@@ -779,20 +779,20 @@ export default function Analytics() {
     setError('');
     try {
       const [dash, rev, services, barbers, peaks, occ, inactive, members] = await Promise.all([
-        getDashboard(),
-        getRevenue({ period: 'day' }),
-        getServiceStats({}),
-        getBarberStats({}),
-        getPeakHours({}),
+        getDashboard().catch(() => null),
+        getRevenue({ period: 'day' }).catch(() => null),
+        getServiceStats({}).catch(() => null),
+        getBarberStats({}).catch(() => null),
+        getPeakHours({}).catch(() => null),
         getOccupancy({}).catch(() => null),
         getInactiveClients().catch(() => ({ clients: [] })),
         getMemberStats().catch(() => null),
       ]);
-      setDashboard(dash);
-      setRevenue(rev);
-      setServiceStats(services);
-      setBarberStats(barbers);
-      setPeakHours(peaks);
+      if (dash) setDashboard(dash);
+      if (rev) setRevenue(rev);
+      if (services) setServiceStats(services);
+      if (barbers) setBarberStats(barbers);
+      if (peaks) setPeakHours(peaks);
       setOccupancy(occ);
       setInactiveClients(inactive.clients || []);
       setMemberStats(members);

@@ -138,8 +138,8 @@ async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = 
   const overrideResult = await db.query(
     `SELECT start_time, end_time, is_day_off
      FROM schedule_overrides
-     WHERE barber_id = $1 AND date = $2`,
-    [barberId, date]
+     WHERE barber_id = $1 AND date = $2 AND salon_id = $3`,
+    [barberId, date, salonId]
   );
 
   let startTime, endTime;
@@ -154,8 +154,8 @@ async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = 
     const scheduleResult = await db.query(
       `SELECT start_time, end_time, is_working
        FROM schedules
-       WHERE barber_id = $1 AND day_of_week = $2`,
-      [barberId, dayOfWeek]
+       WHERE barber_id = $1 AND day_of_week = $2 AND salon_id = $3`,
+      [barberId, dayOfWeek, salonId]
     );
 
     if (scheduleResult.rows.length === 0 || !scheduleResult.rows[0].is_working) {
@@ -299,9 +299,11 @@ async function isSlotAvailable(barberId, date, startTime, duration, client = nul
  * Prefers the barber with fewer bookings that day (load balancing)
  * Includes guest barbers assigned to this salon on the given date
  */
-async function findBestBarber(serviceId, date, startTime, duration, salonId = 'meylan') {
+async function findBestBarber(serviceId, date, startTime, duration, salonId = 'meylan', dbClient = null) {
+  const queryFn = dbClient ? dbClient.query.bind(dbClient) : db.query;
+
   // Get resident barbers that offer this service in this salon
-  const barbersResult = await db.query(
+  const barbersResult = await queryFn(
     `SELECT b.id, b.name FROM barbers b
      JOIN barber_services bs ON b.id = bs.barber_id
      WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
@@ -310,7 +312,7 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
   );
 
   // Get guest barbers for this date+salon that offer this service
-  const guestResult = await db.query(
+  const guestResult = await queryFn(
     `SELECT b.id, b.name FROM barbers b
      JOIN guest_assignments ga ON b.id = ga.barber_id
      JOIN barber_services bs ON b.id = bs.barber_id
@@ -339,11 +341,11 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
     if (!worksAtTime) continue;
 
     // Check if this barber is available at this time (no conflicting bookings/blocks)
-    const available = await isSlotAvailable(barber.id, date, startTime, duration);
+    const available = await isSlotAvailable(barber.id, date, startTime, duration, dbClient);
     if (!available) continue;
 
     // Count their bookings for the day (load balancing)
-    const countResult = await db.query(
+    const countResult = await queryFn(
       `SELECT COUNT(*) as count FROM bookings
        WHERE barber_id = $1 AND date = $2
          AND status != 'cancelled' AND deleted_at IS NULL`,
@@ -381,15 +383,16 @@ async function barberWorksAtTime(barberId, date, dayOfWeek, startTime, endTime, 
   }
 
   // No guest assignment → check if barber belongs to requested salon
-  if (salonId) {
-    const homeSalon = await getBarberHomeSalon(barberId);
-    if (homeSalon !== salonId) return false;
-  }
+  const homeSalon = salonId ? await getBarberHomeSalon(barberId) : null;
+  if (salonId && homeSalon !== salonId) return false;
+
+  // Get salon for schedule lookup (home salon of barber)
+  const scheduleSalonId = salonId || await getBarberHomeSalon(barberId);
 
   // Check schedule override
   const overrideResult = await db.query(
-    'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
-    [barberId, date]
+    'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2 AND salon_id = $3',
+    [barberId, date, scheduleSalonId]
   );
 
   if (overrideResult.rows.length > 0) {
@@ -400,8 +403,8 @@ async function barberWorksAtTime(barberId, date, dayOfWeek, startTime, endTime, 
 
   // Check default schedule
   const scheduleResult = await db.query(
-    'SELECT start_time, end_time, is_working FROM schedules WHERE barber_id = $1 AND day_of_week = $2',
-    [barberId, dayOfWeek]
+    'SELECT start_time, end_time, is_working FROM schedules WHERE barber_id = $1 AND day_of_week = $2 AND salon_id = $3',
+    [barberId, dayOfWeek, scheduleSalonId]
   );
 
   if (scheduleResult.rows.length === 0 || !scheduleResult.rows[0].is_working) return false;
@@ -444,9 +447,10 @@ async function validateBarberSlot(dbClient, barberId, date, startTime, endTime, 
   } else {
     // No guest assignment → normal schedule check
     // Check schedule override first
+    const validateSalonId = salonId || await getBarberHomeSalon(barberId);
     const overrideCheck = await dbClient.query(
-      'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2',
-      [barberId, date]
+      'SELECT is_day_off, start_time, end_time FROM schedule_overrides WHERE barber_id = $1 AND date = $2 AND salon_id = $3',
+      [barberId, date, validateSalonId]
     );
 
     if (overrideCheck.rows.length > 0) {
@@ -459,8 +463,8 @@ async function validateBarberSlot(dbClient, barberId, date, startTime, endTime, 
       }
     } else {
       const scheduleCheck = await dbClient.query(
-        'SELECT is_working, start_time, end_time FROM schedules WHERE barber_id = $1 AND day_of_week = $2',
-        [barberId, dayOfWeek]
+        'SELECT is_working, start_time, end_time FROM schedules WHERE barber_id = $1 AND day_of_week = $2 AND salon_id = $3',
+        [barberId, dayOfWeek, validateSalonId]
       );
       if (scheduleCheck.rows.length === 0 || !scheduleCheck.rows[0].is_working) {
         throw ApiError.badRequest('Ce barber ne travaille pas ce jour');

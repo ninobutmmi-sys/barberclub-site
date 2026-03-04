@@ -7,6 +7,9 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "test": "NODE_ENV=test jest --runInBand --forceExit --detectOpenHandles",
+    "test:unit": "NODE_ENV=test jest tests/unit --forceExit --detectOpenHandles",
+    "test:integration": "NODE_ENV=test jest tests/integration --runInBand --forceExit --detectOpenHandles",
+    "test:watch": "NODE_ENV=test jest --watch --forceExit --detectOpenHandles",
     "lint": "eslint src/",
     "test:e2e": "npx playwright test"
   },

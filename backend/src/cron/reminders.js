@@ -11,9 +11,10 @@ const logger = require('../utils/logger');
 async function queueReminders() {
   try {
     // Find tomorrow's confirmed bookings that haven't had a reminder sent
-    const tomorrow = new Date();
+    const nowParis = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const tomorrow = new Date(nowParis);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
     const result = await db.query(
       `SELECT b.id, b.date, b.start_time, b.cancel_token, b.salon_id,

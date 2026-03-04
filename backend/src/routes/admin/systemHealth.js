@@ -22,16 +22,19 @@ router.get('/health', async (req, res, next) => {
     monthStart.setHours(0, 0, 0, 0);
     const monthStr = monthStart.toISOString().slice(0, 10);
 
+    const salonId = req.user.salon_id;
+
     const notifStats = await db.query(`
       SELECT
-        COUNT(*) FILTER (WHERE type LIKE '%sms' AND status = 'sent')     AS sms_sent,
-        COUNT(*) FILTER (WHERE type LIKE '%sms' AND status = 'failed')   AS sms_failed,
-        COUNT(*) FILTER (WHERE type LIKE '%email' AND status = 'sent')   AS email_sent,
-        COUNT(*) FILTER (WHERE type LIKE '%email' AND status = 'failed') AS email_failed,
-        COUNT(*) FILTER (WHERE status = 'pending')                   AS pending
-      FROM notification_queue
-      WHERE created_at >= $1
-    `, [monthStr]);
+        COUNT(*) FILTER (WHERE nq.type LIKE '%sms' AND nq.status = 'sent')     AS sms_sent,
+        COUNT(*) FILTER (WHERE nq.type LIKE '%sms' AND nq.status = 'failed')   AS sms_failed,
+        COUNT(*) FILTER (WHERE nq.type LIKE '%email' AND nq.status = 'sent')   AS email_sent,
+        COUNT(*) FILTER (WHERE nq.type LIKE '%email' AND nq.status = 'failed') AS email_failed,
+        COUNT(*) FILTER (WHERE nq.status = 'pending')                          AS pending
+      FROM notification_queue nq
+      LEFT JOIN bookings b ON b.id = nq.booking_id
+      WHERE nq.created_at >= $1 AND (b.salon_id = $2 OR b.salon_id IS NULL)
+    `, [monthStr, salonId]);
 
     const stats = notifStats.rows[0] || {};
     const smsCost = (parseInt(stats.sms_sent || 0)) * 0.045;
@@ -44,10 +47,10 @@ router.get('/health', async (req, res, next) => {
       FROM notification_queue nq
       LEFT JOIN bookings b ON b.id = nq.booking_id
       LEFT JOIN clients c ON c.id = b.client_id
-      WHERE nq.status = 'failed'
+      WHERE nq.status = 'failed' AND (b.salon_id = $1 OR b.salon_id IS NULL)
       ORDER BY nq.created_at DESC
       LIMIT 10
-    `);
+    `, [salonId]);
 
     // 6. Cron staleness detection (warn if a cron hasn't run in 2x its schedule)
     const STALE_THRESHOLDS = {
@@ -69,7 +72,10 @@ router.get('/health', async (req, res, next) => {
 
     // 7. Queue depth — pending notifications waiting to be processed
     const queueDepth = await db.query(
-      `SELECT COUNT(*) as total FROM notification_queue WHERE status = 'pending'`
+      `SELECT COUNT(*) as total FROM notification_queue nq
+       LEFT JOIN bookings b ON b.id = nq.booking_id
+       WHERE nq.status = 'pending' AND (b.salon_id = $1 OR b.salon_id IS NULL)`,
+      [salonId]
     );
 
     res.json({

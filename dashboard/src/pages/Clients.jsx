@@ -40,8 +40,9 @@ export default function Clients() {
       setTotal(data.total);
     } catch (err) {
       setError('Impossible de charger les donnees');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   function handleExportCSV() {
