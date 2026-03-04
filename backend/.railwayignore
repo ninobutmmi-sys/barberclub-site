@@ -2,3 +2,10 @@ node_modules/
 .env
 *.log
 .DS_Store
+tests/
+e2e/
+qa_test.sh
+scripts/seed-bookings.js
+jest.config.js
+playwright.config.mjs
+eslint.config.mjs
