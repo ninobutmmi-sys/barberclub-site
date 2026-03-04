@@ -584,7 +584,7 @@ function NowIndicator() {
 
 function BookingDetailModal({ booking, barbers, services, onClose, onStatusChange, onDelete, onDeleteGroup, onReschedule, onNotesUpdated }) {
   const [subView, setSubView] = useState('main'); // 'main' | 'delete'
-  const [notifyClient, setNotifyClient] = useState(true);
+  const [notifyClient, setNotifyClient] = useState(booking?.status !== 'completed');
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -595,13 +595,15 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
   const bookingDateStr = typeof booking.date === 'string' ? booking.date.slice(0, 10) : format(new Date(booking.date), 'yyyy-MM-dd');
   const initTime = booking.start_time?.slice(0, 5) || '09:00';
   const initColor = booking.booking_color || booking.service_color || FALLBACK_COLOR;
-  const isEditable = booking.status === 'confirmed';
+  const isEditable = booking.status === 'confirmed' || booking.status === 'completed';
 
   // Editable fields — initialized with current booking values
   const [editDate, setEditDate] = useState(bookingDateStr);
   const [editTime, setEditTime] = useState(initTime);
   const [editBarberId, setEditBarberId] = useState(booking.barber_id || '');
   const [editServiceId, setEditServiceId] = useState(booking.service_id || '');
+  const initEndTime = booking.end_time?.slice(0, 5) || '';
+  const [editEndTime, setEditEndTime] = useState(initEndTime);
   const [editColor, setEditColor] = useState(initColor);
 
   // Filter services by selected barber
@@ -618,7 +620,7 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
   }, [editBarberId, filteredServices]);
 
   // Dirty detection
-  const isDirty = editDate !== bookingDateStr || editTime !== initTime || editBarberId !== (booking.barber_id || '') || editServiceId !== (booking.service_id || '') || editColor !== initColor;
+  const isDirty = editDate !== bookingDateStr || editTime !== initTime || editEndTime !== initEndTime || editBarberId !== (booking.barber_id || '') || editServiceId !== (booking.service_id || '') || editColor !== initColor;
 
   // Notes state
   const [notes, setNotes] = useState(booking?.client_notes || '');
@@ -666,6 +668,7 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
       await onReschedule(booking.id, {
         date: editDate,
         start_time: editTime,
+        end_time: editEndTime || undefined,
         barber_id: editBarberId,
         service_id: editServiceId,
         color: editColor || undefined,
@@ -778,14 +781,18 @@ function BookingDetailModal({ booking, barbers, services, onClose, onStatusChang
             </div>
             {isEditable ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Date</label>
+                  <input className="input" type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} required />
+                </div>
                 <div className="bk-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Date</label>
-                    <input className="input" type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} required />
+                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Début</label>
+                    <input className="input" type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} min="08:00" max="20:00" step="300" required />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Heure</label>
-                    <input className="input" type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} min="08:00" max="20:00" step="300" required />
+                    <label className="label" style={{ fontSize: 12, marginBottom: 6 }}>Fin</label>
+                    <input className="input" type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)} min="08:00" max="21:00" step="300" required />
                   </div>
                 </div>
                 <div className="bk-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>

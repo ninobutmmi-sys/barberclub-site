@@ -260,6 +260,7 @@ router.put('/:id',
     param('id').matches(uuidRegex),
     body('date').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
     body('start_time').optional().matches(/^\d{2}:\d{2}$/),
+    body('end_time').optional().matches(/^\d{2}:\d{2}$/),
     body('barber_id').optional().matches(uuidRegex),
     body('service_id').optional().matches(uuidRegex),
     body('color').optional({ values: 'falsy' }).matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide'),
@@ -270,7 +271,7 @@ router.put('/:id',
     try {
       const salonId = req.user.salon_id;
       const { id } = req.params;
-      const { date, start_time, barber_id, service_id, color, notify_client } = req.body;
+      const { date, start_time, end_time, barber_id, service_id, color, notify_client } = req.body;
 
       // Get current booking with client info
       const current = await db.query(
@@ -303,7 +304,7 @@ router.put('/:id',
 
       const { duration, price } = serviceResult.rows[0];
       const { addMinutesToTime } = require('../../services/availability');
-      const newEndTime = addMinutesToTime(newStartTime, duration);
+      const newEndTime = end_time || addMinutesToTime(newStartTime, duration);
 
       // Get new barber name if barber changed
       let newBarberName = oldBarberName;
