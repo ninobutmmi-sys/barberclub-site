@@ -208,45 +208,19 @@ async function processReactivationSms(triggerConfig, salonId) {
 }
 
 /**
- * Waitlist Notify: Notify clients on the waitlist for this salon
+ * Waitlist Notify: Expire old waitlist entries (past dates)
+ * Actual SMS notification happens in booking.js cancelBooking() when a slot opens up.
  */
 async function processWaitlistNotify(triggerConfig, salonId) {
-  const message = triggerConfig.message || '';
-  if (!message) return;
-
-  // Find waiting entries for today or upcoming dates (for this salon)
-  const result = await db.query(
-    `SELECT w.id, w.client_name, w.client_phone, w.preferred_date,
-            w.preferred_time_start, w.preferred_time_end,
-            b.name as barber_name, s.name as service_name
-     FROM waitlist w
-     JOIN barbers b ON w.barber_id = b.id
-     JOIN services s ON w.service_id = s.id
-     WHERE w.status = 'waiting'
-       AND w.salon_id = $1
-       AND w.preferred_date >= CURRENT_DATE
-     ORDER BY w.created_at ASC
-     LIMIT 10`,
+  // Expire waitlist entries for past dates
+  const expired = await db.query(
+    `UPDATE waitlist SET status = 'expired'
+     WHERE status = 'waiting' AND salon_id = $1 AND preferred_date < CURRENT_DATE
+     RETURNING id`,
     [salonId]
   );
-
-  for (const entry of result.rows) {
-    const personalMessage = message
-      .replace(/\{prenom\}/gi, entry.client_name || '')
-      .replace(/\{barbier\}/gi, entry.barber_name || '')
-      .replace(/\{prestation\}/gi, entry.service_name || '');
-
-    try {
-      await brevoSMS(entry.client_phone, personalMessage, salonId);
-      logger.info('Waitlist SMS sent', { waitlistId: entry.id, phone: entry.client_phone, salonId });
-      await db.query("UPDATE waitlist SET status = 'notified' WHERE id = $1", [entry.id]);
-    } catch (err) {
-      logger.error('Waitlist SMS failed', { waitlistId: entry.id, error: err.message });
-    }
-  }
-
-  if (result.rows.length > 0) {
-    logger.info(`Waitlist (${salonId}): notified ${result.rows.length} clients`);
+  if (expired.rowCount > 0) {
+    logger.info(`Waitlist (${salonId}): expired ${expired.rowCount} past entries`);
   }
 }
 

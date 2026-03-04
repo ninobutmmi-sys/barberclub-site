@@ -814,6 +814,13 @@ async function sendConfirmationSMS(data) {
   logger.info('Confirmation SMS sent', { bookingId: data.booking_id, phone: data.phone, salonId });
 }
 
+async function sendWaitlistSMS(data) {
+  const salonId = data.salon_id || 'meylan';
+  if (!data.phone) return;
+  await brevoSMS(data.phone, data.message, salonId);
+  logger.info('Waitlist SMS sent', { phone: data.phone, salonId });
+}
+
 module.exports = {
   queueNotification,
   processPendingNotifications,
@@ -824,6 +831,7 @@ module.exports = {
   sendCancellationEmail,
   sendRescheduleEmail,
   sendResetPasswordEmail,
+  sendWaitlistSMS,
   formatDateFR,
   formatTime,
   brevoSMS,

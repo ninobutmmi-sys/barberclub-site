@@ -2,7 +2,8 @@ const { Router } = require('express');
 const { body, param, query } = require('express-validator');
 const { handleValidation } = require('../../middleware/validate');
 const bookingService = require('../../services/booking');
-const { sendCancellationEmail, sendRescheduleEmail } = require('../../services/notification');
+const { sendCancellationEmail, sendRescheduleEmail, sendWaitlistSMS } = require('../../services/notification');
+const config = require('../../config/env');
 const { ApiError } = require('../../utils/errors');
 const logger = require('../../utils/logger');
 const db = require('../../config/database');
@@ -477,22 +478,20 @@ router.delete('/:id',
       const salonId = req.user.salon_id;
       const notify = req.query.notify === 'true';
 
-      // If notify, fetch booking + client info before deleting
+      // Fetch booking info before deleting (needed for notify + waitlist)
       let bookingInfo = null;
-      if (notify) {
-        const infoResult = await db.query(
-          `SELECT b.date, b.start_time, b.price,
-                  s.name as service_name, br.name as barber_name,
-                  c.first_name, c.email
-           FROM bookings b
-           JOIN services s ON b.service_id = s.id
-           JOIN barbers br ON b.barber_id = br.id
-           JOIN clients c ON b.client_id = c.id
-           WHERE b.id = $1 AND b.salon_id = $2 AND b.deleted_at IS NULL`,
-          [req.params.id, salonId]
-        );
-        if (infoResult.rows.length > 0) bookingInfo = infoResult.rows[0];
-      }
+      const infoResult = await db.query(
+        `SELECT b.barber_id, b.date, b.start_time, b.price,
+                s.name as service_name, br.name as barber_name,
+                c.first_name, c.email
+         FROM bookings b
+         JOIN services s ON b.service_id = s.id
+         JOIN barbers br ON b.barber_id = br.id
+         JOIN clients c ON b.client_id = c.id
+         WHERE b.id = $1 AND b.salon_id = $2 AND b.deleted_at IS NULL`,
+        [req.params.id, salonId]
+      );
+      if (infoResult.rows.length > 0) bookingInfo = infoResult.rows[0];
 
       const result = await db.query(
         `UPDATE bookings SET deleted_at = NOW(), status = 'cancelled'
@@ -517,6 +516,42 @@ router.delete('/:id',
           start_time: bookingInfo.start_time,
           price: bookingInfo.price,
         }).catch((err) => logger.error('Email notification failed', { error: err.message }));
+      }
+
+      // Notify waitlist clients if a slot opened up
+      if (bookingInfo) {
+        try {
+          const salon = config.getSalonConfig(salonId);
+          const bookingUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
+          const startTime = (bookingInfo.start_time || '').slice(0, 5);
+          const dateParts = (typeof bookingInfo.date === 'string' ? bookingInfo.date : bookingInfo.date.toISOString().slice(0, 10)).split('-');
+          const dateFormatted = `${dateParts[2]}/${dateParts[1]}`;
+
+          const waitlistEntries = await db.query(
+            `SELECT w.id, w.client_name, w.client_phone,
+                    b.name as barber_name, s.name as service_name
+             FROM waitlist w
+             JOIN barbers b ON w.barber_id = b.id
+             JOIN services s ON w.service_id = s.id
+             WHERE w.barber_id = $1 AND w.preferred_date = $2 AND w.status = 'waiting'
+               AND (w.preferred_time_start IS NULL OR w.preferred_time_start <= $3)
+               AND (w.preferred_time_end IS NULL OR w.preferred_time_end >= $3)
+             ORDER BY w.created_at ASC LIMIT 3`,
+            [bookingInfo.barber_id, bookingInfo.date, startTime]
+          );
+
+          for (const entry of waitlistEntries.rows) {
+            const smsText = `${salon.name} - Bonne nouvelle ${entry.client_name || ''} ! `
+              + `Un creneau s'est libere le ${dateFormatted} a ${startTime} `
+              + `avec ${entry.barber_name} pour ${entry.service_name}. `
+              + `Reserve vite : ${bookingUrl}`;
+            sendWaitlistSMS({ phone: entry.client_phone, message: smsText, salon_id: salonId })
+              .then(() => db.query("UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1", [entry.id]))
+              .catch((err) => logger.error('Waitlist SMS failed', { waitlistId: entry.id, error: err.message }));
+          }
+        } catch (err) {
+          logger.error('Waitlist check failed after admin cancel', { error: err.message });
+        }
       }
 
       res.json({ message: 'RDV supprimé' });

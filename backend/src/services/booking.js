@@ -466,18 +466,45 @@ async function cancelBooking(bookingId, cancelToken) {
     );
   }
 
-  // Check waitlist — notify clients waiting for this barber/date
+  // Check waitlist — notify clients waiting for this barber/date/time
   try {
+    const salonId = booking.salon_id || 'meylan';
+    const salon = config.getSalonConfig(salonId);
+    const bookingUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
+
+    // Match waitlist entries for same barber + date, optionally overlapping time
     const waitlistEntries = await db.query(
-      `SELECT id, client_name, client_phone FROM waitlist
-       WHERE barber_id = $1 AND preferred_date = $2 AND status = 'waiting'
-       ORDER BY created_at ASC LIMIT 1`,
-      [booking.barber_id, booking.date]
+      `SELECT w.id, w.client_name, w.client_phone, w.preferred_date,
+              w.preferred_time_start, w.preferred_time_end,
+              b.name as barber_name, s.name as service_name
+       FROM waitlist w
+       JOIN barbers b ON w.barber_id = b.id
+       JOIN services s ON w.service_id = s.id
+       WHERE w.barber_id = $1 AND w.preferred_date = $2 AND w.status = 'waiting'
+         AND (w.preferred_time_start IS NULL OR w.preferred_time_start <= $3)
+         AND (w.preferred_time_end IS NULL OR w.preferred_time_end >= $3)
+       ORDER BY w.created_at ASC LIMIT 3`,
+      [booking.barber_id, booking.date, booking.start_time.slice(0, 5)]
     );
-    if (waitlistEntries.rows.length > 0) {
-      const entry = waitlistEntries.rows[0];
-      await db.query('UPDATE waitlist SET status = $1, notified_at = NOW() WHERE id = $2', ['notified', entry.id]);
-      logger.info('Waitlist client notified of cancellation', { waitlistId: entry.id, phone: entry.client_phone });
+
+    // Format cancelled slot info for SMS
+    const dateParts = booking.date.split('-');
+    const dateFormatted = `${dateParts[2]}/${dateParts[1]}`;
+    const timeFormatted = booking.start_time.slice(0, 5);
+
+    for (const entry of waitlistEntries.rows) {
+      const smsText = `${salon.name} - Bonne nouvelle ${entry.client_name || ''} ! `
+        + `Un creneau s'est libere le ${dateFormatted} a ${timeFormatted} `
+        + `avec ${entry.barber_name} pour ${entry.service_name}. `
+        + `Reserve vite : ${bookingUrl}`;
+
+      try {
+        await notification.sendWaitlistSMS({ phone: entry.client_phone, message: smsText, salon_id: salonId });
+        await db.query("UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1", [entry.id]);
+        logger.info('Waitlist SMS sent after cancellation', { waitlistId: entry.id, phone: entry.client_phone, salonId });
+      } catch (smsErr) {
+        logger.error('Waitlist SMS failed', { waitlistId: entry.id, error: smsErr.message });
+      }
     }
   } catch (err) {
     logger.error('Failed to check waitlist after cancellation', { error: err.message });
