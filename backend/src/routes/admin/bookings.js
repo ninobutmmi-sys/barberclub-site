@@ -273,95 +273,103 @@ router.put('/:id',
       const { id } = req.params;
       const { date, start_time, end_time, barber_id, service_id, color, notify_client } = req.body;
 
-      // Get current booking with client info
-      const current = await db.query(
-        `SELECT b.*, c.first_name, c.last_name, c.email, c.phone,
-                s.name as service_name, br.name as barber_name
-         FROM bookings b
-         JOIN clients c ON b.client_id = c.id
-         JOIN services s ON b.service_id = s.id
-         JOIN barbers br ON b.barber_id = br.id
-         WHERE b.id = $1 AND b.salon_id = $2 AND b.deleted_at IS NULL`,
-        [id, salonId]
-      );
-      if (current.rows.length === 0) {
-        throw ApiError.notFound('RDV introuvable');
-      }
-
-      const booking = current.rows[0];
-      const oldDate = typeof booking.date === 'string' ? booking.date.slice(0, 10) : booking.date;
-      const oldTime = booking.start_time;
-      const oldBarberName = booking.barber_name;
-
-      const newDate = date || oldDate;
-      const newStartTime = start_time || booking.start_time;
-      const newBarberId = barber_id || booking.barber_id;
-      const newServiceId = service_id || booking.service_id;
-
-      // Get service duration
-      const serviceResult = await db.query('SELECT duration, price, name FROM services WHERE id = $1', [newServiceId]);
-      if (serviceResult.rows.length === 0) throw ApiError.badRequest('Service introuvable');
-
-      const { duration, price } = serviceResult.rows[0];
       const { addMinutesToTime } = require('../../services/availability');
-      const newEndTime = end_time || addMinutesToTime(newStartTime, duration);
 
-      // Get new barber name if barber changed
-      let newBarberName = oldBarberName;
-      if (barber_id && barber_id !== booking.barber_id) {
-        const brResult = await db.query('SELECT name FROM barbers WHERE id = $1', [barber_id]);
-        if (brResult.rows.length > 0) newBarberName = brResult.rows[0].name;
-      }
+      // Wrap everything in a transaction with row lock to prevent race conditions
+      const txResult = await db.transaction(async (client) => {
+        // Get current booking with client info (locked)
+        const current = await client.query(
+          `SELECT b.*, c.first_name, c.last_name, c.email, c.phone,
+                  s.name as service_name, br.name as barber_name
+           FROM bookings b
+           JOIN clients c ON b.client_id = c.id
+           JOIN services s ON b.service_id = s.id
+           JOIN barbers br ON b.barber_id = br.id
+           WHERE b.id = $1 AND b.salon_id = $2 AND b.deleted_at IS NULL
+           FOR UPDATE OF b`,
+          [id, salonId]
+        );
+        if (current.rows.length === 0) {
+          throw ApiError.notFound('RDV introuvable');
+        }
 
-      // Check for conflicts (excluding current booking)
-      const conflictCheck = await db.query(
-        `SELECT id FROM bookings
-         WHERE barber_id = $1 AND date = $2
-           AND status != 'cancelled' AND deleted_at IS NULL
-           AND id != $3
-           AND start_time < $4 AND end_time > $5`,
-        [newBarberId, newDate, id, newEndTime, newStartTime]
-      );
+        const booking = current.rows[0];
+        const oldDate = typeof booking.date === 'string' ? booking.date.slice(0, 10) : booking.date;
+        const oldTime = booking.start_time;
+        const oldBarberName = booking.barber_name;
 
-      if (conflictCheck.rows.length > 0) {
-        throw ApiError.conflict('Ce créneau est déjà pris');
-      }
+        const newDate = date || oldDate;
+        const newStartTime = start_time || booking.start_time;
+        const newBarberId = barber_id || booking.barber_id;
+        const newServiceId = service_id || booking.service_id;
 
-      // Check blocked slots
-      const blockedCheck = await db.query(
-        `SELECT id FROM blocked_slots
-         WHERE barber_id = $1 AND date = $2
-           AND start_time < $3 AND end_time > $4`,
-        [newBarberId, newDate, newEndTime, newStartTime]
-      );
-      if (blockedCheck.rows.length > 0) {
-        throw ApiError.conflict('Ce créneau est bloqué (pause ou congé)');
-      }
+        // Get service duration
+        const serviceResult = await client.query('SELECT duration, price, name FROM services WHERE id = $1', [newServiceId]);
+        if (serviceResult.rows.length === 0) throw ApiError.badRequest('Service introuvable');
 
-      const result = await db.query(
-        `UPDATE bookings SET date = $1, start_time = $2, end_time = $3,
-         barber_id = $4, service_id = $5, price = $6, color = $7
-         WHERE id = $8 RETURNING *`,
-        [newDate, newStartTime, newEndTime, newBarberId, newServiceId, price, color !== undefined ? color : booking.color || null, id]
-      );
+        const { duration, price } = serviceResult.rows[0];
+        const newEndTime = end_time || addMinutesToTime(newStartTime, duration);
 
-      // Send reschedule email if requested (non-blocking)
-      if (notify_client && booking.email) {
+        // Get new barber name if barber changed
+        let newBarberName = oldBarberName;
+        if (barber_id && barber_id !== booking.barber_id) {
+          const brResult = await client.query('SELECT name FROM barbers WHERE id = $1', [barber_id]);
+          if (brResult.rows.length > 0) newBarberName = brResult.rows[0].name;
+        }
+
+        // Check for conflicts with row lock (excluding current booking)
+        const conflictCheck = await client.query(
+          `SELECT id FROM bookings
+           WHERE barber_id = $1 AND date = $2
+             AND status != 'cancelled' AND deleted_at IS NULL
+             AND id != $3
+             AND start_time < $4 AND end_time > $5
+           FOR UPDATE`,
+          [newBarberId, newDate, id, newEndTime, newStartTime]
+        );
+
+        if (conflictCheck.rows.length > 0) {
+          throw ApiError.conflict('Ce créneau est déjà pris');
+        }
+
+        // Check blocked slots
+        const blockedCheck = await client.query(
+          `SELECT id FROM blocked_slots
+           WHERE barber_id = $1 AND date = $2
+             AND start_time < $3 AND end_time > $4`,
+          [newBarberId, newDate, newEndTime, newStartTime]
+        );
+        if (blockedCheck.rows.length > 0) {
+          throw ApiError.conflict('Ce créneau est bloqué (pause ou congé)');
+        }
+
+        const result = await client.query(
+          `UPDATE bookings SET date = $1, start_time = $2, end_time = $3,
+           barber_id = $4, service_id = $5, price = $6, color = $7
+           WHERE id = $8 RETURNING *`,
+          [newDate, newStartTime, newEndTime, newBarberId, newServiceId, price, color !== undefined ? color : booking.color || null, id]
+        );
+
+        return { row: result.rows[0], booking, oldDate, oldTime, oldBarberName, newDate, newStartTime, newBarberName, price, serviceName: serviceResult.rows[0].name };
+      });
+
+      // Send reschedule email if requested (non-blocking, outside transaction)
+      if (notify_client && txResult.booking.email) {
         sendRescheduleEmail({
-          email: booking.email,
-          first_name: booking.first_name,
-          service_name: serviceResult.rows[0].name,
-          barber_name: oldBarberName,
-          old_date: oldDate,
-          old_time: oldTime,
-          new_date: newDate,
-          new_time: newStartTime,
-          new_barber_name: newBarberName,
-          price,
+          email: txResult.booking.email,
+          first_name: txResult.booking.first_name,
+          service_name: txResult.serviceName,
+          barber_name: txResult.oldBarberName,
+          old_date: txResult.oldDate,
+          old_time: txResult.oldTime,
+          new_date: txResult.newDate,
+          new_time: txResult.newStartTime,
+          new_barber_name: txResult.newBarberName,
+          price: txResult.price,
         }).catch((err) => logger.error('Email notification failed', { error: err.message }));
       }
 
-      res.json(result.rows[0]);
+      res.json(txResult.row);
     } catch (error) {
       next(error);
     }

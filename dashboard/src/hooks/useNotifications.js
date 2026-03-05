@@ -97,11 +97,24 @@ export function useNotifications() {
     }
   }, []);
 
-  // Bootstrap + interval
+  // Bootstrap + interval (pause when tab is hidden)
   useEffect(() => {
     fetchBookings();
-    intervalRef.current = setInterval(fetchBookings, POLL_INTERVAL);
-    return () => clearInterval(intervalRef.current);
+
+    function startPolling() {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(fetchBookings, POLL_INTERVAL);
+    }
+    function stopPolling() {
+      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    }
+    function handleVisibility() {
+      if (document.hidden) { stopPolling(); } else { fetchBookings(); startPolling(); }
+    }
+
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => { stopPolling(); document.removeEventListener('visibilitychange', handleVisibility); };
   }, [fetchBookings]);
 
   // Derive the unseen bookings
@@ -114,9 +127,11 @@ export function useNotifications() {
    * disappears and the dropdown clears.
    */
   const markSeen = useCallback(() => {
+    // Snapshot current IDs so we only mark what's visible now, not future arrivals
+    const currentIds = allBookings.map((b) => String(b.id ?? b._id));
     setSeenIds((prev) => {
       const next = new Set(prev);
-      allBookings.forEach((b) => next.add(String(b.id ?? b._id)));
+      currentIds.forEach((id) => next.add(id));
       saveSeenIds(next);
       return next;
     });

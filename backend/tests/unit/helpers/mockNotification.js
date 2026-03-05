@@ -6,6 +6,7 @@ module.exports = {
   sendReminderSMSDirect: jest.fn().mockResolvedValue(true),
   sendWaitlistSMS: jest.fn().mockResolvedValue(true),
   queueNotification: jest.fn().mockResolvedValue(true),
+  brevoSMS: jest.fn().mockResolvedValue(true),
   getBrevoConfig: jest.fn().mockReturnValue({
     apiKey: 'test-key',
     senderEmail: 'test@test.com',

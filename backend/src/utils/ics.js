@@ -8,6 +8,7 @@ const config = require('../config/env');
  * @param {string} booking.end_time - End time (HH:MM)
  * @param {string} booking.service_name - Service name
  * @param {string} booking.barber_name - Barber name
+ * @param {string} [booking.salon_id] - Salon identifier
  * @returns {string} ICS file content
  */
 function generateICS(booking) {
@@ -15,6 +16,7 @@ function generateICS(booking) {
   const endDate = formatICSDate(booking.date, booking.end_time);
   const now = formatICSDateNow();
   const uid = `${booking.id}@barberclub-grenoble.fr`;
+  const salon = config.getSalonConfig(booking.salon_id || 'meylan');
 
   return [
     'BEGIN:VCALENDAR',
@@ -27,9 +29,9 @@ function generateICS(booking) {
     `DTSTAMP:${now}`,
     `DTSTART:${startDate}`,
     `DTEND:${endDate}`,
-    `SUMMARY:${booking.service_name} - BarberClub Meylan`,
-    `DESCRIPTION:${booking.service_name} avec ${booking.barber_name}\\nBarberClub Meylan`,
-    `LOCATION:${config.salon.address}`,
+    `SUMMARY:${booking.service_name} - ${salon.name}`,
+    `DESCRIPTION:${booking.service_name} avec ${booking.barber_name}\\n${salon.name}`,
+    `LOCATION:${salon.address}`,
     'STATUS:CONFIRMED',
     'BEGIN:VALARM',
     'TRIGGER:-PT1H',

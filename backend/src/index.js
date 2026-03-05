@@ -64,31 +64,66 @@ const CRON_LOCK_IDS = {
   dailyBackup: 100007,
 };
 
+// Track consecutive failures per cron job for alerting
+const cronFailureCounts = {};
+const CRON_ALERT_THRESHOLD = 3;
+let cronAlertCooldown = {}; // prevent alert spam (1 alert per hour per cron)
+
 function trackCron(key, fn) {
+  cronFailureCounts[key] = 0;
   return async () => {
-    const db = require('./config/database');
+    const { getClient } = require('./config/database');
     const lockId = CRON_LOCK_IDS[key];
 
-    // Try to acquire advisory lock (non-blocking) — skip if another instance is running
-    const lockResult = await db.query('SELECT pg_try_advisory_lock($1) AS acquired', [lockId]);
-    if (!lockResult.rows[0].acquired) {
-      logger.debug(`Cron ${key} skipped — already running on another instance`);
-      return;
-    }
-
-    cronStatus[key].status = 'running';
-    cronStatus[key].error = null;
+    // Use a dedicated connection for advisory lock (lock + unlock on same connection)
+    const client = await getClient();
     try {
-      await fn();
-      cronStatus[key].status = 'ok';
-      cronStatus[key].lastRun = new Date().toISOString();
-    } catch (err) {
-      cronStatus[key].status = 'error';
-      cronStatus[key].error = err.message;
-      cronStatus[key].lastRun = new Date().toISOString();
-      logger.error(`Cron ${key} failed`, { error: err.message });
+      const lockResult = await client.query('SELECT pg_try_advisory_lock($1) AS acquired', [lockId]);
+      if (!lockResult.rows[0].acquired) {
+        logger.debug(`Cron ${key} skipped — already running on another instance`);
+        return;
+      }
+
+      cronStatus[key].status = 'running';
+      cronStatus[key].error = null;
+      try {
+        await fn();
+        cronStatus[key].status = 'ok';
+        cronStatus[key].lastRun = new Date().toISOString();
+        cronFailureCounts[key] = 0; // reset on success
+      } catch (err) {
+        cronStatus[key].status = 'error';
+        cronStatus[key].error = err.message;
+        cronStatus[key].lastRun = new Date().toISOString();
+        cronFailureCounts[key]++;
+        logger.error(`Cron ${key} failed (${cronFailureCounts[key]}x consecutive)`, { error: err.message });
+
+        // Alert after N consecutive failures (max 1 alert per hour per cron)
+        if (cronFailureCounts[key] >= CRON_ALERT_THRESHOLD) {
+          const now = Date.now();
+          const lastAlert = cronAlertCooldown[key] || 0;
+          if (now - lastAlert > 60 * 60 * 1000) {
+            cronAlertCooldown[key] = now;
+            const label = cronStatus[key].label || key;
+            const msg = `⚠️ ALERTE CRON — "${label}" a échoué ${cronFailureCounts[key]} fois d'affilée. Dernière erreur: ${err.message}`;
+            logger.error(`CRON ALERT: ${msg}`);
+            // Send SMS alert to owner (best-effort, don't crash if it fails)
+            try {
+              const { brevoSMS } = require('./services/notification');
+              const ownerPhone = config.salon.phone;
+              if (ownerPhone) {
+                await brevoSMS(ownerPhone, msg, 'meylan');
+              }
+            } catch (alertErr) {
+              logger.error('Failed to send cron alert SMS', { error: alertErr.message });
+            }
+          }
+        }
+      } finally {
+        await client.query('SELECT pg_advisory_unlock($1)', [lockId]);
+      }
     } finally {
-      await db.query('SELECT pg_advisory_unlock($1)', [lockId]);
+      client.release();
     }
   };
 }
@@ -142,7 +177,7 @@ app.use(cors({
 app.use(cookieParser());
 
 // Body parsing
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: false }));
 
 // Request logging (non-sensitive)
@@ -198,14 +233,14 @@ app.use('/api/track', campaignTrackRoutes);
 // ============================================
 // Short redirect URLs (for SMS links)
 // ============================================
-app.get('/r/avis', (req, res) => {
+app.get('/r/avis', publicLimiter, (req, res) => {
   // Support ?salon=grenoble for per-salon Google Review links
   const salonId = req.query.salon || 'meylan';
   const salon = config.getSalonConfig(salonId);
   res.redirect(302, salon.googleReviewUrl || 'https://barberclub-grenoble.fr');
 });
 
-app.get('/r/rdv/:id/:token', async (req, res) => {
+app.get('/r/rdv/:id/:token', publicLimiter, async (req, res) => {
   // Fetch booking to determine which salon page to redirect to
   try {
     const result = await db.query(

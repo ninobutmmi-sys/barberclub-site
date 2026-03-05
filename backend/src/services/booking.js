@@ -121,7 +121,14 @@ async function createBooking(data) {
       }
     }
 
-    // 4. Check slot is still free (with row lock)
+    // 4. Serialize booking attempts for same barber+date (advisory lock)
+    // Prevents two concurrent transactions from both seeing an empty slot and inserting
+    await client.query(
+      `SELECT pg_advisory_xact_lock(hashtext($1 || $2))`,
+      [barberId, data.date]
+    );
+
+    // Check slot is still free (with row lock)
     const slotFree = await availability.isSlotAvailable(
       barberId,
       data.date,
@@ -329,6 +336,10 @@ function computeRecurringDates(startDate, recurrence) {
     } else if (recurrence.type === 'monthly') {
       next = new Date(start);
       next.setMonth(start.getMonth() + i);
+      // Handle month overflow (e.g. Jan 31 → Mar 3 → clamp to Feb 28)
+      if (next.getDate() !== start.getDate()) {
+        next.setDate(0); // last day of previous month
+      }
     } else {
       break;
     }

@@ -19,15 +19,11 @@ jest.mock('../../../src/utils/logger', () => ({
   debug: jest.fn(),
 }));
 
-// Mock global fetch for brevoSMS
-global.fetch = jest.fn();
-
 const { processAutomationTriggers } = require('../../../src/cron/automationTriggers');
 
 beforeEach(() => {
   mockDb.resetMocks();
   jest.clearAllMocks();
-  global.fetch.mockReset();
 });
 
 describe('processAutomationTriggers', () => {
@@ -98,13 +94,10 @@ describe('processAutomationTriggers', () => {
       return { rows: [], rowCount: 0 };
     });
 
-    // Mock Brevo SMS success
-    global.fetch.mockResolvedValue({ ok: true, text: async () => '{}' });
-
     await processAutomationTriggers();
 
-    // Should have called fetch (brevoSMS) for the review SMS
-    expect(global.fetch).toHaveBeenCalled();
+    // Should have called brevoSMS for the review SMS
+    expect(mockNotification.brevoSMS).toHaveBeenCalled();
 
     // Should have marked client as review_requested and booking as review_email_sent
     const updateClientCall = mockDb.query.mock.calls.find((c) =>
@@ -154,11 +147,7 @@ describe('processAutomationTriggers', () => {
     });
 
     // Mock Brevo SMS FAILURE
-    global.fetch.mockResolvedValue({
-      ok: false,
-      status: 500,
-      text: async () => 'Brevo error',
-    });
+    mockNotification.brevoSMS.mockRejectedValueOnce(new Error('Brevo SMS API error 500'));
 
     await processAutomationTriggers();
 
@@ -212,12 +201,10 @@ describe('processAutomationTriggers', () => {
       return { rows: [], rowCount: 0 };
     });
 
-    global.fetch.mockResolvedValue({ ok: true, text: async () => '{}' });
-
     await processAutomationTriggers();
 
-    // Should have sent SMS
-    expect(global.fetch).toHaveBeenCalled();
+    // Should have sent SMS via brevoSMS
+    expect(mockNotification.brevoSMS).toHaveBeenCalled();
 
     // Should have updated reactivation_sms_sent_at
     const updateCall = mockDb.query.mock.calls.find((c) =>

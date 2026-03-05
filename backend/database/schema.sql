@@ -176,7 +176,7 @@ CREATE TABLE notification_queue (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_notifications_pending ON notification_queue(next_retry_at)
+CREATE INDEX idx_notifications_pending ON notification_queue(status, next_retry_at)
     WHERE status = 'pending';
 CREATE INDEX idx_notifications_booking ON notification_queue(booking_id);
 

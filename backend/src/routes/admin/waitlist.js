@@ -115,10 +115,11 @@ router.post('/',
         preferred_time_end,
       } = req.body;
 
-      // Verify barber exists
+      // Verify barber exists and belongs to this salon
+      const salonId = req.user.salon_id;
       const barberCheck = await db.query(
-        'SELECT id FROM barbers WHERE id = $1 AND deleted_at IS NULL',
-        [barber_id]
+        'SELECT id FROM barbers WHERE id = $1 AND deleted_at IS NULL AND salon_id = $2',
+        [barber_id, salonId]
       );
       if (barberCheck.rows.length === 0) {
         throw ApiError.notFound('Barbier introuvable');
@@ -133,7 +134,6 @@ router.post('/',
         throw ApiError.notFound('Prestation introuvable');
       }
 
-      const salonId = req.user.salon_id;
       const result = await db.query(
         `INSERT INTO waitlist
            (client_id, client_name, client_phone, barber_id, service_id,

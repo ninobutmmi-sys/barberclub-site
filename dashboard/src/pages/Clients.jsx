@@ -21,27 +21,53 @@ export default function Clients() {
   const [sort, setSort] = useState('last_visit');
   const [visible, setVisible] = useState(PAGE_SIZE);
   const debounceRef = useRef(null);
+  const abortRef = useRef(null);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => loadData(), search ? 400 : 0);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
+    };
   }, [search, sort]);
 
-  async function loadData() {
-    setLoading(true);
-    setError(null);
-    setVisible(PAGE_SIZE);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  async function loadData(append = false) {
+    // Cancel previous in-flight request to prevent stale results
+    if (!append && abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    if (!append) abortRef.current = controller;
+
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setError(null);
+      setVisible(PAGE_SIZE);
+    }
     try {
-      const params = { sort, order: 'desc', limit: 100 };
+      const params = { sort, order: 'desc', limit: PAGE_SIZE, offset: append ? clients.length : 0 };
       if (search) params.search = search;
-      const data = await getClients(params);
-      setClients(data.clients);
+      const data = await getClients(params, controller.signal);
+      if (controller.signal.aborted) return;
+      if (append) {
+        setClients(prev => [...prev, ...data.clients]);
+      } else {
+        setClients(data.clients);
+      }
       setTotal(data.total);
+      setHasMore(data.clients.length === PAGE_SIZE && (append ? clients.length + data.clients.length : data.clients.length) < data.total);
     } catch (err) {
+      if (err.name === 'AbortError') return;
       setError('Impossible de charger les donnees');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
   }
 
@@ -53,12 +79,12 @@ export default function Clients() {
       { key: 'phone', label: 'Telephone' },
       { key: 'email', label: 'Email' },
       { key: 'visit_count', label: 'Visites' },
-      { key: 'total_spent', label: 'CA Total (centimes)' },
+      { key: 'total_spent', label: 'CA Total (EUR)', transform: (v) => (v / 100).toFixed(2) },
       { key: 'last_visit', label: 'Derniere visite' },
     ]);
   }
 
-  const hasMore = clients.length > visible;
+  const hasMoreLocal = clients.length > visible;
   const shown = clients.slice(0, visible);
 
   return (
@@ -198,7 +224,7 @@ export default function Clients() {
             )}
 
             {/* Fade overlay + Voir plus */}
-            {hasMore && (
+            {(hasMoreLocal || hasMore) && (
               <div style={{
                 position: 'relative',
                 marginTop: isMobile ? 0 : -80,
@@ -211,7 +237,14 @@ export default function Clients() {
                 pointerEvents: 'none',
               }}>
                 <button
-                  onClick={() => setVisible((v) => v + PAGE_SIZE)}
+                  onClick={() => {
+                    if (hasMoreLocal) {
+                      setVisible((v) => v + PAGE_SIZE);
+                    } else if (hasMore) {
+                      loadData(true);
+                      setVisible((v) => v + PAGE_SIZE);
+                    }
+                  }}
                   style={{
                     pointerEvents: 'auto',
                     display: 'inline-flex',
@@ -257,7 +290,7 @@ export default function Clients() {
             )}
 
             {/* Shown count when all visible */}
-            {!hasMore && clients.length > PAGE_SIZE && (
+            {!hasMoreLocal && !hasMore && clients.length > PAGE_SIZE && (
               <div style={{
                 textAlign: 'center',
                 padding: '16px 0 4px',

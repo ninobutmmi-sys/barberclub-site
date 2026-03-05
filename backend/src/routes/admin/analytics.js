@@ -11,7 +11,9 @@ const router = Router();
 router.get('/dashboard', async (req, res, next) => {
   try {
     const salonId = req.user.salon_id;
-    const today = new Date().toISOString().split('T')[0];
+    // Use Paris timezone for "today" to avoid UTC midnight issues
+    const todayResult = await db.query(`SELECT (NOW() AT TIME ZONE 'Europe/Paris')::date AS today`);
+    const today = todayResult.rows[0].today;
     const firstOfMonth = today.substring(0, 8) + '01';
 
     // Today's stats
@@ -105,7 +107,7 @@ router.get('/revenue',
   async (req, res, next) => {
     try {
       const { period = 'day', from, to } = req.query;
-      const toDate = to || new Date().toISOString().split('T')[0];
+      const toDate = to || getParisTodayISO();
       const fromDate = from || getDefaultFrom(period);
 
       let groupBy, dateExpr;
@@ -154,7 +156,7 @@ router.get('/bookings-count',
   async (req, res, next) => {
     try {
       const { period = 'day', from, to } = req.query;
-      const toDate = to || new Date().toISOString().split('T')[0];
+      const toDate = to || getParisTodayISO();
       const fromDate = from || getDefaultFrom(period);
 
       const dateExpr = period === 'month'
@@ -194,7 +196,7 @@ router.get('/peak-hours',
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const toDate = req.query.to || new Date().toISOString().split('T')[0];
+      const toDate = req.query.to || getParisTodayISO();
       const fromDate = req.query.from || getDefaultFrom('month');
 
       // Bookings by day of week and hour
@@ -248,7 +250,7 @@ router.get('/occupancy',
   handleValidation,
   async (req, res, next) => {
     try {
-      const toDate = req.query.to || new Date().toISOString().split('T')[0];
+      const toDate = req.query.to || getParisTodayISO();
       const fromDate = req.query.from || getDefaultFrom('month');
 
       const salonId = req.user.salon_id;
@@ -311,7 +313,7 @@ router.get('/services',
   handleValidation,
   async (req, res, next) => {
     try {
-      const toDate = req.query.to || new Date().toISOString().split('T')[0];
+      const toDate = req.query.to || getParisTodayISO();
       const fromDate = req.query.from || getDefaultFrom('month');
 
       const salonId = req.user.salon_id;
@@ -365,7 +367,7 @@ router.get('/barbers',
   handleValidation,
   async (req, res, next) => {
     try {
-      const toDate = req.query.to || new Date().toISOString().split('T')[0];
+      const toDate = req.query.to || getParisTodayISO();
       const fromDate = req.query.from || getDefaultFrom('month');
 
       const salonId = req.user.salon_id;
@@ -520,9 +522,10 @@ router.get('/trends', async (req, res, next) => {
     );
 
     // Current month projection
-    const currentMonth = new Date().toISOString().substring(0, 7);
-    const dayOfMonth = new Date().getDate();
-    const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    const parisNow = getParisNow();
+    const currentMonth = getParisTodayISO().substring(0, 7);
+    const dayOfMonth = parisNow.getDate();
+    const daysInMonth = new Date(parisNow.getFullYear(), parisNow.getMonth() + 1, 0).getDate();
 
     const currentMonthData = await db.query(
       `SELECT COALESCE(SUM(price), 0) as revenue_so_far,
@@ -602,7 +605,7 @@ router.get('/members', async (req, res, next) => {
     );
 
     // New members this month
-    const firstOfMonth = new Date().toISOString().substring(0, 8) + '01';
+    const firstOfMonth = getParisTodayISO().substring(0, 8) + '01';
     const newMembers = await db.query(
       `SELECT COUNT(DISTINCT c.id) as count FROM clients c
        JOIN bookings b ON c.id = b.client_id
@@ -705,10 +708,25 @@ router.get('/members', async (req, res, next) => {
 });
 
 // ============================================
+// Helper: get current date/time in Paris timezone
+// ============================================
+function getParisNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+}
+
+function getParisTodayISO() {
+  const now = getParisNow();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// ============================================
 // Helper: default "from" date based on period
 // ============================================
 function getDefaultFrom(period) {
-  const now = new Date();
+  const now = getParisNow();
   if (period === 'month') {
     now.setMonth(now.getMonth() - 12);
   } else if (period === 'week') {
@@ -716,7 +734,10 @@ function getDefaultFrom(period) {
   } else {
     now.setDate(now.getDate() - 30);
   }
-  return now.toISOString().split('T')[0];
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 module.exports = router;

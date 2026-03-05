@@ -158,6 +158,8 @@ export default function Layout() {
   const collapsedDropdownRef = useRef(null);
   const { theme, toggle: toggleTheme } = useTheme();
   const [plusOpen, setPlusOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoutAction, setLogoutAction] = useState(null); // 'logout' or 'switch-salon'
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem('bc_sidebar_collapsed');
     return saved === null ? true : saved === 'true';
@@ -213,7 +215,7 @@ export default function Layout() {
 
         {/* ---- Salon badge ---- */}
         {!collapsed && salon && (
-          <button className="salon-badge" onClick={() => { if (window.confirm('Changer de salon ? Vous serez deconnecte.')) { clearSalon(); logout(); } }} title="Changer de salon">
+          <button className="salon-badge" onClick={() => { setLogoutAction('switch-salon'); setShowLogoutModal(true); }} title="Changer de salon">
             <span className="salon-badge-name">{SALON_LABELS[salon] || salon}</span>
             <span className="salon-badge-change">Changer</span>
           </button>
@@ -274,7 +276,7 @@ export default function Layout() {
         {collapsed && salon && (
           <button
             className="sidebar-icon-btn"
-            onClick={() => { if (window.confirm('Changer de salon ? Vous serez deconnecte.')) { clearSalon(); logout(); } }}
+            onClick={() => { setLogoutAction('switch-salon'); setShowLogoutModal(true); }}
             title={`Salon: ${SALON_LABELS[salon] || salon} — Cliquer pour changer`}
             aria-label="Changer de salon"
             style={{ fontSize: 11, fontWeight: 800, fontFamily: 'var(--font-display)', textTransform: 'uppercase', letterSpacing: '0.04em' }}
@@ -350,7 +352,7 @@ export default function Layout() {
         <div className="sidebar-bottom">
           {collapsed ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <button className="sidebar-icon-btn" onClick={() => { if (window.confirm('Se déconnecter ?')) logout(); }} title={user?.name || 'Déconnexion'} aria-label="Déconnexion">
+              <button className="sidebar-icon-btn" onClick={() => { setLogoutAction('logout'); setShowLogoutModal(true); }} title={user?.name || 'Déconnexion'} aria-label="Déconnexion">
                 {user?.photo_url ? (
                   <img src={user.photo_url} alt={user.name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
                 ) : (
@@ -363,7 +365,7 @@ export default function Layout() {
             </div>
           ) : (
             <div className="sidebar-bottom-row">
-              <div className="sidebar-user" style={{ flex: 1 }} onClick={() => { if (window.confirm('Se déconnecter ?')) logout(); }}>
+              <div className="sidebar-user" style={{ flex: 1 }} onClick={() => { setLogoutAction('logout'); setShowLogoutModal(true); }}>
                 {user?.photo_url ? (
                   <img
                     src={user.photo_url}
@@ -463,7 +465,7 @@ export default function Layout() {
                 {salon && (
                   <button
                     className="mob-drawer-link"
-                    onClick={() => { setPlusOpen(false); if (window.confirm('Changer de salon ? Vous serez deconnecte.')) { clearSalon(); logout(); } }}
+                    onClick={() => { setPlusOpen(false); setLogoutAction('switch-salon'); setShowLogoutModal(true); }}
                     style={{ border: 'none', width: '100%', background: 'none', cursor: 'pointer', fontFamily: 'var(--font)' }}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -478,7 +480,7 @@ export default function Layout() {
 
                 {/* User + theme */}
                 <div className="mob-drawer-row">
-                  <div className="mob-drawer-user" onClick={() => { setPlusOpen(false); if (window.confirm('Se déconnecter ?')) logout(); }}>
+                  <div className="mob-drawer-user" onClick={() => { setPlusOpen(false); setLogoutAction('logout'); setShowLogoutModal(true); }}>
                     <div className="mob-drawer-user-avatar">
                       {user?.photo_url
                         ? <img src={user.photo_url} alt={user.name} />
@@ -498,6 +500,49 @@ export default function Layout() {
             </>
           )}
         </>
+      )}
+      {/* ---- Logout/Switch confirmation modal ---- */}
+      {showLogoutModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        }} onClick={() => setShowLogoutModal(false)}>
+          <div style={{
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
+            borderRadius: 16, padding: '28px 32px', maxWidth: 360, width: '90%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+              {logoutAction === 'switch-salon' ? 'Changer de salon ?' : 'Se déconnecter ?'}
+            </h3>
+            <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              {logoutAction === 'switch-salon'
+                ? 'Vous serez déconnecté et redirigé vers le choix du salon.'
+                : 'Vous devrez vous reconnecter pour accéder au dashboard.'}
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '8px 20px', fontSize: 13 }}
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Annuler
+              </button>
+              <button
+                className="btn btn-danger"
+                style={{ padding: '8px 20px', fontSize: 13, background: '#dc2626', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  if (logoutAction === 'switch-salon') { clearSalon(); }
+                  logout();
+                }}
+              >
+                {logoutAction === 'switch-salon' ? 'Changer' : 'Déconnexion'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

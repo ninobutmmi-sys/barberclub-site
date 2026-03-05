@@ -3,8 +3,8 @@
  *
  * @param {Object[]} data - Array of row objects to export
  * @param {string} filename - Name for the downloaded file (e.g. "clients.csv")
- * @param {{ key: string, label: string }[]} columns - Column definitions controlling
- *   which fields are exported and their header labels
+ * @param {{ key: string, label: string, transform?: (v: any) => string }[]} columns - Column definitions controlling
+ *   which fields are exported and their header labels. Optional transform function.
  */
 export function exportToCSV(data, filename, columns) {
   if (!data || data.length === 0) return;
@@ -18,7 +18,8 @@ export function exportToCSV(data, filename, columns) {
   const rows = data.map((row) =>
     columns
       .map((col) => {
-        const value = row[col.key];
+        let value = row[col.key];
+        if (col.transform && value != null) value = col.transform(value);
         return escapeCSV(value != null ? String(value) : '');
       })
       .join(separator)

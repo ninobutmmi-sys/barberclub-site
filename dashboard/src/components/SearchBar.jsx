@@ -14,6 +14,7 @@ export default function SearchBar() {
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const wrapperRef = useRef(null);
   const timerRef = useRef(null);
 
@@ -32,6 +33,7 @@ export default function SearchBar() {
       try {
         const data = await getClients({ search: term.trim(), limit: 5 });
         setResults(data.clients || []);
+        setActiveIndex(-1);
         setOpen(true);
       } catch (err) {
         setResults([]);
@@ -53,11 +55,21 @@ export default function SearchBar() {
     navigate(`/clients/${client.id}`);
   }
 
-  /** Close dropdown on Escape */
+  /** Keyboard navigation: Escape closes, Arrow keys navigate, Enter selects */
   function handleKeyDown(e) {
     if (e.key === 'Escape') {
       setOpen(false);
       setQuery('');
+      setActiveIndex(-1);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((i) => (i < results.length - 1 ? i + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((i) => (i > 0 ? i - 1 : results.length - 1));
+    } else if (e.key === 'Enter' && activeIndex >= 0 && results[activeIndex]) {
+      e.preventDefault();
+      handleSelect(results[activeIndex]);
     }
   }
 
@@ -111,16 +123,17 @@ export default function SearchBar() {
 
       {open && results.length > 0 && (
         <div style={styles.dropdown}>
-          {results.map((client) => (
+          {results.map((client, idx) => (
             <div
               key={client.id}
-              style={styles.resultItem}
+              style={{ ...styles.resultItem, background: idx === activeIndex ? 'var(--bg-hover)' : 'transparent' }}
               onClick={() => handleSelect(client)}
               onMouseEnter={(e) => {
+                setActiveIndex(idx);
                 e.currentTarget.style.background = 'var(--bg-hover)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.background = idx === activeIndex ? 'var(--bg-hover)' : 'transparent';
               }}
             >
               <div style={styles.resultName}>

@@ -24,7 +24,8 @@ async function cleanupOldNotifications() {
     const result = await db.query(
       `DELETE FROM notification_queue
        WHERE (status = 'sent' OR status = 'failed')
-         AND created_at < NOW() - INTERVAL '${NOTIFICATION_CLEANUP_DAYS} days'`
+         AND created_at < NOW() - INTERVAL $1`,
+      [NOTIFICATION_CLEANUP_DAYS + ' days']
     );
     if (result.rowCount > 0) {
       logger.info(`Cleaned up ${result.rowCount} old notifications`);

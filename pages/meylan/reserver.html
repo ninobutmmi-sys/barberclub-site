@@ -1300,7 +1300,6 @@
             border-radius: 12px;
             color: #fff;
             font-family: 'Inter', sans-serif;
-            font-size: 15px;
             font-weight: 500;
             outline: none;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2914,6 +2913,7 @@
         </div>
     </div>
 
+    <script src="../../assets/js/api-config.js"></script>
     <script>
     // ============================================
     // BarberClub Booking — Vanilla JS
@@ -2922,11 +2922,7 @@
         'use strict';
 
         // ---- CONFIG ----
-        const API_PROD = 'https://fortunate-benevolence-production-7df2.up.railway.app/api';
-        const API_DEV = 'http://localhost:3000/api';
-        const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? API_DEV
-            : API_PROD;
+        const API = window.BARBERCLUB_API;
         const MAX_RETRIES = 2;
 
         // ---- XSS PROTECTION ----
@@ -3810,6 +3806,8 @@
                 if (!validateForm()) return;
             }
 
+            if (!state.selectedSlot) return; // Guard: waitlist mode, no slot selected
+
             const barberId = state.selectedBarber.id === 'any'
                 ? state.selectedSlot.barber_id
                 : state.selectedBarber.id;
@@ -4126,9 +4124,10 @@
                     }
                 }
             } finally {
+                // Keep button disabled after successful booking/waitlist (step 5)
+                if (state.step === 5) return;
                 actionBusy = false;
-                // Re-enable based on current step state (submitBooking manages its own disable)
-                if (state.step !== 5) actionBtn.disabled = false;
+                actionBtn.disabled = false;
             }
         });
 

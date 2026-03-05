@@ -1,9 +1,17 @@
 /**
  * BarberClub — RGPD Cookie Consent Banner
  * Auto-injects a minimal cookie consent banner.
+ * Analytics scripts (gtag, fbq) are only loaded when consent is 'accepted'.
  */
 (function () {
-  if (localStorage.getItem('bc_cookie_consent')) return;
+  // If already accepted, load analytics immediately
+  if (localStorage.getItem('bc_cookie_consent') === 'accepted') {
+    loadAnalytics();
+    return;
+  }
+
+  // If refused, do nothing
+  if (localStorage.getItem('bc_cookie_consent') === 'refused') return;
 
   var style = document.createElement('style');
   style.textContent = [
@@ -47,8 +55,40 @@
     banner.style.transform = 'translateY(100%)';
     banner.style.opacity = '0';
     setTimeout(function () { banner.remove(); }, 350);
+    if (consent === 'accepted') {
+      loadAnalytics();
+    }
   }
 
   document.getElementById('bc-cookie-accept').addEventListener('click', function () { dismiss('accepted'); });
   document.getElementById('bc-cookie-refuse').addEventListener('click', function () { dismiss('refused'); });
+
+  /**
+   * Dynamically inject analytics scripts only after consent.
+   * Called on accept or on page load if already accepted.
+   */
+  function loadAnalytics() {
+    // Google Analytics
+    if (window.BC_GTAG_ID && !window.gtag) {
+      var gtagScript = document.createElement('script');
+      gtagScript.async = true;
+      gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.BC_GTAG_ID;
+      document.head.appendChild(gtagScript);
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', window.BC_GTAG_ID);
+    }
+
+    // Facebook Pixel
+    if (window.BC_FB_PIXEL_ID && !window.fbq) {
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+      (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      window.fbq('init', window.BC_FB_PIXEL_ID);
+      window.fbq('track', 'PageView');
+    }
+  }
 })();

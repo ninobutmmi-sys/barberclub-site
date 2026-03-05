@@ -1,52 +1,7 @@
 const db = require('../config/database');
 const config = require('../config/env');
 const logger = require('../utils/logger');
-const { BREVO_REQUEST_TIMEOUT_MS } = require('../constants');
-const { getBrevoConfig } = require('../services/notification');
-
-function formatPhoneInternational(phone) {
-  let cleaned = phone.replace(/[\s.-]/g, '');
-  if (cleaned.startsWith('0')) {
-    cleaned = '+33' + cleaned.substring(1);
-  }
-  if (!cleaned.startsWith('+')) {
-    cleaned = '+33' + cleaned;
-  }
-  return cleaned;
-}
-
-async function brevoSMS(phone, content, salonId = 'meylan') {
-  const brevo = getBrevoConfig(salonId);
-  if (!brevo.apiKey) {
-    logger.warn('Brevo API key not configured, skipping SMS', { salonId });
-    return;
-  }
-  const recipient = formatPhoneInternational(phone);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), BREVO_REQUEST_TIMEOUT_MS);
-  try {
-    const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
-      method: 'POST',
-      headers: {
-        'api-key': brevo.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        sender: brevo.smsSender,
-        recipient,
-        content,
-        type: 'transactional',
-      }),
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
-    }
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+const { brevoSMS } = require('../services/notification');
 
 /**
  * Process automation triggers (runs every 10 minutes)

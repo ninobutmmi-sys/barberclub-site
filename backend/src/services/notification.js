@@ -38,10 +38,11 @@ async function processPendingNotifications() {
          AND nq.next_retry_at <= NOW()
          AND nq.attempts < nq.max_attempts
        ORDER BY nq.created_at
-       LIMIT ${NOTIFICATION_BATCH_SIZE}
+       LIMIT $1
        FOR UPDATE SKIP LOCKED
      )
-     RETURNING id`
+     RETURNING id`,
+    [NOTIFICATION_BATCH_SIZE]
   );
 
   if (claimed.rows.length === 0) return;

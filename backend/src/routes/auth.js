@@ -124,12 +124,22 @@ router.post('/login',
       const accessToken = generateAccessToken(tokenPayload);
       const refreshToken = generateRefreshToken(tokenPayload);
 
-      // Store refresh token in database
+      // Store refresh token in database (limit to 5 active sessions)
       const expiresAt = new Date(Date.now() + config.jwt.refreshExpiresMs);
       await db.query(
         `INSERT INTO refresh_tokens (user_id, user_type, token, expires_at)
          VALUES ($1, $2, $3, $4)`,
         [user.id, type, refreshToken, expiresAt]
+      );
+      // Prune oldest sessions beyond 5
+      await db.query(
+        `DELETE FROM refresh_tokens WHERE id IN (
+           SELECT id FROM refresh_tokens
+           WHERE user_id = $1 AND user_type = $2 AND expires_at > NOW()
+           ORDER BY created_at DESC
+           OFFSET 5
+         )`,
+        [user.id, type]
       );
 
       logger.info('User logged in', { userId: user.id, type, salonId: userSalonId });

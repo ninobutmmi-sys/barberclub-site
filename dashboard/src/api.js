@@ -26,22 +26,35 @@ function clearTokens() {
   localStorage.removeItem('bc_user');
 }
 
+let refreshPromise = null;
+
 async function refreshAccessToken() {
-  // Refresh token is sent automatically via httpOnly cookie
-  const res = await fetch(`${API_BASE}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-  });
+  // If a refresh is already in progress, wait for it instead of firing another
+  if (refreshPromise) return refreshPromise;
 
-  if (!res.ok) {
-    clearTokens();
-    throw new Error('Session expirée');
+  refreshPromise = (async () => {
+    // Refresh token is sent automatically via httpOnly cookie
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+
+    if (!res.ok) {
+      clearTokens();
+      throw new Error('Session expirée');
+    }
+
+    const data = await res.json();
+    setTokens(data.access_token);
+    return data.access_token;
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
   }
-
-  const data = await res.json();
-  setTokens(data.access_token);
-  return data.access_token;
 }
 
 function getSalonId() {
@@ -74,28 +87,49 @@ async function request(path, options = {}) {
     headers['Authorization'] = `Bearer ${access}`;
   }
 
-  let res = await fetch(`${API_BASE}${fullPath}`, { ...finalOptions, headers, credentials: 'include' });
+  // Timeout: use caller's signal if provided, otherwise auto-abort after 15s
+  const callerSignal = options.signal;
+  let timeoutId;
+  let controller;
+  if (!callerSignal) {
+    controller = new AbortController();
+    timeoutId = setTimeout(() => controller.abort(), 15_000);
+  }
+  const signal = callerSignal || controller?.signal;
 
-  // Auto-refresh on 401
-  if (res.status === 401 && access) {
-    try {
-      const newToken = await refreshAccessToken();
-      headers['Authorization'] = `Bearer ${newToken}`;
-      res = await fetch(`${API_BASE}${fullPath}`, { ...finalOptions, headers, credentials: 'include' });
-    } catch {
-      clearTokens();
-      window.location.reload();
-      throw new Error('Session expirée');
+  const fetchOpts = { ...finalOptions, headers, credentials: 'include', signal };
+
+  try {
+    let res = await fetch(`${API_BASE}${fullPath}`, fetchOpts);
+
+    // Auto-refresh on 401
+    if (res.status === 401 && access) {
+      try {
+        const newToken = await refreshAccessToken();
+        headers['Authorization'] = `Bearer ${newToken}`;
+        res = await fetch(`${API_BASE}${fullPath}`, { ...fetchOpts, headers });
+      } catch {
+        clearTokens();
+        window.location.reload();
+        throw new Error('Session expirée');
+      }
     }
-  }
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || data.details?.[0] || `Erreur ${res.status}`);
-  }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.details?.[0] || `Erreur ${res.status}`);
+    }
 
-  if (res.status === 204) return null;
-  return res.json();
+    if (res.status === 204) return null;
+    return res.json();
+  } catch (err) {
+    if (err.name === 'AbortError' && !callerSignal) {
+      throw new Error('Le serveur ne répond pas (timeout 15s)');
+    }
+    throw err;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 }
 
 // ---- Auth ----
@@ -193,9 +227,9 @@ export const getGuestAssignments = () =>
   request('/admin/barbers/guest-assignments/list');
 
 // ---- Admin: Clients ----
-export const getClients = (params) => {
+export const getClients = (params, signal) => {
   const qs = new URLSearchParams(params).toString();
-  return request(`/admin/clients?${qs}`);
+  return request(`/admin/clients?${qs}`, signal ? { signal } : {});
 };
 export const getClient = (id) => request(`/admin/clients/${id}`);
 export const getInactiveClients = () => request('/admin/clients/inactive');

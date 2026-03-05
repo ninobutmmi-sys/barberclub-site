@@ -157,18 +157,30 @@ router.put('/:id/schedule',
       const { id } = req.params;
       const { schedules } = req.body;
 
-      // Replace all schedules for this barber
-      await db.query('DELETE FROM schedules WHERE barber_id = $1', [id]);
+      // Replace all schedules for this barber (in a transaction)
+      const client = await db.pool.connect();
+      try {
+        await client.query('BEGIN');
 
-      for (const schedule of schedules) {
-        // Normalize times: strip seconds if present, default to 09:00/19:00 for rest days
-        const startTime = schedule.is_working ? (schedule.start_time || '09:00').slice(0, 5) : '09:00';
-        const endTime = schedule.is_working ? (schedule.end_time || '19:00').slice(0, 5) : '19:00';
-        await db.query(
-          `INSERT INTO schedules (barber_id, day_of_week, start_time, end_time, is_working, salon_id)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [id, schedule.day_of_week, startTime, endTime, schedule.is_working, req.user.salon_id]
-        );
+        await client.query('DELETE FROM schedules WHERE barber_id = $1', [id]);
+
+        for (const schedule of schedules) {
+          // Normalize times: strip seconds if present, default to 09:00/19:00 for rest days
+          const startTime = schedule.is_working ? (schedule.start_time || '09:00').slice(0, 5) : '09:00';
+          const endTime = schedule.is_working ? (schedule.end_time || '19:00').slice(0, 5) : '19:00';
+          await client.query(
+            `INSERT INTO schedules (barber_id, day_of_week, start_time, end_time, is_working, salon_id)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [id, schedule.day_of_week, startTime, endTime, schedule.is_working, req.user.salon_id]
+          );
+        }
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
       }
 
       const result = await db.query(
@@ -194,6 +206,14 @@ router.post('/:id/overrides',
     body('start_time').optional().matches(/^\d{2}:\d{2}$/),
     body('end_time').optional().matches(/^\d{2}:\d{2}$/),
     body('reason').optional().trim().isLength({ max: 500 }),
+    body('end_time').custom((value, { req: r }) => {
+      if (r.body.is_day_off === false || r.body.is_day_off === 'false') {
+        if (r.body.start_time && value && value <= r.body.start_time) {
+          throw new Error('L\'heure de fin doit être après l\'heure de début');
+        }
+      }
+      return true;
+    }),
   ],
   handleValidation,
   async (req, res, next) => {

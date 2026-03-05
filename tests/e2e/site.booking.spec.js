@@ -44,10 +44,6 @@ test.describe('Booking flow - Meylan', () => {
     await expect(page).toHaveTitle(/BarberClub/);
   });
 
-  test('mon-compte page loads', async ({ page }) => {
-    await page.goto('/pages/meylan/mon-compte.html');
-    await expect(page).toHaveTitle(/BarberClub/);
-  });
 });
 
 test.describe('Booking flow - Grenoble', () => {

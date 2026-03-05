@@ -1266,15 +1266,12 @@
         </div>
     </div>
 
+    <script src="../../assets/js/api-config.js"></script>
     <script>
     (() => {
         'use strict';
 
-        const API_PROD = 'https://fortunate-benevolence-production-7df2.up.railway.app/api';
-        const API_DEV = 'http://localhost:3000/api';
-        const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? API_DEV
-            : API_PROD;
+        const API = window.BARBERCLUB_API;
 
         const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
         const DAYS_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
@@ -1391,8 +1388,12 @@
                 }
 
                 // Check if less than 12h before RDV — disable cancel/reschedule
-                const rdvDateTime = new Date(booking.date + 'T' + booking.start_time.slice(0, 5) + ':00');
-                const hoursUntil = (rdvDateTime - new Date()) / (1000 * 60 * 60);
+                // Use Paris timezone explicitly to avoid DST issues
+                const nowParis = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+                const [rdvY, rdvM, rdvD] = booking.date.split('-').map(Number);
+                const [rdvH, rdvMn] = booking.start_time.slice(0, 5).split(':').map(Number);
+                const rdvDateTime = new Date(rdvY, rdvM - 1, rdvD, rdvH, rdvMn, 0);
+                const hoursUntil = (rdvDateTime - nowParis) / (1000 * 60 * 60);
 
                 if (hoursUntil < 12) {
                     $('#cancelBtn').disabled = true;

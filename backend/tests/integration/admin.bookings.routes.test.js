@@ -370,27 +370,35 @@ describe('POST /api/admin/bookings', () => {
 // PUT /api/admin/bookings/:id — Modify booking
 // ============================================
 describe('PUT /api/admin/bookings/:id', () => {
+  // Helper to setup transaction mock for PUT tests
+  function setupPutTransaction(clientQueryMocks) {
+    const mockClient = { query: jest.fn() };
+    for (const mock of clientQueryMocks) {
+      mockClient.query.mockResolvedValueOnce(mock);
+    }
+    db.transaction.mockImplementationOnce(async (cb) => cb(mockClient));
+    return mockClient;
+  }
+
   it('updates a booking and checks salon_id', async () => {
-    // Get current booking
-    db.query.mockResolvedValueOnce({
-      rows: [{
+    const mockClient = setupPutTransaction([
+      // Get current booking (FOR UPDATE)
+      { rows: [{
         id: BOOKING_ID, date: FUTURE_DATE, start_time: '10:00', end_time: '10:30',
         status: 'confirmed', price: 2700, barber_id: BARBER_ID, service_id: SERVICE_ID,
         client_id: CLIENT_ID, first_name: 'Jean', last_name: 'Dupont',
         email: 'jean@test.fr', phone: '0612345678', service_name: 'Coupe homme',
         barber_name: 'Lucas', color: null,
-      }],
-    });
-    // Get service duration
-    db.query.mockResolvedValueOnce({ rows: [{ duration: 30, price: 2700, name: 'Coupe homme' }] });
-    // Conflict check
-    db.query.mockResolvedValueOnce({ rows: [] });
-    // Blocked slots check
-    db.query.mockResolvedValueOnce({ rows: [] });
-    // UPDATE
-    db.query.mockResolvedValueOnce({
-      rows: [{ id: BOOKING_ID, date: FUTURE_DATE, start_time: '11:00', end_time: '11:30' }],
-    });
+      }] },
+      // Get service duration
+      { rows: [{ duration: 30, price: 2700, name: 'Coupe homme' }] },
+      // Conflict check (FOR UPDATE)
+      { rows: [] },
+      // Blocked slots check
+      { rows: [] },
+      // UPDATE
+      { rows: [{ id: BOOKING_ID, date: FUTURE_DATE, start_time: '11:00', end_time: '11:30' }] },
+    ]);
 
     const res = await request(app)
       .put(`/api/admin/bookings/${BOOKING_ID}`)
@@ -398,11 +406,13 @@ describe('PUT /api/admin/bookings/:id', () => {
 
     expect(res.status).toBe(200);
     // Verify salon_id was used in the initial fetch
-    expect(db.query.mock.calls[0][1]).toEqual([BOOKING_ID, 'meylan']);
+    expect(mockClient.query.mock.calls[0][1]).toEqual([BOOKING_ID, 'meylan']);
   });
 
   it('returns 404 if booking not found in this salon', async () => {
-    db.query.mockResolvedValueOnce({ rows: [] });
+    setupPutTransaction([
+      { rows: [] }, // booking not found
+    ]);
 
     const res = await request(app)
       .put(`/api/admin/bookings/${BOOKING_ID}`)
@@ -412,17 +422,17 @@ describe('PUT /api/admin/bookings/:id', () => {
   });
 
   it('returns 409 on time conflict', async () => {
-    db.query.mockResolvedValueOnce({
-      rows: [{
+    setupPutTransaction([
+      { rows: [{
         id: BOOKING_ID, date: FUTURE_DATE, start_time: '10:00', end_time: '10:30',
         status: 'confirmed', price: 2700, barber_id: BARBER_ID, service_id: SERVICE_ID,
         client_id: CLIENT_ID, first_name: 'Jean', last_name: 'Dupont',
         email: 'jean@test.fr', phone: '0612345678', service_name: 'Coupe homme',
         barber_name: 'Lucas', color: null,
-      }],
-    });
-    db.query.mockResolvedValueOnce({ rows: [{ duration: 30, price: 2700, name: 'Coupe homme' }] });
-    db.query.mockResolvedValueOnce({ rows: [{ id: 'conflicting-booking' }] }); // conflict!
+      }] },
+      { rows: [{ duration: 30, price: 2700, name: 'Coupe homme' }] },
+      { rows: [{ id: 'conflicting-booking' }] }, // conflict!
+    ]);
 
     const res = await request(app)
       .put(`/api/admin/bookings/${BOOKING_ID}`)
@@ -432,21 +442,19 @@ describe('PUT /api/admin/bookings/:id', () => {
   });
 
   it('sends reschedule email when notify_client is true', async () => {
-    db.query.mockResolvedValueOnce({
-      rows: [{
+    setupPutTransaction([
+      { rows: [{
         id: BOOKING_ID, date: FUTURE_DATE, start_time: '10:00', end_time: '10:30',
         status: 'confirmed', price: 2700, barber_id: BARBER_ID, service_id: SERVICE_ID,
         client_id: CLIENT_ID, first_name: 'Jean', last_name: 'Dupont',
         email: 'jean@test.fr', phone: '0612345678', service_name: 'Coupe homme',
         barber_name: 'Lucas', color: null,
-      }],
-    });
-    db.query.mockResolvedValueOnce({ rows: [{ duration: 30, price: 2700, name: 'Coupe homme' }] });
-    db.query.mockResolvedValueOnce({ rows: [] });
-    db.query.mockResolvedValueOnce({ rows: [] });
-    db.query.mockResolvedValueOnce({
-      rows: [{ id: BOOKING_ID, date: FUTURE_DATE, start_time: '11:00', end_time: '11:30' }],
-    });
+      }] },
+      { rows: [{ duration: 30, price: 2700, name: 'Coupe homme' }] },
+      { rows: [] },
+      { rows: [] },
+      { rows: [{ id: BOOKING_ID, date: FUTURE_DATE, start_time: '11:00', end_time: '11:30' }] },
+    ]);
 
     await request(app)
       .put(`/api/admin/bookings/${BOOKING_ID}`)

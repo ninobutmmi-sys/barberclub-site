@@ -2,6 +2,7 @@
 function initBookingModal(targetReservationUrl) {
     const modal = document.getElementById('bookingModal');
     const modalConfirm = document.getElementById('modalConfirm');
+    if (!modal || !modalConfirm) return;
     const bookingButtons = document.querySelectorAll('a[href*="reserver-"]');
     
     // Intercept booking button clicks
