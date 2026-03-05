@@ -4,7 +4,7 @@
 
 import { timeToMinutes, HOUR_START, PX_PER_MIN } from './helpers';
 
-export const BLOCK_TYPE_LABELS = { break: 'Pause', personal: 'Perso', closed: 'Ferm\u00e9' };
+export const BLOCK_TYPE_LABELS = { break: 'Pause', personal: 'Perso', closed: 'Fermé' };
 
 export default function BlockedSlotBlock({ block, onClick }) {
   const startMin = timeToMinutes(block.start_time) - HOUR_START * 60;

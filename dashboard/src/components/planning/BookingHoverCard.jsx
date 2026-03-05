@@ -19,7 +19,7 @@ function HoverRow({ label, value }) {
 export default function BookingHoverCard({ booking, anchorRect }) {
   if (!booking || !anchorRect) return null;
 
-  const SOURCE_LABELS = { online: 'R\u00e9serv\u00e9 en ligne', manual: 'Ajout\u00e9 manuellement', phone: 'Par t\u00e9l\u00e9phone', walk_in: 'Sans RDV' };
+  const SOURCE_LABELS = { online: 'Réservé en ligne', manual: 'Ajouté manuellement', phone: 'Par téléphone', walk_in: 'Sans RDV' };
   const cardW = 380;
   const cardH = booking.client_notes ? 380 : 320;
 
@@ -91,7 +91,7 @@ export default function BookingHoverCard({ booking, anchorRect }) {
         {/* Left: booking details */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 8 }}>
-            Aper\u00e7u de la r\u00e9servation
+            Aperçu de la réservation
           </div>
 
           <div style={{ display: 'grid', gap: 5 }}>
@@ -101,7 +101,7 @@ export default function BookingHoverCard({ booking, anchorRect }) {
               <span style={{ color: 'var(--text-secondary)' }}>Statut</span>
               <span className={`badge badge-${booking.status}`}>{STATUS_LABELS[booking.status] || booking.status}</span>
             </div>
-            {createdAt && <HoverRow label="Cr\u00e9\u00e9 le" value={createdAt} />}
+            {createdAt && <HoverRow label="Créé le" value={createdAt} />}
           </div>
         </div>
 
@@ -153,7 +153,7 @@ export default function BookingHoverCard({ booking, anchorRect }) {
       }}>
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          Dur\u00e9e
+          Durée
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600 }}>
           {formattedDate}

@@ -15,7 +15,7 @@ export default function BlockDetailModal({ block, onClose, onDelete }) {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">Cr\u00e9neau bloqu\u00e9</h3>
+          <h3 className="modal-title">Créneau bloqué</h3>
           <button className="btn-ghost" onClick={onClose}><CloseIcon /></button>
         </div>
         <div className="modal-body">

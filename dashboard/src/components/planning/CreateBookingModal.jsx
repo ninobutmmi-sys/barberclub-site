@@ -166,7 +166,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
               <span className="bk-icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
               </span>
-              RDV r\u00e9currents cr\u00e9\u00e9s
+              RDV récurrents créés
             </h3>
             <button className="btn-ghost" onClick={() => { setRecurrenceResult(null); onCreated(); }}><CloseIcon /></button>
           </div>
@@ -175,7 +175,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
             <div className="bk-client-badge" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.03))' }}>
               <div className="bk-dot" />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>{created.length} rendez-vous cr\u00e9\u00e9{created.length > 1 ? 's' : ''}</div>
+                <div style={{ fontSize: 15, fontWeight: 700 }}>{created.length} rendez-vous créé{created.length > 1 ? 's' : ''}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>{RECURRENCE_LABELS[recurrenceType]}</div>
               </div>
             </div>
@@ -183,7 +183,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
             {skipped.length > 0 && (
               <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.03))', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b', marginBottom: 6 }}>
-                  {skipped.length} date{skipped.length > 1 ? 's' : ''} ignor\u00e9e{skipped.length > 1 ? 's' : ''} (cr\u00e9neaux d\u00e9j\u00e0 pris)
+                  {skipped.length} date{skipped.length > 1 ? 's' : ''} ignorée{skipped.length > 1 ? 's' : ''} (créneaux déjà pris)
                 </div>
                 {skipped.map((s, i) => (
                   <div key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '2px 0' }}>
@@ -276,7 +276,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
               </select>
             </div>
 
-            {/* Date / Heure / Dur\u00e9e */}
+            {/* Date / Heure / Durée */}
             <div className="bk-grid-3">
               <div className="bk-field">
                 <label>Date</label>
@@ -287,7 +287,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
                 <input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} min="08:00" max="20:00" required />
               </div>
               <div className="bk-field">
-                <label>Dur\u00e9e (min)</label>
+                <label>Durée (min)</label>
                 <input className="input" type="number" value={duration} onChange={(e) => setDuration(parseInt(e.target.value) || 0)} min="5" step="5" required />
               </div>
             </div>
@@ -321,7 +321,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
               >
                 <div className="bk-knob" />
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>R\u00e9p\u00e9ter</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Répéter</span>
               {repeatEnabled && (
                 <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>
                   ({RECURRENCE_LABELS[recurrenceType]})
@@ -332,7 +332,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
             {repeatEnabled && (
               <div className="bk-recurrence-box" style={{ marginTop: 10 }}>
                 <div className="bk-field" style={{ marginBottom: 10 }}>
-                  <label>Fr\u00e9quence</label>
+                  <label>Fréquence</label>
                   <select className="input" value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)}>
                     <option value="weekly">Toutes les semaines</option>
                     <option value="biweekly">Toutes les 2 semaines</option>
@@ -343,14 +343,14 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
                   <div className="bk-field" style={{ marginBottom: 0 }}>
                     <label>Fin</label>
                     <select className="input" value={recurrenceEndType} onChange={(e) => setRecurrenceEndType(e.target.value)}>
-                      <option value="occurrences">Apr\u00e8s X s\u00e9ances</option>
-                      <option value="end_date">\u00c0 une date</option>
+                      <option value="occurrences">Après X séances</option>
+                      <option value="end_date">À une date</option>
                     </select>
                   </div>
                   <div className="bk-field" style={{ marginBottom: 0 }}>
                     {recurrenceEndType === 'occurrences' ? (
                       <>
-                        <label>Nb de s\u00e9ances</label>
+                        <label>Nb de séances</label>
                         <input className="input" type="number" value={recurrenceOccurrences} onChange={(e) => setRecurrenceOccurrences(Math.max(2, Math.min(52, parseInt(e.target.value) || 2)))} min="2" max="52" />
                       </>
                     ) : (
@@ -387,7 +387,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
                       className="input"
                       value={searchQuery}
                       onChange={handleSearchChange}
-                      placeholder="Nom, pr\u00e9nom ou t\u00e9l\u00e9phone..."
+                      placeholder="Nom, prénom ou téléphone..."
                       onKeyDown={(e) => { if (e.key === 'Escape') setSearchOpen(false); }}
                       style={{ paddingLeft: 32 }}
                     />
@@ -408,7 +408,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
                           </div>
                           <div>
                             <div style={{ fontSize: 13, fontWeight: 600 }}>{c.first_name} {c.last_name}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{c.phone}{c.email ? ` \u00b7 ${c.email}` : ''}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{c.phone}{c.email ? ` · ${c.email}` : ''}</div>
                           </div>
                         </div>
                       </div>
@@ -417,7 +417,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
                 )}
                 {searchOpen && searchQuery.trim().length >= 2 && searchResults.length === 0 && !searchLoading && (
                   <div className="bk-search-results" style={{ padding: '12px 14px', fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center' }}>
-                    Aucun client trouv\u00e9
+                    Aucun client trouvé
                   </div>
                 )}
               </div>
@@ -437,7 +437,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
 
             <div className="bk-grid-2">
               <div className="bk-field">
-                <label>Pr\u00e9nom</label>
+                <label>Prénom</label>
                 <input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.5 } : undefined} />
               </div>
               <div className="bk-field">
@@ -447,7 +447,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
             </div>
             <div className="bk-grid-2">
               <div className="bk-field">
-                <label>T\u00e9l\u00e9phone</label>
+                <label>Téléphone</label>
                 <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.5 } : undefined} />
               </div>
               <div className="bk-field">
@@ -461,7 +461,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
           <div className="bk-footer">
             <div>
               {priceDisplay && (
-                <span className="bk-price">{priceDisplay}<small>\u00b7 {duration}min</small></span>
+                <span className="bk-price">{priceDisplay}<small>· {duration}min</small></span>
               )}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -470,12 +470,12 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
                 {saving ? (
                   <>
                     <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-                    Cr\u00e9ation...
+                    Création...
                   </>
                 ) : (
                   <>
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    {repeatEnabled ? 'Cr\u00e9er la s\u00e9rie' : 'Cr\u00e9er le RDV'}
+                    {repeatEnabled ? 'Créer la série' : 'Créer le RDV'}
                   </>
                 )}
               </button>

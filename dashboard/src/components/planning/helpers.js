@@ -29,10 +29,10 @@ export const GRID_HEIGHT = TOTAL_MINUTES * PX_PER_MIN; // 1800px
 export const HOUR_HEIGHT = 60 * PX_PER_MIN; // 180px
 
 export const STATUS_LABELS = {
-  confirmed: 'Confirm\u00e9',
-  completed: 'Termin\u00e9',
+  confirmed: 'Confirmé',
+  completed: 'Terminé',
   no_show: 'No-show',
-  cancelled: 'Annul\u00e9',
+  cancelled: 'Annulé',
 };
 
 // Fallback color palette for bookings without service_color

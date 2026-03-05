@@ -80,7 +80,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
         setTimeout(() => setNotesSaved(false), 2000);
       } catch {
         setNotesSaved(false);
-        alert('Erreur lors de la sauvegarde des notes. V\u00e9rifiez votre connexion.');
+        alert('Erreur lors de la sauvegarde des notes. Vérifiez votre connexion.');
       }
       setNotesSaving(false);
     }, 800);
@@ -127,7 +127,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
     }
   }
 
-  const sourceLabel = { online: 'En ligne', manual: 'Manuel', phone: 'T\u00e9l.', walk_in: 'Sans RDV' }[booking.source] || booking.source || '\u2013';
+  const sourceLabel = { online: 'En ligne', manual: 'Manuel', phone: 'Tél.', walk_in: 'Sans RDV' }[booking.source] || booking.source || '\u2013';
 
   // ---------- DELETE CONFIRMATION ----------
   if (subView === 'delete') {
@@ -142,23 +142,23 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
             <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: 8, padding: '14px 16px', marginBottom: 16 }}>
               <div style={{ fontSize: 14, fontWeight: 600 }}>{booking.client_first_name} {booking.client_last_name}</div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary, #ccc)', marginTop: 2 }}>
-                {booking.service_name} — {booking.date ? format(parseISO(bookingDateStr), 'EEEE d MMM', { locale: fr }) : ''} \u00e0 {booking.start_time?.slice(0, 5)}
+                {booking.service_name} — {booking.date ? format(parseISO(bookingDateStr), 'EEEE d MMM', { locale: fr }) : ''} à {booking.start_time?.slice(0, 5)}
               </div>
             </div>
             <p style={{ fontSize: 14, color: 'var(--text-secondary, #ccc)', marginBottom: 16 }}>
-              Cette action est irr\u00e9versible. Le cr\u00e9neau sera lib\u00e9r\u00e9.
+              Cette action est irréversible. Le créneau sera libéré.
             </p>
             {hasEmail && (
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '12px 14px', background: 'rgba(var(--overlay),0.03)', border: '1px solid rgba(var(--overlay),0.08)', borderRadius: 8 }}>
                 <input type="checkbox" checked={notifyClient} onChange={(e) => setNotifyClient(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#3b82f6', cursor: 'pointer' }} />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>Pr\u00e9venir le client par email</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>Prévenir le client par email</div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>{booking.client_email}</div>
                 </div>
               </label>
             )}
             {!hasEmail && (
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 0' }}>Pas d&apos;email — le client ne sera pas notifi\u00e9.</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '8px 0' }}>Pas d&apos;email — le client ne sera pas notifié.</div>
             )}
           </div>
           <div className="modal-footer" style={{ flexDirection: 'column', alignItems: 'center', gap: 8 }}>
@@ -220,22 +220,22 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
             </div>
           </div>
 
-          {/* CR\u00c9NEAU SECTION — editable if confirmed or completed */}
+          {/* CRÉNEAU SECTION — editable if confirmed or completed */}
           <div className="bk-section">
             <div className="bk-section-title">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              Cr\u00e9neau
+              Créneau
             </div>
             {isEditable ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {/* Date + D\u00e9but + Fin — 3 colonnes */}
+                {/* Date + Début + Fin — 3 colonnes */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.9fr 0.9fr', gap: 10 }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>Date</label>
                     <input className="input" type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} required />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>D\u00e9but</label>
+                    <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>Début</label>
                     <input className="input" type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} min="08:00" max="20:00" step="300" required />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
@@ -258,7 +258,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
                     </select>
                   </div>
                 </div>
-                {/* Couleur — int\u00e9gr\u00e9e dans cr\u00e9neau */}
+                {/* Couleur — intégrée dans créneau */}
                 <div>
                   <label className="label" style={{ fontSize: 11, marginBottom: 6, color: 'var(--text-muted)', display: 'block' }}>Couleur</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -307,12 +307,12 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
                 Notes client
               </div>
               {notesSaving && <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>Sauvegarde...</span>}
-              {notesSaved && <span style={{ fontSize: 10, color: '#22c55e' }}>Sauvegard\u00e9</span>}
+              {notesSaved && <span style={{ fontSize: 10, color: '#22c55e' }}>Sauvegardé</span>}
             </div>
             <textarea
               value={notes}
               onChange={(e) => handleNotesChange(e.target.value)}
-              placeholder="Ex: Sabot 3mm sur les cot\u00e9s, fondu bas..."
+              placeholder="Ex: Sabot 3mm sur les cotés, fondu bas..."
               style={{
                 width: '100%', minHeight: 70, padding: '12px 14px', fontSize: 13,
                 background: 'rgba(var(--overlay),0.04)', border: '1px solid rgba(var(--overlay),0.1)',
@@ -329,7 +329,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
             <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '12px 14px', background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.12)', borderRadius: 10 }}>
               <input type="checkbox" checked={notifyClient} onChange={(e) => setNotifyClient(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#3b82f6', cursor: 'pointer' }} />
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>Pr\u00e9venir le client par email</div>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>Prévenir le client par email</div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{booking.client_email}</div>
               </div>
             </label>

@@ -275,7 +275,7 @@ export default function Planning() {
       {error && (
         <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
           <span>{error}</span>
-          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>R\u00e9essayer</button>
+          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
         </div>
       )}
       {/* Header */}
@@ -374,7 +374,7 @@ export default function Planning() {
             <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Chargement du planning...</div>
           </div>
         ) : barbers.length === 0 ? (
-          <div className="empty-state" style={{ minHeight: 300 }}>Aucun barber configur\u00e9.</div>
+          <div className="empty-state" style={{ minHeight: 300 }}>Aucun barber configuré.</div>
         ) : (
           <div key={view} className="planning-grid-animated">
             <TimeGrid

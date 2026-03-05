@@ -34,7 +34,7 @@ export default function BlockSlotModal({ barbers, onClose, onCreated, initialDat
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">Bloquer un cr\u00e9neau</h3>
+          <h3 className="modal-title">Bloquer un créneau</h3>
           <button className="btn-ghost" onClick={onClose}><CloseIcon /></button>
         </div>
         <form onSubmit={handleSubmit}>
@@ -52,9 +52,9 @@ export default function BlockSlotModal({ barbers, onClose, onCreated, initialDat
               <div className="form-group">
                 <label className="label">Type</label>
                 <select className="input" value={type} onChange={(e) => setType(e.target.value)} required>
-                  <option value="break">Pause d\u00e9jeuner</option>
+                  <option value="break">Pause déjeuner</option>
                   <option value="personal">Perso / RDV</option>
-                  <option value="closed">Ferm\u00e9</option>
+                  <option value="closed">Fermé</option>
                 </select>
               </div>
             </div>
@@ -64,7 +64,7 @@ export default function BlockSlotModal({ barbers, onClose, onCreated, initialDat
             </div>
             <div style={formRow}>
               <div className="form-group">
-                <label className="label">D\u00e9but</label>
+                <label className="label">Début</label>
                 <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} min="08:00" max="20:00" required />
               </div>
               <div className="form-group">
@@ -74,12 +74,12 @@ export default function BlockSlotModal({ barbers, onClose, onCreated, initialDat
             </div>
             <div className="form-group">
               <label className="label">Raison (optionnel)</label>
-              <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex: Pause d\u00e9jeuner" />
+              <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex: Pause déjeuner" />
             </div>
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Annuler</button>
-            <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>{saving ? 'Cr\u00e9ation...' : 'Bloquer'}</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>{saving ? 'Création...' : 'Bloquer'}</button>
           </div>
         </form>
       </div>

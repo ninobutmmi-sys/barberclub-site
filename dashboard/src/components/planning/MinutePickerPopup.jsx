@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 
 export default function MinutePickerPopup({ hour, position, onSelect, onClose, occupiedSlots }) {
   const popupRef = useRef(null);
-  const minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+  const minutes = [0, 10, 20, 30, 40, 50];
 
   // Check if a minute is occupied by an existing booking/block
   function isOccupied(m) {
@@ -74,7 +74,7 @@ export default function MinutePickerPopup({ hour, position, onSelect, onClose, o
         </div>
         <span style={{ fontFamily: 'var(--font-display, Orbitron, monospace)', fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>{hh}:--</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
         {minutes.map((m) => {
           const mm = String(m).padStart(2, '0');
           const occupied = isOccupied(m);
