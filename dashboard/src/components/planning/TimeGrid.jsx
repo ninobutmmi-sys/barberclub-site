@@ -11,7 +11,7 @@ import BlockedSlotBlock from './BlockedSlotBlock';
 import BookingBlock from './BookingBlock';
 import MinutePickerPopup from './MinutePickerPopup';
 
-export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, guestAssignments, onBookingClick, onBlockClick, onSlotClick, view, onSwipeLeft, onSwipeRight, onDragDrop, draggingId }) {
+export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, guestAssignments, onBookingClick, onBlockClick, onSlotClick, view, onSwipeLeft, onSwipeRight }) {
   const scrollRef = useRef(null);
   const gridBodyRef = useRef(null);
   const touchRef = useRef(null);
@@ -54,9 +54,6 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
 
   // Hover indicator state
   const [hoverInfo, setHoverInfo] = useState(null); // { barberId, dayStr, top, time }
-
-  // Drag-over highlight state
-  const [dragOverTarget, setDragOverTarget] = useState(null); // { dayStr, barberId }
 
   // Swipe to navigate days on mobile
   function handleTouchStart(e) {
@@ -211,8 +208,6 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                     const dayBlocked = blockedByDayBarber?.[key] || [];
                     const barberIsOff = isBarberOff(barber.id, day);
 
-                    const isDragOver = dragOverTarget && dragOverTarget.dayStr === dayStr && dragOverTarget.barberId === barber.id;
-
                     return (
                       <div
                         key={barber.id}
@@ -222,7 +217,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                           position: 'relative',
                           borderRight: bIdx < barberCount - 1 ? '1px solid rgba(var(--overlay),0.04)' : 'none',
                           cursor: barberIsOff ? 'default' : 'pointer',
-                          background: barberIsOff ? 'repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(var(--overlay),0.035) 6px, rgba(var(--overlay),0.035) 7px)' : isDragOver ? 'rgba(59,130,246,0.08)' : 'transparent',
+                          background: barberIsOff ? 'repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(var(--overlay),0.035) 6px, rgba(var(--overlay),0.035) 7px)' : 'transparent',
                           transition: 'background 0.15s',
                         }}
                         onClick={(e) => {
@@ -256,35 +251,6 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                           setHoverInfo({ barberId: barber.id, dayStr, top: topPx, time: `${hh}:${mm}` });
                         }}
                         onMouseLeave={() => setHoverInfo(null)}
-                        onDragOver={(e) => {
-                          if (barberIsOff) return;
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = 'move';
-                          setDragOverTarget({ dayStr, barberId: barber.id });
-                        }}
-                        onDragEnter={(e) => {
-                          e.preventDefault();
-                          setDragOverTarget({ dayStr, barberId: barber.id });
-                        }}
-                        onDragLeave={() => {
-                          setDragOverTarget(null);
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          setDragOverTarget(null);
-                          if (!gridBodyRef.current || !onDragDrop) return;
-                          try {
-                            const data = JSON.parse(e.dataTransfer.getData('application/json'));
-                            const rect = gridBodyRef.current.getBoundingClientRect();
-                            const scrollTop = gridBodyRef.current.scrollTop;
-                            const relativeY = (e.clientY - rect.top) + scrollTop - 10;
-                            const rawMinutes = Math.round(relativeY / PX_PER_MIN) + HOUR_START * 60;
-                            const clamped = Math.max(HOUR_START * 60, Math.min(HOUR_END * 60 - 1, rawMinutes));
-                            const hh = String(Math.floor(clamped / 60)).padStart(2, '0');
-                            const mm = String(clamped % 60).padStart(2, '0');
-                            onDragDrop(data.bookingId, { date: dayStr, start_time: `${hh}:${mm}`, barber_id: barber.id });
-                          } catch { /* invalid data */ }
-                        }}
                       >
                         {/* Off-hours zones (hatched like day-off, but clickable) */}
                         {!barberIsOff && OFF_HOURS.map((zone) => (
@@ -316,7 +282,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                           <BlockedSlotBlock key={bs.id} block={bs} onClick={onBlockClick} />
                         ))}
                         {dayBookings.map((bk) => (
-                          <BookingBlock key={bk.id} booking={bk} onClick={onBookingClick} isDragging={draggingId === bk.id} />
+                          <BookingBlock key={bk.id} booking={bk} onClick={onBookingClick} />
                         ))}
                       </div>
                     );

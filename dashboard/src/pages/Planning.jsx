@@ -59,7 +59,6 @@ export default function Planning() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockDefaults, setBlockDefaults] = useState({});
   const [selectedBlock, setSelectedBlock] = useState(null);
-  const [draggingId, setDraggingId] = useState(null);
   const [quickAction, setQuickAction] = useState(null); // { booking, rect }
 
   // Force day view on mobile
@@ -270,39 +269,6 @@ export default function Planning() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedBooking, showCreateModal, showBlockModal, selectedBlock, quickAction]);
 
-  // Drag & drop state for confirmation modal
-  const [pendingDrag, setPendingDrag] = useState(null); // { bookingId, date, start_time, barber_id }
-
-  function handleDragDrop(bookingId, { date, start_time, barber_id }) {
-    // Snap time to nearest 00/20/30
-    const [hh, mm] = start_time.split(':').map(Number);
-    const snapOptions = [0, 20, 30, 60]; // 60 = next hour :00
-    let bestMin = 0;
-    let bestDist = 60;
-    for (const s of snapOptions) {
-      const dist = Math.abs(mm - s);
-      if (dist < bestDist) { bestDist = dist; bestMin = s; }
-    }
-    let snapH = hh;
-    let snapM = bestMin;
-    if (snapM === 60) { snapH += 1; snapM = 0; }
-    const snappedTime = `${String(snapH).padStart(2, '0')}:${String(snapM).padStart(2, '0')}`;
-    setPendingDrag({ bookingId, date, start_time: snappedTime, barber_id });
-  }
-
-  async function confirmDragDrop() {
-    if (!pendingDrag) return;
-    const { bookingId, date, start_time, barber_id } = pendingDrag;
-    setDraggingId(bookingId);
-    setPendingDrag(null);
-    try {
-      await updateBooking(bookingId, { date, start_time, barber_id, notify_client: true });
-      await loadData();
-    } catch (err) {
-      alert('Erreur lors du d\u00e9placement : ' + err.message);
-    }
-    setDraggingId(null);
-  }
 
   return (
     <>
@@ -423,8 +389,6 @@ export default function Planning() {
               view={view}
               onSwipeLeft={goNext}
               onSwipeRight={goPrev}
-              onDragDrop={handleDragDrop}
-              draggingId={draggingId}
               guestAssignments={guestAssignments}
             />
             {bookings.filter((b) => b.status !== 'cancelled').length === 0 && (
@@ -495,42 +459,6 @@ export default function Planning() {
         />
       )}
 
-      {/* Drag & Drop confirmation modal */}
-      {pendingDrag && (() => {
-        const dragBooking = bookings.find((b) => b.id === pendingDrag.bookingId);
-        const dragBarber = barbers.find((b) => b.id === pendingDrag.barber_id);
-        return (
-          <div className="modal-overlay" onClick={() => setPendingDrag(null)}>
-            <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
-              <div className="modal-header">
-                <h3>Confirmer le d\u00e9placement</h3>
-                <button className="modal-close" onClick={() => setPendingDrag(null)}><CloseIcon /></button>
-              </div>
-              <div style={{ padding: '16px 20px', fontSize: 14, lineHeight: 1.6 }}>
-                <p style={{ margin: '0 0 8px', color: 'var(--text-secondary)' }}>
-                  D\u00e9placer le RDV de <strong style={{ color: 'var(--text)' }}>{dragBooking?.client_first_name} {dragBooking?.client_last_name}</strong> :
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '12px 0' }}>
-                  <span style={{ padding: '6px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 13, color: '#fca5a5' }}>
-                    {dragBooking?.start_time?.slice(0, 5)} — {typeof dragBooking?.date === 'string' ? dragBooking.date.slice(5).replace('-', '/') : ''}
-                  </span>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                  <span style={{ padding: '6px 12px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, fontSize: 13, color: '#86efac' }}>
-                    {pendingDrag.start_time} — {pendingDrag.date.slice(5).replace('-', '/')}{dragBarber ? ` (${dragBarber.name})` : ''}
-                  </span>
-                </div>
-                <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
-                  Le client sera notifi\u00e9 du changement par email.
-                </p>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 20px', borderTop: '1px solid rgba(var(--overlay),0.08)' }}>
-                <button className="btn btn-secondary" onClick={() => setPendingDrag(null)}>Annuler</button>
-                <button className="btn btn-primary" onClick={confirmDragDrop}>Confirmer</button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </>
   );
 }

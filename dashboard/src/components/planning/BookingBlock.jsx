@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { timeToMinutes, HOUR_START, PX_PER_MIN, FALLBACK_COLOR, STATUS_OVERRIDES, hexToBlockStyle } from './helpers';
 import BookingHoverCard from './BookingHoverCard';
 
-export default function BookingBlock({ booking, onClick, isDragging }) {
+export default function BookingBlock({ booking, onClick }) {
   const startMin = timeToMinutes(booking.start_time) - HOUR_START * 60;
   const endMin = timeToMinutes(booking.end_time) - HOUR_START * 60;
   const duration = endMin - startMin;
@@ -23,21 +23,9 @@ export default function BookingBlock({ booking, onClick, isDragging }) {
   const [showHover, setShowHover] = useState(false);
   const [anchorRect, setAnchorRect] = useState(null);
 
-  function handleDragStart(e) {
-    e.stopPropagation();
-    setShowHover(false);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('application/json', JSON.stringify({
-      bookingId: booking.id,
-      barberId: booking.barber_id,
-      date: typeof booking.date === 'string' ? booking.date.slice(0, 10) : '',
-    }));
-  }
-
   function handleMouseEnter(e) {
     e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.5)';
     e.currentTarget.style.zIndex = '20';
-    if (isDragging) return;
     hoverTimerRef.current = setTimeout(() => {
       if (blockRef.current) {
         setAnchorRect(blockRef.current.getBoundingClientRect());
@@ -64,8 +52,6 @@ export default function BookingBlock({ booking, onClick, isDragging }) {
     <>
       <div
         ref={blockRef}
-        draggable="true"
-        onDragStart={handleDragStart}
         className={isFirstVisit ? 'planning-block-first-visit' : undefined}
         style={{
           position: 'absolute',
@@ -77,7 +63,7 @@ export default function BookingBlock({ booking, onClick, isDragging }) {
           borderLeft: `3px solid ${isFirstVisit ? '#f59e0b' : color.border}`,
           borderRadius: '0 4px 4px 0',
           padding: isTiny ? '2px 5px' : '4px 6px',
-          cursor: isDragging ? 'grabbing' : 'pointer',
+          cursor: 'pointer',
           overflow: 'hidden',
           fontSize: 12,
           lineHeight: '15px',
@@ -85,7 +71,7 @@ export default function BookingBlock({ booking, onClick, isDragging }) {
           zIndex: 2,
           boxSizing: 'border-box',
           transition: 'box-shadow 0.12s, opacity 0.15s',
-          opacity: isDragging ? 0.4 : 1,
+          opacity: 1,
         }}
         onClick={(e) => { e.stopPropagation(); setShowHover(false); onClick(booking, blockRef.current?.getBoundingClientRect()); }}
         onMouseMove={(e) => e.stopPropagation()}
@@ -105,7 +91,7 @@ export default function BookingBlock({ booking, onClick, isDragging }) {
         )}
 
         <div style={{ fontWeight: 600, fontSize: 10, opacity: 0.7, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-          {isDragging ? 'D\u00e9placement...' : <>{booking.start_time?.slice(0, 5)} - {booking.end_time?.slice(0, 5)}</>}
+          {booking.start_time?.slice(0, 5)} - {booking.end_time?.slice(0, 5)}
         </div>
         {!isTiny && (
           <div style={{ fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isTall ? 'normal' : 'nowrap', paddingRight: isOnline ? 14 : 0 }}>
@@ -124,7 +110,7 @@ export default function BookingBlock({ booking, onClick, isDragging }) {
           </div>
         )}
       </div>
-      {showHover && !isDragging && <BookingHoverCard booking={booking} anchorRect={anchorRect} />}
+      {showHover && <BookingHoverCard booking={booking} anchorRect={anchorRect} />}
     </>
   );
 }
