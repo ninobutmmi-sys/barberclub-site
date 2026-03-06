@@ -117,6 +117,27 @@
         ]
     }
     </script>
+    <!-- Schema.org BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Accueil",
+                "item": "https://barberclub-grenoble.fr/"
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Meylan",
+                "item": "https://barberclub-grenoble.fr/pages/meylan/"
+            }
+        ]
+    }
+    </script>
     <style>
         /* ORBITRON FONT */
         @font-face {
@@ -890,6 +911,24 @@
             outline: 2px solid #fff;
             outline-offset: 2px;
         }
+
+        /* H1 SEO SUBTITLE */
+        .title-seo {
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(13px, 3vw, 16px);
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0.05em;
+            color: rgba(255,255,255,0.55);
+            margin-top: 10px;
+            text-align: center;
+            animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+            opacity: 0;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .title-seo { opacity: 1; }
+        }
+
     </style>
 </head>
 
@@ -911,7 +950,8 @@
 
         <div class="logo-container">
             <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
-            <h1 class="title">Meylan</h1>
+            <p class="title" aria-hidden="true">Meylan</p>
+            <h1 class="title-seo">Votre Barbier à Meylan</h1>
         </div>
 
         <nav class="nav" id="main-content">
@@ -927,11 +967,8 @@
                 </a>
                 <a href="prestations.html" class="nav-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="6" cy="6" r="3" />
-                        <line x1="8.12" y1="8.12" x2="12" y2="12" />
-                        <line x1="20" y1="4" x2="8.12" y2="15.88" />
-                        <circle cx="6" cy="18" r="3" />
-                        <line x1="14.8" y1="14.8" x2="20" y2="20" />
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                        <line x1="7" y1="7" x2="7.01" y2="7" />
                     </svg>
                     Tarifs
                 </a>
@@ -945,12 +982,11 @@
                     Rendez-vous
                 </a>
                 <a href="galerie.html" class="nav-item">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                        <circle cx="8.5" cy="8.5" r="1.5" />
-                        <polyline points="21 15 16 10 5 21" />
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
                     </svg>
-                    Galerie
+                    Salon
                 </a>
                 <a href="contact.html" class="nav-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
