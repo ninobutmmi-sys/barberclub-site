@@ -417,8 +417,32 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
                   </div>
                 )}
                 {searchOpen && searchQuery.trim().length >= 2 && searchResults.length === 0 && !searchLoading && (
-                  <div className="bk-search-results" style={{ padding: '12px 14px', fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center' }}>
-                    Aucun client trouvé
+                  <div className="bk-search-results">
+                    <div
+                      className="bk-search-item"
+                      onClick={() => {
+                        const q = searchQuery.trim();
+                        // Pre-fill: if starts with 0 or + → phone, else split into first/last name
+                        if (/^[0+]/.test(q)) {
+                          setPhone(q);
+                        } else {
+                          const parts = q.split(/\s+/);
+                          setFirstName(parts[0] || '');
+                          setLastName(parts.slice(1).join(' ') || '');
+                        }
+                        setSearchQuery('');
+                        setSearchOpen(false);
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+                    >
+                      <div style={{ width: 30, height: 30, borderRadius: 8, background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#3b82f6' }}>Créer nouveau client</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>"{searchQuery.trim()}"</div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
