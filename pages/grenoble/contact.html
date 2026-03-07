@@ -487,6 +487,65 @@
             50% { opacity: 0.4; }
         }
 
+        /* TRANSPORT */
+        .transport-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .transport-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .transport-icon {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        .transport-icon svg {
+            width: 18px;
+            height: 18px;
+            opacity: 0.8;
+        }
+
+        .transport-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .transport-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+
+        .transport-detail {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .transport-time {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.6);
+            white-space: nowrap;
+        }
+
         /* SOCIAL */
         .social-grid {
             display: flex;
@@ -863,6 +922,42 @@
                     </svg>
                     Ouvrir dans Maps
                 </a>
+                <div class="transport-grid" style="margin-top: 16px;">
+                    <div class="transport-row">
+                        <div class="transport-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="3" width="16" height="16" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><circle cx="8" cy="21" r="1"/><circle cx="16" cy="21" r="1"/><path d="M8 19h8"/>
+                            </svg>
+                        </div>
+                        <div class="transport-info">
+                            <div class="transport-name">Tram A / B</div>
+                            <div class="transport-detail">Arret Victor Hugo</div>
+                        </div>
+                        <div class="transport-time">2 min</div>
+                    </div>
+                    <div class="transport-row">
+                        <div class="transport-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 6v6"/><path d="M16 6v6"/><path d="M2 12h20"/><path d="M6 18h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z"/><circle cx="7" cy="21" r="1"/><circle cx="17" cy="21" r="1"/>
+                            </svg>
+                        </div>
+                        <div class="transport-info">
+                            <div class="transport-name">Bus C1, C3</div>
+                            <div class="transport-detail">Arrets a proximite</div>
+                        </div>
+                    </div>
+                    <div class="transport-row">
+                        <div class="transport-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 17H3a2 2 0 01-2-2V9a2 2 0 012-2h2"/><path d="M19 17h2a2 2 0 002-2V9a2 2 0 00-2-2h-2"/><path d="M12 17V5"/><circle cx="12" cy="17" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="transport-info">
+                            <div class="transport-name">Voiture</div>
+                            <div class="transport-detail">Stationnement payant sur rue</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
