@@ -2,7 +2,7 @@
 // Main Planning component
 // ---------------------------------------------------------------------------
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   getBookings,
   getBarbers,
@@ -183,6 +183,24 @@ export default function Planning() {
     return { count: active.length, revenue: active.reduce((s, b) => s + (b.price || 0), 0) };
   }, [bookings]);
 
+  // Next upcoming booking (mobile only)
+  const nextBooking = useMemo(() => {
+    if (!isMobile) return null;
+    const now = new Date();
+    const todayStr = format(now, 'yyyy-MM-dd');
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    return bookings
+      .filter(b => {
+        const d = typeof b.date === 'string' ? b.date.slice(0, 10) : format(new Date(b.date), 'yyyy-MM-dd');
+        return d === todayStr && b.status === 'confirmed';
+      })
+      .sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''))
+      .find(b => {
+        const [h, m] = (b.start_time || '0:0').split(':').map(Number);
+        return h * 60 + m > nowMin;
+      }) || null;
+  }, [bookings, isMobile]);
+
   const navDisplay = useMemo(() => {
     if (view === 'day') return format(currentDate, 'EEEE d MMMM yyyy', { locale: fr });
     return `${format(weekStart, 'd MMM', { locale: fr })} \u2013 ${format(weekEnd, 'd MMM yyyy', { locale: fr })}`;
@@ -269,6 +287,34 @@ export default function Planning() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedBooking, showCreateModal, showBlockModal, selectedBlock, quickAction]);
 
+  // Pull to refresh (mobile)
+  const showPullRef = useRef(false);
+  const [showPullRefresh, setShowPullRefresh] = useState(false);
+  useEffect(() => { showPullRef.current = showPullRefresh; }, [showPullRefresh]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = document.querySelector('.main-content');
+    if (!el) return;
+    let startY = 0, pulling = false;
+    function onStart(e) { if (el.scrollTop <= 0) { startY = e.touches[0].clientY; pulling = true; } }
+    function onMove(e) {
+      if (!pulling) return;
+      const delta = (e.touches?.[0]?.clientY || 0) - startY;
+      if (delta > 60 && el.scrollTop <= 0) setShowPullRefresh(true);
+      else if (delta <= 0) { pulling = false; setShowPullRefresh(false); }
+    }
+    function onEnd() {
+      if (pulling && showPullRef.current) handleRefresh();
+      pulling = false;
+      setShowPullRefresh(false);
+    }
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: true });
+    el.addEventListener('touchend', onEnd, { passive: true });
+    return () => { el.removeEventListener('touchstart', onStart); el.removeEventListener('touchmove', onMove); el.removeEventListener('touchend', onEnd); };
+  }, [isMobile, handleRefresh]);
+
 
   return (
     <>
@@ -307,6 +353,24 @@ export default function Planning() {
           </div>
           {/* Week day strip — Timify-style */}
           <MobileWeekStrip currentDate={currentDate} onSelectDate={setCurrentDate} />
+
+          {/* Next booking banner */}
+          {nextBooking && format(currentDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', marginTop: 8, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prochain</div>
+                <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {nextBooking.start_time?.slice(0, 5)} — {nextBooking.client_first_name} {nextBooking.client_last_name} · {nextBooking.service_name}
+                </div>
+              </div>
+              {nextBooking.client_phone && (
+                <a href={`tel:${nextBooking.client_phone.replace(/\s/g, '')}`} style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(34,197,94,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22c55e', textDecoration: 'none', flexShrink: 0, border: '1px solid rgba(34,197,94,0.2)' }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </a>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div className="plan-header">
@@ -367,6 +431,18 @@ export default function Planning() {
         </div>
       )}
 
+      {/* Pull to refresh indicator */}
+      {isMobile && showPullRefresh && (
+        <div style={{ textAlign: 'center', padding: '10px 0', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          {refreshing ? (
+            <>
+              <div style={{ width: 14, height: 14, border: '2px solid rgba(var(--overlay),0.1)', borderTopColor: 'var(--text-secondary)', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+              Actualisation...
+            </>
+          ) : 'Relacher pour actualiser'}
+        </div>
+      )}
+
       {/* Grid */}
       <div className="page-body" style={{ paddingBottom: 0 }}>
         {loading ? (
@@ -401,6 +477,26 @@ export default function Planning() {
         )}
       </div>
 
+      {/* FAB — mobile only */}
+      {isMobile && !showCreateModal && !selectedBooking && !quickAction && (
+        <button
+          onClick={handleCreateClick}
+          aria-label="Nouveau RDV"
+          style={{
+            position: 'fixed', bottom: 76, right: 16, zIndex: 100,
+            width: 52, height: 52, borderRadius: '50%',
+            background: '#3b82f6', color: '#fff', border: 'none',
+            boxShadow: '0 4px 20px rgba(59,130,246,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'transform 0.15s',
+          }}
+          onTouchStart={(e) => { e.currentTarget.style.transform = 'scale(0.9)'; }}
+          onTouchEnd={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >
+          <PlusIcon size={22} />
+        </button>
+      )}
+
       {/* Quick Actions Popover */}
       {quickAction && (
         <BookingQuickActions
@@ -408,7 +504,9 @@ export default function Planning() {
           anchorRect={quickAction.rect}
           onViewDetail={(bk) => { setQuickAction(null); setSelectedBooking(bk); }}
           onDelete={(bk) => { setQuickAction(null); setSelectedBooking(bk); }}
+          onStatusChange={(id, status) => { setQuickAction(null); handleStatusChange(id, status); }}
           onClose={() => setQuickAction(null)}
+          isMobile={isMobile}
         />
       )}
 
