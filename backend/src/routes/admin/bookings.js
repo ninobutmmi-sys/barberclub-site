@@ -7,6 +7,7 @@ const config = require('../../config/env');
 const { ApiError } = require('../../utils/errors');
 const logger = require('../../utils/logger');
 const db = require('../../config/database');
+const { logAudit } = require('../../middleware/auditLog');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -221,7 +222,7 @@ router.post('/',
     body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
     body('color').optional({ values: 'falsy' }).matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide'),
     body('recurrence').optional().isObject(),
-    body('recurrence.type').optional().isIn(['weekly', 'biweekly', 'monthly']),
+    body('recurrence.type').optional().isIn(['daily', 'weekly', 'biweekly', 'monthly']),
     body('recurrence.end_type').optional().isIn(['occurrences', 'end_date']),
     body('recurrence.occurrences').optional().isInt({ min: 2, max: 52 }).toInt(),
     body('recurrence.end_date').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
@@ -237,6 +238,7 @@ router.post('/',
           { ...bookingData, source: 'manual', salon_id: salonId },
           recurrence
         );
+        logAudit(req, 'create', 'booking', result.groupId || result.bookings?.[0]?.id, { recurring: true, count: result.bookings?.length });
         res.status(201).json(result);
       } else {
         const booking = await bookingService.createBooking({
@@ -244,6 +246,7 @@ router.post('/',
           source: 'manual',
           salon_id: salonId,
         });
+        logAudit(req, 'create', 'booking', booking.id, { date: booking.date, start_time: booking.start_time });
         res.status(201).json(booking);
       }
     } catch (error) {
@@ -369,6 +372,7 @@ router.put('/:id',
         }).catch((err) => logger.error('Email notification failed', { error: err.message }));
       }
 
+      logAudit(req, 'update', 'booking', req.params.id, { changes: req.body });
       res.json(txResult.row);
     } catch (error) {
       next(error);
@@ -389,6 +393,7 @@ router.patch('/:id/status',
     try {
       const salonId = req.user.salon_id;
       const result = await bookingService.updateBookingStatus(req.params.id, req.body.status, salonId);
+      logAudit(req, 'status', 'booking', req.params.id, { status: req.body.status });
       res.json(result);
     } catch (error) {
       next(error);
@@ -469,6 +474,7 @@ router.delete('/group/:groupId',
       }
 
       logger.info('Recurring group deleted', { groupId, count: result.rows.length, futureOnly });
+      logAudit(req, 'delete', 'booking_group', groupId, { count: result.rows.length, futureOnly });
       res.json({ message: `${result.rows.length} RDV supprimés`, count: result.rows.length });
     } catch (error) {
       next(error);
@@ -563,6 +569,7 @@ router.delete('/:id',
         }
       }
 
+      logAudit(req, 'delete', 'booking', req.params.id);
       res.json({ message: 'RDV supprimé' });
     } catch (error) {
       next(error);

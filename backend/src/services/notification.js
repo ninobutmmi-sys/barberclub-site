@@ -8,6 +8,7 @@ const {
   BREVO_CIRCUIT_COOLDOWN_MS,
   BREVO_REQUEST_TIMEOUT_MS,
 } = require('../constants');
+const { alertCircuitOpen, alertCircuitClosed } = require('../utils/discord');
 
 /**
  * Queue a notification for async sending
@@ -137,6 +138,7 @@ function isCircuitOpen(salonId = 'meylan') {
     circuit.failures = 0;
     circuit.openedAt = null;
     logger.info('Brevo circuit breaker reset (cooldown elapsed)', { salonId });
+    alertCircuitClosed(salonId);
     return false;
   }
   return true;
@@ -156,6 +158,7 @@ function recordBrevoFailure(salonId = 'meylan') {
   if (circuit.failures >= circuit.threshold && !circuit.openedAt) {
     circuit.openedAt = Date.now();
     logger.warn(`Brevo circuit breaker OPEN — skipping calls for ${BREVO_CIRCUIT_COOLDOWN_MS / 1000}s`, { salonId, failures: circuit.failures });
+    alertCircuitOpen(salonId, circuit.failures);
   }
 }
 

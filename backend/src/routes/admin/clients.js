@@ -3,6 +3,7 @@ const { param, query, body } = require('express-validator');
 const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
+const { logAudit } = require('../../middleware/auditLog');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -124,8 +125,8 @@ router.get('/inactive', async (req, res, next) => {
        JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $1
        WHERE c.deleted_at IS NULL
        GROUP BY c.id
-       HAVING COUNT(b.id) FILTER (WHERE b.status = 'completed') >= 5
-          AND MAX(b.date) FILTER (WHERE b.status = 'completed') <= CURRENT_DATE - INTERVAL '45 days'
+       HAVING COUNT(b.id) FILTER (WHERE b.status = 'completed') >= 3
+          AND MAX(b.date) FILTER (WHERE b.status = 'completed') <= CURRENT_DATE - INTERVAL '90 days'
        ORDER BY days_since_visit DESC
        LIMIT 20`,
       [salonId]
@@ -257,6 +258,7 @@ router.put('/:id',
         throw ApiError.notFound('Client introuvable');
       }
 
+      logAudit(req, 'update', 'client', id, { changes: req.body });
       res.json(result.rows[0]);
     } catch (error) {
       next(error);
@@ -291,6 +293,7 @@ router.delete('/:id',
         [req.params.id, 'client']
       );
 
+      logAudit(req, 'delete', 'client', req.params.id);
       res.json({ message: 'Données client supprimées (RGPD)' });
     } catch (error) {
       next(error);

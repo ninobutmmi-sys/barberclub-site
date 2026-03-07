@@ -14,6 +14,7 @@ const { ApiError } = require('./utils/errors');
 const { publicLimiter, adminLimiter } = require('./middleware/rateLimiter');
 const { requireAuth, requireBarber } = require('./middleware/auth');
 const { GRACEFUL_SHUTDOWN_TIMEOUT_MS } = require('./constants');
+const { alertCronFailure } = require('./utils/discord');
 
 // Route imports
 const healthRoutes = require('./routes/health');
@@ -26,15 +27,15 @@ const adminBarberRoutes = require('./routes/admin/barbers');
 const adminClientRoutes = require('./routes/admin/clients');
 const adminAnalyticsRoutes = require('./routes/admin/analytics');
 const blockedSlotsRoutes = require('./routes/admin/blockedSlots');
-const paymentRoutes = require('./routes/admin/payments');
 const mailingRoutes = require('./routes/admin/mailing');
 const smsRoutes = require('./routes/admin/sms');
 const notificationRoutes = require('./routes/admin/notifications');
-const productRoutes = require('./routes/admin/products');
 const waitlistRoutes = require('./routes/admin/waitlist');
 const automationRoutes = require('./routes/admin/automation');
 const { adminRouter: campaignRoutes, publicRouter: campaignTrackRoutes } = require('./routes/admin/campaignTracking');
 const systemHealthRoutes = require('./routes/admin/systemHealth');
+const auditLogRoutes = require('./routes/admin/auditLog');
+const pushRoutes = require('./routes/admin/push');
 
 // Cron job imports
 const { queueReminders } = require('./cron/reminders');
@@ -107,6 +108,8 @@ function trackCron(key, fn) {
             const label = cronStatus[key].label || key;
             const msg = `⚠️ ALERTE CRON — "${label}" a échoué ${cronFailureCounts[key]} fois d'affilée. Dernière erreur: ${err.message}`;
             logger.error(`CRON ALERT: ${msg}`);
+            // Discord alert (fire-and-forget)
+            alertCronFailure(label, cronFailureCounts[key], err.message);
             // Send SMS alert to owner (best-effort, don't crash if it fails)
             try {
               const { brevoSMS } = require('./services/notification');
@@ -216,15 +219,15 @@ adminRouter.use('/barbers', adminBarberRoutes);
 adminRouter.use('/clients', adminClientRoutes);
 adminRouter.use('/analytics', adminAnalyticsRoutes);
 adminRouter.use('/blocked-slots', blockedSlotsRoutes);
-adminRouter.use('/payments', paymentRoutes);
 adminRouter.use('/mailing', mailingRoutes);
 adminRouter.use('/sms', smsRoutes);
 adminRouter.use('/notifications', notificationRoutes);
-adminRouter.use('/products', productRoutes);
 adminRouter.use('/waitlist', waitlistRoutes);
 adminRouter.use('/automation', automationRoutes);
 adminRouter.use('/campaigns', campaignRoutes);
 adminRouter.use('/system', systemHealthRoutes);
+adminRouter.use('/audit-log', auditLogRoutes);
+adminRouter.use('/push', pushRoutes);
 app.use('/api/admin', adminRouter);
 
 // Public campaign tracking (no auth)

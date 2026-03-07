@@ -37,7 +37,7 @@ function SmsIcon() {
   );
 }
 
-export default function Sms() {
+export default function Sms({ embedded } = {}) {
   const isMobile = useMobile();
   const [tab, setTab] = useState('send'); // 'send' | 'history' | 'settings'
   const [template, setTemplate] = useState(SMS_TEMPLATES[0]);
@@ -213,7 +213,7 @@ export default function Sms() {
           .sms-send-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
-      <div className="page-header">
+      {!embedded && <div className="page-header">
         <div>
           <h2 className="page-title">SMS</h2>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
@@ -249,7 +249,7 @@ export default function Sms() {
             )}
           </div>
         </div>
-      </div>
+      </div>}
 
       <div className="page-body">
         {/* Tabs */}

@@ -14,11 +14,8 @@ const Barbers = lazy(() => import('./pages/Barbers'));
 const Clients = lazy(() => import('./pages/Clients'));
 const ClientDetail = lazy(() => import('./pages/ClientDetail'));
 const History = lazy(() => import('./pages/History'));
-const Sms = lazy(() => import('./pages/Sms'));
-const Mailing = lazy(() => import('./pages/Mailing'));
-const SystemHealth = lazy(() => import('./pages/SystemHealth'));
-const Automation = lazy(() => import('./pages/Automation'));
-const Campaigns = lazy(() => import('./pages/Campaigns'));
+const Messages = lazy(() => import('./pages/Messages'));
+const System = lazy(() => import('./pages/System'));
 const PageLoader = () => (
   <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e' }}>
     Chargement...
@@ -59,11 +56,8 @@ function AppRoutes() {
         <Route path="clients" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
         <Route path="clients/:id" element={<Suspense fallback={<PageLoader />}><ClientDetail /></Suspense>} />
         <Route path="history" element={<Suspense fallback={<PageLoader />}><History /></Suspense>} />
-        <Route path="sms" element={<Suspense fallback={<PageLoader />}><Sms /></Suspense>} />
-        <Route path="mailing" element={<Suspense fallback={<PageLoader />}><Mailing /></Suspense>} />
-        <Route path="system" element={<Suspense fallback={<PageLoader />}><SystemHealth /></Suspense>} />
-        <Route path="automation" element={<Suspense fallback={<PageLoader />}><Automation /></Suspense>} />
-        <Route path="campaigns" element={<Suspense fallback={<PageLoader />}><Campaigns /></Suspense>} />
+        <Route path="messages" element={<Suspense fallback={<PageLoader />}><Messages /></Suspense>} />
+        <Route path="system" element={<Suspense fallback={<PageLoader />}><System /></Suspense>} />
 
       </Route>
     </Routes>

@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useNotifications } from '../hooks/useNotifications';
 import useMobile from '../hooks/useMobile';
+import usePushNotifications from '../hooks/usePushNotifications';
 import SearchBar from './SearchBar';
 
 /** Bell SVG icon */
@@ -77,16 +78,8 @@ const NAV_GROUPS = [
     label: 'Communication',
     items: [
       {
-        to: '/sms', label: 'SMS',
+        to: '/messages', label: 'Messages',
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-      },
-      {
-        to: '/mailing', label: 'Mailing',
-        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>,
-      },
-      {
-        to: '/campaigns', label: 'Campagnes',
-        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>,
       },
     ],
   },
@@ -96,10 +89,6 @@ const NAV_GROUPS = [
       {
         to: '/system', label: 'Système',
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>,
-      },
-      {
-        to: '/automation', label: 'Automation',
-        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>,
       },
     ],
   },
@@ -139,10 +128,7 @@ const DRAWER_NAV = [
   { to: '/services', label: 'Prestations', icon: NAV.find(n => n.to === '/services').icon },
   { to: '/barbers', label: 'Barbers', icon: NAV.find(n => n.to === '/barbers').icon },
   { to: '/history', label: 'Historique', icon: NAV.find(n => n.to === '/history').icon },
-  { to: '/sms', label: 'SMS', icon: NAV.find(n => n.to === '/sms').icon },
-  { to: '/mailing', label: 'Mailing', icon: NAV.find(n => n.to === '/mailing').icon },
-  { to: '/automation', label: 'Automation', icon: NAV.find(n => n.to === '/automation').icon },
-  { to: '/campaigns', label: 'Campagnes', icon: NAV.find(n => n.to === '/campaigns').icon },
+  { to: '/messages', label: 'Messages', icon: NAV.find(n => n.to === '/messages').icon },
 ];
 
 const SALON_LABELS = { meylan: 'Meylan', grenoble: 'Grenoble' };
@@ -153,6 +139,7 @@ export default function Layout() {
   const location = useLocation();
   const isMobile = useMobile();
   const { hasNew, newCount, bookings, markSeen } = useNotifications();
+  const push = usePushNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const expandedDropdownRef = useRef(null);
   const collapsedDropdownRef = useRef(null);
@@ -348,6 +335,30 @@ export default function Layout() {
             </div>
           ))}
         </nav>
+
+        {/* Push notification toggle */}
+        {push.supported && !collapsed && (
+          <div style={{ padding: '0 16px 8px' }}>
+            <button
+              onClick={push.subscribed ? push.unsubscribe : push.subscribe}
+              disabled={push.loading}
+              style={{
+                width: '100%', padding: '8px 12px', fontSize: 12,
+                background: push.subscribed ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
+                color: push.subscribed ? '#22c55e' : 'var(--text-secondary)',
+                border: `1px solid ${push.subscribed ? 'rgba(34,197,94,0.3)' : 'var(--border)'}`,
+                borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                fontFamily: 'var(--font)', transition: 'all 0.2s',
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14, flexShrink: 0 }}>
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+              {push.loading ? '...' : push.subscribed ? 'Notifs push actives' : 'Activer les notifs push'}
+            </button>
+          </div>
+        )}
 
         <div className="sidebar-bottom">
           {collapsed ? (

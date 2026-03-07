@@ -1166,7 +1166,7 @@ export default function Analytics() {
               className="a-stagger a-d10"
               icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ef4444" strokeWidth="1.5" style={{ opacity: 0.7 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
               title="Clients inactifs"
-              subtitle="Reguliers (5+ visites) sans RDV depuis 45+ jours"
+              subtitle="Reguliers (3+ visites) sans RDV depuis 3 mois"
             />
             <div className="a-stagger a-d10" style={{ marginBottom: 32 }}>
               {inactiveClients.length === 0 ? (
@@ -1189,13 +1189,13 @@ export default function Analytics() {
                     >
                       <div style={{
                         width: 36, height: 36, borderRadius: 10,
-                        background: c.days_since_visit >= 90
+                        background: c.days_since_visit >= 180
                           ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)',
-                        border: `1px solid ${c.days_since_visit >= 90
+                        border: `1px solid ${c.days_since_visit >= 180
                           ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)'}`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontWeight: 700, fontSize: 13, flexShrink: 0,
-                        color: c.days_since_visit >= 90 ? '#ef4444' : '#f59e0b',
+                        color: c.days_since_visit >= 180 ? '#ef4444' : '#f59e0b',
                       }}>
                         {c.first_name?.charAt(0)}
                       </div>
@@ -1210,9 +1210,9 @@ export default function Analytics() {
                       </div>
                       <div style={{
                         fontSize: 11, fontWeight: 700,
-                        color: c.days_since_visit >= 90 ? '#ef4444' : '#f59e0b',
+                        color: c.days_since_visit >= 180 ? '#ef4444' : '#f59e0b',
                         padding: '4px 10px', borderRadius: 6,
-                        background: c.days_since_visit >= 90
+                        background: c.days_since_visit >= 180
                           ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)',
                         flexShrink: 0,
                       }}>

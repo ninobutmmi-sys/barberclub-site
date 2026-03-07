@@ -13,11 +13,6 @@ const TRIGGER_LABELS = {
     desc: 'SMS envoyé 1h après un RDV terminé pour demander un avis Google.',
     icon: '⭐',
   },
-  reactivation_sms: {
-    title: 'Réactivation client inactif',
-    desc: 'SMS automatique envoyé après 45 jours sans RDV.',
-    icon: '🔄',
-  },
   waitlist_notify: {
     title: 'Notification liste d\'attente',
     desc: 'SMS automatique quand une place se libère pour un client en attente.',
@@ -25,7 +20,7 @@ const TRIGGER_LABELS = {
   },
 };
 
-export default function Automation() {
+export default function Automation({ embedded } = {}) {
   const isMobile = useMobile();
   const [tab, setTab] = useState('monitoring'); // monitoring | triggers | waitlist
   const [triggers, setTriggers] = useState([]);
@@ -114,14 +109,16 @@ export default function Automation() {
           <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
         </div>
       )}
-      <div className="page-header">
-        <div>
-          <h2 className="page-title">Automatisation</h2>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            Triggers SMS automatiques & liste d'attente
-          </p>
+      {!embedded && (
+        <div className="page-header">
+          <div>
+            <h2 className="page-title">Automatisation</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              Triggers SMS automatiques & liste d'attente
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="page-body">
         {/* Tabs */}
@@ -410,7 +407,6 @@ function StatCard({ label, value, icon, color }) {
 function TriggerConfigModal({ trigger, onClose, onSaved }) {
   const [message, setMessage] = useState(trigger.config?.message || '');
   const [delayMinutes, setDelayMinutes] = useState(trigger.config?.delay_minutes || 60);
-  const [inactiveDays, setInactiveDays] = useState(trigger.config?.inactive_days || 45);
   const [googleReviewUrl, setGoogleReviewUrl] = useState(trigger.config?.google_review_url || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -423,9 +419,6 @@ function TriggerConfigModal({ trigger, onClose, onSaved }) {
     if (trigger.type === 'review_sms') {
       config.delay_minutes = parseInt(delayMinutes);
       config.google_review_url = googleReviewUrl;
-    }
-    if (trigger.type === 'reactivation_sms') {
-      config.inactive_days = parseInt(inactiveDays);
     }
     try {
       await updateAutomationTrigger(trigger.type, { config });
@@ -461,7 +454,6 @@ function TriggerConfigModal({ trigger, onClose, onSaved }) {
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
                 Variables : <code style={{ color: '#3b82f6' }}>{'{prenom}'}</code> <code style={{ color: '#3b82f6' }}>{'{nom}'}</code>
                 {trigger.type === 'review_sms' && <> <code style={{ color: '#3b82f6' }}>{'{lien_avis}'}</code></>}
-                {trigger.type === 'reactivation_sms' && <> <code style={{ color: '#3b82f6' }}>{'{lien_reservation}'}</code></>}
                 {trigger.type === 'waitlist_notify' && <> <code style={{ color: '#3b82f6' }}>{'{date}'}</code> <code style={{ color: '#3b82f6' }}>{'{heure}'}</code> <code style={{ color: '#3b82f6' }}>{'{lien_reservation}'}</code></>}
               </div>
             </div>
@@ -479,12 +471,6 @@ function TriggerConfigModal({ trigger, onClose, onSaved }) {
               </>
             )}
 
-            {trigger.type === 'reactivation_sms' && (
-              <div className="form-group">
-                <label className="label">Jours d'inactivité avant envoi</label>
-                <input className="input" type="number" min="7" max="365" value={inactiveDays} onChange={(e) => setInactiveDays(e.target.value)} />
-              </div>
-            )}
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Annuler</button>

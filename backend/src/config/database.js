@@ -1,6 +1,7 @@
 const { Pool, types } = require('pg');
 const config = require('./env');
 const logger = require('../utils/logger');
+const { alertDatabaseDown } = require('../utils/discord');
 
 // Return DATE columns as plain strings ('YYYY-MM-DD') instead of JS Date objects.
 // Default pg behavior creates Date at local midnight, which JSON-serializes to the
@@ -24,6 +25,7 @@ const pool = new Pool({
 // Log connection events
 pool.on('error', (err) => {
   logger.error('Unexpected database pool error', { error: err.message });
+  alertDatabaseDown(err.message);
 });
 
 pool.on('connect', () => {

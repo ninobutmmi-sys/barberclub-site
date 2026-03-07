@@ -32,7 +32,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
 
   // Recurrence state
   const [repeatEnabled, setRepeatEnabled] = useState(false);
-  const [recurrenceType, setRecurrenceType] = useState('biweekly');
+  const [recurrenceType, setRecurrenceType] = useState('weekly');
   const [recurrenceEndType, setRecurrenceEndType] = useState('occurrences');
   const [recurrenceOccurrences, setRecurrenceOccurrences] = useState(6);
   const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
@@ -150,7 +150,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
     } catch (err) { setError(err.message); setSaving(false); }
   }
 
-  const RECURRENCE_LABELS = { weekly: 'Toutes les semaines', biweekly: 'Toutes les 2 semaines', monthly: 'Tous les mois' };
+  const RECURRENCE_LABELS = { daily: 'Tous les jours', weekly: 'Toutes les semaines', biweekly: 'Toutes les 2 semaines', monthly: 'Tous les mois' };
 
   // Helper: format price
   const priceDisplay = selectedService ? (selectedService.price / 100).toFixed(2).replace('.', ',') + ' \u20ac' : null;
@@ -334,6 +334,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
                 <div className="bk-field" style={{ marginBottom: 10 }}>
                   <label>Fréquence</label>
                   <select className="input" value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)}>
+                    <option value="daily">Tous les jours</option>
                     <option value="weekly">Toutes les semaines</option>
                     <option value="biweekly">Toutes les 2 semaines</option>
                     <option value="monthly">Tous les mois</option>

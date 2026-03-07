@@ -8,6 +8,8 @@ const API_BASE = window.location.hostname === 'localhost' || window.location.hos
   ? API_DEV
   : API_PROD;
 
+export { API_BASE };
+
 function getTokens() {
   return {
     access: localStorage.getItem('bc_access_token'),
@@ -248,29 +250,11 @@ export const createBlockedSlot = (body) =>
 export const deleteBlockedSlot = (id) =>
   request(`/admin/blocked-slots/${id}`, { method: 'DELETE' });
 
-// ---- Admin: Payments / Caisse ----
-export const getDailyCash = (date) =>
-  request(`/admin/payments/daily?date=${date}`);
-export const recordPayment = (body) =>
-  request('/admin/payments', { method: 'POST', body: JSON.stringify(body) });
-export const deletePayment = (id) =>
-  request(`/admin/payments/${id}`, { method: 'DELETE' });
-export const closeRegister = (body) =>
-  request('/admin/payments/close', { method: 'POST', body: JSON.stringify(body) });
-export const getClosings = (params) => {
-  const qs = new URLSearchParams(params).toString();
-  return request(`/admin/payments/closings?${qs}`);
-};
-
 // ---- Admin: Analytics ----
 export const getDashboard = () => request('/admin/analytics/dashboard');
 export const getRevenue = (params) => {
   const qs = new URLSearchParams(params).toString();
   return request(`/admin/analytics/revenue?${qs}`);
-};
-export const getBookingsCount = (params) => {
-  const qs = new URLSearchParams(params).toString();
-  return request(`/admin/analytics/bookings-count?${qs}`);
 };
 export const getPeakHours = (params) => {
   const qs = new URLSearchParams(params).toString();
@@ -288,35 +272,7 @@ export const getBarberStats = (params) => {
   const qs = new URLSearchParams(params).toString();
   return request(`/admin/analytics/barbers?${qs}`);
 };
-export const getClientStats = () => request('/admin/analytics/clients');
-export const getTrends = () => request('/admin/analytics/trends');
 export const getMemberStats = () => request('/admin/analytics/members');
-
-// ---- Admin: Products / Stock ----
-export const getProducts = (params) => {
-  const qs = params ? new URLSearchParams(params).toString() : '';
-  return request(`/admin/products${qs ? '?' + qs : ''}`);
-};
-export const createProduct = (body) =>
-  request('/admin/products', { method: 'POST', body: JSON.stringify(body) });
-export const updateProduct = (id, body) =>
-  request(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(body) });
-export const deleteProduct = (id) =>
-  request(`/admin/products/${id}`, { method: 'DELETE' });
-export const recordProductSale = (id, body) =>
-  request(`/admin/products/${id}/sale`, { method: 'POST', body: JSON.stringify(body) });
-export const getProductSales = (params) => {
-  const qs = params ? new URLSearchParams(params).toString() : '';
-  return request(`/admin/products/sales${qs ? '?' + qs : ''}`);
-};
-export const getProductStats = () => request('/admin/products/stats');
-
-// ---- Admin: Gift Cards ----
-export const getGiftCards = () => request('/admin/products/gift-cards');
-export const createGiftCard = (body) =>
-  request('/admin/products/gift-cards', { method: 'POST', body: JSON.stringify(body) });
-export const updateGiftCard = (id, body) =>
-  request(`/admin/products/gift-cards/${id}`, { method: 'PUT', body: JSON.stringify(body) });
 
 // ---- Admin: Waitlist ----
 export const getWaitlist = (params) => {
@@ -335,6 +291,10 @@ export const getWaitlistCount = () => request('/admin/waitlist/count');
 export const getAutomationTriggers = () => request('/admin/automation');
 export const updateAutomationTrigger = (type, body) =>
   request(`/admin/automation/${type}`, { method: 'PUT', body: JSON.stringify(body) });
+
+// ---- Admin: Mailing ----
+export const sendMailing = (body) =>
+  request('/admin/mailing/send', { method: 'POST', body: JSON.stringify(body) });
 
 // ---- Admin: SMS ----
 export const sendSms = (body) =>
@@ -355,8 +315,15 @@ export const purgeFailedNotifications = () => request('/admin/notifications/fail
 // ---- Admin: System Health ----
 export const getSystemHealth = () => request('/admin/system/health');
 
+// ---- Admin: Audit Log ----
+export const getAuditLog = (params) => {
+  const filtered = Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined)
+  );
+  const qs = new URLSearchParams(filtered).toString();
+  return request(`/admin/audit-log?${qs}`);
+};
+
 // ---- Admin: Campaign Tracking ----
 export const getCampaigns = () => request('/admin/campaigns');
-export const createCampaign = (body) =>
-  request('/admin/campaigns', { method: 'POST', body: JSON.stringify(body) });
 export const getCampaignROI = (id) => request(`/admin/campaigns/${id}/roi`);

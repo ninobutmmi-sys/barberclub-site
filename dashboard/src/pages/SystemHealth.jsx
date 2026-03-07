@@ -32,7 +32,7 @@ function StatusDot({ status }) {
   );
 }
 
-export default function SystemHealth() {
+export default function SystemHealth({ embedded } = {}) {
   const isMobile = useMobile();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -70,24 +70,26 @@ export default function SystemHealth() {
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <h2 className="page-title">Santé Système</h2>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            Monitoring API, base de données, notifications & cron jobs
-          </p>
+      {!embedded && (
+        <div className="page-header">
+          <div>
+            <h2 className="page-title">Santé Système</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              Monitoring API, base de données, notifications & cron jobs
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {lastUpdate && (
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                MAJ {lastUpdate.toLocaleTimeString('fr-FR')}
+              </span>
+            )}
+            <button className="btn btn-secondary btn-sm" onClick={load} disabled={loading}>
+              {loading ? 'Chargement...' : 'Actualiser'}
+            </button>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {lastUpdate && (
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-              MAJ {lastUpdate.toLocaleTimeString('fr-FR')}
-            </span>
-          )}
-          <button className="btn btn-secondary btn-sm" onClick={load} disabled={loading}>
-            {loading ? 'Chargement...' : 'Actualiser'}
-          </button>
-        </div>
-      </div>
+      )}
 
       {error && (
         <div role="alert" style={{ padding: '12px 16px', marginBottom: 16, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, color: '#ef4444', fontSize: 13 }}>

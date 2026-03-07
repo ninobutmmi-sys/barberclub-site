@@ -3,6 +3,7 @@ const { body, param } = require('express-validator');
 const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
+const { logAudit } = require('../../middleware/auditLog');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -76,6 +77,7 @@ router.post('/',
         }
       }
 
+      logAudit(req, 'create', 'service', service.id, { name, price, duration });
       res.status(201).json(service);
     } catch (error) {
       next(error);
@@ -155,6 +157,7 @@ router.put('/:id',
         throw ApiError.notFound('Prestation introuvable');
       }
 
+      logAudit(req, 'update', 'service', id, { changes: req.body });
       res.json(result.rows[0]);
     } catch (error) {
       next(error);
@@ -180,6 +183,7 @@ router.delete('/:id',
         throw ApiError.notFound('Prestation introuvable');
       }
 
+      logAudit(req, 'delete', 'service', req.params.id);
       res.json({ message: 'Prestation supprimée' });
     } catch (error) {
       next(error);

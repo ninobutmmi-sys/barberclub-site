@@ -95,6 +95,11 @@ module.exports = {
     phone: process.env.SALON_PHONE || '',
     googleReviewUrl: process.env.GOOGLE_REVIEW_URL || '',
   },
+  vapid: {
+    publicKey: process.env.VAPID_PUBLIC_KEY || '',
+    privateKey: process.env.VAPID_PRIVATE_KEY || '',
+    subject: `mailto:${process.env.BREVO_SENDER_EMAIL || 'noreply@barberclub-grenoble.fr'}`,
+  },
   getSalonConfig,
   SALONS,
 };

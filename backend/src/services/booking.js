@@ -5,6 +5,7 @@ const availability = require('./availability');
 const notification = require('./notification');
 const logger = require('../utils/logger');
 const config = require('../config/env');
+const { notifyNewBooking } = require('./push');
 const {
   MAX_BOOKING_ADVANCE_MONTHS,
   CANCELLATION_DEADLINE_HOURS,
@@ -302,6 +303,9 @@ async function createBooking(data) {
     }
   }
 
+  // Push notification to dashboard (fire-and-forget)
+  notifyNewBooking(salonId, result);
+
   return result;
 }
 
@@ -309,7 +313,7 @@ async function createBooking(data) {
  * Compute recurring dates from a start date
  * @param {string} startDate - YYYY-MM-DD
  * @param {object} recurrence
- * @param {string} recurrence.type - 'weekly' | 'biweekly' | 'monthly'
+ * @param {string} recurrence.type - 'daily' | 'weekly' | 'biweekly' | 'monthly'
  * @param {string} recurrence.end_type - 'occurrences' | 'end_date'
  * @param {number} [recurrence.occurrences] - total bookings including first
  * @param {string} [recurrence.end_date] - YYYY-MM-DD
@@ -327,7 +331,10 @@ function computeRecurringDates(startDate, recurrence) {
 
   for (let i = 1; i < maxOccurrences; i++) {
     let next;
-    if (recurrence.type === 'weekly') {
+    if (recurrence.type === 'daily') {
+      next = new Date(start);
+      next.setDate(start.getDate() + i);
+    } else if (recurrence.type === 'weekly') {
       next = new Date(start);
       next.setDate(start.getDate() + 7 * i);
     } else if (recurrence.type === 'biweekly') {

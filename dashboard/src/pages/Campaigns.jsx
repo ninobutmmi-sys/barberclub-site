@@ -6,7 +6,7 @@ function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
 }
 
-export default function Campaigns() {
+export default function Campaigns({ embedded } = {}) {
   const isMobile = useMobile();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,14 +42,16 @@ export default function Campaigns() {
           <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
         </div>
       )}
-      <div className="page-header">
-        <div>
-          <h2 className="page-title">Campagnes</h2>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            Suivi ROI des campagnes SMS & Email
-          </p>
+      {!embedded && (
+        <div className="page-header">
+          <div>
+            <h2 className="page-title">Campagnes</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              Suivi ROI des campagnes SMS & Email
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="page-body">
         {/* Stats Overview */}

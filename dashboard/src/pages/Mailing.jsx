@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getClients, getNotificationLogs, getBrevoStatus } from '../api';
+import { getClients, getNotificationLogs, getBrevoStatus, sendMailing } from '../api';
 import useMobile from '../hooks/useMobile';
 
 // ============================================
@@ -65,7 +65,7 @@ function MailIcon() {
   );
 }
 
-export default function Mailing() {
+export default function Mailing({ embedded } = {}) {
   const isMobile = useMobile();
   const [tab, setTab] = useState('compose'); // 'compose' | 'history' | 'settings'
   const [template, setTemplate] = useState(EMAIL_TEMPLATES[0]);
@@ -148,38 +148,22 @@ export default function Mailing() {
     setResult(null);
 
     try {
-      const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:3000/api'
-        : 'https://barberclub-site-production.up.railway.app/api';
-
-      const res = await fetch(`${API_BASE}/admin/mailing/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('bc_access_token')}`,
-        },
-        body: JSON.stringify({
-          recipients: recipients.map((c) => ({
-            email: c.email,
-            first_name: c.first_name,
-            last_name: c.last_name,
-          })),
-          subject,
-          body,
-          from_name: brevoStatus?.senderName || 'BarberClub Meylan',
-        }),
+      const data = await sendMailing({
+        recipients: recipients.map((c) => ({
+          email: c.email,
+          first_name: c.first_name,
+          last_name: c.last_name,
+        })),
+        subject,
+        body,
+        from_name: brevoStatus?.senderName || 'BarberClub Meylan',
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setResult({ error: data.error || `Erreur ${res.status}` });
-      } else {
-        setResult({
-          success: true,
-          sent: data.sent || recipients.length,
-          failed: data.failed || 0,
-        });
-      }
+      setResult({
+        success: true,
+        sent: data.sent || recipients.length,
+        failed: data.failed || 0,
+      });
     } catch (err) {
       setResult({ error: err.message });
     }
@@ -222,14 +206,14 @@ export default function Mailing() {
           .mailing-compose-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
-      <div className="page-header">
+      {!embedded && <div className="page-header">
         <div>
           <h2 className="page-title">Mailing</h2>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
             Campagnes email via Brevo
           </p>
         </div>
-      </div>
+      </div>}
 
       <div className="page-body">
         {/* Tabs */}

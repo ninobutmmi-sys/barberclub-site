@@ -33,9 +33,6 @@ async function processAutomationTriggers() {
           case 'review_sms':
             await processReviewSms(trigger.config, salonId);
             break;
-          case 'reactivation_sms':
-            await processReactivationSms(trigger.config, salonId);
-            break;
           case 'waitlist_notify':
             await processWaitlistNotify(trigger.config, salonId);
             break;
@@ -104,58 +101,6 @@ async function processReviewSms(triggerConfig, salonId) {
 
   if (result.rows.length > 0) {
     logger.info(`Review SMS (${salonId}): processed ${result.rows.length} bookings`);
-  }
-}
-
-/**
- * Reactivation SMS: Send to clients inactive for X days
- * Filtered by salon — only counts bookings from this salon
- */
-async function processReactivationSms(triggerConfig, salonId) {
-  const inactiveDays = triggerConfig.inactive_days || 45;
-  const message = triggerConfig.message || '';
-
-  if (!message) return;
-
-  const salon = config.getSalonConfig(salonId);
-  const bookingUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
-
-  // Find clients with 3+ visits at THIS salon, inactive for inactiveDays
-  const result = await db.query(
-    `SELECT c.id, c.first_name, c.last_name, c.phone,
-            MAX(b.date) as last_visit
-     FROM clients c
-     JOIN bookings b ON c.id = b.client_id
-     WHERE c.phone IS NOT NULL
-       AND c.deleted_at IS NULL
-       AND b.deleted_at IS NULL
-       AND b.salon_id = $2
-       AND b.status IN ('completed', 'confirmed')
-       AND (c.reactivation_sms_sent_at IS NULL OR c.reactivation_sms_sent_at < NOW() - INTERVAL '30 days')
-     GROUP BY c.id
-     HAVING COUNT(b.id) >= 3
-       AND MAX(b.date) < CURRENT_DATE - $1::int
-       AND MAX(b.date) > CURRENT_DATE - ($1::int + 30)`,
-    [inactiveDays, salonId]
-  );
-
-  for (const client of result.rows) {
-    const personalMessage = message
-      .replace(/\{prenom\}/gi, client.first_name || '')
-      .replace(/\{nom\}/gi, client.last_name || '')
-      .replace(/\{lien_reservation\}/gi, bookingUrl);
-
-    try {
-      await brevoSMS(client.phone, personalMessage, salonId);
-      await db.query('UPDATE clients SET reactivation_sms_sent_at = NOW() WHERE id = $1', [client.id]);
-      logger.info('Reactivation SMS sent', { clientId: client.id, phone: client.phone, salonId });
-    } catch (err) {
-      logger.error('Reactivation SMS failed', { clientId: client.id, error: err.message });
-    }
-  }
-
-  if (result.rows.length > 0) {
-    logger.info(`Reactivation SMS (${salonId}): found ${result.rows.length} inactive clients`);
   }
 }
 
