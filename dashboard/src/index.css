@@ -1056,6 +1056,35 @@ tr:hover td {
   animation: fadeIn 0.2s ease;
 }
 
+.bk-recurrence-wrap { padding: 0 24px; }
+
+.bk-color-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: default;
+}
+.bk-color-preview {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}
+.bk-color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.bk-color-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
 /* ---- PLANNING HEADER PREMIUM ---- */
 .plan-header {
   display: flex;
@@ -2152,12 +2181,43 @@ select.input {
   .booking-detail-modal .modal-header { padding: 16px 18px; }
   .booking-detail-modal .modal-body { padding: 8px 18px 24px; gap: 16px; }
   .booking-detail-modal .modal-footer { padding: 16px 18px; flex-wrap: wrap; }
-  .bk-section { padding: 16px 18px; border-radius: 10px; }
   .bk-section-title { margin-bottom: 12px; }
   .bk-form-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
   .bk-footer-actions { flex-wrap: wrap; }
   .bk-footer-actions .btn { flex: 1; min-width: 0; }
   .bk-footer-actions .btn-save { flex: 1 1 100%; order: -1; }
+
+  /* ---- CREATE BOOKING MODAL COMPACT ---- */
+  .bk-header { padding: 12px 16px 8px; }
+  .bk-header h3 { font-size: 13px; gap: 8px; }
+  .bk-header h3 .bk-icon { width: 28px; height: 28px; border-radius: 8px; }
+  .bk-header h3 .bk-icon svg { width: 13px; height: 13px; }
+  .bk-section { padding: 12px 16px; border-radius: 10px; }
+  .bk-section-label { margin-bottom: 8px; font-size: 9px; }
+  .bk-barbers { gap: 6px; margin-bottom: 10px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .bk-barbers::-webkit-scrollbar { display: none; }
+  .bk-barber-chip { padding: 6px 10px; font-size: 12px; gap: 6px; flex: 0 0 auto; border-radius: 8px; }
+  .bk-barber-chip .bk-avatar { width: 22px; height: 22px; font-size: 9px; border-radius: 6px; }
+  .bk-field { margin-bottom: 8px; }
+  .bk-field label { font-size: 10px; margin-bottom: 3px; }
+  .bk-field .input, .bk-field select.input { padding: 8px 10px; border-radius: 8px; }
+  .bk-grid-2 { gap: 6px; }
+  .bk-grid-3 { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .bk-divider { margin: 8px 16px; }
+  .bk-recurrence-box { padding: 10px 12px; }
+  .bk-client-badge { padding: 8px 12px; margin-bottom: 10px; gap: 8px; }
+  .bk-error { margin: 0 16px 8px; padding: 8px 12px; font-size: 12px; }
+  .bk-footer { padding: 10px 16px; }
+  .bk-footer .bk-price { font-size: 14px; }
+  .bk-footer .bk-price small { font-size: 10px; }
+  .bk-btn-create { padding: 9px 16px; font-size: 12px; gap: 6px; border-radius: 8px; }
+  .bk-btn-cancel { padding: 9px 14px; font-size: 12px; border-radius: 8px; }
+  .bk-search-results { max-height: 180px; }
+  .bk-search-item { padding: 8px 12px; }
+  .bk-color-grid { gap: 5px; }
+  .bk-color-dot { width: 18px; height: 18px; border-radius: 5px; }
+  .bk-color-field { margin-bottom: 4px !important; }
+  .bk-recurrence-wrap { padding: 0 16px; }
 
   /* ---- MOBILE CARD LIST (replaces tables) ---- */
   .mob-card-list {

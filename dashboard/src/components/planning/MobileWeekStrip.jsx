@@ -18,7 +18,7 @@ import { ChevronLeft, ChevronRight } from './Icons';
 
 const DAY_LABELS = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'];
 
-export default function MobileWeekStrip({ currentDate, onSelectDate }) {
+export default function MobileWeekStrip({ currentDate, onSelectDate, hideMonthNav }) {
   const weekMonday = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
   const weekDays = useMemo(() => {
     const d = [];
@@ -30,19 +30,21 @@ export default function MobileWeekStrip({ currentDate, onSelectDate }) {
   const monthLabel = format(currentDate, 'MMM yyyy', { locale: fr });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: hideMonthNav ? 0 : 8 }}>
       {/* Month label + nav + Aujourd'hui */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button className="plan-nav-btn" onClick={() => onSelectDate(subMonths(currentDate, 1))} style={{ width: 26, height: 26, flexShrink: 0 }}><ChevronLeft /></button>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize', minWidth: 90, textAlign: 'center' }}>{monthLabel}</span>
-          <button className="plan-nav-btn" onClick={() => onSelectDate(addMonths(currentDate, 1))} style={{ width: 26, height: 26, flexShrink: 0 }}><ChevronRight /></button>
+      {!hideMonthNav && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className="plan-nav-btn" onClick={() => onSelectDate(subMonths(currentDate, 1))} style={{ width: 26, height: 26, flexShrink: 0 }}><ChevronLeft /></button>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize', minWidth: 90, textAlign: 'center' }}>{monthLabel}</span>
+            <button className="plan-nav-btn" onClick={() => onSelectDate(addMonths(currentDate, 1))} style={{ width: 26, height: 26, flexShrink: 0 }}><ChevronRight /></button>
+          </div>
+          <button className="plan-today-btn" style={{ padding: '4px 10px', fontSize: 12, borderColor: 'rgba(255,255,255,0.7)', color: 'var(--text)' }} onClick={() => onSelectDate(new Date())}>Aujourd&apos;hui</button>
         </div>
-        <button className="plan-today-btn" style={{ padding: '4px 10px', fontSize: 12, borderColor: 'rgba(255,255,255,0.7)', color: 'var(--text)' }} onClick={() => onSelectDate(new Date())}>Aujourd&apos;hui</button>
-      </div>
+      )}
       {/* Week nav arrows + Day buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <button className="plan-nav-btn" onClick={() => onSelectDate(subWeeks(currentDate, 1))} style={{ width: 28, height: 28, flexShrink: 0 }}><ChevronLeft /></button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <button className="plan-nav-btn" onClick={() => onSelectDate(subWeeks(currentDate, 1))} style={{ width: 26, height: 26, flexShrink: 0 }}><ChevronLeft /></button>
         {weekDays.map((day, i) => {
           const dayStr = format(day, 'yyyy-MM-dd');
           const isActive = dayStr === currentStr;
@@ -53,33 +55,32 @@ export default function MobileWeekStrip({ currentDate, onSelectDate }) {
               onClick={() => onSelectDate(day)}
               style={{
                 flex: 1,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                padding: '6px 0',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                padding: '4px 0',
                 border: isActive ? '2px solid var(--accent, #3b82f6)' : '1px solid transparent',
-                borderRadius: 10,
+                borderRadius: 8,
                 background: isActive ? 'rgba(59,130,246,0.12)' : 'transparent',
                 color: isActive ? 'var(--accent, #3b82f6)' : today ? 'var(--text)' : 'var(--text-secondary)',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
             >
-              <span style={{ fontSize: 16, fontWeight: isActive || today ? 800 : 600, lineHeight: 1.2 }}>
+              <span style={{ fontSize: 14, fontWeight: isActive || today ? 800 : 600, lineHeight: 1.2 }}>
                 {format(day, 'd')}
               </span>
-              <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'lowercase', letterSpacing: '0.02em', opacity: isActive ? 1 : 0.7 }}>
+              <span style={{ fontSize: 9, fontWeight: 600, textTransform: 'lowercase', letterSpacing: '0.02em', opacity: isActive ? 1 : 0.7 }}>
                 {DAY_LABELS[i]}
               </span>
               {today && (
                 <div style={{
                   width: 4, height: 4, borderRadius: '50%',
                   background: isActive ? 'var(--accent, #3b82f6)' : 'var(--text-muted)',
-                  marginTop: 1,
                 }} />
               )}
             </button>
           );
         })}
-        <button className="plan-nav-btn" onClick={() => onSelectDate(addWeeks(currentDate, 1))} style={{ width: 28, height: 28, flexShrink: 0 }}><ChevronRight /></button>
+        <button className="plan-nav-btn" onClick={() => onSelectDate(addWeeks(currentDate, 1))} style={{ width: 26, height: 26, flexShrink: 0 }}><ChevronRight /></button>
       </div>
     </div>
   );

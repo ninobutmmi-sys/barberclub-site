@@ -3321,6 +3321,8 @@
             for (const s of state.services) {
                 grouped[getCategory(s.name)].push(s);
             }
+            // Sort each category by price ascending
+            Object.values(grouped).forEach(arr => arr.sort((a, b) => a.price - b.price));
 
             let html = '';
             for (const cat of categories) {

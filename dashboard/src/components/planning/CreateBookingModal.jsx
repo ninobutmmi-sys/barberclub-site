@@ -29,6 +29,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [colorOpen, setColorOpen] = useState(false);
 
   // Recurrence state
   const [repeatEnabled, setRepeatEnabled] = useState(false);
@@ -292,19 +293,25 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
               </div>
             </div>
 
-            {/* Color picker */}
-            <div className="bk-field" style={{ marginTop: 6 }}>
-              <label>Couleur</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+            {/* Color picker — collapsible on mobile */}
+            <div className="bk-field bk-color-field" style={{ marginTop: 4 }}>
+              <label
+                className="bk-color-toggle"
+                onClick={(e) => { e.preventDefault(); setColorOpen(!colorOpen); }}
+              >
+                Couleur
+                <span className="bk-color-preview" style={{ background: bookingColor || FALLBACK_COLOR }} />
+              </label>
+              <div className={`bk-color-grid${colorOpen ? ' open' : ''}`}>
                 {COLOR_PALETTE.map((c) => (
                   <div
                     key={c}
                     onClick={() => setBookingColor(c)}
+                    className="bk-color-dot"
                     style={{
-                      width: 22, height: 22, borderRadius: 6, background: c, cursor: 'pointer',
+                      background: c,
                       border: bookingColor === c ? '2px solid #fff' : '2px solid transparent',
                       boxShadow: bookingColor === c ? `0 0 0 1px ${c}` : 'none',
-                      transition: 'all 0.15s ease',
                     }}
                   />
                 ))}
@@ -313,7 +320,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
           </div>
 
           {/* ---- Recurrence ---- */}
-          <div style={{ padding: '0 24px' }}>
+          <div className="bk-recurrence-wrap">
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '4px 0' }}>
               <div
                 className={`bk-toggle ${repeatEnabled ? 'on' : 'off'}`}
