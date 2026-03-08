@@ -369,6 +369,9 @@ router.put('/:id',
           new_time: txResult.newStartTime,
           new_barber_name: txResult.newBarberName,
           price: txResult.price,
+          cancel_token: txResult.booking.cancel_token,
+          booking_id: txResult.booking.id,
+          salon_id: salonId,
         }).catch((err) => logger.error('Email notification failed', { error: err.message }));
       }
 
@@ -468,6 +471,7 @@ router.delete('/group/:groupId',
               date: dateStr,
               start_time: info.start_time,
               price: info.price,
+              salon_id: salonId,
             }).catch((err) => logger.error('Email notification failed', { error: err.message, bookingId: info.id }));
           }
         }
@@ -530,6 +534,7 @@ router.delete('/:id',
           date: dateStr,
           start_time: bookingInfo.start_time,
           price: bookingInfo.price,
+          salon_id: salonId,
         }).catch((err) => logger.error('Email notification failed', { error: err.message }));
       }
 
