@@ -32,7 +32,7 @@ export default function BlockedSlotBlock({ block, onClick }) {
         zIndex: 1,
         boxSizing: 'border-box',
       }}
-      onClick={(e) => { e.stopPropagation(); onClick(block); }}
+      onClick={(e) => { e.stopPropagation(); if (!block._isRecurring) onClick(block); }}
       onMouseMove={(e) => e.stopPropagation()}
       title={`${block.start_time?.slice(0, 5)} - ${block.end_time?.slice(0, 5)} | ${BLOCK_TYPE_LABELS[block.type] || block.type}${block.reason ? ' \u2014 ' + block.reason : ''}`}
     >

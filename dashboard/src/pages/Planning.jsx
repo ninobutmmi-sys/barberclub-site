@@ -52,6 +52,7 @@ export default function Planning() {
   const [refreshing, setRefreshing] = useState(false);
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [barberOffDays, setBarberOffDays] = useState({}); // { barberId: Set([0,6]) }
+  const [barberBreaks, setBarberBreaks] = useState({}); // { barberId: { dayOfWeek: { start, end } } }
   const [guestAssignments, setGuestAssignments] = useState([]); // [{ barber_id, host_salon_id, date, barber_name, home_salon_id }]
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -103,16 +104,25 @@ export default function Planning() {
       setGuestAssignments(Array.isArray(ga) ? ga : []);
       // Load schedules for all barbers to know off-days
       const offMap = {};
+      const breakMap = {};
       await Promise.all(barberList.map(async (br) => {
         try {
           const sched = await getBarberSchedule(br.id);
           const offSet = new Set();
-          (sched.weekly || []).forEach((w) => { if (!w.is_working) offSet.add(w.day_of_week); });
+          const breaks = {};
+          (sched.weekly || []).forEach((w) => {
+            if (!w.is_working) offSet.add(w.day_of_week);
+            if (w.break_start && w.break_end) {
+              breaks[w.day_of_week] = { start: w.break_start.slice(0, 5), end: w.break_end.slice(0, 5) };
+            }
+          });
           offMap[br.id] = offSet;
-        } catch { offMap[br.id] = new Set(); }
+          breakMap[br.id] = breaks;
+        } catch { offMap[br.id] = new Set(); breakMap[br.id] = {}; }
       }));
       if (signal?.aborted) return;
       setBarberOffDays(offMap);
+      setBarberBreaks(breakMap);
     } catch (err) {
       if (signal?.aborted) return;
       console.error('Planning load error:', err);
@@ -175,8 +185,30 @@ export default function Planning() {
       if (!map[key]) map[key] = [];
       map[key].push(bs);
     }
+    // Inject recurring breaks as virtual blocked slots
+    for (const day of days) {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      const jsDay = day.getDay();
+      const dow = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
+      for (const barber of barbers) {
+        const brk = barberBreaks[barber.id]?.[dow];
+        if (!brk) continue;
+        const key = `${dateStr}_${barber.id}`;
+        if (!map[key]) map[key] = [];
+        map[key].push({
+          id: `break-${barber.id}-${dateStr}`,
+          barber_id: barber.id,
+          date: dateStr,
+          start_time: brk.start,
+          end_time: brk.end,
+          type: 'break',
+          reason: 'Pause',
+          _isRecurring: true,
+        });
+      }
+    }
     return map;
-  }, [blockedSlots]);
+  }, [blockedSlots, days, barbers, barberBreaks]);
 
   const stats = useMemo(() => {
     const active = bookings.filter((b) => b.status !== 'cancelled');
