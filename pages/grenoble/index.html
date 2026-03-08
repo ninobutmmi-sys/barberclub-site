@@ -926,6 +926,119 @@
             .title-seo { opacity: 1; }
         }
 
+        /* STORY SECTION */
+        .story-section {
+            position: relative;
+            background: #000;
+            padding: 80px 24px;
+            overflow: hidden;
+        }
+
+        .story-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1px;
+            height: 60px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.25), transparent);
+        }
+
+        .story-container {
+            max-width: 560px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .story-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: rgba(255,255,255,0.35);
+            margin-bottom: 16px;
+        }
+
+        .story-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(26px, 7vw, 40px);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 28px;
+            background: linear-gradient(135deg, #ffffff, #a0a0a0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .story-divider {
+            width: 40px;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            margin: 0 auto 40px;
+        }
+
+        .story-text p {
+            font-size: 15px;
+            line-height: 1.9;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 20px;
+        }
+
+        .story-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .story-accent {
+            font-size: 17px !important;
+            color: rgba(255,255,255,0.95) !important;
+            font-weight: 600;
+        }
+
+        .story-closing {
+            margin-top: 40px;
+            padding-top: 32px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .story-closing p {
+            font-size: 15px !important;
+            color: rgba(255,255,255,0.5) !important;
+            font-style: italic;
+            margin-bottom: 6px !important;
+        }
+
+        .story-with-you {
+            font-family: 'Orbitron', sans-serif !important;
+            font-size: 18px !important;
+            font-weight: 700 !important;
+            font-style: normal !important;
+            color: #fff !important;
+            letter-spacing: 0.1em;
+            margin-top: 8px !important;
+        }
+
+        .story-container {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .story-section.visible .story-container {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (min-width: 768px) {
+            .story-section { padding: 100px 40px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .story-container { opacity: 1; transform: none; transition: none; }
+        }
+
     </style>
 </head>
 
@@ -995,6 +1108,27 @@
             </div>
         </nav>
     </div>
+
+    <!-- STORY SECTION -->
+    <section class="story-section">
+        <div class="story-container">
+            <div class="story-label">Notre Histoire</div>
+            <h2 class="story-title">L'Exigence</h2>
+            <div class="story-divider"></div>
+            <div class="story-text">
+                <p>Avec plus de 10 ans d'expertise, au fil de mon parcours, j'ai appris ce qui plaît vraiment. Ce qui déçoit. Et surtout, ce qui ne doit jamais être laissé au hasard pour faire la différence.</p>
+                <p>Chaque détail a été observé, corrigé, perfectionné au fil du temps.</p>
+                <p class="story-accent">En 2024, Barber Club est né de cette exigence.</p>
+                <p>Une vision construite avec du temps, de l'expérience, et surtout une passion.</p>
+                <p>Nous avons décidé de ne pas suivre les règles, mais de les redéfinir. Comme vous, nous avons appris, évolué, cherché l'exigence. Et comme vous, nous savons qu'un style se construit avec le temps.</p>
+                <p>Barber Club grandit, étape après étape.<br>Et ce n'est que le début.</p>
+                <div class="story-closing">
+                    <p>L'histoire s'écrit maintenant.</p>
+                    <p class="story-with-you">Avec vous.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- BOOKING MODAL -->
     <div class="booking-modal" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -1066,6 +1200,21 @@
                 modalConfirm.focus();
             }
         });
+    </script>
+    <script>
+        // Story section scroll reveal
+        const storySection = document.querySelector('.story-section');
+        if (storySection) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+            observer.observe(storySection);
+        }
     </script>
 <script src="../../assets/js/cookie-consent.js" defer></script>
 </body>

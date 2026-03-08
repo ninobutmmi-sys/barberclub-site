@@ -77,13 +77,13 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
   return (
     <div
       ref={scrollRef}
+      className="planning-grid-container"
       style={{
         display: 'flex',
         flexDirection: 'column',
         border: '1px solid rgba(var(--overlay),0.08)',
         borderRadius: 10,
         background: 'var(--bg-card)',
-        height: 'calc(100vh - 180px)',
         overflow: 'hidden',
       }}
     >

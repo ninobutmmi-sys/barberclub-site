@@ -10,6 +10,19 @@ export function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' \u20ac';
 }
 
+export function formatPhone(phone) {
+  if (!phone) return '';
+  const clean = phone.replace(/\s/g, '');
+  if (/^0[1-9]\d{8}$/.test(clean)) {
+    return clean.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
+  }
+  if (/^\+33[1-9]\d{8}$/.test(clean)) {
+    const national = '0' + clean.slice(3);
+    return national.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
+  }
+  return phone;
+}
+
 export function timeToMinutes(t) {
   if (!t) return 0;
   const parts = t.split(':');

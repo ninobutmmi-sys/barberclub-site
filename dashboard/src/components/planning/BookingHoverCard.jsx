@@ -5,7 +5,7 @@
 import { createPortal } from 'react-dom';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { timeToMinutes, hexToBlockStyle, FALLBACK_COLOR, STATUS_LABELS } from './helpers';
+import { timeToMinutes, hexToBlockStyle, formatPhone, FALLBACK_COLOR, STATUS_LABELS } from './helpers';
 
 function HoverRow({ label, value }) {
   return (
@@ -126,7 +126,7 @@ export default function BookingHoverCard({ booking, anchorRect }) {
           </div>
           {booking.client_phone && (
             <div style={{ fontSize: 10, color: 'var(--text-secondary)', textAlign: 'center', wordBreak: 'break-all' }}>
-              {booking.client_phone}
+              {formatPhone(booking.client_phone)}
             </div>
           )}
           {booking.client_email && (
