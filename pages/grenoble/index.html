@@ -1109,27 +1109,6 @@
         </nav>
     </div>
 
-    <!-- STORY SECTION -->
-    <section class="story-section">
-        <div class="story-container">
-            <div class="story-label">Notre Histoire</div>
-            <h2 class="story-title">L'Exigence</h2>
-            <div class="story-divider"></div>
-            <div class="story-text">
-                <p>Avec plus de 10 ans d'expertise, au fil de mon parcours, j'ai appris ce qui plaît vraiment. Ce qui déçoit. Et surtout, ce qui ne doit jamais être laissé au hasard pour faire la différence.</p>
-                <p>Chaque détail a été observé, corrigé, perfectionné au fil du temps.</p>
-                <p class="story-accent">En 2024, Barber Club est né de cette exigence.</p>
-                <p>Une vision construite avec du temps, de l'expérience, et surtout une passion.</p>
-                <p>Nous avons décidé de ne pas suivre les règles, mais de les redéfinir. Comme vous, nous avons appris, évolué, cherché l'exigence. Et comme vous, nous savons qu'un style se construit avec le temps.</p>
-                <p>Barber Club grandit, étape après étape.<br>Et ce n'est que le début.</p>
-                <div class="story-closing">
-                    <p>L'histoire s'écrit maintenant.</p>
-                    <p class="story-with-you">Avec vous.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- BOOKING MODAL -->
     <div class="booking-modal" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-overlay"></div>
@@ -1200,21 +1179,6 @@
                 modalConfirm.focus();
             }
         });
-    </script>
-    <script>
-        // Story section scroll reveal
-        const storySection = document.querySelector('.story-section');
-        if (storySection) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.15 });
-            observer.observe(storySection);
-        }
     </script>
 <script src="../../assets/js/cookie-consent.js" defer></script>
 </body>

@@ -300,6 +300,65 @@
         .salon-section:nth-child(3) { animation-delay: 0.25s; }
         .salon-section:nth-child(4) { animation-delay: 0.35s; }
         .salon-section:nth-child(5) { animation-delay: 0.45s; }
+        .salon-section:nth-child(6) { animation-delay: 0.55s; }
+
+        /* STORY BLOCK */
+        .story-block {
+            text-align: center;
+            padding: 28px 20px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+        }
+        .story-block .story-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(22px, 6vw, 32px);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff, #a0a0a0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .story-block .story-divider {
+            width: 40px;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            margin: 0 auto 28px;
+        }
+        .story-block p {
+            font-size: 14px;
+            line-height: 1.9;
+            color: rgba(255,255,255,0.55);
+            margin-bottom: 16px;
+        }
+        .story-block p:last-child { margin-bottom: 0; }
+        .story-block .story-accent {
+            font-size: 15px;
+            color: rgba(255,255,255,0.9);
+            font-weight: 600;
+        }
+        .story-block .story-closing {
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .story-block .story-closing p {
+            color: rgba(255,255,255,0.45);
+            font-style: italic;
+            margin-bottom: 4px;
+        }
+        .story-block .story-with-you {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            font-style: normal;
+            color: #fff;
+            letter-spacing: 0.1em;
+            margin-top: 6px;
+        }
 
         /* DESKTOP */
         @media (min-width: 768px) {
@@ -431,6 +490,25 @@
                 <summary>Quels sont les tarifs ?</summary>
                 <p>La coupe homme débute à 20€, le combo coupe + barbe à 30€. Retrouve le détail sur notre <a href="prestations.html">page tarifs</a>.</p>
             </details>
+        </div>
+
+        <!-- NOTRE HISTOIRE -->
+        <div class="salon-section">
+            <h2 class="section-label">Notre Histoire</h2>
+            <div class="story-block">
+                <div class="story-title">L'Exigence</div>
+                <div class="story-divider"></div>
+                <p>Avec plus de 10 ans d'expertise, au fil de mon parcours, j'ai appris ce qui plaît vraiment. Ce qui déçoit. Et surtout, ce qui ne doit jamais être laissé au hasard pour faire la différence.</p>
+                <p>Chaque détail a été observé, corrigé, perfectionné au fil du temps.</p>
+                <p class="story-accent">En 2024, Barber Club est né de cette exigence.</p>
+                <p>Une vision construite avec du temps, de l'expérience, et surtout une passion.</p>
+                <p>Nous avons décidé de ne pas suivre les règles, mais de les redéfinir. Comme vous, nous avons appris, évolué, cherché l'exigence. Et comme vous, nous savons qu'un style se construit avec le temps.</p>
+                <p>Barber Club grandit, étape après étape.<br>Et ce n'est que le début.</p>
+                <div class="story-closing">
+                    <p>L'histoire s'écrit maintenant.</p>
+                    <p class="story-with-you">Avec vous.</p>
+                </div>
+            </div>
         </div>
 
         <!-- CROSS-SALON -->
