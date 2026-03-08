@@ -143,10 +143,13 @@ async function createBooking(data) {
     }
 
     // 5. Find or create client — prioritize phone (unique primary identifier)
-    let clientResult = await client.query(
-      'SELECT id FROM clients WHERE phone = $1 AND deleted_at IS NULL LIMIT 1',
-      [data.phone]
-    );
+    let clientResult = { rows: [] };
+    if (data.phone) {
+      clientResult = await client.query(
+        'SELECT id FROM clients WHERE phone = $1 AND deleted_at IS NULL LIMIT 1',
+        [data.phone]
+      );
+    }
 
     // If not found by phone, try email
     if (clientResult.rows.length === 0 && data.email) {
@@ -160,16 +163,21 @@ async function createBooking(data) {
     if (clientResult.rows.length > 0) {
       clientId = clientResult.rows[0].id;
       // Update client info (name, phone, email) — keeps data fresh
+      const updateFields = ['first_name = $1', 'last_name = $2'];
+      const updateValues = [data.first_name, data.last_name];
+      if (data.phone) { updateFields.push(`phone = $${updateFields.length + 1}`); updateValues.push(data.phone); }
+      if (data.email) { updateFields.push(`email = $${updateFields.length + 1}`); updateValues.push(data.email); }
+      updateValues.push(clientId);
       await client.query(
-        'UPDATE clients SET first_name = $1, last_name = $2, phone = $3, email = COALESCE($4, email) WHERE id = $5',
-        [data.first_name, data.last_name, data.phone, data.email || null, clientId]
+        `UPDATE clients SET ${updateFields.join(', ')} WHERE id = $${updateValues.length}`,
+        updateValues
       );
     } else {
-      // Create new client
+      // Create new client (phone can be null for walk-ins)
       const newClient = await client.query(
         `INSERT INTO clients (first_name, last_name, phone, email)
          VALUES ($1, $2, $3, $4) RETURNING id`,
-        [data.first_name, data.last_name, data.phone, data.email || null]
+        [data.first_name, data.last_name, data.phone || null, data.email || null]
       );
       clientId = newClient.rows[0].id;
     }

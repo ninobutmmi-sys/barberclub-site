@@ -216,9 +216,9 @@ router.post('/',
     body('start_time').matches(/^\d{2}:\d{2}$/).withMessage('Heure invalide'),
     body('first_name').trim().notEmpty().withMessage('Prénom requis').isLength({ max: 100 }),
     body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
-    body('phone').trim().notEmpty().withMessage('Téléphone requis')
-      .customSanitizer(v => v.replace(/\s/g, ''))
-      .matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numéro invalide'),
+    body('phone').optional({ values: 'falsy' }).trim()
+      .customSanitizer(v => v ? v.replace(/\s/g, '') : '')
+      .custom(v => !v || /^(\+33|0)[1-9]\d{8}$/.test(v)).withMessage('Numéro invalide'),
     body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
     body('color').optional({ values: 'falsy' }).matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide'),
     body('recurrence').optional().isObject(),

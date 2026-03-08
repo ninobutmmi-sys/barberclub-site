@@ -479,8 +479,8 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
             </div>
             <div className="bk-grid-2">
               <div className="bk-field">
-                <label>Téléphone</label>
-                <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.5 } : undefined} />
+                <label>Téléphone <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optionnel)</span></label>
+                <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} readOnly={!!selectedClient} style={selectedClient ? { opacity: 0.5 } : undefined} />
               </div>
               <div className="bk-field">
                 <label>Email <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optionnel)</span></label>
