@@ -220,6 +220,7 @@ router.post('/',
       .customSanitizer(v => v ? v.replace(/\s/g, '') : '')
       .custom(v => !v || /^(\+33|0)[1-9]\d{8}$/.test(v)).withMessage('Numéro invalide'),
     body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('duration').optional().isInt({ min: 5, max: 480 }).toInt(),
     body('color').optional({ values: 'falsy' }).matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide'),
     body('recurrence').optional().isObject(),
     body('recurrence.type').optional().isIn(['daily', 'weekly', 'biweekly', 'monthly']),

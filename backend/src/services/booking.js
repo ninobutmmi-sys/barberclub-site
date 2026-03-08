@@ -68,7 +68,7 @@ async function createBooking(data) {
       throw ApiError.badRequest('Prestation introuvable ou inactive');
     }
     const service = serviceResult.rows[0];
-    const effectiveDuration = data.duration || service.duration;
+    const effectiveDuration = parseInt(data.duration, 10) || service.duration;
 
     // 2. Resolve barber (handle 'any' mode)
     let barberId = data.barber_id;
