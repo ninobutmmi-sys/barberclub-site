@@ -68,6 +68,7 @@ async function createBooking(data) {
       throw ApiError.badRequest('Prestation introuvable ou inactive');
     }
     const service = serviceResult.rows[0];
+    const effectiveDuration = data.duration || service.duration;
 
     // 2. Resolve barber (handle 'any' mode)
     let barberId = data.barber_id;
@@ -78,7 +79,7 @@ async function createBooking(data) {
         data.service_id,
         data.date,
         data.start_time,
-        service.duration,
+        effectiveDuration,
         salonId,
         client
       );
@@ -102,8 +103,8 @@ async function createBooking(data) {
       barberName = barberResult.rows[0].name;
     }
 
-    // 3. Calculate end time
-    const endTime = availability.addMinutesToTime(data.start_time, service.duration);
+    // 3. Calculate end time (use admin-provided duration if set, else service default)
+    const endTime = availability.addMinutesToTime(data.start_time, effectiveDuration);
 
     // 3b. Validate barber schedule (client bookings only — admin can override)
     if (!isAdmin) {
@@ -134,7 +135,7 @@ async function createBooking(data) {
       barberId,
       data.date,
       data.start_time,
-      service.duration,
+      effectiveDuration,
       client
     );
     if (!slotFree) {
