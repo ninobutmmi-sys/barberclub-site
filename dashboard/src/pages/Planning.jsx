@@ -297,7 +297,19 @@ export default function Planning() {
     const el = document.querySelector('.main-content');
     if (!el) return;
     let startY = 0, pulling = false;
-    function onStart(e) { if (el.scrollTop <= 0) { startY = e.touches[0].clientY; pulling = true; } }
+    function isInsideScrollableChild(target) {
+      let node = target;
+      while (node && node !== el) {
+        if (node.scrollHeight > node.clientHeight && node.scrollTop > 0) return true;
+        node = node.parentElement;
+      }
+      return false;
+    }
+    function onStart(e) {
+      if (el.scrollTop > 0 || isInsideScrollableChild(e.target)) return;
+      startY = e.touches[0].clientY;
+      pulling = true;
+    }
     function onMove(e) {
       if (!pulling) return;
       const delta = (e.touches?.[0]?.clientY || 0) - startY;
