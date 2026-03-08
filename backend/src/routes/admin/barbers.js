@@ -168,10 +168,12 @@ router.put('/:id/schedule',
           // Normalize times: strip seconds if present, default to 09:00/19:00 for rest days
           const startTime = schedule.is_working ? (schedule.start_time || '09:00').slice(0, 5) : '09:00';
           const endTime = schedule.is_working ? (schedule.end_time || '19:00').slice(0, 5) : '19:00';
+          const breakStart = schedule.is_working && schedule.break_start ? schedule.break_start.slice(0, 5) : null;
+          const breakEnd = schedule.is_working && schedule.break_end ? schedule.break_end.slice(0, 5) : null;
           await client.query(
-            `INSERT INTO schedules (barber_id, day_of_week, start_time, end_time, is_working, salon_id)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [id, schedule.day_of_week, startTime, endTime, schedule.is_working, req.user.salon_id]
+            `INSERT INTO schedules (barber_id, day_of_week, start_time, end_time, is_working, salon_id, break_start, break_end)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [id, schedule.day_of_week, startTime, endTime, schedule.is_working, req.user.salon_id, breakStart, breakEnd]
           );
         }
 
