@@ -8,8 +8,9 @@
 /grenoble/prestations       /pages/grenoble/prestations.html 301
 /grenoble/Rendez-vous       /pages/grenoble/reserver.html    301
 /grenoble/rendez-vous       /pages/grenoble/reserver.html    301
-/grenoble/Galerie           /pages/grenoble/galerie.html     301
-/grenoble/galerie           /pages/grenoble/galerie.html     301
+/grenoble/Galerie           /pages/grenoble/salon.html       301
+/grenoble/galerie           /pages/grenoble/salon.html       301
+/pages/grenoble/galerie.html /pages/grenoble/salon.html      301
 /grenoble/Contact           /pages/grenoble/contact.html     301
 /grenoble/contact           /pages/grenoble/contact.html     301
 
@@ -20,7 +21,8 @@
 /meylan/Prestations         /pages/meylan/prestations.html   301
 /meylan/rendez-vous         /pages/meylan/reserver.html      301
 /meylan/Rendez-vous         /pages/meylan/reserver.html      301
-/meylan/galerie             /pages/meylan/galerie.html       301
-/meylan/Galerie             /pages/meylan/galerie.html       301
+/meylan/galerie             /pages/meylan/salon.html         301
+/meylan/Galerie             /pages/meylan/salon.html         301
+/pages/meylan/galerie.html  /pages/meylan/salon.html         301
 /meylan/contact             /pages/meylan/contact.html       301
 /meylan/Contact             /pages/meylan/contact.html       301
