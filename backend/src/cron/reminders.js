@@ -38,6 +38,7 @@ async function queueReminders() {
     let failed = 0;
 
     for (const booking of result.rows) {
+      const salonId = booking.salon_id || 'meylan';
       try {
         await notification.sendReminderSMSDirect({
           booking_id: booking.id,
@@ -45,9 +46,15 @@ async function queueReminders() {
           phone: booking.phone,
           date: booking.date,
           start_time: booking.start_time,
-          salon_id: booking.salon_id || 'meylan',
+          salon_id: salonId,
         });
         await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [booking.id]);
+        // Log to notification_queue for SMS history
+        await db.query(
+          `INSERT INTO notification_queue (booking_id, type, status, channel, phone, salon_id, sent_at, attempts)
+           VALUES ($1, 'reminder_sms', 'sent', 'sms', $2, $3, NOW(), 1)`,
+          [booking.id, booking.phone, salonId]
+        );
         sent++;
       } catch (err) {
         logger.error('Direct reminder SMS failed, queueing for retry', { bookingId: booking.id, error: err.message });

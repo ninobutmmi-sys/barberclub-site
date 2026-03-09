@@ -13,6 +13,7 @@ router.get('/logs', async (req, res) => {
   try {
     const {
       type,
+      channel,
       status,
       limit = 50,
       offset = 0,
@@ -28,6 +29,10 @@ router.get('/logs', async (req, res) => {
     if (type) {
       conditions.push(`nq.type = $${paramIndex++}`);
       params.push(type);
+    }
+    if (channel) {
+      conditions.push(`nq.channel = $${paramIndex++}`);
+      params.push(channel);
     }
     if (status) {
       conditions.push(`nq.status = $${paramIndex++}`);
@@ -58,11 +63,12 @@ router.get('/logs', async (req, res) => {
 
     const result = await db.query(
       `SELECT nq.id, nq.type, nq.status, nq.created_at, nq.sent_at,
-              nq.attempts, nq.last_error,
+              nq.attempts, nq.last_error, nq.channel, nq.phone AS nq_phone,
+              nq.recipient_name, nq.message,
               c.first_name, c.last_name, c.phone, c.email
        FROM notification_queue nq
-       JOIN bookings b ON nq.booking_id = b.id
-       JOIN clients c ON b.client_id = c.id
+       LEFT JOIN bookings b ON nq.booking_id = b.id
+       LEFT JOIN clients c ON b.client_id = c.id
        ${where}
        ORDER BY nq.created_at DESC
        LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,

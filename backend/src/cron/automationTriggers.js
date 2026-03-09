@@ -94,8 +94,22 @@ async function processReviewSms(triggerConfig, salonId) {
       logger.info('Review SMS sent', { bookingId: booking.id, phone: booking.phone, salonId });
       await db.query('UPDATE clients SET review_requested = true WHERE id = $1', [booking.client_id]);
       await db.query('UPDATE bookings SET review_email_sent = true WHERE id = $1', [booking.id]);
+      // Log to notification_queue for SMS history
+      await db.query(
+        `INSERT INTO notification_queue (booking_id, type, status, channel, phone, recipient_name, message, salon_id, sent_at, attempts)
+         VALUES ($1, 'review_sms', 'sent', 'sms', $2, $3, $4, $5, NOW(), 1)`,
+        [booking.id, booking.phone, booking.first_name || '', personalMessage, salonId]
+      );
     } catch (err) {
       logger.error('Review SMS failed', { bookingId: booking.id, error: err.message });
+      // Log failure too
+      try {
+        await db.query(
+          `INSERT INTO notification_queue (booking_id, type, status, channel, phone, recipient_name, message, salon_id, last_error, attempts)
+           VALUES ($1, 'review_sms', 'failed', 'sms', $2, $3, $4, $5, $6, 1)`,
+          [booking.id, booking.phone, booking.first_name || '', personalMessage, salonId, err.message]
+        );
+      } catch (_) { /* silent */ }
     }
   }
 
