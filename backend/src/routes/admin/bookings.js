@@ -351,7 +351,7 @@ router.put('/:id',
           `UPDATE bookings SET date = $1, start_time = $2, end_time = $3,
            barber_id = $4, service_id = $5, price = $6, color = $7
            WHERE id = $8 RETURNING *`,
-          [newDate, newStartTime, newEndTime, newBarberId, newServiceId, price, color !== undefined ? color : booking.color || null, id]
+          [newDate, newStartTime, newEndTime, newBarberId, newServiceId, price, color !== undefined ? color : (newServiceId !== booking.service_id ? null : booking.color || null), id]
         );
 
         return { row: result.rows[0], booking, oldDate, oldTime, oldBarberName, newDate, newStartTime, newBarberName, price, serviceName: serviceResult.rows[0].name };
