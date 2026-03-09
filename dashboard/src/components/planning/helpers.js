@@ -34,8 +34,8 @@ export const HOUR_END = 21;
 export const TOTAL_MINUTES = (HOUR_END - HOUR_START) * 60;
 // Off-hours zones (visible but grayed out — bookings still allowed)
 export const OFF_HOURS = [
-  { startHour: 8, endHour: 9 },   // Before opening
-  { startHour: 19, endHour: 21 },  // After closing
+  { startHour: 8, endHour: 9 },       // Before opening
+  { startHour: 20.5, endHour: 21 },   // After latest schedule (20:30+)
 ];
 export const PX_PER_MIN = 3;
 export const GRID_HEIGHT = TOTAL_MINUTES * PX_PER_MIN; // 1800px
