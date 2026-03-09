@@ -23,7 +23,7 @@ module.exports = {
   // --- Slot intervals ---
   SLOT_INTERVAL_PUBLIC: 30, // minutes between public slots
   SLOT_INTERVAL_ADMIN: 5,  // minutes between admin slots
-  ADMIN_SCHEDULE_END: '20:00', // admin can book up to this time
+  ADMIN_SCHEDULE_END: '20:30', // admin can book up to this time
 
   // --- Rate limiting ---
   RATE_LIMIT_PUBLIC_WINDOW_MS: 60 * 1000,       // 1 minute

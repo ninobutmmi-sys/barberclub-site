@@ -65,11 +65,11 @@ export default function BlockSlotModal({ barbers, onClose, onCreated, initialDat
             <div style={formRow}>
               <div className="form-group">
                 <label className="label">Début</label>
-                <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} min="08:00" max="20:00" required />
+                <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} min="08:00" max="20:30" required />
               </div>
               <div className="form-group">
                 <label className="label">Fin</label>
-                <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} min="08:00" max="20:00" required />
+                <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} min="08:00" max="21:00" required />
               </div>
             </div>
             <div className="form-group">

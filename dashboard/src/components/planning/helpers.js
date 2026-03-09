@@ -30,12 +30,12 @@ export function timeToMinutes(t) {
 }
 
 export const HOUR_START = 8;
-export const HOUR_END = 20;
+export const HOUR_END = 21;
 export const TOTAL_MINUTES = (HOUR_END - HOUR_START) * 60;
 // Off-hours zones (visible but grayed out — bookings still allowed)
 export const OFF_HOURS = [
   { startHour: 8, endHour: 9 },   // Before opening
-  { startHour: 19, endHour: 20 },  // After closing
+  { startHour: 19, endHour: 21 },  // After closing
 ];
 export const PX_PER_MIN = 3;
 export const GRID_HEIGHT = TOTAL_MINUTES * PX_PER_MIN; // 1800px
@@ -59,7 +59,7 @@ export function hexToBlockStyle(hex) {
   const b = parseInt(hex.slice(5, 7), 16);
   const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
   const base = isDark ? [17, 17, 19] : [245, 245, 247];
-  const alpha = isDark ? 0.30 : 0.25;
+  const alpha = isDark ? 0.55 : 0.30;
   const br = Math.round(r * alpha + base[0] * (1 - alpha));
   const bg = Math.round(g * alpha + base[1] * (1 - alpha));
   const bb = Math.round(b * alpha + base[2] * (1 - alpha));

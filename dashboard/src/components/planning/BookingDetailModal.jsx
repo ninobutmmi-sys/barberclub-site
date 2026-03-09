@@ -236,7 +236,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>Début</label>
-                    <input className="input" type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} min="08:00" max="20:00" step="300" required />
+                    <input className="input" type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} min="08:00" max="20:30" step="300" required />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>Fin</label>
