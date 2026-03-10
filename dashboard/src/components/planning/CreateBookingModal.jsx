@@ -294,8 +294,13 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
                 <input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} min="07:00" max="21:00" required />
               </div>
               <div className="bk-field">
-                <label>Durée (min)</label>
-                <input className="input" type="number" value={duration} onChange={(e) => setDuration(parseInt(e.target.value) || 0)} min="5" step="5" required />
+                <label>Durée</label>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input className="input" type="number" value={Math.floor(duration / 60)} onChange={(e) => setDuration((parseInt(e.target.value) || 0) * 60 + (duration % 60))} min="0" max="12" style={{ width: 60, textAlign: 'center' }} />
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>h</span>
+                  <input className="input" type="number" value={duration % 60} onChange={(e) => setDuration(Math.floor(duration / 60) * 60 + (parseInt(e.target.value) || 0))} min="0" max="55" step="5" style={{ width: 60, textAlign: 'center' }} />
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>min</span>
+                </div>
               </div>
             </div>
 
