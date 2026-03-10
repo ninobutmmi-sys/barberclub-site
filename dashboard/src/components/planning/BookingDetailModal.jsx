@@ -296,6 +296,9 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
             <div style={{ display: 'grid', gap: 6 }}>
               <DetailRow label="Prix" value={formatPrice(booking.price)} valueStyle={{ fontFamily: 'var(--font-display, Orbitron, monospace)', fontWeight: 800 }} />
               <DetailRow label="Source" value={sourceLabel} />
+              {booking.created_at && (
+                <DetailRow label="Créé le" value={format(new Date(booking.created_at), "d MMM yyyy 'à' HH:mm", { locale: fr })} />
+              )}
             </div>
           </div>
 
