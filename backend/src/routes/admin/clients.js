@@ -77,8 +77,8 @@ router.get('/',
       const result = await db.query(
         `SELECT c.id, c.first_name, c.last_name, c.phone, c.email, c.has_account,
                 c.notes, c.created_at,
-                COUNT(b.id) FILTER (WHERE b.status IN ('completed', 'confirmed')) as visit_count,
-                COALESCE(SUM(b.price) FILTER (WHERE b.status IN ('completed', 'confirmed')), 0) as total_spent,
+                COUNT(b.id) FILTER (WHERE b.status = 'completed') as visit_count,
+                COALESCE(SUM(b.price) FILTER (WHERE b.status = 'completed'), 0) as total_spent,
                 MAX(b.date) FILTER (WHERE b.status IN ('completed', 'confirmed')) as last_visit
          FROM clients c
          LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $1
@@ -153,10 +153,10 @@ router.get('/:id',
       const clientResult = await db.query(
         `SELECT c.id, c.first_name, c.last_name, c.phone, c.email,
                 c.has_account, c.notes, c.created_at,
-                COUNT(b.id) FILTER (WHERE b.status IN ('completed', 'confirmed')) as visit_count,
+                COUNT(b.id) FILTER (WHERE b.status = 'completed') as visit_count,
                 COUNT(b.id) FILTER (WHERE b.status = 'no_show') as no_show_count,
                 COUNT(b.id) FILTER (WHERE b.status = 'cancelled') as cancelled_count,
-                COALESCE(SUM(b.price) FILTER (WHERE b.status IN ('completed', 'confirmed')), 0) as total_spent,
+                COALESCE(SUM(b.price) FILTER (WHERE b.status = 'completed'), 0) as total_spent,
                 MAX(b.date) FILTER (WHERE b.status IN ('completed', 'confirmed')) as last_visit
          FROM clients c
          LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $2
@@ -176,7 +176,7 @@ router.get('/:id',
         `SELECT s.name, COUNT(*) as count
          FROM bookings b
          JOIN services s ON b.service_id = s.id
-         WHERE b.client_id = $1 AND b.salon_id = $2 AND b.status IN ('completed', 'confirmed') AND b.deleted_at IS NULL
+         WHERE b.client_id = $1 AND b.salon_id = $2 AND b.status = 'completed' AND b.deleted_at IS NULL
          GROUP BY s.name ORDER BY count DESC LIMIT 1`,
         [id, salonId]
       );
@@ -186,7 +186,7 @@ router.get('/:id',
         `SELECT br.name, COUNT(*) as count
          FROM bookings b
          JOIN barbers br ON b.barber_id = br.id
-         WHERE b.client_id = $1 AND b.salon_id = $2 AND b.status IN ('completed', 'confirmed') AND b.deleted_at IS NULL
+         WHERE b.client_id = $1 AND b.salon_id = $2 AND b.status = 'completed' AND b.deleted_at IS NULL
          GROUP BY br.name ORDER BY count DESC LIMIT 1`,
         [id, salonId]
       );

@@ -404,7 +404,10 @@ function BarberPerformance({ data }) {
   const maxRev = Math.max(...barbers.map((b) => parseInt(b.revenue) || 0), 1);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(barbers.length, 3)}, 1fr)`, gap: 16 }}>
+    <div style={isMobile
+      ? { display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, WebkitOverflowScrolling: 'touch' }
+      : { display: 'grid', gridTemplateColumns: `repeat(${Math.min(barbers.length, 3)}, 1fr)`, gap: 16 }
+    }>
       {barbers.map((b, i) => {
         const rev = parseInt(b.revenue) || 0;
         const count = parseInt(b.booking_count) || 0;
@@ -414,7 +417,7 @@ function BarberPerformance({ data }) {
         const avgPerBooking = count > 0 ? Math.round(rev / count) : 0;
 
         return (
-          <div key={i} className="a-card a-card-lift" style={{ padding: '24px 22px' }}>
+          <div key={i} className="a-card a-card-lift" style={{ padding: '24px 22px', ...(isMobile ? { minWidth: 200, flex: '0 0 auto' } : {}) }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <div style={{
