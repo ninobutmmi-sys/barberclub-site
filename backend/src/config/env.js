@@ -74,7 +74,8 @@ module.exports = {
   jwt: {
     secret: process.env.JWT_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
-    accessExpiresIn: '15m',
+    accessExpiresIn: '15m',         // clients
+    barberAccessExpiresIn: '7d',    // barbers (dashboard PWA)
     refreshExpiresIn: '90d',
     refreshExpiresMs: 90 * 24 * 60 * 60 * 1000, // 90 days in ms
   },

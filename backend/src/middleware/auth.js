@@ -87,9 +87,14 @@ function optionalAuth(req, res, next) {
 }
 
 /**
- * Generate JWT access token (short-lived: 15 min)
+ * Generate JWT access token
+ * Barbers: 7 days (dashboard PWA needs long sessions)
+ * Clients: 15 min (public booking, short-lived)
  */
 function generateAccessToken(user) {
+  const expiresIn = user.type === 'barber'
+    ? config.jwt.barberAccessExpiresIn
+    : config.jwt.accessExpiresIn;
   return jwt.sign(
     {
       id: user.id,
@@ -99,7 +104,7 @@ function generateAccessToken(user) {
       salon_id: user.salon_id || 'meylan',
     },
     config.jwt.secret,
-    { expiresIn: config.jwt.accessExpiresIn }
+    { expiresIn }
   );
 }
 
