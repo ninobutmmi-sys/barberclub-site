@@ -2026,7 +2026,24 @@ select.input {
   .page-body { padding: 14px 16px; overflow-x: hidden; }
   .page-title { font-size: 16px; }
   .input-row { grid-template-columns: 1fr; }
-  .planning-grid-container { height: calc(100dvh - 290px); }
+  .planning-grid-container { height: calc(100dvh - 190px); }
+  .planning-grid-container .planning-barber-col { min-width: 0; }
+
+  /* Narrower time gutter on mobile */
+  .planning-time-gutter { width: 38px !important; min-width: 38px !important; }
+  .planning-time-gutter .time-label { font-size: 10px !important; }
+  .planning-time-gutter .time-label-half { font-size: 9px !important; }
+
+  /* Tighter barber sub-headers */
+  .planning-barber-subheader img { width: 18px !important; height: 18px !important; }
+  .planning-barber-subheader { font-size: 9px !important; padding: 2px 0 !important; }
+
+  /* Booking blocks — more compact on mobile */
+  .planning-block-time { font-size: 9px !important; }
+  .planning-block-name { font-size: 11px !important; }
+  .planning-block-service { font-size: 9px !important; }
+  .planning-block-source { width: 13px !important; height: 13px !important; top: 2px !important; right: 2px !important; }
+  .planning-block-source svg { width: 8px !important; height: 8px !important; }
 
   /* ---- BOTTOM NAV ---- */
   .mob-bottom-nav {

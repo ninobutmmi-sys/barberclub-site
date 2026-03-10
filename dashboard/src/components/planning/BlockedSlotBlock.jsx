@@ -6,12 +6,13 @@ import { timeToMinutes, HOUR_START, PX_PER_MIN } from './helpers';
 
 export const BLOCK_TYPE_LABELS = { break: 'Pause', personal: 'Perso', closed: 'Fermé' };
 
-export default function BlockedSlotBlock({ block, onClick }) {
+export default function BlockedSlotBlock({ block, onClick, pxPerMin }) {
+  const px = pxPerMin || PX_PER_MIN;
   const startMin = timeToMinutes(block.start_time) - HOUR_START * 60;
   const endMin = timeToMinutes(block.end_time) - HOUR_START * 60;
   const duration = endMin - startMin;
-  const top = Math.max(startMin * PX_PER_MIN, 0);
-  const height = duration * PX_PER_MIN;
+  const top = Math.max(startMin * px, 0);
+  const height = duration * px;
 
   return (
     <div

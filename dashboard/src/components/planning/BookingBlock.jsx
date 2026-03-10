@@ -6,12 +6,13 @@ import { useState, useEffect, useRef } from 'react';
 import { timeToMinutes, HOUR_START, PX_PER_MIN, FALLBACK_COLOR, STATUS_OVERRIDES, hexToBlockStyle } from './helpers';
 import BookingHoverCard from './BookingHoverCard';
 
-export default function BookingBlock({ booking, onClick }) {
+export default function BookingBlock({ booking, onClick, pxPerMin }) {
+  const px = pxPerMin || PX_PER_MIN;
   const startMin = timeToMinutes(booking.start_time) - HOUR_START * 60;
   const endMin = timeToMinutes(booking.end_time) - HOUR_START * 60;
   const duration = endMin - startMin;
-  const top = Math.max(startMin * PX_PER_MIN, 0);
-  const height = duration * PX_PER_MIN;
+  const top = Math.max(startMin * px, 0);
+  const height = duration * px;
 
   const color = STATUS_OVERRIDES[booking.status] || hexToBlockStyle(booking.service_color || FALLBACK_COLOR);
   const isTall = height >= 90;
@@ -93,11 +94,11 @@ export default function BookingBlock({ booking, onClick }) {
           </div>
         )}
 
-        <div style={{ fontWeight: 600, fontSize: 10, opacity: 0.7, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+        <div className="planning-block-time" style={{ fontWeight: 600, fontSize: 10, opacity: 0.7, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
           {booking.start_time?.slice(0, 5)} - {booking.end_time?.slice(0, 5)}
         </div>
         {!isTiny && (
-          <div style={{ fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isTall ? 'normal' : 'nowrap', paddingRight: isOnline ? 14 : 0 }}>
+          <div className="planning-block-name" style={{ fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isTall ? 'normal' : 'nowrap', paddingRight: isOnline ? 14 : 0 }}>
             {booking.client_first_name} {booking.client_last_name}
             {isFirstVisit && !isTiny && (
               <span className="planning-block-new-badge">
@@ -108,7 +109,7 @@ export default function BookingBlock({ booking, onClick }) {
           </div>
         )}
         {!isSmall && (
-          <div style={{ fontSize: 10, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isTall ? 'normal' : 'nowrap', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.02em' }}>
+          <div className="planning-block-service" style={{ fontSize: 10, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isTall ? 'normal' : 'nowrap', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.02em' }}>
             {booking.service_name}
           </div>
         )}

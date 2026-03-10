@@ -2,21 +2,43 @@
 // TimeGrid
 // ---------------------------------------------------------------------------
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { format, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { HOUR_START, HOUR_END, GRID_HEIGHT, HOUR_HEIGHT, PX_PER_MIN, OFF_HOURS } from './helpers';
+import { HOUR_START, HOUR_END, GRID_HEIGHT, HOUR_HEIGHT, PX_PER_MIN, TOTAL_MINUTES, OFF_HOURS } from './helpers';
 import NowIndicator from './NowIndicator';
 import BlockedSlotBlock from './BlockedSlotBlock';
 import BookingBlock from './BookingBlock';
 import MinutePickerPopup from './MinutePickerPopup';
 
-export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, barberSchedules, guestAssignments, onBookingClick, onBlockClick, onSlotClick, view, onSwipeLeft, onSwipeRight }) {
+export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, barberSchedules, guestAssignments, onBookingClick, onBlockClick, onSlotClick, view, onSwipeLeft, onSwipeRight, compact }) {
   const scrollRef = useRef(null);
   const gridBodyRef = useRef(null);
   const touchRef = useRef(null);
   const barberCount = barbers.length || 1;
   const isWeek = view === 'week';
+
+  // Compact mode: calculate pxPerMin to fit entire day without scroll
+  const [compactPx, setCompactPx] = useState(PX_PER_MIN);
+  const measureRef = useCallback((node) => {
+    if (!compact || !node) return;
+    gridBodyRef.current = node;
+    const h = node.clientHeight;
+    if (h > 0) setCompactPx(Math.max(h / TOTAL_MINUTES, 0.4));
+  }, [compact]);
+  useEffect(() => {
+    if (!compact || !gridBodyRef.current) return;
+    function onResize() {
+      const h = gridBodyRef.current.clientHeight;
+      if (h > 0) setCompactPx(Math.max(h / TOTAL_MINUTES, 0.4));
+    }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [compact]);
+
+  const px = compact ? compactPx : PX_PER_MIN;
+  const gridH = TOTAL_MINUTES * px;
+  const hourH = 60 * px;
 
   // Check if a barber is off on a given date (0=Monday convention)
   // Also handles guest assignments: resident away = off, guest without assignment = off
@@ -106,7 +128,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
       {/* ===== STICKY HEADER (day names + barber names) ===== */}
       <div style={{ display: 'flex', flexShrink: 0, borderBottom: '1px solid rgba(var(--overlay),0.10)' }}>
         {/* Gutter spacer */}
-        <div style={{ width: 52, minWidth: 52, borderRight: '1px solid rgba(var(--overlay),0.10)' }} />
+        <div className="planning-time-gutter" style={{ width: 52, minWidth: 52, borderRight: '1px solid rgba(var(--overlay),0.10)' }} />
 
         {/* Day headers */}
         {days.map((day) => {
@@ -138,7 +160,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                     // Guest barber present today
                     const isGuestHere = b.is_guest && gi;
                     return (
-                      <div key={b.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3px 1px', fontSize: 10, fontWeight: 700, color: off ? 'var(--text-muted)' : isGuestHere ? '#3b82f6' : 'var(--text-secondary)', borderRight: '1px solid rgba(var(--overlay),0.04)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: off ? 0.5 : 1 }}>
+                      <div key={b.id} className="planning-barber-subheader" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '3px 1px', fontSize: 10, fontWeight: 700, color: off ? 'var(--text-muted)' : isGuestHere ? '#3b82f6' : 'var(--text-secondary)', borderRight: '1px solid rgba(var(--overlay),0.04)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.04em', opacity: off ? 0.5 : 1 }}>
                         {b.photo_url && (
                           <img src={b.photo_url} alt={b.name} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', marginBottom: 1, filter: off ? 'grayscale(1) opacity(0.4)' : 'none', border: isGuestHere ? '2px solid #3b82f6' : 'none' }} />
                         )}
@@ -173,30 +195,36 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
 
       {/* ===== SCROLLABLE BODY (time gutter + grid) ===== */}
       <div
-        ref={gridBodyRef}
-        style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}
+        ref={compact ? measureRef : (node) => { gridBodyRef.current = node; }}
+        style={{ flex: 1, overflowY: compact ? 'hidden' : 'auto', overflowX: 'hidden' }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onScroll={() => { if (minutePicker) setMinutePicker(null); }}
       >
-        <div style={{ display: 'flex', height: GRID_HEIGHT + 10, paddingTop: 10, position: 'relative' }}>
+        <div style={{ display: 'flex', height: compact ? '100%' : gridH + 10, paddingTop: compact ? 0 : 10, position: 'relative' }}>
           {/* Now indicator — spans the entire grid width */}
-          {days.some((d) => isToday(d)) && <NowIndicator />}
+          {days.some((d) => isToday(d)) && <NowIndicator pxPerMin={px} />}
 
           {/* Time gutter */}
-          <div style={{ width: 52, minWidth: 52, position: 'relative', borderRight: '1px solid rgba(var(--overlay),0.10)', flexShrink: 0 }}>
-            {hours.map((h, i) => (
-              <div key={h}>
-                <div style={{ position: 'absolute', top: i * HOUR_HEIGHT - 7, right: 6, fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', userSelect: 'none' }}>
-                  {String(h).padStart(2, '0')}:00
+          <div className="planning-time-gutter" style={{ width: compact ? 28 : 52, minWidth: compact ? 28 : 52, position: 'relative', borderRight: '1px solid rgba(var(--overlay),0.10)', flexShrink: 0 }}>
+            {hours.map((h, i) => {
+              // In compact mode, skip some labels if too dense
+              const showLabel = !compact || hourH >= 20 || i % 2 === 0;
+              return (
+                <div key={h}>
+                  {showLabel && (
+                    <div className="time-label" style={{ position: 'absolute', top: i * hourH - (compact ? 5 : 7), right: compact ? 3 : 6, fontSize: compact ? 8 : 11, fontWeight: 700, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', userSelect: 'none' }}>
+                      {String(h).padStart(2, '0')}{compact ? 'h' : ':00'}
+                    </div>
+                  )}
+                  {!compact && i < hours.length - 1 && (
+                    <div className="time-label-half" style={{ position: 'absolute', top: i * hourH + hourH / 2 - 6, right: 6, fontSize: 10, color: 'rgba(var(--overlay),0.35)', fontVariantNumeric: 'tabular-nums', userSelect: 'none' }}>
+                      :30
+                    </div>
+                  )}
                 </div>
-                {i < hours.length - 1 && (
-                  <div style={{ position: 'absolute', top: i * HOUR_HEIGHT + HOUR_HEIGHT / 2 - 6, right: 6, fontSize: 10, color: 'rgba(var(--overlay),0.35)', fontVariantNumeric: 'tabular-nums', userSelect: 'none' }}>
-                    :30
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Day columns */}
@@ -209,9 +237,9 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                 {/* Hour lines */}
                 {hours.map((h, i) => (
                   <div key={`line-${h}`}>
-                    <div style={{ position: 'absolute', top: i * HOUR_HEIGHT, left: 0, right: 0, borderTop: '1px solid rgba(var(--overlay),0.08)', pointerEvents: 'none' }} />
-                    {i < hours.length - 1 && (
-                      <div style={{ position: 'absolute', top: i * HOUR_HEIGHT + HOUR_HEIGHT / 2, left: 0, right: 0, borderTop: '1px dashed rgba(var(--overlay),0.025)', pointerEvents: 'none' }} />
+                    <div style={{ position: 'absolute', top: i * hourH, left: 0, right: 0, borderTop: '1px solid rgba(var(--overlay),0.08)', pointerEvents: 'none' }} />
+                    {!compact && i < hours.length - 1 && (
+                      <div style={{ position: 'absolute', top: i * hourH + hourH / 2, left: 0, right: 0, borderTop: '1px dashed rgba(var(--overlay),0.025)', pointerEvents: 'none' }} />
                     )}
                   </div>
                 ))}
@@ -241,8 +269,8 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                           if (!gridBodyRef.current) return;
                           const rect = gridBodyRef.current.getBoundingClientRect();
                           const scrollTop = gridBodyRef.current.scrollTop;
-                          const relativeY = (e.clientY - rect.top) + scrollTop - 10;
-                          const totalMinutes = Math.round(relativeY / PX_PER_MIN / 5) * 5 + HOUR_START * 60;
+                          const relativeY = (e.clientY - rect.top) + scrollTop - (compact ? 0 : 10);
+                          const totalMinutes = Math.round(relativeY / px / 5) * 5 + HOUR_START * 60;
                           const clamped = Math.max(HOUR_START * 60, Math.min(HOUR_END * 60, totalMinutes));
                           const hour = Math.floor(clamped / 60);
                           setMinutePicker({
@@ -258,12 +286,12 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                           if (!gridBodyRef.current) return;
                           const rect = gridBodyRef.current.getBoundingClientRect();
                           const scrollTop = gridBodyRef.current.scrollTop;
-                          const relativeY = (e.clientY - rect.top) + scrollTop - 10;
-                          const totalMinutes = Math.round(relativeY / PX_PER_MIN / 5) * 5 + HOUR_START * 60;
+                          const relativeY = (e.clientY - rect.top) + scrollTop - (compact ? 0 : 10);
+                          const totalMinutes = Math.round(relativeY / px / 5) * 5 + HOUR_START * 60;
                           const clamped = Math.max(HOUR_START * 60, Math.min(HOUR_END * 60, totalMinutes));
                           const hh = String(Math.floor(clamped / 60)).padStart(2, '0');
                           const mm = String(clamped % 60).padStart(2, '0');
-                          const topPx = (clamped - HOUR_START * 60) * PX_PER_MIN;
+                          const topPx = (clamped - HOUR_START * 60) * px;
                           setHoverInfo({ barberId: barber.id, dayStr, top: topPx, time: `${hh}:${mm}` });
                         }}
                         onMouseLeave={() => setHoverInfo(null)}
@@ -272,9 +300,9 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                         {!barberIsOff && getBarberOffHours(barber.id, day).map((zone) => (
                           <div key={`off-${zone.startHour}`} style={{
                             position: 'absolute',
-                            top: (zone.startHour - HOUR_START) * 60 * PX_PER_MIN,
+                            top: (zone.startHour - HOUR_START) * 60 * px,
                             left: 0, right: 0,
-                            height: (zone.endHour - zone.startHour) * 60 * PX_PER_MIN,
+                            height: (zone.endHour - zone.startHour) * 60 * px,
                             background: 'repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(var(--overlay),0.035) 6px, rgba(var(--overlay),0.035) 7px)',
                             pointerEvents: 'none',
                           }} />
@@ -282,23 +310,23 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                         {/* Off-day overlay */}
                         {barberIsOff && (
                           <div className="planning-day-off-overlay">
-                            <span className="planning-day-off-badge">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg>
+                            <span className="planning-day-off-badge" style={compact ? { fontSize: 7, padding: '2px 5px' } : undefined}>
+                              {!compact && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg>}
                               Repos
                             </span>
                           </div>
                         )}
                         {/* Hover time indicator */}
-                        {!barberIsOff && hoverInfo && hoverInfo.barberId === barber.id && hoverInfo.dayStr === dayStr && !minutePicker && (
+                        {!compact && !barberIsOff && hoverInfo && hoverInfo.barberId === barber.id && hoverInfo.dayStr === dayStr && !minutePicker && (
                           <div className="planning-hover-indicator" style={{ top: hoverInfo.top }}>
                             <div className="planning-hover-label">+ {hoverInfo.time}</div>
                           </div>
                         )}
                         {dayBlocked.map((bs) => (
-                          <BlockedSlotBlock key={bs.id} block={bs} onClick={onBlockClick} />
+                          <BlockedSlotBlock key={bs.id} block={bs} onClick={onBlockClick} pxPerMin={px} />
                         ))}
                         {dayBookings.map((bk) => (
-                          <BookingBlock key={bk.id} booking={bk} onClick={onBookingClick} />
+                          <BookingBlock key={bk.id} booking={bk} onClick={onBookingClick} pxPerMin={px} />
                         ))}
                       </div>
                     );
