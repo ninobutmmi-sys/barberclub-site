@@ -543,6 +543,12 @@ export default function History() {
                 <DetailField label="Barber" value={selected.barber_name} />
                 <DetailField label="Prix" value={formatPrice(selected.price)} mono />
                 <DetailField label="Source" value={SOURCE_LABELS[selected.source] || selected.source} />
+                {selected.created_at && (
+                  <DetailField label="Créé le" value={(() => {
+                    const d = new Date(selected.created_at);
+                    return `${formatDateFR(d.toISOString().slice(0, 10))} à ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                  })()} />
+                )}
                 <div style={{ gridColumn: '1 / -1' }}>
                   <span className="label">Statut</span>
                   <div style={{ marginTop: 4 }}>
