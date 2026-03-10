@@ -174,7 +174,7 @@ export default function Mailing({ embedded } = {}) {
     setLogsLoading(true);
     try {
       const data = await getNotificationLogs({
-        type: 'confirmation_email',
+        channel: 'email',
         limit: 25,
         offset: page * 25,
       });
@@ -467,6 +467,7 @@ export default function Mailing({ embedded } = {}) {
                       <tr style={{ borderBottom: '1px solid rgba(var(--overlay),0.1)' }}>
                         <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Date</th>
                         <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Destinataire</th>
+                        <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Objet</th>
                         <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Type</th>
                         <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 600, color: 'var(--text-secondary)', fontSize: 11, textTransform: 'uppercase' }}>Statut</th>
                       </tr>
@@ -474,13 +475,19 @@ export default function Mailing({ embedded } = {}) {
                     <tbody>
                       {logs.map((log) => {
                         const st = statusLabel(log.status);
-                        const typeLabel = {
-                          confirmation_email: 'Confirmation',
-                          review_email: 'Avis',
+                        const typeConfig = {
+                          confirmation_email: { label: 'Confirmation', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+                          cancellation_email: { label: 'Annulation', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+                          reschedule_email: { label: 'Déplacement', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+                          reset_password_email: { label: 'Reset MDP', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
+                          campaign_email: { label: 'Campagne', color: '#a855f7', bg: 'rgba(168,85,247,0.1)' },
                         };
+                        const tc = typeConfig[log.type] || { label: log.type, color: '#6b7280', bg: 'rgba(107,114,128,0.1)' };
+                        const recipientEmail = log.nq_email || log.email || '';
+                        const recipientName = log.recipient_name || (log.first_name ? `${log.first_name} ${log.last_name || ''}`.trim() : '');
                         return (
                           <tr key={log.id} style={{ borderBottom: '1px solid rgba(var(--overlay),0.04)' }}>
-                            <td style={{ padding: '10px 12px' }}>
+                            <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
                               {new Date(log.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                               {' '}
                               <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
@@ -488,17 +495,19 @@ export default function Mailing({ embedded } = {}) {
                               </span>
                             </td>
                             <td style={{ padding: '10px 12px' }}>
-                              <span style={{ fontWeight: 600 }}>{log.first_name} {log.last_name}</span>
-                              <br />
-                              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{log.email}</span>
+                              {recipientName && <span style={{ fontWeight: 600 }}>{recipientName}<br /></span>}
+                              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{recipientEmail}</span>
+                            </td>
+                            <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text-secondary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {log.subject || '\u2013'}
                             </td>
                             <td style={{ padding: '10px 12px' }}>
                               <span style={{
                                 display: 'inline-block', padding: '2px 8px', borderRadius: 10,
                                 fontSize: 11, fontWeight: 600,
-                                background: 'rgba(168,85,247,0.1)', color: '#a855f7',
+                                background: tc.bg, color: tc.color,
                               }}>
-                                {typeLabel[log.type] || log.type}
+                                {tc.label}
                               </span>
                             </td>
                             <td style={{ padding: '10px 12px' }}>

@@ -136,17 +136,18 @@ export default function Sms({ embedded } = {}) {
     }
 
     let recipients = [];
+    const cleanPhone = (p) => p.replace(/[\s.\-]/g, '');
     if (recipientMode === 'manual') {
-      recipients = manualNumbers.split('\n').filter((n) => n.trim()).map((n) => ({ phone: n.trim() }));
+      recipients = manualNumbers.split('\n').filter((n) => n.trim()).map((n) => ({ phone: cleanPhone(n.trim()) }));
     } else if (recipientMode === 'all') {
       recipients = allClients.map((c) => ({
-        phone: c.phone,
+        phone: cleanPhone(c.phone),
         first_name: c.first_name,
         last_name: c.last_name,
       }));
     } else {
       recipients = selectedClients.filter((c) => c.phone).map((c) => ({
-        phone: c.phone,
+        phone: cleanPhone(c.phone),
         first_name: c.first_name,
         last_name: c.last_name,
       }));

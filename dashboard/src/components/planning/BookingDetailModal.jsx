@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { updateClient } from '../../api';
-import { formatPrice, formatPhone, FALLBACK_COLOR, STATUS_LABELS, COLOR_PALETTE } from './helpers';
+import { formatPrice, formatPhone, FALLBACK_COLOR, STATUS_LABELS } from './helpers';
 import { CloseIcon } from './Icons';
 
 function DetailRow({ label, value, bold, valueStyle }) {
@@ -50,12 +50,25 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
     return services.filter((s) => s.barbers && s.barbers.some((b) => b.id === editBarberId));
   }, [services, editBarberId]);
 
+  // Unique service colors for the color picker
+  const serviceColors = useMemo(() => {
+    const seen = new Set();
+    return services.filter((s) => s.color && !seen.has(s.color) && seen.add(s.color)).map((s) => s.color);
+  }, [services]);
+
   // Reset service when barber changes and current service is unavailable
   useEffect(() => {
     if (editBarberId && filteredServices.length > 0 && !filteredServices.find((s) => s.id === editServiceId)) {
       setEditServiceId(filteredServices[0].id);
     }
   }, [editBarberId, filteredServices, editServiceId]);
+
+  // Auto-set color when service changes
+  useEffect(() => {
+    if (!editServiceId) return;
+    const svc = services.find((s) => s.id === editServiceId);
+    if (svc?.color) setEditColor(svc.color);
+  }, [editServiceId, services]);
 
   // Dirty detection
   const isDirty = editDate !== bookingDateStr || editTime !== initTime || editEndTime !== initEndTime || editBarberId !== (booking.barber_id || '') || editServiceId !== (booking.service_id || '') || editColor !== initColor;
@@ -258,11 +271,12 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
                     </select>
                   </div>
                 </div>
-                {/* Couleur — intégrée dans créneau */}
+                {/* Couleur — prestations uniquement */}
+                {serviceColors.length > 0 && (
                 <div>
                   <label className="label" style={{ fontSize: 11, marginBottom: 6, color: 'var(--text-muted)', display: 'block' }}>Couleur</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {COLOR_PALETTE.map((c) => (
+                    {serviceColors.map((c) => (
                       <div
                         key={c}
                         onClick={() => setEditColor(c)}
@@ -276,6 +290,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
                     ))}
                   </div>
                 </div>
+                )}
               </div>
             ) : (
               <div style={{ display: 'grid', gap: 6 }}>

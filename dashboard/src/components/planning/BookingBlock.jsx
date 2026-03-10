@@ -23,7 +23,10 @@ export default function BookingBlock({ booking, onClick }) {
   const [showHover, setShowHover] = useState(false);
   const [anchorRect, setAnchorRect] = useState(null);
 
+  const hasHover = window.matchMedia('(hover: hover)').matches;
+
   function handleMouseEnter(e) {
+    if (!hasHover) return; // skip on touch devices
     e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.5)';
     e.currentTarget.style.zIndex = '20';
     hoverTimerRef.current = setTimeout(() => {

@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { format } from 'date-fns';
 import { getClients, createBooking } from '../../api';
-import { FALLBACK_COLOR, COLOR_PALETTE } from './helpers';
+import { FALLBACK_COLOR } from './helpers';
 import { CloseIcon } from './Icons';
 
 export default function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate, initialTime, initialBarberId }) {
@@ -30,6 +30,12 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [colorOpen, setColorOpen] = useState(false);
+
+  // Unique service colors for the color picker
+  const serviceColors = useMemo(() => {
+    const seen = new Set();
+    return services.filter((s) => s.color && !seen.has(s.color) && seen.add(s.color)).map((s) => s.color);
+  }, [services]);
 
   // Recurrence state
   const [repeatEnabled, setRepeatEnabled] = useState(false);
@@ -60,7 +66,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
     const svc = filteredServices.find((s) => s.id === serviceId);
     if (svc) {
       setDuration(svc.duration);
-      if (!bookingColor) setBookingColor(svc.color || FALLBACK_COLOR);
+      setBookingColor(svc.color || FALLBACK_COLOR);
     }
   }, [serviceId, filteredServices]);
 
@@ -303,7 +309,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
                 <span className="bk-color-preview" style={{ background: bookingColor || FALLBACK_COLOR }} />
               </label>
               <div className={`bk-color-grid${colorOpen ? ' open' : ''}`}>
-                {COLOR_PALETTE.map((c) => (
+                {serviceColors.map((c) => (
                   <div
                     key={c}
                     onClick={() => setBookingColor(c)}
