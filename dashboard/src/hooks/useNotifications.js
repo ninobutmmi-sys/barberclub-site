@@ -5,8 +5,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getBookings } from '../api';
+import { useSocketEvent } from './useSocket';
 
-const POLL_INTERVAL = 30_000; // 30 seconds
+const POLL_INTERVAL = 60_000; // 60s fallback (WebSocket handles real-time)
 
 function getStorageKey() {
   const salon = localStorage.getItem('bc_salon') || 'meylan';
@@ -96,6 +97,9 @@ export function useNotifications() {
       setLoading(false);
     }
   }, []);
+
+  // Instant refresh on WebSocket booking events
+  useSocketEvent('booking:created', fetchBookings);
 
   // Bootstrap + interval (pause when tab is hidden)
   useEffect(() => {

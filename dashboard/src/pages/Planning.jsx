@@ -29,6 +29,7 @@ import {
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import useMobile from '../hooks/useMobile';
+import { usePlanningSocket } from '../hooks/useSocket';
 
 import { formatPrice } from '../components/planning/helpers';
 import { ChevronLeft, ChevronRight, PlusIcon, RefreshIcon, CloseIcon } from '../components/planning/Icons';
@@ -145,21 +146,23 @@ export default function Planning() {
     return () => controller.abort();
   }, [loadData]);
 
-  // Auto-refresh every 30s (pause when tab is hidden)
+  // Real-time updates via WebSocket (fallback: poll every 60s)
+  const { dirty: wsDirty, consume: wsConsume } = usePlanningSocket();
   useEffect(() => {
-    let intervalId = null;
-    function startPolling() {
-      intervalId = setInterval(() => { loadData(undefined, { silent: true }); }, 30_000);
+    if (wsDirty) {
+      wsConsume();
+      loadData(undefined, { silent: true });
     }
-    function stopPolling() {
-      if (intervalId) { clearInterval(intervalId); intervalId = null; }
-    }
+  }, [wsDirty, wsConsume, loadData]);
+
+  // Fallback polling every 60s + refresh on tab visibility
+  useEffect(() => {
+    let intervalId = setInterval(() => { loadData(undefined, { silent: true }); }, 60_000);
     function handleVisibility() {
-      if (document.hidden) { stopPolling(); } else { loadData(undefined, { silent: true }); startPolling(); }
+      if (!document.hidden) loadData(undefined, { silent: true });
     }
-    startPolling();
     document.addEventListener('visibilitychange', handleVisibility);
-    return () => { stopPolling(); document.removeEventListener('visibilitychange', handleVisibility); };
+    return () => { clearInterval(intervalId); document.removeEventListener('visibilitychange', handleVisibility); };
   }, [loadData]);
 
   const handleRefresh = useCallback(async () => {

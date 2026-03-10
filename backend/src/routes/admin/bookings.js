@@ -8,6 +8,7 @@ const { ApiError } = require('../../utils/errors');
 const logger = require('../../utils/logger');
 const db = require('../../config/database');
 const { logAudit } = require('../../middleware/auditLog');
+const ws = require('../../services/websocket');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -241,6 +242,7 @@ router.post('/',
           recurrence
         );
         logAudit(req, 'create', 'booking', result.groupId || result.bookings?.[0]?.id, { recurring: true, count: result.bookings?.length });
+        ws.emitBookingCreated(salonId, result);
         res.status(201).json(result);
       } else {
         const booking = await bookingService.createBooking({
@@ -249,6 +251,7 @@ router.post('/',
           salon_id: salonId,
         });
         logAudit(req, 'create', 'booking', booking.id, { date: booking.date, start_time: booking.start_time });
+        ws.emitBookingCreated(salonId, booking);
         res.status(201).json(booking);
       }
     } catch (error) {
@@ -373,6 +376,7 @@ router.put('/:id',
       }
 
       logAudit(req, 'update', 'booking', req.params.id, { changes: req.body });
+      ws.emitBookingUpdated(salonId, txResult.row);
       res.json(txResult.row);
     } catch (error) {
       next(error);
@@ -394,6 +398,7 @@ router.patch('/:id/status',
       const salonId = req.user.salon_id;
       const result = await bookingService.updateBookingStatus(req.params.id, req.body.status, salonId);
       logAudit(req, 'status', 'booking', req.params.id, { status: req.body.status });
+      ws.emitBookingStatusChanged(salonId, result);
       res.json(result);
     } catch (error) {
       next(error);
@@ -572,6 +577,7 @@ router.delete('/:id',
       }
 
       logAudit(req, 'delete', 'booking', req.params.id);
+      ws.emitBookingCancelled(salonId, req.params.id);
       res.json({ message: 'RDV supprimé' });
     } catch (error) {
       next(error);

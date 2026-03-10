@@ -9,6 +9,7 @@ const { generateICS } = require('../utils/ics');
 const { ApiError } = require('../utils/errors');
 const db = require('../config/database');
 const { MAX_BOOKING_ADVANCE_MONTHS } = require('../constants');
+const ws = require('../services/websocket');
 
 const router = Router();
 
@@ -261,6 +262,7 @@ router.post('/bookings',
       }
 
       const booking = await bookingService.createBooking(bookingData);
+      ws.emitBookingCreated(salonId, booking);
 
       res.status(201).json(booking);
     } catch (error) {

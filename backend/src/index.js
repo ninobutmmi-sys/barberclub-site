@@ -2,6 +2,7 @@
 // BarberClub API — Main Server
 // ============================================
 
+const http = require('http');
 const config = require('./config/env');
 const db = require('./config/database');
 const express = require('express');
@@ -331,7 +332,13 @@ if (config.nodeEnv !== 'test') {
 
   // Verify DB is reachable before accepting traffic
   ensureConnection().then(() => {
-    const server = app.listen(PORT, () => {
+    const server = http.createServer(app);
+
+    // Initialize WebSocket
+    const ws = require('./services/websocket');
+    ws.init(server);
+
+    server.listen(PORT, () => {
       logger.info(`BarberClub API running on port ${PORT}`, {
         env: config.nodeEnv,
         cors: config.corsOrigins,

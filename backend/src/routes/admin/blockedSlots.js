@@ -3,6 +3,7 @@ const { body, param, query } = require('express-validator');
 const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
+const ws = require('../../services/websocket');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -160,8 +161,10 @@ router.post('/',
 
       if (dates.length === 1) {
         if (created.length === 0) throw ApiError.conflict('Ce créneau chevauche un rendez-vous existant');
+        ws.emitBlockedSlotChanged(salonId);
         res.status(201).json(created[0]);
       } else {
+        ws.emitBlockedSlotChanged(salonId);
         res.status(201).json({ created: created.length, skipped: skipped.length, slots: created });
       }
     } catch (error) {
@@ -190,6 +193,7 @@ router.delete('/:id',
         throw ApiError.notFound('Créneau bloqué introuvable');
       }
 
+      ws.emitBlockedSlotChanged(salonId);
       res.json({ message: 'Créneau bloqué supprimé' });
     } catch (error) {
       next(error);
