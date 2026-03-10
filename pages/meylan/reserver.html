@@ -3371,21 +3371,23 @@
             const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
 
             if (state.selectedBarber.id === 'any') {
-                // All barbers off on this day? Guest barbers count as available only on their guest_dates
                 return state.barbers.length === 0 || state.barbers.every(b => {
                     if (b.is_guest) {
                         return !(b.guest_dates || []).includes(dateStr);
                     }
+                    if ((b.work_dates || []).includes(dateStr)) return false;
+                    if ((b.off_dates || []).includes(dateStr)) return true;
                     const offs = (b.off_days || []).map(Number);
                     return offs.includes(dow);
                 });
             } else {
                 const barber = state.barbers.find(b => b.id === state.selectedBarber.id);
                 if (!barber) return true;
-                // Guest barber: only available on guest_dates
                 if (barber.is_guest) {
                     return !(barber.guest_dates || []).includes(dateStr);
                 }
+                if ((barber.work_dates || []).includes(dateStr)) return false;
+                if ((barber.off_dates || []).includes(dateStr)) return true;
                 const offs = (barber.off_days || []).map(Number);
                 return offs.includes(dow);
             }

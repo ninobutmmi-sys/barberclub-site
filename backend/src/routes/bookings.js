@@ -56,6 +56,27 @@ router.get('/barbers', publicLimiter,
       offMap[row.barber_id].push(row.day_of_week);
     }
 
+    // Load schedule overrides (working on off-days, or day-off on working days)
+    const residentIds = result.rows.map(b => b.id);
+    let overrideWorkDates = {};
+    let overrideOffDates = {};
+    if (residentIds.length > 0) {
+      const overrides = await db.query(
+        `SELECT barber_id, date, is_day_off FROM schedule_overrides
+         WHERE salon_id = $1 AND date >= CURRENT_DATE AND barber_id = ANY($2)`,
+        [salonId, residentIds]
+      );
+      for (const row of overrides.rows) {
+        if (row.is_day_off) {
+          if (!overrideOffDates[row.barber_id]) overrideOffDates[row.barber_id] = [];
+          overrideOffDates[row.barber_id].push(row.date);
+        } else {
+          if (!overrideWorkDates[row.barber_id]) overrideWorkDates[row.barber_id] = [];
+          overrideWorkDates[row.barber_id].push(row.date);
+        }
+      }
+    }
+
     // For guest barbers, load their guest assignment dates
     const guestIds = guestResult.rows.map(b => b.id);
     let guestDatesMap = {};
@@ -74,6 +95,8 @@ router.get('/barbers', publicLimiter,
     const barbers = allBarbers.map((b) => ({
       ...b,
       off_days: offMap[b.id] || [],
+      work_dates: overrideWorkDates[b.id] || undefined,
+      off_dates: overrideOffDates[b.id] || undefined,
       guest_dates: guestDatesMap[b.id] || undefined,
     }));
     res.json(barbers);
