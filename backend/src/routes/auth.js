@@ -202,22 +202,30 @@ router.post('/register',
       );
 
       let clientId;
-      if (existingCheck.rows.length > 0) {
-        // Upgrade existing client to account
-        clientId = existingCheck.rows[0].id;
-        await db.query(
-          `UPDATE clients SET first_name = $1, last_name = $2, email = $3, phone = $4,
-           password_hash = $5, has_account = true WHERE id = $6`,
-          [first_name, last_name, email, phone, passwordHash, clientId]
-        );
-      } else {
-        // Create new client with account
-        const result = await db.query(
-          `INSERT INTO clients (first_name, last_name, phone, email, password_hash, has_account)
-           VALUES ($1, $2, $3, $4, $5, true) RETURNING id`,
-          [first_name, last_name, phone, email, passwordHash]
-        );
-        clientId = result.rows[0].id;
+      try {
+        if (existingCheck.rows.length > 0) {
+          // Upgrade existing client to account
+          clientId = existingCheck.rows[0].id;
+          await db.query(
+            `UPDATE clients SET first_name = $1, last_name = $2, email = $3, phone = $4,
+             password_hash = $5, has_account = true WHERE id = $6`,
+            [first_name, last_name, email, phone, passwordHash, clientId]
+          );
+        } else {
+          // Create new client with account
+          const result = await db.query(
+            `INSERT INTO clients (first_name, last_name, phone, email, password_hash, has_account)
+             VALUES ($1, $2, $3, $4, $5, true) RETURNING id`,
+            [first_name, last_name, phone, email, passwordHash]
+          );
+          clientId = result.rows[0].id;
+        }
+      } catch (dbErr) {
+        if (dbErr.code === '23505') {
+          // UNIQUE constraint violation (phone or email already taken by another client)
+          throw ApiError.conflict('Ce numéro de téléphone ou email est déjà utilisé par un autre compte');
+        }
+        throw dbErr;
       }
 
       // Generate tokens

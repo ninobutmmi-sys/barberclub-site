@@ -19,6 +19,7 @@ export default function Clients() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('last_visit');
+  const [tab, setTab] = useState('all'); // 'all' | 'accounts'
   const [visible, setVisible] = useState(PAGE_SIZE);
   const debounceRef = useRef(null);
   const abortRef = useRef(null);
@@ -30,7 +31,7 @@ export default function Clients() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [search, sort]);
+  }, [search, sort, tab]);
 
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -51,6 +52,7 @@ export default function Clients() {
     try {
       const params = { sort, order: 'desc', limit: PAGE_SIZE, offset: append ? clients.length : 0 };
       if (search) params.search = search;
+      if (tab === 'accounts') params.has_account = 'true';
       const data = await getClients(params, controller.signal);
       if (controller.signal.aborted) return;
       if (append) {
@@ -98,7 +100,7 @@ export default function Clients() {
       <div className="page-header">
         <div>
           <h2 className="page-title">Clients</h2>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{total} clients</p>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{total} {tab === 'accounts' ? 'comptes' : 'clients'}</p>
         </div>
         {!isMobile && (
           <button className="btn btn-secondary" onClick={handleExportCSV} disabled={!clients.length}>
@@ -113,6 +115,29 @@ export default function Clients() {
       </div>
 
       <div className="page-body">
+        <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
+          {[{ key: 'all', label: 'Tous' }, { key: 'accounts', label: 'Comptes' }].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => { setTab(t.key); setVisible(PAGE_SIZE); }}
+              style={{
+                padding: '8px 20px',
+                fontSize: 13,
+                fontWeight: tab === t.key ? 700 : 500,
+                color: tab === t.key ? 'var(--text)' : 'var(--text-muted)',
+                background: 'none',
+                border: 'none',
+                borderBottom: tab === t.key ? '2px solid var(--accent, #3b82f6)' : '2px solid transparent',
+                cursor: 'pointer',
+                fontFamily: 'var(--font)',
+                transition: 'all 0.2s',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, marginBottom: 20 }}>
           <input
             className="input"
@@ -179,7 +204,7 @@ export default function Clients() {
                       <th>Téléphone</th>
                       <th>Visites</th>
                       <th>CA Total</th>
-                      <th>Dernière visite</th>
+                      <th>{tab === 'accounts' ? 'Inscrit le' : 'Dernière visite'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -214,7 +239,7 @@ export default function Clients() {
                           {formatPrice(c.total_spent)}
                         </td>
                         <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                          {c.last_visit || '-'}
+                          {tab === 'accounts' ? (c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : '-') : (c.last_visit || '-')}
                         </td>
                       </tr>
                     ))}

@@ -16,6 +16,7 @@ router.get('/',
     query('search').optional().trim(),
     query('sort').optional().isIn(['name', 'last_visit', 'total_spent', 'visit_count']),
     query('order').optional().isIn(['asc', 'desc']),
+    query('has_account').optional().isIn(['true', 'false']),
     query('inactive_weeks').optional().isInt({ min: 1 }),
     query('limit').optional().isInt({ min: 1, max: 100 }),
     query('offset').optional().isInt({ min: 0 }),
@@ -46,6 +47,13 @@ router.get('/',
         );
         params.push(`%${search}%`);
         paramIndex++;
+      }
+
+      // Filter by account status
+      if (req.query.has_account === 'true') {
+        whereConditions.push('c.has_account = true');
+      } else if (req.query.has_account === 'false') {
+        whereConditions.push('(c.has_account = false OR c.has_account IS NULL)');
       }
 
       // Filter inactive clients (no booking in X weeks)
