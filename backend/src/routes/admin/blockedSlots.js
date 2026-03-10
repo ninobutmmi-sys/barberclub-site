@@ -88,19 +88,22 @@ router.post('/',
     body('end_time').matches(/^\d{2}:\d{2}$/).withMessage('Heure de fin invalide'),
     body('type').isIn(['break', 'personal', 'closed']).withMessage('Type invalide'),
     body('reason').optional({ values: 'falsy' }).isString().isLength({ max: 255 }),
+    body('recurrence').optional().isObject(),
+    body('recurrence.type').optional().isIn(['weekly', 'biweekly']),
+    body('recurrence.end_type').optional().isIn(['occurrences', 'end_date']),
+    body('recurrence.occurrences').optional().isInt({ min: 2, max: 52 }).toInt(),
+    body('recurrence.end_date').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const { barber_id, date, start_time, end_time, reason, type } = req.body;
+      const { barber_id, date, start_time, end_time, reason, type, recurrence } = req.body;
 
-      // Validate that end_time > start_time
       if (start_time >= end_time) {
         throw ApiError.badRequest('L\'heure de fin doit être après l\'heure de début');
       }
 
-      // Check barber exists and belongs to salon
       const barberResult = await db.query(
         'SELECT id, name FROM barbers WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
         [barber_id, salonId]
@@ -109,37 +112,58 @@ router.post('/',
         throw ApiError.badRequest('Barber introuvable');
       }
 
-      // Auto-delete overlapping blocked slots (breaks/personal/closed) to allow replacement
-      await db.query(
-        `DELETE FROM blocked_slots
-         WHERE barber_id = $1 AND date = $2
-           AND start_time < $3 AND end_time > $4`,
-        [barber_id, date, end_time, start_time]
-      );
-
-      // Check for overlap with existing bookings
-      const bookingOverlap = await db.query(
-        `SELECT id FROM bookings
-         WHERE barber_id = $1 AND date = $2
-           AND status != 'cancelled' AND deleted_at IS NULL
-           AND start_time < $3 AND end_time > $4`,
-        [barber_id, date, end_time, start_time]
-      );
-      if (bookingOverlap.rows.length > 0) {
-        throw ApiError.conflict('Ce créneau chevauche un rendez-vous existant');
+      // Generate dates (single or recurring)
+      const dates = [date];
+      if (recurrence && recurrence.type) {
+        const interval = recurrence.type === 'biweekly' ? 14 : 7;
+        const startDate = new Date(date + 'T00:00:00');
+        let maxDates = 52;
+        if (recurrence.end_type === 'occurrences') {
+          maxDates = recurrence.occurrences || 10;
+        }
+        const endDate = recurrence.end_type === 'end_date' && recurrence.end_date
+          ? new Date(recurrence.end_date + 'T00:00:00')
+          : null;
+        for (let i = 1; i < maxDates; i++) {
+          const next = new Date(startDate);
+          next.setDate(startDate.getDate() + i * interval);
+          if (endDate && next > endDate) break;
+          dates.push(next.toISOString().split('T')[0]);
+        }
       }
 
-      const result = await db.query(
-        `INSERT INTO blocked_slots (barber_id, date, start_time, end_time, reason, type, salon_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING *`,
-        [barber_id, date, start_time, end_time, reason || null, type, salonId]
-      );
+      const created = [];
+      const skipped = [];
+      for (const d of dates) {
+        // Auto-delete overlapping blocked slots
+        await db.query(
+          `DELETE FROM blocked_slots WHERE barber_id = $1 AND date = $2 AND start_time < $3 AND end_time > $4`,
+          [barber_id, d, end_time, start_time]
+        );
+        // Check booking overlap
+        const overlap = await db.query(
+          `SELECT id FROM bookings WHERE barber_id = $1 AND date = $2 AND status != 'cancelled' AND deleted_at IS NULL AND start_time < $3 AND end_time > $4`,
+          [barber_id, d, end_time, start_time]
+        );
+        if (overlap.rows.length > 0) {
+          skipped.push(d);
+          continue;
+        }
+        const result = await db.query(
+          `INSERT INTO blocked_slots (barber_id, date, start_time, end_time, reason, type, salon_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          [barber_id, d, start_time, end_time, reason || null, type, salonId]
+        );
+        const slot = result.rows[0];
+        slot.barber_name = barberResult.rows[0].name;
+        created.push(slot);
+      }
 
-      const slot = result.rows[0];
-      slot.barber_name = barberResult.rows[0].name;
-
-      res.status(201).json(slot);
+      if (dates.length === 1) {
+        if (created.length === 0) throw ApiError.conflict('Ce créneau chevauche un rendez-vous existant');
+        res.status(201).json(created[0]);
+      } else {
+        res.status(201).json({ created: created.length, skipped: skipped.length, slots: created });
+      }
     } catch (error) {
       next(error);
     }
