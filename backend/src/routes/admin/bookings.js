@@ -353,11 +353,15 @@ router.put('/:id',
       });
 
       // Send reschedule email only if date/time/barber actually changed (not just color/service)
+      // and only if the booking is in the future (don't notify for past bookings)
       const dateChanged = txResult.newDate !== txResult.oldDate;
       const timeChanged = txResult.newStartTime.slice(0,5) !== txResult.oldTime.slice(0,5);
       const barberChanged = txResult.newBarberName !== txResult.oldBarberName;
       const actualReschedule = dateChanged || timeChanged || barberChanged;
-      if (notify_client && actualReschedule && txResult.booking.email) {
+      const now = new Date();
+      const bookingDateTime = new Date(`${txResult.oldDate}T${txResult.oldTime.slice(0,5)}:00`);
+      const bookingInPast = bookingDateTime < now;
+      if (notify_client && actualReschedule && txResult.booking.email && !bookingInPast) {
         sendRescheduleEmail({
           email: txResult.booking.email,
           first_name: txResult.booking.first_name,
