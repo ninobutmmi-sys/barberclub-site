@@ -95,10 +95,10 @@ router.get('/stats', async (req, res) => {
     const salonId = req.user.salon_id;
     const result = await db.query(
       `SELECT
-         COUNT(*) FILTER (WHERE type = 'reminder_sms' AND status = 'sent') AS sms_sent,
-         COUNT(*) FILTER (WHERE type = 'reminder_sms' AND status = 'failed') AS sms_failed,
-         COUNT(*) FILTER (WHERE type IN ('confirmation_email', 'review_email') AND status = 'sent') AS emails_sent,
-         COUNT(*) FILTER (WHERE type IN ('confirmation_email', 'review_email') AND status = 'failed') AS emails_failed,
+         COUNT(*) FILTER (WHERE channel = 'sms' AND status = 'sent') AS sms_sent,
+         COUNT(*) FILTER (WHERE channel = 'sms' AND status = 'failed') AS sms_failed,
+         COUNT(*) FILTER (WHERE channel = 'email' AND status = 'sent') AS emails_sent,
+         COUNT(*) FILTER (WHERE channel = 'email' AND status = 'failed') AS emails_failed,
          COUNT(*) FILTER (WHERE status = 'pending') AS pending
        FROM notification_queue
        WHERE created_at >= $1 AND salon_id = $2`,
