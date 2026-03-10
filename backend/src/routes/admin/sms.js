@@ -14,7 +14,7 @@ router.post(
   '/send',
   [
     body('recipients').isArray({ min: 1, max: 500 }).withMessage('Entre 1 et 500 destinataires'),
-    body('recipients.*.phone').matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numero de telephone invalide'),
+    body('recipients.*.phone').customSanitizer((v) => v ? v.replace(/[\s.\-]/g, '') : v).matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numero de telephone invalide'),
     body('recipients.*.first_name').optional().trim().isLength({ max: 100 }),
     body('recipients.*.last_name').optional().trim().isLength({ max: 100 }),
     body('message').notEmpty().isLength({ max: 1600 }).withMessage('Message requis (max 1600 car.)'),

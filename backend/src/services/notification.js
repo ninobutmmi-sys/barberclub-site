@@ -177,7 +177,7 @@ function getBrevoConfig(salonId) {
 // Brevo API helpers (salon-aware)
 // ============================================
 
-async function brevoEmail(to, subject, htmlContent, salonId = 'meylan') {
+async function brevoEmail(to, subject, htmlContent, salonId = 'meylan', meta = {}) {
   if (config.nodeEnv === 'test') {
     logger.debug('Brevo email skipped (test mode)', { to, subject });
     return;
@@ -211,9 +211,25 @@ async function brevoEmail(to, subject, htmlContent, salonId = 'meylan') {
     if (!response.ok) {
       const errorBody = await response.text();
       recordBrevoFailure(salonId);
+      // Log failed email
+      try {
+        await db.query(
+          `INSERT INTO notification_queue (id, booking_id, type, status, channel, email, recipient_name, subject, salon_id, created_at, last_error)
+           VALUES (gen_random_uuid(), $1, $2, 'failed', 'email', $3, $4, $5, $6, NOW(), $7)`,
+          [meta.bookingId || null, meta.type || 'email', to, meta.recipientName || null, subject, salonId, `${response.status}: ${errorBody.slice(0, 200)}`]
+        );
+      } catch (_) { /* silent */ }
       throw new Error(`Brevo email API error ${response.status}: ${errorBody}`);
     }
     recordBrevoSuccess(salonId);
+    // Log successful email
+    try {
+      await db.query(
+        `INSERT INTO notification_queue (id, booking_id, type, status, channel, email, recipient_name, subject, salon_id, created_at, sent_at)
+         VALUES (gen_random_uuid(), $1, $2, 'sent', 'email', $3, $4, $5, $6, NOW(), NOW())`,
+        [meta.bookingId || null, meta.type || 'email', to, meta.recipientName || null, subject, salonId]
+      );
+    } catch (_) { /* silent */ }
   } catch (err) {
     if (err.name === 'AbortError') recordBrevoFailure(salonId);
     throw err;
@@ -300,7 +316,9 @@ async function sendConfirmationEmail(data) {
     salonId,
   });
 
-  await brevoEmail(data.email, `Confirmation RDV - ${data.service_name} le ${dateFormatted}`, html, salonId);
+  await brevoEmail(data.email, `Confirmation RDV - ${data.service_name} le ${dateFormatted}`, html, salonId, {
+    bookingId: data.booking_id, type: 'confirmation_email', recipientName: data.first_name,
+  });
 }
 
 /**
@@ -625,7 +643,9 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
       </div>`, { showHero: false, salonId });
 
   try {
-    await brevoEmail(email, `RDV annulé - ${service_name} le ${dateFormatted}`, html, salonId);
+    await brevoEmail(email, `RDV annulé - ${service_name} le ${dateFormatted}`, html, salonId, {
+      type: 'cancellation_email', recipientName: first_name,
+    });
     logger.info('Cancellation email sent', { email, salonId });
   } catch (err) {
     logger.error('Cancellation email failed', { error: err.message, salonId });
@@ -732,7 +752,9 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
       </p>` : ''}`, { showHero: false, salonId });
 
   try {
-    await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html, salonId);
+    await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html, salonId, {
+      bookingId: booking_id, type: 'reschedule_email', recipientName: first_name,
+    });
     logger.info('Reschedule email sent', { email, salonId });
   } catch (err) {
     logger.error('Reschedule email failed', { error: err.message, salonId });
@@ -780,7 +802,9 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl, salon_id })
         <p style="margin:0;">Si vous n'avez pas fait cette demande, ignorez cet email.</p>
       </div>`, { showHero: false, salonId });
 
-  await brevoEmail(email, 'Réinitialisation de votre mot de passe BarberClub', html, salonId);
+  await brevoEmail(email, 'Réinitialisation de votre mot de passe BarberClub', html, salonId, {
+    type: 'reset_password_email',
+  });
   logger.info('Reset password email sent', { email, salonId });
 }
 
