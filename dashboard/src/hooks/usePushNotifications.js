@@ -19,16 +19,29 @@ export default function usePushNotifications() {
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
   const supported = 'serviceWorker' in navigator && 'PushManager' in window;
+  const salonId = localStorage.getItem('bc_salon') || 'meylan';
 
-  // Check if already subscribed
+  // Check if already subscribed + re-sync salon when it changes
   useEffect(() => {
     if (!supported) return;
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.pushManager.getSubscription().then((sub) => {
-        setSubscribed(!!sub);
-      });
+    navigator.serviceWorker.ready.then(async (reg) => {
+      const sub = await reg.pushManager.getSubscription();
+      setSubscribed(!!sub);
+      // If subscribed, re-register with current salon so backend updates salon_id
+      if (sub) {
+        const token = localStorage.getItem('bc_access_token');
+        fetch(`${API_BASE}/admin/push/subscribe?salon_id=${salonId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+          body: JSON.stringify(sub.toJSON()),
+        }).catch(() => {});
+      }
     });
-  }, [supported]);
+  }, [supported, salonId]);
 
   const subscribe = useCallback(async () => {
     if (!supported) return;
