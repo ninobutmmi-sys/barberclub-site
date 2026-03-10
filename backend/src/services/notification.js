@@ -204,6 +204,10 @@ async function brevoEmail(to, subject, htmlContent, salonId = 'meylan', meta = {
         to: [{ email: to }],
         subject,
         htmlContent,
+        textContent: htmlToText(htmlContent),
+        headers: {
+          'X-Mailin-Tag': meta.type || 'transactional',
+        },
       }),
       signal: controller.signal,
     });
@@ -361,6 +365,22 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function htmlToText(html) {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/tr>/gi, '\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<a[^>]+href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, '$2 ($1)')
+    .replace(/&eacute;/g, 'é').replace(/&agrave;/g, 'à').replace(/&euro;/g, '€')
+    .replace(/&laquo;/g, '«').replace(/&raquo;/g, '»').replace(/&mdash;/g, '—')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 // Base URL for hosted assets (production domain)
