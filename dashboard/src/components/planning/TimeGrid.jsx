@@ -11,7 +11,7 @@ import BlockedSlotBlock from './BlockedSlotBlock';
 import BookingBlock from './BookingBlock';
 import MinutePickerPopup from './MinutePickerPopup';
 
-export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, guestAssignments, onBookingClick, onBlockClick, onSlotClick, view, onSwipeLeft, onSwipeRight }) {
+export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, barberSchedules, guestAssignments, onBookingClick, onBlockClick, onSlotClick, view, onSwipeLeft, onSwipeRight }) {
   const scrollRef = useRef(null);
   const gridBodyRef = useRef(null);
   const touchRef = useRef(null);
@@ -41,6 +41,22 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
     const jsDay = date.getDay(); // 0=Sunday
     const dow = jsDay === 0 ? 6 : jsDay - 1; // Convert to 0=Monday
     return offSet.has(dow);
+  }
+
+  // Get off-hours zones for a specific barber on a specific date
+  function getBarberOffHours(barberId, date) {
+    const jsDay = date.getDay();
+    const dow = jsDay === 0 ? 6 : jsDay - 1;
+    const sched = barberSchedules?.[barberId]?.[dow];
+    if (!sched) return OFF_HOURS; // fallback to global off-hours
+    const [sh, sm] = sched.start.split(':').map(Number);
+    const [eh, em] = sched.end.split(':').map(Number);
+    const startDecimal = sh + sm / 60;
+    const endDecimal = eh + em / 60;
+    const zones = [];
+    if (startDecimal > HOUR_START) zones.push({ startHour: HOUR_START, endHour: startDecimal });
+    if (endDecimal < HOUR_END) zones.push({ startHour: endDecimal, endHour: HOUR_END });
+    return zones;
   }
 
   // Get guest assignment info for a barber on a specific date
@@ -252,8 +268,8 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                         }}
                         onMouseLeave={() => setHoverInfo(null)}
                       >
-                        {/* Off-hours zones (hatched like day-off, but clickable) */}
-                        {!barberIsOff && OFF_HOURS.map((zone) => (
+                        {/* Off-hours zones per barber schedule (hatched, but clickable) */}
+                        {!barberIsOff && getBarberOffHours(barber.id, day).map((zone) => (
                           <div key={`off-${zone.startHour}`} style={{
                             position: 'absolute',
                             top: (zone.startHour - HOUR_START) * 60 * PX_PER_MIN,

@@ -53,6 +53,7 @@ export default function Planning() {
   const [blockedSlots, setBlockedSlots] = useState([]);
   const [barberOffDays, setBarberOffDays] = useState({}); // { barberId: Set([0,6]) }
   const [barberBreaks, setBarberBreaks] = useState({}); // { barberId: { dayOfWeek: { start, end } } }
+  const [barberSchedules, setBarberSchedules] = useState({}); // { barberId: { dayOfWeek: { start, end } } }
   const [guestAssignments, setGuestAssignments] = useState([]); // [{ barber_id, host_salon_id, date, barber_name, home_salon_id }]
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -102,27 +103,34 @@ export default function Planning() {
       setServices(Array.isArray(s) ? s : []);
       setBlockedSlots(Array.isArray(bs) ? bs : []);
       setGuestAssignments(Array.isArray(ga) ? ga : []);
-      // Load schedules for all barbers to know off-days
+      // Load schedules for all barbers to know off-days + working hours
       const offMap = {};
       const breakMap = {};
+      const schedMap = {};
       await Promise.all(barberList.map(async (br) => {
         try {
           const sched = await getBarberSchedule(br.id);
           const offSet = new Set();
           const breaks = {};
+          const hours = {};
           (sched.weekly || []).forEach((w) => {
             if (!w.is_working) offSet.add(w.day_of_week);
+            else if (w.start_time && w.end_time) {
+              hours[w.day_of_week] = { start: w.start_time.slice(0, 5), end: w.end_time.slice(0, 5) };
+            }
             if (w.break_start && w.break_end) {
               breaks[w.day_of_week] = { start: w.break_start.slice(0, 5), end: w.break_end.slice(0, 5) };
             }
           });
           offMap[br.id] = offSet;
           breakMap[br.id] = breaks;
-        } catch { offMap[br.id] = new Set(); breakMap[br.id] = {}; }
+          schedMap[br.id] = hours;
+        } catch { offMap[br.id] = new Set(); breakMap[br.id] = {}; schedMap[br.id] = {}; }
       }));
       if (signal?.aborted) return;
       setBarberOffDays(offMap);
       setBarberBreaks(breakMap);
+      setBarberSchedules(schedMap);
     } catch (err) {
       if (signal?.aborted) return;
       console.error('Planning load error:', err);
@@ -474,6 +482,7 @@ export default function Planning() {
               bookingsByDayBarber={bookingsByDayBarber}
               blockedByDayBarber={blockedByDayBarber}
               barberOffDays={barberOffDays}
+              barberSchedules={barberSchedules}
               onBookingClick={handleBookingBlockClick}
               onBlockClick={setSelectedBlock}
               onSlotClick={handleSlotClick}
