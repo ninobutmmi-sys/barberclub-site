@@ -349,8 +349,12 @@ router.put('/:id',
         return { row: result.rows[0], booking, oldDate, oldTime, oldBarberName, newDate, newStartTime, newBarberName, price, serviceName: serviceResult.rows[0].name };
       });
 
-      // Send reschedule email if requested (non-blocking, outside transaction)
-      if (notify_client && txResult.booking.email) {
+      // Send reschedule email only if date/time/barber actually changed (not just color/service)
+      const dateChanged = txResult.newDate !== txResult.oldDate;
+      const timeChanged = txResult.newStartTime.slice(0,5) !== txResult.oldTime.slice(0,5);
+      const barberChanged = txResult.newBarberName !== txResult.oldBarberName;
+      const actualReschedule = dateChanged || timeChanged || barberChanged;
+      if (notify_client && actualReschedule && txResult.booking.email) {
         sendRescheduleEmail({
           email: txResult.booking.email,
           first_name: txResult.booking.first_name,
