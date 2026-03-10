@@ -285,7 +285,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
               </div>
               <div className="bk-field">
                 <label>Heure</label>
-                <input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} min="08:00" max="20:30" required />
+                <input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} min="07:00" max="21:00" required />
               </div>
               <div className="bk-field">
                 <label>Durée (min)</label>

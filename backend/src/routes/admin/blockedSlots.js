@@ -109,16 +109,13 @@ router.post('/',
         throw ApiError.badRequest('Barber introuvable');
       }
 
-      // Check for overlap with existing blocked slots
-      const overlapCheck = await db.query(
-        `SELECT id FROM blocked_slots
+      // Auto-delete overlapping blocked slots (breaks/personal/closed) to allow replacement
+      await db.query(
+        `DELETE FROM blocked_slots
          WHERE barber_id = $1 AND date = $2
            AND start_time < $3 AND end_time > $4`,
         [barber_id, date, end_time, start_time]
       );
-      if (overlapCheck.rows.length > 0) {
-        throw ApiError.conflict('Ce créneau chevauche un blocage existant');
-      }
 
       // Check for overlap with existing bookings
       const bookingOverlap = await db.query(
