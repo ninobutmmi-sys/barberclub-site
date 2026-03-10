@@ -57,10 +57,12 @@ async function notifySalon(salonId, payload) {
 function notifyNewBooking(salonId, booking) {
   const clientName = [booking.first_name, booking.last_name].filter(Boolean).join(' ') || 'Client';
   const time = (booking.start_time || '').slice(0, 5);
+  const salonLabel = salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
+  const barber = booking.barber_name || '';
 
   notifySalon(salonId, {
-    title: 'Nouveau RDV',
-    body: `${clientName} — ${booking.date} a ${time}`,
+    title: `Nouveau RDV — ${salonLabel}`,
+    body: `${clientName} avec ${barber} — ${booking.date} à ${time}`,
     tag: `booking-${booking.id}`,
     url: '/#/planning',
   });

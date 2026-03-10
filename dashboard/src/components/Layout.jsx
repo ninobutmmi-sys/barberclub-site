@@ -39,6 +39,10 @@ function serviceName(booking) {
   return booking.service_name || booking.service?.name || 'Service';
 }
 
+function barberName(booking) {
+  return booking.barber_name || booking.barber?.first_name || '';
+}
+
 const NAV_GROUPS = [
   {
     label: null, // No label for main group
@@ -248,7 +252,7 @@ export default function Layout() {
                         <span className="notif-item-time">{formatTime(b)}</span>
                         <span className="notif-item-info">
                           <span className="notif-item-client">{clientName(b)}</span>
-                          <span className="notif-item-service">{serviceName(b)}</span>
+                          <span className="notif-item-service">{barberName(b) ? `${barberName(b)} · ${serviceName(b)}` : serviceName(b)}</span>
                         </span>
                       </button>
                     ))
@@ -303,7 +307,7 @@ export default function Layout() {
                         <span className="notif-item-time">{formatTime(b)}</span>
                         <span className="notif-item-info">
                           <span className="notif-item-client">{clientName(b)}</span>
-                          <span className="notif-item-service">{serviceName(b)}</span>
+                          <span className="notif-item-service">{barberName(b) ? `${barberName(b)} · ${serviceName(b)}` : serviceName(b)}</span>
                         </span>
                       </button>
                     ))
