@@ -336,16 +336,7 @@ router.put('/:id',
           throw ApiError.conflict('Ce créneau est déjà pris');
         }
 
-        // Check blocked slots
-        const blockedCheck = await client.query(
-          `SELECT id FROM blocked_slots
-           WHERE barber_id = $1 AND date = $2
-             AND start_time < $3 AND end_time > $4`,
-          [newBarberId, newDate, newEndTime, newStartTime]
-        );
-        if (blockedCheck.rows.length > 0) {
-          throw ApiError.conflict('Ce créneau est bloqué (pause ou congé)');
-        }
+        // Admin can book over blocked slots/breaks — no blocked slot check
 
         const result = await client.query(
           `UPDATE bookings SET date = $1, start_time = $2, end_time = $3,

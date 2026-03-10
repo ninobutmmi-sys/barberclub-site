@@ -274,7 +274,7 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
  * @param {object} client - Database client (for transactions)
  * @returns {boolean}
  */
-async function isSlotAvailable(barberId, date, startTime, duration, client = null) {
+async function isSlotAvailable(barberId, date, startTime, duration, client = null, { isAdmin = false } = {}) {
   const queryFn = client ? client.query.bind(client) : db.query;
 
   const endTime = addMinutesToTime(startTime, duration);
@@ -294,34 +294,37 @@ async function isSlotAvailable(barberId, date, startTime, duration, client = nul
   const result = await queryFn(lockQuery, [barberId, date, endTime, startTime]);
   if (result.rows.length > 0) return false;
 
-  // Also check blocked slots
-  const blockedCheck = await queryFn(
-    `SELECT id FROM blocked_slots
-     WHERE barber_id = $1 AND date = $2
-       AND start_time < $3 AND end_time > $4`,
-    [barberId, date, endTime, startTime]
-  );
-  if (blockedCheck.rows.length > 0) return false;
+  // Admin can book over blocked slots and breaks
+  if (!isAdmin) {
+    // Check blocked slots
+    const blockedCheck = await queryFn(
+      `SELECT id FROM blocked_slots
+       WHERE barber_id = $1 AND date = $2
+         AND start_time < $3 AND end_time > $4`,
+      [barberId, date, endTime, startTime]
+    );
+    if (blockedCheck.rows.length > 0) return false;
 
-  // Check recurring break from schedule
-  const dateObj = new Date(date + 'T00:00:00');
-  const jsDay = dateObj.getDay();
-  const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1;
-  const homeSalon = await getBarberHomeSalon(barberId);
+    // Check recurring break from schedule
+    const dateObj = new Date(date + 'T00:00:00');
+    const jsDay = dateObj.getDay();
+    const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1;
+    const homeSalon = await getBarberHomeSalon(barberId);
 
-  const breakCheck = await queryFn(
-    `SELECT break_start, break_end FROM schedules
-     WHERE barber_id = $1 AND day_of_week = $2 AND salon_id = $3
-       AND break_start IS NOT NULL AND break_end IS NOT NULL`,
-    [barberId, dayOfWeek, homeSalon]
-  );
-  if (breakCheck.rows.length > 0) {
-    const brk = breakCheck.rows[0];
-    const brkStart = timeToMinutes(brk.break_start);
-    const brkEnd = timeToMinutes(brk.break_end);
-    const slotStart = timeToMinutes(startTime);
-    const slotEnd = timeToMinutes(endTime);
-    if (slotStart < brkEnd && slotEnd > brkStart) return false;
+    const breakCheck = await queryFn(
+      `SELECT break_start, break_end FROM schedules
+       WHERE barber_id = $1 AND day_of_week = $2 AND salon_id = $3
+         AND break_start IS NOT NULL AND break_end IS NOT NULL`,
+      [barberId, dayOfWeek, homeSalon]
+    );
+    if (breakCheck.rows.length > 0) {
+      const brk = breakCheck.rows[0];
+      const brkStart = timeToMinutes(brk.break_start);
+      const brkEnd = timeToMinutes(brk.break_end);
+      const slotStart = timeToMinutes(startTime);
+      const slotEnd = timeToMinutes(endTime);
+      if (slotStart < brkEnd && slotEnd > brkStart) return false;
+    }
   }
 
   return true;

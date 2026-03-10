@@ -130,13 +130,14 @@ async function createBooking(data) {
       [barberId, data.date]
     );
 
-    // Check slot is still free (with row lock)
+    // Check slot is still free (with row lock) — admin can book over blocked slots/breaks
     const slotFree = await availability.isSlotAvailable(
       barberId,
       data.date,
       data.start_time,
       effectiveDuration,
-      client
+      client,
+      { isAdmin }
     );
     if (!slotFree) {
       throw ApiError.conflict('Ce créneau vient d\'être pris par un autre client. Veuillez en choisir un autre.');
