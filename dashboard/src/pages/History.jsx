@@ -67,6 +67,12 @@ function today() {
   return toLocalDateStr();
 }
 
+function defaultTo() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 6);
+  return toLocalDateStr(d);
+}
+
 export default function History() {
   const navigate = useNavigate();
   const isMobile = useMobile();
@@ -74,7 +80,7 @@ export default function History() {
 
   // -- Filters --
   const [from, setFrom] = useState(defaultFrom);
-  const [to, setTo] = useState(today);
+  const [to, setTo] = useState(defaultTo);
   const [barberId, setBarberId] = useState('');
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
