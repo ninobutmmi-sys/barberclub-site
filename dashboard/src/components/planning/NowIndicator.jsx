@@ -22,13 +22,13 @@ export default function NowIndicator({ pxPerMin }) {
   return (
     <div style={{ position: 'absolute', top, left: 0, right: 0, height: 0, zIndex: 20, pointerEvents: 'none' }}>
       {/* Time label in gutter */}
-      <div style={{ position: 'absolute', left: 4, top: -9, fontSize: 10, fontWeight: 800, color: '#ef4444', fontFamily: 'var(--font-display, Orbitron, monospace)', fontVariantNumeric: 'tabular-nums', background: 'var(--bg, #0a0a0a)', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.02em' }}>
+      <div style={{ position: 'absolute', left: 4, top: -7, fontSize: 9, fontWeight: 800, color: '#ef4444', fontFamily: 'var(--font-display, Orbitron, monospace)', fontVariantNumeric: 'tabular-nums', background: 'var(--bg, #0a0a0a)', padding: '0px 3px', borderRadius: 2, letterSpacing: '0.02em', lineHeight: '14px' }}>
         {timeStr}
       </div>
-      {/* Circle at the gutter/grid boundary — with pulse animation */}
+      {/* Dot at the gutter/grid boundary */}
       <div className="planning-now-dot" />
-      {/* Line across all columns */}
-      <div style={{ position: 'absolute', left: 52, right: 0, top: 0, height: 2, background: '#ef4444', boxShadow: '0 0 8px rgba(239,68,68,0.4)' }} />
+      {/* Line across all columns — 1px crisp */}
+      <div style={{ position: 'absolute', left: 52, right: 0, top: 0, height: 1, background: '#ef4444' }} />
     </div>
   );
 }

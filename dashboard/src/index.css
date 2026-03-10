@@ -2386,13 +2386,12 @@ select.input {
    ============================================ */
 .planning-now-dot {
   position: absolute;
-  left: 48px;
-  top: -4px;
-  width: 9px;
-  height: 9px;
+  left: 49px;
+  top: -3px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #ef4444;
-  animation: nowDotPulse 2s ease-in-out infinite;
 }
 
 @keyframes nowDotPulse {
