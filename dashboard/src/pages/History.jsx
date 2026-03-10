@@ -94,7 +94,7 @@ export default function History() {
   const [barbers, setBarbers] = useState([]);
 
   // -- Sort --
-  const [sort, setSort] = useState('date');
+  const [sort, setSort] = useState('created_at');
   const [order, setOrder] = useState('desc');
 
   // -- Detail modal --
@@ -384,6 +384,12 @@ export default function History() {
                         Statut {renderSortIcon('status')}
                       </th>
                       <th>Source</th>
+                      <th
+                        onClick={() => handleSort('created_at')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        Réservé le {renderSortIcon('created_at')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -430,6 +436,12 @@ export default function History() {
                         </td>
                         <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                           {SOURCE_LABELS[b.source] || b.source}
+                        </td>
+                        <td style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                          {b.created_at ? (() => {
+                            const d = new Date(b.created_at);
+                            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                          })() : '\u2013'}
                         </td>
                       </tr>
                     ))}
