@@ -190,11 +190,17 @@ async function createBooking(data) {
     );
 
     // 6. Check if first visit (for NEW badge)
-    const existingBookings = await client.query(
-      'SELECT 1 FROM bookings WHERE client_id = $1 AND deleted_at IS NULL AND status != $2 LIMIT 1',
-      [clientId, 'cancelled']
-    );
-    const isFirstVisit = existingBookings.rows.length === 0;
+    // Skip check if explicitly marked (e.g. recurring bookings after the first one)
+    let isFirstVisit = false;
+    if (data._forceNotFirstVisit) {
+      isFirstVisit = false;
+    } else {
+      const existingBookings = await client.query(
+        'SELECT 1 FROM bookings WHERE client_id = $1 AND deleted_at IS NULL AND status != $2 LIMIT 1',
+        [clientId, 'cancelled']
+      );
+      isFirstVisit = existingBookings.rows.length === 0;
+    }
 
     // 7. Insert the booking
     const bookingResult = await client.query(
@@ -389,12 +395,14 @@ async function createRecurringBookings(data, recurrence) {
   const created = [];
   const skipped = [];
 
-  for (const date of allDates) {
+  for (let i = 0; i < allDates.length; i++) {
+    const date = allDates[i];
     try {
       const booking = await createBooking({
         ...data,
         date,
         recurrence_group_id: groupId,
+        _forceNotFirstVisit: i > 0,
       });
       created.push(booking);
     } catch (err) {

@@ -569,9 +569,7 @@ export default function Planning() {
           onDeleteGroup={handleDeleteBookingGroup}
           onReschedule={handleRescheduleBooking}
           onNotesUpdated={(clientId, newNotes) => {
-            setBookings((prev) => prev.map((b) =>
-              b.client_id === clientId ? { ...b, client_notes: newNotes } : b
-            ));
+            invalidatePlanning();
             setSelectedBooking((prev) => prev ? { ...prev, client_notes: newNotes } : prev);
           }}
         />
