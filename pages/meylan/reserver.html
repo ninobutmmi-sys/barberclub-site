@@ -4153,6 +4153,23 @@
                 await loadBarbers();
                 if (state.barbers.length === 0) throw new Error('no barbers');
                 pageLoading.classList.add('hidden');
+
+                // Auto-select barber from URL param (e.g. ?barber=Lucas)
+                const urlBarber = new URLSearchParams(window.location.search).get('barber');
+                if (urlBarber) {
+                    const match = state.barbers.find(b => b.name.toLowerCase() === urlBarber.toLowerCase());
+                    if (match) {
+                        state.selectedBarber = match;
+                        const card = document.querySelector(`.barber-card[data-id="${match.id}"]`);
+                        if (card) {
+                            card.classList.add('selected');
+                            card.setAttribute('aria-checked', 'true');
+                        }
+                        goToStep(2);
+                        await loadServices();
+                    }
+                }
+
                 updateActionBtn();
             } catch (e) {
                 // Show user-friendly error on loading screen
