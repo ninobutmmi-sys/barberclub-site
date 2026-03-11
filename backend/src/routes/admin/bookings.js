@@ -379,7 +379,21 @@ router.put('/:id',
         }).catch((err) => logger.error('Email notification failed', { error: err.message }));
       }
 
-      logAudit(req, 'update', 'booking', req.params.id, { changes: req.body });
+      logAudit(req, 'update', 'booking', req.params.id, {
+        client: `${txResult.booking.first_name} ${txResult.booking.last_name}`,
+        before: {
+          date: txResult.oldDate,
+          start_time: txResult.oldTime?.slice(0, 5),
+          barber: txResult.oldBarberName,
+          service: txResult.booking.service_name,
+        },
+        after: {
+          date: txResult.newDate,
+          start_time: txResult.newStartTime?.slice(0, 5),
+          barber: txResult.newBarberName,
+          service: txResult.serviceName,
+        },
+      });
       ws.emitBookingUpdated(salonId, txResult.row);
       res.json(txResult.row);
     } catch (error) {
