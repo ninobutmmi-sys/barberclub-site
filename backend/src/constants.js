@@ -21,7 +21,7 @@ module.exports = {
   MAX_RECURRENCE_OCCURRENCES: 52,
 
   // --- Slot intervals ---
-  SLOT_INTERVAL_PUBLIC: 30, // minutes between public slots
+  SLOT_INTERVAL_PUBLIC: 10, // minutes between public slots
   SLOT_INTERVAL_ADMIN: 5,  // minutes between admin slots
   ADMIN_SCHEDULE_END: '20:30', // admin can book up to this time
 
