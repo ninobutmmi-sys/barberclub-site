@@ -1,8 +1,19 @@
 import { lazy, Suspense } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: true,
+      staleTime: 30_000,
+    },
+  },
+});
 
 // Lazy-loaded pages (code splitting per route)
 const SalonSelector = lazy(() => import('./pages/SalonSelector'));
@@ -67,11 +78,13 @@ function AppRoutes() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <HashRouter>
-          <AppRoutes />
-        </HashRouter>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <HashRouter>
+            <AppRoutes />
+          </HashRouter>
+        </AuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

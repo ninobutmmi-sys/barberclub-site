@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { getClients, getNotificationLogs, getBrevoStatus, sendMailing } from '../api';
+import { useState } from 'react';
+import { getClients, sendMailing } from '../api';
 import useMobile from '../hooks/useMobile';
+import { useBrevoStatus, useNotificationLogs } from '../hooks/useApi';
 
 // ============================================
 // Mailing Page — Email campaigns via Brevo
@@ -77,7 +78,7 @@ export default function Mailing({ embedded } = {}) {
   const [result, setResult] = useState(null);
 
   // Brevo status
-  const [brevoStatus, setBrevoStatus] = useState(null);
+  const { data: brevoStatus } = useBrevoStatus();
 
   // Client search
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,14 +87,14 @@ export default function Mailing({ embedded } = {}) {
   const [loadingAll, setLoadingAll] = useState(false);
 
   // History
-  const [logs, setLogs] = useState([]);
-  const [logsTotal, setLogsTotal] = useState(0);
   const [logsPage, setLogsPage] = useState(0);
-  const [logsLoading, setLogsLoading] = useState(false);
-
-  useEffect(() => {
-    getBrevoStatus().then(setBrevoStatus).catch(() => {});
-  }, []);
+  const logsQuery = useNotificationLogs(
+    { channel: 'email', limit: 25, offset: logsPage * 25 },
+    { enabled: tab === 'history' }
+  );
+  const logs = logsQuery.data?.notifications || [];
+  const logsTotal = logsQuery.data?.total || 0;
+  const logsLoading = logsQuery.isLoading;
 
   function handleTemplateChange(id) {
     const tpl = EMAIL_TEMPLATES.find((t) => t.id === id) || EMAIL_TEMPLATES[0];
@@ -170,24 +171,9 @@ export default function Mailing({ embedded } = {}) {
     setSending(false);
   }
 
-  async function loadLogs(page = 0) {
-    setLogsLoading(true);
-    try {
-      const data = await getNotificationLogs({
-        channel: 'email',
-        limit: 25,
-        offset: page * 25,
-      });
-      setLogs(data.notifications || []);
-      setLogsTotal(data.total || 0);
-      setLogsPage(page);
-    } catch { /* silent */ }
-    setLogsLoading(false);
+  function loadLogs(page) {
+    setLogsPage(page);
   }
-
-  useEffect(() => {
-    if (tab === 'history') loadLogs(0);
-  }, [tab]);
 
   const statusLabel = (s) => {
     if (s === 'sent') return { text: 'Envoye', color: '#22c55e' };

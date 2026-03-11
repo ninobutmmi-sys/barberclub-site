@@ -1,16 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
-import {
-  getBarbers,
-  updateBarber,
-  getBarberSchedule,
-  updateBarberSchedule,
-  addBarberOverride,
-  deleteBarberOverride,
-  getBarberGuestDays,
-  addBarberGuestDay,
-  deleteBarberGuestDay,
-} from '../api';
+import { useState, useCallback } from 'react';
 import useMobile from '../hooks/useMobile';
+import {
+  useBarbers,
+  useBarberSchedule,
+  useBarberGuestDays,
+  useUpdateBarber,
+  useUpdateBarberSchedule,
+  useAddBarberOverride,
+  useDeleteBarberOverride,
+  useAddBarberGuestDay,
+  useDeleteBarberGuestDay,
+} from '../hooks/useApi';
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
@@ -64,34 +64,17 @@ function InlineStatus({ status }) {
 
 export default function Barbers() {
   const isMobile = useMobile();
-  const [barbers, setBarbers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: barbers = [], isLoading: loading, error, refetch } = useBarbers();
   const [editBarber, setEditBarber] = useState(null);
   const [scheduleBarber, setScheduleBarber] = useState(null);
   const [guestBarber, setGuestBarber] = useState(null);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
-    setLoading(true);
-    setError(null);
-    try {
-      setBarbers(await getBarbers());
-    } catch (err) {
-      setError('Impossible de charger les donnees');
-    }
-    setLoading(false);
-  }
 
   return (
     <>
       {error && (
         <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
           <span>{error}</span>
-          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+          <button onClick={() => refetch()} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
         </div>
       )}
       <div className="page-header">
@@ -222,10 +205,6 @@ export default function Barbers() {
         <EditBarberModal
           barber={editBarber}
           onClose={() => setEditBarber(null)}
-          onSaved={() => {
-            setEditBarber(null);
-            loadData();
-          }}
         />
       )}
 
@@ -250,23 +229,22 @@ export default function Barbers() {
 // Edit Barber Modal (unchanged)
 // ============================================
 
-function EditBarberModal({ barber, onClose, onSaved }) {
+function EditBarberModal({ barber, onClose }) {
+  const mutation = useUpdateBarber();
   const [name, setName] = useState(barber.name);
   const [role, setRole] = useState(barber.role || '');
   const [photoUrl, setPhotoUrl] = useState(barber.photo_url || '');
   const [isActive, setIsActive] = useState(barber.is_active);
-  const [saving, setSaving] = useState(false);
+  const saving = mutation.isPending;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
     try {
-      await updateBarber(barber.id, { name, role, photo_url: photoUrl || null, is_active: isActive });
-      onSaved();
+      await mutation.mutateAsync({ id: barber.id, data: { name, role, photo_url: photoUrl || null, is_active: isActive } });
+      onClose();
     } catch (err) {
       alert(err.message);
     }
-    setSaving(false);
   };
 
   return (
@@ -365,107 +343,83 @@ function EditBarberModal({ barber, onClose, onSaved }) {
 // ============================================
 
 function ScheduleModal({ barber, onClose }) {
+  const { data: rawSchedule, isLoading: loading } = useBarberSchedule(barber.id);
+  const saveMutation = useUpdateBarberSchedule();
+  const addOverrideMutation = useAddBarberOverride();
+  const deleteOverrideMutation = useDeleteBarberOverride();
+
+  // Local editable copy of the schedule
   const [schedule, setSchedule] = useState(null);
-  const [overrides, setOverrides] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState(null);
-
-  // Tab: "schedule" or "overrides"
   const [activeTab, setActiveTab] = useState('schedule');
-
-  // Override form state
   const [ovDate, setOvDate] = useState('');
   const [ovIsDayOff, setOvIsDayOff] = useState(true);
   const [ovStartTime, setOvStartTime] = useState('09:00');
   const [ovEndTime, setOvEndTime] = useState('19:00');
   const [ovReason, setOvReason] = useState('');
-  const [addingOverride, setAddingOverride] = useState(false);
   const [showOverrideForm, setShowOverrideForm] = useState(false);
 
-  // Status helper: show a message then auto-clear
+  const saving = saveMutation.isPending;
+  const addingOverride = addOverrideMutation.isPending;
+  const overrides = rawSchedule?.overrides || [];
+
+  // Initialize local schedule from query data
+  if (rawSchedule && !schedule) {
+    const sched = Array.from({ length: 7 }, (_, i) => {
+      const existing = rawSchedule.weekly?.find((w) => w.day_of_week === i);
+      if (existing) {
+        return {
+          ...existing,
+          start_time: (existing.start_time || '09:00').slice(0, 5),
+          end_time: (existing.end_time || '19:00').slice(0, 5),
+        };
+      }
+      return { day_of_week: i, start_time: '09:00', end_time: '19:00', is_working: false };
+    });
+    setSchedule(sched);
+  }
+
   const flash = useCallback((type, message) => {
     setStatus({ type, message });
     const timer = setTimeout(() => setStatus(null), 3000);
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    loadSchedule();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function loadSchedule() {
-    setLoading(true);
-    try {
-      const data = await getBarberSchedule(barber.id);
-      const sched = Array.from({ length: 7 }, (_, i) => {
-        const existing = data.weekly?.find((w) => w.day_of_week === i);
-        if (existing) {
-          return {
-            ...existing,
-            start_time: (existing.start_time || '09:00').slice(0, 5),
-            end_time: (existing.end_time || '19:00').slice(0, 5),
-          };
-        }
-        return {
-          day_of_week: i,
-          start_time: '09:00',
-          end_time: '19:00',
-          is_working: false,
-        };
-      });
-      setSchedule(sched);
-      setOverrides(data.overrides || []);
-    } catch (err) {
-      // silently handled
-    }
-    setLoading(false);
-  }
-
   async function saveSchedule() {
-    setSaving(true);
     try {
-      await updateBarberSchedule(barber.id, schedule);
+      await saveMutation.mutateAsync({ id: barber.id, schedules: schedule });
       flash('success', 'Horaires enregistres avec succes');
     } catch (err) {
       flash('error', err.message);
     }
-    setSaving(false);
   }
 
   async function handleAddOverride(e) {
     e.preventDefault();
-    setAddingOverride(true);
     try {
-      await addBarberOverride(barber.id, {
-        date: ovDate,
-        is_day_off: ovIsDayOff,
-        start_time: ovIsDayOff ? undefined : ovStartTime,
-        end_time: ovIsDayOff ? undefined : ovEndTime,
-        reason: ovReason || undefined,
+      await addOverrideMutation.mutateAsync({
+        id: barber.id,
+        data: {
+          date: ovDate,
+          is_day_off: ovIsDayOff,
+          start_time: ovIsDayOff ? undefined : ovStartTime,
+          end_time: ovIsDayOff ? undefined : ovEndTime,
+          reason: ovReason || undefined,
+        },
       });
-      // Reset form
-      setOvDate('');
-      setOvIsDayOff(true);
-      setOvStartTime('09:00');
-      setOvEndTime('19:00');
-      setOvReason('');
+      setOvDate(''); setOvIsDayOff(true); setOvStartTime('09:00'); setOvEndTime('19:00'); setOvReason('');
       setShowOverrideForm(false);
       flash('success', 'Exception ajoutee');
-      await loadSchedule();
     } catch (err) {
       flash('error', err.message);
     }
-    setAddingOverride(false);
   }
 
   async function removeOverride(id) {
     if (!window.confirm('Supprimer cette exception ?')) return;
     try {
-      await deleteBarberOverride(id);
+      await deleteOverrideMutation.mutateAsync(id);
       flash('success', 'Exception supprimee');
-      await loadSchedule();
     } catch (err) {
       flash('error', err.message);
     }
@@ -969,17 +923,18 @@ const SALON_OPTIONS = [
 ];
 
 function GuestDaysModal({ barber, onClose }) {
-  const [guestDays, setGuestDays] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: rawGuestDays, isLoading: loading } = useBarberGuestDays(barber.id);
+  const addMutation = useAddBarberGuestDay();
+  const deleteMutation = useDeleteBarberGuestDay();
+
+  const guestDays = Array.isArray(rawGuestDays) ? rawGuestDays : [];
   const [status, setStatus] = useState(null);
   const [showForm, setShowForm] = useState(false);
-
-  // Form state
   const [gdDate, setGdDate] = useState('');
   const [gdSalon, setGdSalon] = useState('');
   const [gdStartTime, setGdStartTime] = useState('09:00');
   const [gdEndTime, setGdEndTime] = useState('19:00');
-  const [adding, setAdding] = useState(false);
+  const adding = addMutation.isPending;
 
   const flash = useCallback((type, message) => {
     setStatus({ type, message });
@@ -987,52 +942,33 @@ function GuestDaysModal({ barber, onClose }) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Filter out barber's own salon from destination choices
   const destinations = SALON_OPTIONS.filter(s => s.id !== barber.salon_id);
-
-  useEffect(() => {
-    loadGuestDays();
-  }, []);
-
-  async function loadGuestDays() {
-    setLoading(true);
-    try {
-      const data = await getBarberGuestDays(barber.id);
-      setGuestDays(Array.isArray(data) ? data : []);
-    } catch {
-      setGuestDays([]);
-    }
-    setLoading(false);
-  }
 
   async function handleAdd(e) {
     e.preventDefault();
-    setAdding(true);
     try {
-      await addBarberGuestDay(barber.id, {
-        date: gdDate,
-        host_salon_id: gdSalon || destinations[0]?.id,
-        start_time: gdStartTime,
-        end_time: gdEndTime,
+      await addMutation.mutateAsync({
+        id: barber.id,
+        data: {
+          date: gdDate,
+          host_salon_id: gdSalon || destinations[0]?.id,
+          start_time: gdStartTime,
+          end_time: gdEndTime,
+        },
       });
-      setGdDate('');
-      setGdStartTime('09:00');
-      setGdEndTime('19:00');
+      setGdDate(''); setGdStartTime('09:00'); setGdEndTime('19:00');
       setShowForm(false);
       flash('success', 'Jour invite ajoute');
-      await loadGuestDays();
     } catch (err) {
       flash('error', err.message);
     }
-    setAdding(false);
   }
 
   async function handleDelete(id) {
     if (!window.confirm('Supprimer ce jour invite ?')) return;
     try {
-      await deleteBarberGuestDay(id);
+      await deleteMutation.mutateAsync(id);
       flash('success', 'Jour invite supprime');
-      await loadGuestDays();
     } catch (err) {
       flash('error', err.message);
     }

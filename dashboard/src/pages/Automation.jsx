@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import {
-  getAutomationTriggers, updateAutomationTrigger,
-  getWaitlist, addToWaitlist, updateWaitlistEntry, deleteWaitlistEntry, getWaitlistCount,
-  getBarbers, getServices,
-  getNotificationStats, getNotificationLogs,
-} from '../api';
+import { useState } from 'react';
+import { updateAutomationTrigger } from '../api';
 import useMobile from '../hooks/useMobile';
+import {
+  useAutomationTriggers, useUpdateAutomationTrigger,
+  useWaitlist, useWaitlistCount, useAddToWaitlist, useUpdateWaitlistEntry, useDeleteWaitlistEntry,
+  useBarbers, useServices,
+  useNotificationStats, useNotificationLogs,
+} from '../hooks/useApi';
 
 const TRIGGER_LABELS = {
   review_sms: {
@@ -23,81 +24,50 @@ const TRIGGER_LABELS = {
 export default function Automation({ embedded } = {}) {
   const isMobile = useMobile();
   const [tab, setTab] = useState('monitoring'); // monitoring | triggers | waitlist
-  const [triggers, setTriggers] = useState([]);
-  const [waitlist, setWaitlist] = useState([]);
-  const [waitlistCount, setWaitlistCount] = useState(0);
-  const [barbers, setBarbers] = useState([]);
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [editTrigger, setEditTrigger] = useState(null);
   const [addWlModal, setAddWlModal] = useState(false);
 
-  // Monitoring
-  const [stats, setStats] = useState(null);
-  const [recentLogs, setRecentLogs] = useState([]);
-  const [statsLoading, setStatsLoading] = useState(false);
+  // React Query hooks
+  const triggersQuery = useAutomationTriggers();
+  const waitlistQuery = useWaitlist({ status: 'waiting' });
+  const waitlistCountQuery = useWaitlistCount();
+  const barbersQuery = useBarbers();
+  const servicesQuery = useServices();
+  const statsQuery = useNotificationStats({ enabled: tab === 'monitoring' });
+  const logsQuery = useNotificationLogs({ limit: 15, offset: 0 }, { enabled: tab === 'monitoring' });
 
-  useEffect(() => { loadData(); }, []);
+  const triggers = triggersQuery.data || [];
+  const waitlist = waitlistQuery.data || [];
+  const waitlistCount = waitlistCountQuery.data?.count ?? 0;
+  const barbers = barbersQuery.data || [];
+  const services = servicesQuery.data || [];
+  const stats = statsQuery.data || null;
+  const recentLogs = logsQuery.data?.notifications || [];
 
-  useEffect(() => {
-    if (tab === 'monitoring') loadMonitoring();
-  }, [tab]);
+  const loading = triggersQuery.isLoading;
+  const error = triggersQuery.error?.message || null;
+  const statsLoading = statsQuery.isLoading;
 
-  async function loadMonitoring() {
-    setStatsLoading(true);
-    try {
-      const [s, l] = await Promise.all([
-        getNotificationStats(),
-        getNotificationLogs({ limit: 15, offset: 0 }),
-      ]);
-      setStats(s);
-      setRecentLogs(l.notifications || []);
-    } catch (err) { /* silently handled */ }
-    setStatsLoading(false);
-  }
-
-  async function loadData() {
-    setLoading(true);
-    setError(null);
-    try {
-      const [t, wl, wlc, b, s] = await Promise.all([
-        getAutomationTriggers(),
-        getWaitlist({ status: 'waiting' }),
-        getWaitlistCount(),
-        getBarbers(),
-        getServices(),
-      ]);
-      setTriggers(t);
-      setWaitlist(wl);
-      setWaitlistCount(wlc.count ?? 0);
-      setBarbers(b);
-      setServices(s);
-    } catch (err) {
-      setError('Impossible de charger les donnees');
-    }
-    setLoading(false);
-  }
+  const toggleMutation = useUpdateAutomationTrigger();
+  const deleteMutation = useDeleteWaitlistEntry();
+  const updateWlMutation = useUpdateWaitlistEntry();
 
   async function handleToggleTrigger(trigger) {
     try {
-      await updateAutomationTrigger(trigger.type, { is_active: !trigger.is_active });
-      loadData();
+      await toggleMutation.mutateAsync({ type: trigger.type, data: { is_active: !trigger.is_active } });
     } catch (err) { alert(err.message); }
   }
 
   async function handleDeleteWaitlist(id) {
     if (!confirm('Retirer de la liste d\'attente ?')) return;
     try {
-      await deleteWaitlistEntry(id);
-      loadData();
+      await deleteMutation.mutateAsync(id);
     } catch (err) { alert(err.message); }
   }
 
   async function handleMarkNotified(entry) {
     try {
-      await updateWaitlistEntry(entry.id, { status: 'notified' });
-      loadData();
+      await updateWlMutation.mutateAsync({ id: entry.id, data: { status: 'notified' } });
     } catch (err) { alert(err.message); }
   }
 
@@ -106,7 +76,7 @@ export default function Automation({ embedded } = {}) {
       {error && (
         <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
           <span>{error}</span>
-          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+          <button onClick={() => triggersQuery.refetch()} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
         </div>
       )}
       {!embedded && (
@@ -372,7 +342,6 @@ export default function Automation({ embedded } = {}) {
         <TriggerConfigModal
           trigger={editTrigger}
           onClose={() => setEditTrigger(null)}
-          onSaved={() => { setEditTrigger(null); loadData(); }}
         />
       )}
 
@@ -382,7 +351,6 @@ export default function Automation({ embedded } = {}) {
           barbers={barbers}
           services={services}
           onClose={() => setAddWlModal(false)}
-          onSaved={() => { setAddWlModal(false); loadData(); }}
         />
       )}
     </>
@@ -404,27 +372,26 @@ function StatCard({ label, value, icon, color }) {
   );
 }
 
-function TriggerConfigModal({ trigger, onClose, onSaved }) {
+function TriggerConfigModal({ trigger, onClose }) {
   const [message, setMessage] = useState(trigger.config?.message || '');
   const [delayMinutes, setDelayMinutes] = useState(trigger.config?.delay_minutes || 60);
   const [googleReviewUrl, setGoogleReviewUrl] = useState(trigger.config?.google_review_url || '');
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const mutation = useUpdateAutomationTrigger();
+  const saving = mutation.isPending;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSaving(true);
     const config = { ...trigger.config, message };
     if (trigger.type === 'review_sms') {
       config.delay_minutes = parseInt(delayMinutes);
       config.google_review_url = googleReviewUrl;
     }
     try {
-      await updateAutomationTrigger(trigger.type, { config });
-      onSaved();
+      await mutation.mutateAsync({ type: trigger.type, data: { config } });
+      onClose();
     } catch (err) { setError(err.message); }
-    setSaving(false);
   };
 
   const meta = TRIGGER_LABELS[trigger.type] || {};
@@ -484,7 +451,7 @@ function TriggerConfigModal({ trigger, onClose, onSaved }) {
   );
 }
 
-function AddWaitlistModal({ barbers, services, onClose, onSaved }) {
+function AddWaitlistModal({ barbers, services, onClose }) {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [barberId, setBarberId] = useState(barbers[0]?.id || '');
@@ -492,15 +459,15 @@ function AddWaitlistModal({ barbers, services, onClose, onSaved }) {
   const [date, setDate] = useState('');
   const [timeStart, setTimeStart] = useState('');
   const [timeEnd, setTimeEnd] = useState('');
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const mutation = useAddToWaitlist();
+  const saving = mutation.isPending;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSaving(true);
     try {
-      await addToWaitlist({
+      await mutation.mutateAsync({
         client_name: clientName,
         client_phone: clientPhone,
         barber_id: barberId,
@@ -509,9 +476,8 @@ function AddWaitlistModal({ barbers, services, onClose, onSaved }) {
         preferred_time_start: timeStart || undefined,
         preferred_time_end: timeEnd || undefined,
       });
-      onSaved();
+      onClose();
     } catch (err) { setError(err.message); }
-    setSaving(false);
   };
 
   return (

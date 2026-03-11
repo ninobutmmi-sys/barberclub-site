@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getClient, updateClient, deleteClient } from '../api';
 import useMobile from '../hooks/useMobile';
+import { useClient, useUpdateClient, useDeleteClient } from '../hooks/useApi';
 
 function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
@@ -11,52 +11,39 @@ export default function ClientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isMobile = useMobile();
-  const [client, setClient] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: client, isLoading: loading, error, refetch } = useClient(id);
+  const updateMutation = useUpdateClient();
+  const deleteMutation = useDeleteClient();
+
   const [editNotes, setEditNotes] = useState(false);
   const [notes, setNotes] = useState('');
   const [toast, setToast] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const saving = updateMutation.isPending;
 
-  useEffect(() => { loadClient(); }, [id]);
+  // Sync notes when client data loads
+  useEffect(() => {
+    if (client) setNotes(client.notes || '');
+  }, [client]);
 
-  /** @param {'success'|'error'} type */
   function showToast(message, type = 'success') {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function loadClient() {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getClient(id);
-      setClient(data);
-      setNotes(data.notes || '');
-    } catch (err) {
-      setError('Impossible de charger les donnees');
-    }
-    setLoading(false);
-  }
-
   async function saveNotes() {
-    setSaving(true);
     try {
-      await updateClient(id, { notes });
+      await updateMutation.mutateAsync({ id, data: { notes } });
       setEditNotes(false);
       showToast('Notes enregistrees avec succes');
-      loadClient();
     } catch (err) {
       showToast(err.message, 'error');
     }
-    setSaving(false);
   }
 
   async function handleDelete() {
     if (!confirm('Supprimer ce client (RGPD) ? Cette action est irréversible.')) return;
     try {
-      await deleteClient(id);
+      await deleteMutation.mutateAsync(id);
       navigate('/clients');
     } catch (err) {
       alert(err.message);
@@ -71,7 +58,7 @@ export default function ClientDetail() {
       {error && (
         <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
           <span>{error}</span>
-          <button onClick={() => { setError(null); loadClient(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+          <button onClick={() => refetch()} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
         </div>
       )}
       {client && <>

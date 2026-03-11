@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { getClients, sendSms, getNotificationLogs, getBrevoStatus } from '../api';
+import { useState, useRef } from 'react';
+import { getClients, sendSms } from '../api';
 import useMobile from '../hooks/useMobile';
+import { useBrevoStatus, useNotificationLogs } from '../hooks/useApi';
 
 // ============================================
 // SMS Page — Brevo integration (server-side)
@@ -57,21 +58,19 @@ export default function Sms({ embedded } = {}) {
   const searchTimer = useRef(null);
 
   // Brevo status
-  const [brevoStatus, setBrevoStatus] = useState(null);
-  const [loadingStatus, setLoadingStatus] = useState(true);
+  const { data: brevoStatus, isLoading: loadingStatus } = useBrevoStatus({
+    placeholderData: { configured: false },
+  });
 
   // History
-  const [logs, setLogs] = useState([]);
-  const [logsTotal, setLogsTotal] = useState(0);
   const [logsPage, setLogsPage] = useState(0);
-  const [logsLoading, setLogsLoading] = useState(false);
-
-  useEffect(() => {
-    getBrevoStatus()
-      .then(setBrevoStatus)
-      .catch(() => setBrevoStatus({ configured: false }))
-      .finally(() => setLoadingStatus(false));
-  }, []);
+  const logsQuery = useNotificationLogs(
+    { channel: 'sms', limit: 25, offset: logsPage * 25 },
+    { enabled: tab === 'history' }
+  );
+  const logs = logsQuery.data?.notifications || [];
+  const logsTotal = logsQuery.data?.total || 0;
+  const logsLoading = logsQuery.isLoading;
 
   const isConfigured = brevoStatus?.configured && brevoStatus?.connected !== false;
   const charCount = message.length;
@@ -178,24 +177,9 @@ export default function Sms({ embedded } = {}) {
     setSending(false);
   }
 
-  async function loadLogs(page = 0) {
-    setLogsLoading(true);
-    try {
-      const data = await getNotificationLogs({
-        channel: 'sms',
-        limit: 25,
-        offset: page * 25,
-      });
-      setLogs(data.notifications || []);
-      setLogsTotal(data.total || 0);
-      setLogsPage(page);
-    } catch { /* silent */ }
-    setLogsLoading(false);
+  function loadLogs(page) {
+    setLogsPage(page);
   }
-
-  useEffect(() => {
-    if (tab === 'history') loadLogs(0);
-  }, [tab]);
 
   const statusLabel = (s) => {
     if (s === 'sent') return { text: 'Envoye', color: '#22c55e' };

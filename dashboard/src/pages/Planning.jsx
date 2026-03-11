@@ -3,19 +3,23 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  getBookings,
-  getBarbers,
-  getServices,
-  updateBookingStatus,
-  updateBooking,
-  deleteBooking,
-  deleteBookingGroup,
-  getBlockedSlots,
-  deleteBlockedSlot,
+  updateBookingStatus as apiUpdateBookingStatus,
+  updateBooking as apiUpdateBooking,
+  deleteBooking as apiDeleteBooking,
+  deleteBookingGroup as apiDeleteBookingGroup,
+  deleteBlockedSlot as apiDeleteBlockedSlot,
   getBarberSchedule,
-  getGuestAssignments,
 } from '../api';
+import {
+  useBookings,
+  useBarbers,
+  useServices,
+  useBlockedSlots,
+  useGuestAssignments,
+  keys,
+} from '../hooks/useApi';
 import {
   format,
   addDays,
@@ -43,35 +47,29 @@ import MobileWeekStrip from '../components/planning/MobileWeekStrip';
 
 export default function Planning() {
   const isMobile = useMobile();
+  const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState(window.innerWidth < 1024 ? 'day' : 'week');
-  const [bookings, setBookings] = useState([]);
-  const [barbers, setBarbers] = useState([]);
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [blockedSlots, setBlockedSlots] = useState([]);
-  const [barberOffDays, setBarberOffDays] = useState({}); // { barberId: Set([0,6]) }
-  const [barberBreaks, setBarberBreaks] = useState({}); // { barberId: { dayOfWeek: { start, end } } }
-  const [barberSchedules, setBarberSchedules] = useState({}); // { barberId: { dayOfWeek: { start, end } } }
-  const [guestAssignments, setGuestAssignments] = useState([]); // [{ barber_id, host_salon_id, date, barber_name, home_salon_id }]
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createDefaults, setCreateDefaults] = useState({});
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockDefaults, setBlockDefaults] = useState({});
   const [selectedBlock, setSelectedBlock] = useState(null);
-  const [quickAction, setQuickAction] = useState(null); // { booking, rect }
-  const [mobileFullDay, setMobileFullDay] = useState(false); // normal scroll vs full-day compact
+  const [quickAction, setQuickAction] = useState(null);
+  const [mobileFullDay, setMobileFullDay] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Force day view on mobile
+  // Barber schedules (loaded separately since they don't change often)
+  const [barberOffDays, setBarberOffDays] = useState({});
+  const [barberBreaks, setBarberBreaks] = useState({});
+  const [barberSchedules, setBarberSchedules] = useState({});
+
   useEffect(() => {
     if (isMobile) setView('day');
   }, [isMobile]);
 
   const currentDateStr = format(currentDate, 'yyyy-MM-dd');
-
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDateStr]);
   const weekEnd = useMemo(() => endOfWeek(currentDate, { weekStartsOn: 1 }), [currentDateStr]);
 
@@ -87,93 +85,102 @@ export default function Planning() {
     [view, weekStart, currentDateStr]
   );
 
-  const loadData = useCallback(async (signal, { silent = false } = {}) => {
-    if (!silent) setLoading(true);
-    setError(null);
-    try {
-      const [bk, b, s, bs, ga] = await Promise.all([
-        getBookings({ date: apiDateStr, view }),
-        getBarbers(),
-        getServices(),
-        getBlockedSlots({ date: apiDateStr, view }),
-        getGuestAssignments().catch(() => []),
-      ]);
-      if (signal?.aborted) return;
-      setBookings(Array.isArray(bk) ? bk : []);
-      const barberList = Array.isArray(b) ? b : [];
-      setBarbers(barberList);
-      setServices(Array.isArray(s) ? s : []);
-      setBlockedSlots(Array.isArray(bs) ? bs : []);
-      setGuestAssignments(Array.isArray(ga) ? ga : []);
-      // Load schedules for all barbers to know off-days + working hours
-      const offMap = {};
-      const breakMap = {};
-      const schedMap = {};
-      await Promise.all(barberList.map(async (br) => {
-        try {
-          const sched = await getBarberSchedule(br.id);
-          const offSet = new Set();
-          const breaks = {};
-          const hours = {};
-          (sched.weekly || []).forEach((w) => {
-            if (!w.is_working) offSet.add(w.day_of_week);
-            else if (w.start_time && w.end_time) {
-              hours[w.day_of_week] = { start: w.start_time.slice(0, 5), end: w.end_time.slice(0, 5) };
-            }
-            if (w.break_start && w.break_end) {
-              breaks[w.day_of_week] = { start: w.break_start.slice(0, 5), end: w.break_end.slice(0, 5) };
-            }
-          });
-          offMap[br.id] = offSet;
-          breakMap[br.id] = breaks;
-          schedMap[br.id] = hours;
-        } catch { offMap[br.id] = new Set(); breakMap[br.id] = {}; schedMap[br.id] = {}; }
-      }));
-      if (signal?.aborted) return;
+  // React Query hooks for planning data
+  const bookingsQuery = useBookings({ date: apiDateStr, view }, { refetchInterval: 60_000 });
+  const barbersQuery = useBarbers();
+  const servicesQuery = useServices();
+  const blockedSlotsQuery = useBlockedSlots({ date: apiDateStr, view }, { refetchInterval: 60_000 });
+  const guestAssignmentsQuery = useGuestAssignments();
+
+  const bookings = useMemo(() => {
+    const bk = bookingsQuery.data;
+    return Array.isArray(bk) ? bk : [];
+  }, [bookingsQuery.data]);
+  const barbers = useMemo(() => {
+    const b = barbersQuery.data;
+    return Array.isArray(b) ? b : [];
+  }, [barbersQuery.data]);
+  const services = useMemo(() => {
+    const s = servicesQuery.data;
+    return Array.isArray(s) ? s : [];
+  }, [servicesQuery.data]);
+  const blockedSlots = useMemo(() => {
+    const bs = blockedSlotsQuery.data;
+    return Array.isArray(bs) ? bs : [];
+  }, [blockedSlotsQuery.data]);
+  const guestAssignments = useMemo(() => {
+    const ga = guestAssignmentsQuery.data;
+    return Array.isArray(ga) ? ga : [];
+  }, [guestAssignmentsQuery.data]);
+
+  const loading = bookingsQuery.isLoading && barbersQuery.isLoading;
+  const error = bookingsQuery.error?.message || barbersQuery.error?.message || null;
+
+  // Load barber schedules when barbers change
+  useEffect(() => {
+    if (barbers.length === 0) return;
+    const offMap = {};
+    const breakMap = {};
+    const schedMap = {};
+    Promise.all(barbers.map(async (br) => {
+      try {
+        const cached = queryClient.getQueryData(keys.barberSchedule(br.id));
+        const sched = cached || await queryClient.fetchQuery({
+          queryKey: keys.barberSchedule(br.id),
+          queryFn: () => getBarberSchedule(br.id),
+          staleTime: 5 * 60_000,
+        });
+        const offSet = new Set();
+        const breaks = {};
+        const hours = {};
+        (sched.weekly || []).forEach((w) => {
+          if (!w.is_working) offSet.add(w.day_of_week);
+          else if (w.start_time && w.end_time) {
+            hours[w.day_of_week] = { start: w.start_time.slice(0, 5), end: w.end_time.slice(0, 5) };
+          }
+          if (w.break_start && w.break_end) {
+            breaks[w.day_of_week] = { start: w.break_start.slice(0, 5), end: w.break_end.slice(0, 5) };
+          }
+        });
+        offMap[br.id] = offSet;
+        breakMap[br.id] = breaks;
+        schedMap[br.id] = hours;
+      } catch { offMap[br.id] = new Set(); breakMap[br.id] = {}; schedMap[br.id] = {}; }
+    })).then(() => {
       setBarberOffDays(offMap);
       setBarberBreaks(breakMap);
       setBarberSchedules(schedMap);
-    } catch (err) {
-      if (signal?.aborted) return;
-      console.error('Planning load error:', err);
-      setError('Impossible de charger les donnees');
-    }
-    if (!signal?.aborted && !silent) setLoading(false);
-  }, [apiDateStr, view]);
+    });
+  }, [barbers, queryClient]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    loadData(controller.signal);
-    return () => controller.abort();
-  }, [loadData]);
-
-  // Real-time updates via WebSocket (fallback: poll every 60s)
+  // WebSocket: invalidate queries on real-time events
   const { dirty: wsDirty, consume: wsConsume } = usePlanningSocket();
   useEffect(() => {
     if (wsDirty) {
       wsConsume();
-      loadData(undefined, { silent: true });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['blockedSlots'] });
     }
-  }, [wsDirty, wsConsume, loadData]);
+  }, [wsDirty, wsConsume, queryClient]);
 
-  // Fallback polling every 60s + refresh on tab visibility
-  useEffect(() => {
-    let intervalId = setInterval(() => { loadData(undefined, { silent: true }); }, 60_000);
-    function handleVisibility() {
-      if (!document.hidden) loadData(undefined, { silent: true });
-    }
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => { clearInterval(intervalId); document.removeEventListener('visibilitychange', handleVisibility); };
-  }, [loadData]);
+  function invalidatePlanning() {
+    queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    queryClient.invalidateQueries({ queryKey: ['blockedSlots'] });
+  }
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await loadData();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['bookings'] }),
+        queryClient.invalidateQueries({ queryKey: ['blockedSlots'] }),
+        queryClient.invalidateQueries({ queryKey: keys.barbers }),
+        queryClient.invalidateQueries({ queryKey: keys.services }),
+      ]);
     } finally {
       setRefreshing(false);
     }
-  }, [loadData]);
+  }, [queryClient]);
 
   const bookingsByDayBarber = useMemo(() => {
     const map = {};
@@ -251,22 +258,22 @@ export default function Planning() {
   }
 
   async function handleStatusChange(id, status) {
-    try { await updateBookingStatus(id, status); setSelectedBooking(null); setQuickAction(null); loadData(); } catch (err) { alert(err.message); }
+    try { await apiUpdateBookingStatus(id, status); setSelectedBooking(null); setQuickAction(null); invalidatePlanning(); } catch (err) { alert(err.message); }
   }
 
   async function handleDeleteBooking(id, notify = false) {
-    try { await deleteBooking(id, { notify }); setSelectedBooking(null); loadData(); } catch (err) { alert(err.message); }
+    try { await apiDeleteBooking(id, { notify }); setSelectedBooking(null); invalidatePlanning(); } catch (err) { alert(err.message); }
   }
 
   async function handleDeleteBookingGroup(groupId, notify = false, futureOnly = false) {
-    try { const res = await deleteBookingGroup(groupId, { notify, futureOnly }); setSelectedBooking(null); loadData(); return res; } catch (err) { alert(err.message); }
+    try { const res = await apiDeleteBookingGroup(groupId, { notify, futureOnly }); setSelectedBooking(null); invalidatePlanning(); return res; } catch (err) { alert(err.message); }
   }
 
   async function handleRescheduleBooking(id, data) {
     try {
-      await updateBooking(id, data);
+      await apiUpdateBooking(id, data);
       setSelectedBooking(null);
-      loadData();
+      invalidatePlanning();
     } catch (err) {
       throw err;
     }
@@ -285,7 +292,7 @@ export default function Planning() {
   function handleCreated() {
     setShowCreateModal(false);
     setCreateDefaults({});
-    loadData();
+    invalidatePlanning();
   }
 
   function handleBlockClick() {
@@ -296,12 +303,12 @@ export default function Planning() {
   function handleBlockCreated() {
     setShowBlockModal(false);
     setBlockDefaults({});
-    loadData();
+    invalidatePlanning();
   }
 
   async function handleDeleteBlock(id) {
     if (!confirm('Supprimer ce blocage ?')) return;
-    try { await deleteBlockedSlot(id); setSelectedBlock(null); loadData(); } catch (err) { alert(err.message); }
+    try { await apiDeleteBlockedSlot(id); setSelectedBlock(null); invalidatePlanning(); } catch (err) { alert(err.message); }
   }
 
   // Keyboard shortcuts: <-/-> = prev/next, T = today
@@ -364,7 +371,7 @@ export default function Planning() {
       {error && (
         <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
           <span>{error}</span>
-          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+          <button onClick={() => invalidatePlanning()} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
         </div>
       )}
       {/* Header */}

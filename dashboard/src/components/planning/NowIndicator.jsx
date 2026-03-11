@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { HOUR_START, TOTAL_MINUTES, PX_PER_MIN } from './helpers';
 
-export default function NowIndicator({ pxPerMin }) {
+export default function NowIndicator({ pxPerMin, topOffset = 0 }) {
   const px = pxPerMin || PX_PER_MIN;
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -16,7 +16,7 @@ export default function NowIndicator({ pxPerMin }) {
   const minutes = now.getHours() * 60 + now.getMinutes();
   const offset = minutes - HOUR_START * 60;
   if (offset < 0 || offset > TOTAL_MINUTES) return null;
-  const top = offset * px;
+  const top = offset * px + topOffset;
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   return (

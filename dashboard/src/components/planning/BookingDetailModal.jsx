@@ -21,8 +21,8 @@ function DetailRow({ label, value, bold, valueStyle }) {
 export { DetailRow };
 
 export default function BookingDetailModal({ booking, barbers, services, onClose, onStatusChange, onDelete, onDeleteGroup, onReschedule, onNotesUpdated }) {
-  const [subView, setSubView] = useState('main'); // 'main' | 'delete'
-  const [notifyClient, setNotifyClient] = useState(booking?.status !== 'completed');
+  const [subView, setSubView] = useState('main'); // 'main' | 'delete' | 'confirm-edit'
+  const [notifyClient, setNotifyClient] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -63,9 +63,10 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
     }
   }, [editBarberId, filteredServices, editServiceId]);
 
-  // Auto-set color when service changes
+  // Auto-set color when service is manually changed (not on initial load)
+  const initialServiceId = useRef(booking.service_id || '');
   useEffect(() => {
-    if (!editServiceId) return;
+    if (!editServiceId || editServiceId === initialServiceId.current) return;
     const svc = services.find((s) => s.id === editServiceId);
     if (svc?.color) setEditColor(svc.color);
   }, [editServiceId, services]);
@@ -76,32 +77,17 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
   // Notes state
   const [notes, setNotes] = useState(booking?.client_notes || '');
   const [notesSaving, setNotesSaving] = useState(false);
-  const [notesSaved, setNotesSaved] = useState(false);
-  const noteTimerRef = useRef(null);
+  const notesDirty = notes !== (booking?.client_notes || '');
 
-  function handleNotesChange(value) {
-    setNotes(value);
-    setNotesSaved(false);
-    if (noteTimerRef.current) clearTimeout(noteTimerRef.current);
-    noteTimerRef.current = setTimeout(async () => {
-      if (!booking?.client_id) return;
-      setNotesSaving(true);
-      try {
-        await updateClient(booking.client_id, { notes: value });
-        setNotesSaved(true);
-        onNotesUpdated?.(booking.client_id, value);
-        setTimeout(() => setNotesSaved(false), 2000);
-      } catch {
-        setNotesSaved(false);
-        alert('Erreur lors de la sauvegarde des notes. Vérifiez votre connexion.');
-      }
-      setNotesSaving(false);
-    }, 800);
+  async function saveNotes() {
+    if (!booking?.client_id || !notesDirty) return;
+    setNotesSaving(true);
+    try {
+      await updateClient(booking.client_id, { notes });
+      onNotesUpdated?.(booking.client_id, notes);
+    } catch { /* silent */ }
+    setNotesSaving(false);
   }
-
-  useEffect(() => {
-    return () => { if (noteTimerRef.current) clearTimeout(noteTimerRef.current); };
-  }, []);
 
   async function handleDelete() {
     setDeleting(true);
@@ -141,6 +127,49 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
   }
 
   const sourceLabel = { online: 'En ligne', manual: 'Manuel', phone: 'Tél.', walk_in: 'Sans RDV' }[booking.source] || booking.source || '\u2013';
+
+  // ---------- EDIT CONFIRMATION ----------
+  if (subView === 'confirm-edit') {
+    const editedBarber = barbers.find((b) => b.id === editBarberId);
+    const editedService = filteredServices.find((s) => s.id === editServiceId);
+    return (
+      <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+          <div className="modal-header">
+            <h3 className="modal-title" style={{ color: '#f59e0b' }}>Modifier le RDV</h3>
+            <button className="btn-ghost" onClick={onClose}><CloseIcon /></button>
+          </div>
+          <div className="modal-body">
+            <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 8, padding: '14px 16px', marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{booking.client_first_name} {booking.client_last_name}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary, #ccc)', marginTop: 2 }}>
+                {editedService?.name || booking.service_name} — {editDate ? format(parseISO(editDate), 'EEEE d MMM', { locale: fr }) : ''} à {editTime}
+              </div>
+              {editedBarber && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>avec {editedBarber.name}</div>}
+            </div>
+            {hasEmail && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '12px 14px', background: 'rgba(var(--overlay),0.03)', border: '1px solid rgba(var(--overlay),0.08)', borderRadius: 8 }}>
+                <input type="checkbox" checked={notifyClient} onChange={(e) => setNotifyClient(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#3b82f6', cursor: 'pointer' }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>Prévenir le client par email</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 1 }}>{booking.client_email}</div>
+                </div>
+              </label>
+            )}
+            {saveError && (
+              <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, color: '#ef4444', fontSize: 13 }}>{saveError}</div>
+            )}
+          </div>
+          <div className="modal-footer" style={{ flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving} style={{ minWidth: 180 }}>
+              {saving ? 'Enregistrement...' : 'Confirmer la modification'}
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setSubView('main')}>Retour</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ---------- DELETE CONFIRMATION ----------
   if (subView === 'delete') {
@@ -319,17 +348,13 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
 
           {/* NOTES SECTION */}
           <div className="bk-section">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div className="bk-section-title" style={{ marginBottom: 0 }}>
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                Notes client
-              </div>
-              {notesSaving && <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>Sauvegarde...</span>}
-              {notesSaved && <span style={{ fontSize: 10, color: '#22c55e' }}>Sauvegardé</span>}
+            <div className="bk-section-title">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              Notes client
             </div>
             <textarea
               value={notes}
-              onChange={(e) => handleNotesChange(e.target.value)}
+              onChange={(e) => setNotes(e.target.value)}
               placeholder="Ex: Sabot 3mm sur les cotés, fondu bas..."
               style={{
                 width: '100%', minHeight: 70, padding: '12px 14px', fontSize: 13,
@@ -340,25 +365,21 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
               onFocus={(e) => { e.target.style.borderColor = 'rgba(59,130,246,0.4)'; }}
               onBlur={(e) => { e.target.style.borderColor = 'rgba(var(--overlay),0.1)'; }}
             />
+            {notesDirty && (
+              <button className="btn btn-primary btn-sm" onClick={saveNotes} disabled={notesSaving} style={{ marginTop: 8 }}>
+                {notesSaving ? 'Sauvegarde...' : 'Enregistrer la note'}
+              </button>
+            )}
           </div>
 
-          {/* NOTIFICATION CHECKBOX — shown only if dirty and has email */}
-          {isDirty && hasEmail && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '12px 14px', background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.12)', borderRadius: 10 }}>
-              <input type="checkbox" checked={notifyClient} onChange={(e) => setNotifyClient(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#3b82f6', cursor: 'pointer' }} />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>Prévenir le client par email</div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{booking.client_email}</div>
-              </div>
-            </label>
-          )}
+          {/* Notification checkbox removed — now in confirm-edit modal */}
         </div>
 
         {/* FOOTER */}
         <div className="modal-footer bk-footer-actions" style={{ gap: 8 }}>
           {isDirty && (
-            <button className="btn btn-primary btn-sm btn-save" onClick={handleSave} disabled={saving} style={{ marginLeft: 'auto' }}>
-              {saving ? 'Enregistrement...' : 'Enregistrer'}
+            <button className="btn btn-primary btn-sm btn-save" onClick={() => { setNotifyClient(false); setSubView('confirm-edit'); }} style={{ marginLeft: 'auto' }}>
+              Enregistrer
             </button>
           )}
           {booking.status === 'confirmed' && (
@@ -367,7 +388,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
           {booking.status === 'no_show' && (
             <button className="btn btn-primary btn-sm" onClick={() => onStatusChange(booking.id, 'confirmed')}>Re-confirmer</button>
           )}
-          <button className="btn btn-danger btn-sm" onClick={() => { setNotifyClient(true); setSubView('delete'); }}>
+          <button className="btn btn-danger btn-sm" onClick={() => { setNotifyClient(false); setSubView('delete'); }}>
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             Supprimer
           </button>

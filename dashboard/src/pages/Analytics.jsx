@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { format, startOfWeek } from 'date-fns';
 import useMobile from '../hooks/useMobile';
 import {
-  getDashboard,
-  getRevenue,
-  getServiceStats,
-  getBarberStats,
-  getPeakHours,
-  getInactiveClients,
-  getOccupancy,
-  getMemberStats,
-} from '../api';
+  useDashboard,
+  useRevenue,
+  useServiceStats,
+  useBarberStats,
+  usePeakHours,
+  useInactiveClients,
+  useOccupancy,
+  useMemberStats,
+} from '../hooks/useApi';
 
 // ============================================
 // Helpers
@@ -46,7 +47,7 @@ const ACCENTS = {
 // Section Header
 // ============================================
 
-function SectionTitle({ icon, title, subtitle, className = '' }) {
+function SectionTitle({ icon, title, subtitle, right, className = '' }) {
   return (
     <div className={className} style={{
       display: 'flex',
@@ -69,10 +70,11 @@ function SectionTitle({ icon, title, subtitle, className = '' }) {
       }}>
         {icon}
       </div>
-      <div>
+      <div style={{ flex: 1 }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.02em' }}>{title}</h3>
         {subtitle && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{subtitle}</p>}
       </div>
+      {right}
     </div>
   );
 }
@@ -400,7 +402,7 @@ function BarberPerformance({ data }) {
     return <div className="empty-state">Aucun barber</div>;
   }
 
-  const barbers = data.barbers;
+  const barbers = data.barbers.filter((b) => b.name?.toLowerCase() !== 'admin');
   const maxRev = Math.max(...barbers.map((b) => parseInt(b.revenue) || 0), 1);
 
   return (
@@ -762,47 +764,48 @@ function MembersSection({ stats }) {
 export default function Analytics() {
   const isMobile = useMobile();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [dashboard, setDashboard] = useState(null);
-  const [revenue, setRevenue] = useState([]);
-  const [serviceStats, setServiceStats] = useState(null);
-  const [barberStats, setBarberStats] = useState(null);
-  const [peakHours, setPeakHours] = useState(null);
-  const [occupancy, setOccupancy] = useState(null);
-  const [inactiveClients, setInactiveClients] = useState([]);
-  const [memberStats, setMemberStats] = useState(null);
+  const [barberPeriod, setBarberPeriod] = useState('day');
 
-  useEffect(() => {
-    loadAll();
-  }, []);
-
-  async function loadAll() {
-    setLoading(true);
-    setError('');
-    try {
-      const [dash, rev, services, barbers, peaks, occ, inactive, members] = await Promise.all([
-        getDashboard().catch(() => null),
-        getRevenue({ period: 'day' }).catch(() => null),
-        getServiceStats({}).catch(() => null),
-        getBarberStats({}).catch(() => null),
-        getPeakHours({}).catch(() => null),
-        getOccupancy({}).catch(() => null),
-        getInactiveClients().catch(() => ({ clients: [] })),
-        getMemberStats().catch(() => null),
-      ]);
-      if (dash) setDashboard(dash);
-      if (rev) setRevenue(rev);
-      if (services) setServiceStats(services);
-      if (barbers) setBarberStats(barbers);
-      if (peaks) setPeakHours(peaks);
-      setOccupancy(occ);
-      setInactiveClients(inactive.clients || []);
-      setMemberStats(members);
-    } catch (err) {
-      setError(err.message || 'Erreur de chargement');
+  // Compute from/to for barber stats period
+  const barberStatsParams = (() => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    if (barberPeriod === 'day') return { from: today, to: today };
+    if (barberPeriod === 'week') {
+      const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
+      return { from: format(monday, 'yyyy-MM-dd'), to: today };
     }
-    setLoading(false);
+    return {}; // 'all' — no from/to, API defaults to last month
+  })();
+
+  const dashboardQuery = useDashboard();
+  const revenueQuery = useRevenue({ period: 'day' });
+  const serviceStatsQuery = useServiceStats({});
+  const barberStatsQuery = useBarberStats(barberStatsParams);
+  const peakHoursQuery = usePeakHours({});
+  const occupancyQuery = useOccupancy({});
+  const inactiveQuery = useInactiveClients();
+  const memberStatsQuery = useMemberStats();
+
+  const loading = dashboardQuery.isLoading;
+  const error = dashboardQuery.error?.message || '';
+  const dashboard = dashboardQuery.data || null;
+  const revenue = revenueQuery.data || [];
+  const serviceStats = serviceStatsQuery.data || null;
+  const barberStats = barberStatsQuery.data || null;
+  const peakHours = peakHoursQuery.data || null;
+  const occupancy = occupancyQuery.data || null;
+  const inactiveClients = inactiveQuery.data?.clients || [];
+  const memberStats = memberStatsQuery.data || null;
+
+  function loadAll() {
+    dashboardQuery.refetch();
+    revenueQuery.refetch();
+    serviceStatsQuery.refetch();
+    barberStatsQuery.refetch();
+    peakHoursQuery.refetch();
+    occupancyQuery.refetch();
+    inactiveQuery.refetch();
+    memberStatsQuery.refetch();
   }
 
   const todayBookings = dashboard?.today?.bookings || 0;
@@ -1067,7 +1070,24 @@ export default function Analytics() {
               className="a-stagger a-d7"
               icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
               title="Performance barbers"
-              subtitle="Chiffres et indicateurs par coiffeur"
+              subtitle={barberPeriod === 'day' ? "Aujourd'hui" : barberPeriod === 'week' ? 'Cette semaine' : 'Derniers 30 jours'}
+              right={
+                <div style={{ display: 'flex', gap: 4, background: 'rgba(var(--overlay),0.04)', borderRadius: 8, padding: 3 }}>
+                  {[
+                    { key: 'day', label: 'Jour' },
+                    { key: 'week', label: 'Semaine' },
+                    { key: 'all', label: 'Mois' },
+                  ].map((p) => (
+                    <button key={p.key} onClick={() => setBarberPeriod(p.key)} style={{
+                      padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                      fontSize: 11, fontWeight: 700, letterSpacing: '0.02em',
+                      background: barberPeriod === p.key ? 'rgba(var(--overlay),0.12)' : 'transparent',
+                      color: barberPeriod === p.key ? 'var(--text)' : 'var(--text-muted)',
+                      transition: 'all 0.15s',
+                    }}>{p.label}</button>
+                  ))}
+                </div>
+              }
             />
             <div className="a-stagger a-d7" style={{ marginBottom: 32 }}>
               <BarberPerformance data={barberStats} />

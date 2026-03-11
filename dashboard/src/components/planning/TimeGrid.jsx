@@ -203,7 +203,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
       >
         <div style={{ display: 'flex', height: compact ? '100%' : gridH + 10, paddingTop: compact ? 0 : 10, position: 'relative' }}>
           {/* Now indicator — spans the entire grid width */}
-          {days.some((d) => isToday(d)) && <NowIndicator pxPerMin={px} />}
+          {days.some((d) => isToday(d)) && <NowIndicator pxPerMin={px} topOffset={compact ? 0 : 10} />}
 
           {/* Time gutter */}
           <div className="planning-time-gutter" style={{ width: compact ? 28 : 52, minWidth: compact ? 28 : 52, position: 'relative', borderRight: '1px solid rgba(var(--overlay),0.10)', flexShrink: 0 }}>

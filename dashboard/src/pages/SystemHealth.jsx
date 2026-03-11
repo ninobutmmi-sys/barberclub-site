@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getSystemHealth, purgeFailedNotifications } from '../api';
+import { useState } from 'react';
 import useMobile from '../hooks/useMobile';
+import { useSystemHealth, usePurgeFailedNotifications } from '../hooks/useApi';
 
 function formatUptime(seconds) {
   const d = Math.floor(seconds / 86400);
@@ -34,28 +34,10 @@ function StatusDot({ status }) {
 
 export default function SystemHealth({ embedded } = {}) {
   const isMobile = useMobile();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [lastUpdate, setLastUpdate] = useState(null);
+  const { data, isLoading: loading, error, dataUpdatedAt, refetch } = useSystemHealth();
+  const purgeMutation = usePurgeFailedNotifications();
 
-  const load = useCallback(async () => {
-    try {
-      const res = await getSystemHealth();
-      setData(res);
-      setError('');
-      setLastUpdate(new Date());
-    } catch (err) {
-      setError(err.message);
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 30000);
-    return () => clearInterval(interval);
-  }, [load]);
+  const lastUpdate = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
 
   if (loading && !data) {
     return <div className="empty-state">Chargement...</div>;
@@ -84,7 +66,7 @@ export default function SystemHealth({ embedded } = {}) {
                 MAJ {lastUpdate.toLocaleTimeString('fr-FR')}
               </span>
             )}
-            <button className="btn btn-secondary btn-sm" onClick={load} disabled={loading}>
+            <button className="btn btn-secondary btn-sm" onClick={() => refetch()} disabled={loading}>
               {loading ? 'Chargement...' : 'Actualiser'}
             </button>
           </div>
@@ -93,7 +75,7 @@ export default function SystemHealth({ embedded } = {}) {
 
       {error && (
         <div role="alert" style={{ padding: '12px 16px', marginBottom: 16, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, color: '#ef4444', fontSize: 13 }}>
-          {error}
+          {error.message}
         </div>
       )}
 
@@ -136,8 +118,7 @@ export default function SystemHealth({ embedded } = {}) {
                 style={{ fontSize: 11, padding: '4px 12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 6, cursor: 'pointer' }}
                 onClick={async () => {
                   if (!confirm('Supprimer toutes les notifications échouées ?')) return;
-                  await purgeFailedNotifications();
-                  load();
+                  await purgeMutation.mutateAsync();
                 }}
               >
                 Purger les échecs

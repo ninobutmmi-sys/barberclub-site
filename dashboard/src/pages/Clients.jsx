@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getClients } from '../api';
 import { exportToCSV } from '../utils/csv';
 import useMobile from '../hooks/useMobile';
+import { useClients } from '../hooks/useApi';
 
 function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
@@ -13,65 +14,31 @@ const PAGE_SIZE = 20;
 export default function Clients() {
   const navigate = useNavigate();
   const isMobile = useMobile();
-  const [clients, setClients] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('last_visit');
-  const [tab, setTab] = useState('all'); // 'all' | 'accounts'
+  const [tab, setTab] = useState('all');
   const [visible, setVisible] = useState(PAGE_SIZE);
   const debounceRef = useRef(null);
-  const abortRef = useRef(null);
 
+  // Debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => loadData(), search ? 400 : 0);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (abortRef.current) abortRef.current.abort();
-    };
-  }, [search, sort, tab]);
-
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  async function loadData(append = false) {
-    // Cancel previous in-flight request to prevent stale results
-    if (!append && abortRef.current) abortRef.current.abort();
-    const controller = new AbortController();
-    if (!append) abortRef.current = controller;
-
-    if (append) {
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-      setError(null);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(search);
       setVisible(PAGE_SIZE);
-    }
-    try {
-      const params = { sort, order: 'desc', limit: PAGE_SIZE, offset: append ? clients.length : 0 };
-      if (search) params.search = search;
-      if (tab === 'accounts') params.has_account = 'true';
-      const data = await getClients(params, controller.signal);
-      if (controller.signal.aborted) return;
-      if (append) {
-        setClients(prev => [...prev, ...data.clients]);
-      } else {
-        setClients(data.clients);
-      }
-      setTotal(data.total);
-      setHasMore(data.clients.length === PAGE_SIZE && (append ? clients.length + data.clients.length : data.clients.length) < data.total);
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      setError('Impossible de charger les donnees');
-    } finally {
-      if (!controller.signal.aborted) {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    }
-  }
+    }, search ? 400 : 0);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search]);
+
+  const clientParams = { sort, order: 'desc', limit: 100 };
+  if (debouncedSearch) clientParams.search = debouncedSearch;
+  if (tab === 'accounts') clientParams.has_account = 'true';
+
+  const { data: clientData, isLoading: loading, error } = useClients(clientParams);
+  const clients = clientData?.clients || [];
+  const total = clientData?.total || 0;
+  const hasMore = clients.length < total;
 
   function handleExportCSV() {
     if (!clients.length) return;
@@ -86,7 +53,6 @@ export default function Clients() {
     ]);
   }
 
-  const hasMoreLocal = clients.length > visible;
   const shown = clients.slice(0, visible);
 
   return (
@@ -94,7 +60,7 @@ export default function Clients() {
       {error && (
         <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
           <span>{error}</span>
-          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+          <button onClick={() => window.location.reload()} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
         </div>
       )}
       <div className="page-header">
@@ -249,7 +215,7 @@ export default function Clients() {
             )}
 
             {/* Fade overlay + Voir plus */}
-            {(hasMoreLocal || hasMore) && (
+            {visible < clients.length && (
               <div style={{
                 position: 'relative',
                 marginTop: isMobile ? 0 : -80,
@@ -262,14 +228,7 @@ export default function Clients() {
                 pointerEvents: 'none',
               }}>
                 <button
-                  onClick={() => {
-                    if (hasMoreLocal) {
-                      setVisible((v) => v + PAGE_SIZE);
-                    } else if (hasMore) {
-                      loadData(true);
-                      setVisible((v) => v + PAGE_SIZE);
-                    }
-                  }}
+                  onClick={() => setVisible((v) => v + PAGE_SIZE)}
                   style={{
                     pointerEvents: 'auto',
                     display: 'inline-flex',
@@ -315,7 +274,7 @@ export default function Clients() {
             )}
 
             {/* Shown count when all visible */}
-            {!hasMoreLocal && !hasMore && clients.length > PAGE_SIZE && (
+            {visible >= clients.length && clients.length > PAGE_SIZE && (
               <div style={{
                 textAlign: 'center',
                 padding: '16px 0 4px',

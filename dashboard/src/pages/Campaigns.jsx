@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { getCampaigns, getCampaignROI } from '../api';
+import { useState } from 'react';
+import { getCampaignROI } from '../api';
+import { useCampaigns } from '../hooks/useApi';
 import useMobile from '../hooks/useMobile';
 
 function formatPrice(cents) {
@@ -8,24 +9,8 @@ function formatPrice(cents) {
 
 export default function Campaigns({ embedded } = {}) {
   const isMobile = useMobile();
-  const [campaigns, setCampaigns] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: campaigns = [], isLoading: loading, error } = useCampaigns();
   const [selectedROI, setSelectedROI] = useState(null);
-
-  useEffect(() => { loadData(); }, []);
-
-  async function loadData() {
-    setLoading(true);
-    setError(null);
-    try {
-      const c = await getCampaigns();
-      setCampaigns(c);
-    } catch (err) {
-      setError('Impossible de charger les donnees');
-    }
-    setLoading(false);
-  }
 
   async function viewROI(campaign) {
     try {
@@ -38,8 +23,7 @@ export default function Campaigns({ embedded } = {}) {
     <>
       {error && (
         <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
-          <span>{error}</span>
-          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+          <span>{error.message}</span>
         </div>
       )}
       {!embedded && (

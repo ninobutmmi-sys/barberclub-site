@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { getServices, createService, updateService, deleteService, getBarbers } from '../api';
+import { useState } from 'react';
 import useMobile from '../hooks/useMobile';
+import { useServices, useBarbers, useCreateService, useUpdateService, useDeleteService } from '../hooks/useApi';
 
 function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
@@ -10,32 +10,15 @@ import { COLOR_PALETTE } from '../utils/constants';
 
 export default function Services() {
   const isMobile = useMobile();
-  const [services, setServices] = useState([]);
-  const [barbers, setBarbers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [modal, setModal] = useState(null); // null | 'create' | service object
-
-  useEffect(() => { loadData(); }, []);
-
-  async function loadData() {
-    setLoading(true);
-    setError(null);
-    try {
-      const [s, b] = await Promise.all([getServices(), getBarbers()]);
-      setServices(s);
-      setBarbers(b);
-    } catch (err) {
-      setError('Impossible de charger les donnees');
-    }
-    setLoading(false);
-  }
+  const { data: services = [], isLoading: loading, error, refetch } = useServices();
+  const { data: barbers = [] } = useBarbers();
+  const [modal, setModal] = useState(null);
+  const deleteMutation = useDeleteService();
 
   async function handleDelete(id) {
     if (!confirm('Supprimer cette prestation ?')) return;
     try {
-      await deleteService(id);
-      loadData();
+      await deleteMutation.mutateAsync(id);
     } catch (err) {
       alert(err.message);
     }
@@ -46,7 +29,7 @@ export default function Services() {
       {error && (
         <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
           <span>{error}</span>
-          <button onClick={() => { setError(null); loadData(); }} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+          <button onClick={() => refetch()} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
         </div>
       )}
       <div className="page-header">
@@ -140,15 +123,16 @@ export default function Services() {
           service={modal === 'create' ? null : modal}
           barbers={barbers}
           onClose={() => setModal(null)}
-          onSaved={() => { setModal(null); loadData(); }}
         />
       )}
     </>
   );
 }
 
-function ServiceModal({ service, barbers, onClose, onSaved }) {
+function ServiceModal({ service, barbers, onClose }) {
   const isEdit = !!service;
+  const createMutation = useCreateService();
+  const updateMutation = useUpdateService();
   const [name, setName] = useState(service?.name || '');
   const [description, setDescription] = useState(service?.description || '');
   const [price, setPrice] = useState(service ? (service.price / 100).toFixed(2) : '');
@@ -158,8 +142,8 @@ function ServiceModal({ service, barbers, onClose, onSaved }) {
   const [selectedBarbers, setSelectedBarbers] = useState(
     service?.barbers?.map((b) => b.id) || barbers.map((b) => b.id)
   );
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const saving = createMutation.isPending || updateMutation.isPending;
 
   const toggleBarber = (id) => {
     setSelectedBarbers((prev) =>
@@ -170,7 +154,6 @@ function ServiceModal({ service, barbers, onClose, onSaved }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSaving(true);
 
     const body = {
       name,
@@ -184,15 +167,14 @@ function ServiceModal({ service, barbers, onClose, onSaved }) {
 
     try {
       if (isEdit) {
-        await updateService(service.id, body);
+        await updateMutation.mutateAsync({ id: service.id, data: body });
       } else {
-        await createService(body);
+        await createMutation.mutateAsync(body);
       }
-      onSaved();
+      onClose();
     } catch (err) {
       setError(err.message);
     }
-    setSaving(false);
   };
 
   return (
