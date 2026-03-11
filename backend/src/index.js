@@ -214,6 +214,14 @@ app.use('/api/client', clientRoutes);
 // Admin/barber routes (authenticated)
 const adminRouter = express.Router();
 adminRouter.use(requireAuth, requireBarber, adminLimiter);
+// Override salon_id from JWT with the one sent by the dashboard (query/body)
+adminRouter.use((req, _res, next) => {
+  const fromRequest = req.query.salon_id || req.body?.salon_id;
+  if (fromRequest && ['meylan', 'grenoble'].includes(fromRequest)) {
+    req.user.salon_id = fromRequest;
+  }
+  next();
+});
 adminRouter.use('/bookings', adminBookingRoutes);
 adminRouter.use('/services', adminServiceRoutes);
 adminRouter.use('/barbers', adminBarberRoutes);

@@ -127,7 +127,7 @@ router.get('/stats', async (req, res) => {
  * Vérifie la configuration Brevo
  */
 router.get('/brevo-status', async (req, res) => {
-  const salonId = req.query.salon_id || req.user.salon_id;
+  const salonId = req.user.salon_id;
   const salonConfig = config.getSalonConfig(salonId);
   const brevo = salonConfig.brevo || config.brevo;
   const configured = !!brevo.apiKey;
