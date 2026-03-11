@@ -587,7 +587,7 @@
 
     <script>
         // Register Service Worker for PWA (only if cookies not refused)
-        if ('serviceWorker' in navigator && localStorage.getItem('cookie_consent') !== 'refused') {
+        if ('serviceWorker' in navigator && localStorage.getItem('bc_cookie_consent') !== 'refused') {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
             });

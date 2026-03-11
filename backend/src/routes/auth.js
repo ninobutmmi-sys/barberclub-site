@@ -147,10 +147,9 @@ router.post('/login',
       // Set refresh token as httpOnly cookie (dashboard uses this)
       setRefreshTokenCookie(res, refreshToken);
 
-      // Also return refresh_token in body for backward compat (site vitrine pages)
       res.json({
         access_token: accessToken,
-        refresh_token: refreshToken,
+        refresh_token: refreshToken, // site vitrine clients need this (no httpOnly cookie support)
         user: {
           id: user.id,
           type,
@@ -247,7 +246,7 @@ router.post('/register',
 
       res.status(201).json({
         access_token: accessToken,
-        refresh_token: refreshToken,
+        refresh_token: refreshToken, // site vitrine clients need this
         user: {
           id: clientId,
           type: 'client',
@@ -329,7 +328,7 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
 
     res.json({
       access_token: newAccessToken,
-      refresh_token: newRefreshToken,
+      refresh_token: newRefreshToken, // site vitrine clients need this
       user: tokenPayload,
     });
   } catch (error) {
@@ -494,7 +493,7 @@ router.post('/reset-password',
       res.json({
         message: 'Mot de passe réinitialisé avec succès',
         access_token: accessToken,
-        refresh_token: refreshToken,
+        refresh_token: refreshToken, // site vitrine clients need this
         user: tokenPayload,
       });
     } catch (error) {
@@ -565,7 +564,7 @@ router.post('/claim-account',
 
       res.status(201).json({
         access_token: accessToken,
-        refresh_token: refreshToken,
+        refresh_token: refreshToken, // site vitrine clients need this
         user: {
           id: client_id,
           type: 'client',

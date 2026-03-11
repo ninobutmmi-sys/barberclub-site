@@ -48,7 +48,9 @@ async function createBooking(data) {
       }
       // Reject bookings starting within MIN_BOOKING_LEAD_MINUTES
       const minBookingTime = new Date(now.getTime() + MIN_BOOKING_LEAD_MINUTES * 60 * 1000);
-      const requestedDateTime = new Date(`${data.date}T${data.start_time}:00`);
+      const [rdY, rdM, rdD] = data.date.split('-').map(Number);
+      const [rdH, rdMn] = data.start_time.split(':').map(Number);
+      const requestedDateTime = new Date(rdY, rdM - 1, rdD, rdH, rdMn, 0);
       if (requestedDateTime < minBookingTime) {
         throw ApiError.badRequest(`Impossible de réserver un créneau dans moins de ${MIN_BOOKING_LEAD_MINUTES} minutes`);
       }
@@ -663,7 +665,9 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
       throw ApiError.badRequest('Impossible de déplacer dans le passé');
     }
     const minBookingTime = new Date(now.getTime() + MIN_BOOKING_LEAD_MINUTES * 60 * 1000);
-    const newDateTime = new Date(`${newDate}T${newStartTime}:00`);
+    const [ndY, ndM, ndD] = newDate.split('-').map(Number);
+    const [ndH, ndMn] = newStartTime.split(':').map(Number);
+    const newDateTime = new Date(ndY, ndM - 1, ndD, ndH, ndMn, 0);
     if (newDateTime < minBookingTime) {
       throw ApiError.badRequest(`Impossible de déplacer sur un créneau dans moins de ${MIN_BOOKING_LEAD_MINUTES} minutes`);
     }

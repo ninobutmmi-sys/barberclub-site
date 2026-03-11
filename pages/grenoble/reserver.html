@@ -3643,9 +3643,10 @@
 
         // ---- STEP 4: SUMMARY ----
         function renderSummary() {
-            const barberName = state.selectedBarber.id === 'any'
-                ? (state.selectedSlot.barber_name || 'Peu importe')
-                : state.selectedBarber.name;
+            const barberName = state.selectedSlot
+                ? (state.selectedBarber.id === 'any' ? (state.selectedSlot.barber_name || 'Peu importe') : state.selectedBarber.name)
+                : (state.selectedBarber ? state.selectedBarber.name : 'Peu importe');
+            const slotTime = state.selectedSlot ? state.selectedSlot.time : "Liste d'attente";
 
             $('#summaryCard').innerHTML = `
                 <div class="summary-row">
@@ -3662,7 +3663,7 @@
                 </div>
                 <div class="summary-row">
                     <span class="summary-label">Heure</span>
-                    <span class="summary-value">${state.selectedSlot.time}</span>
+                    <span class="summary-value">${slotTime}</span>
                 </div>
                 <div class="summary-row">
                     <span class="summary-label">Dur\u00e9e</span>

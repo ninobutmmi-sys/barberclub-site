@@ -21,7 +21,7 @@ const PRECACHE_ASSETS = [
 ];
 
 // Never cache API calls or booking pages (always need fresh data)
-const NEVER_CACHE = ['/api/', '/pages/meylan/reserver.html', '/pages/meylan/mon-rdv.html', '/pages/meylan/reset-password.html'];
+const NEVER_CACHE = ['/api/', '/pages/meylan/reserver.html', '/pages/meylan/mon-rdv.html', '/pages/meylan/reset-password.html', '/pages/grenoble/reserver.html', '/pages/grenoble/mon-rdv.html', '/pages/grenoble/reset-password.html'];
 
 // Install event - precache core assets
 self.addEventListener('install', event => {

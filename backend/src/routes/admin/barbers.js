@@ -247,9 +247,10 @@ router.delete('/overrides/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const result = await db.query(
-        'DELETE FROM schedule_overrides WHERE id = $1 RETURNING id',
-        [req.params.id]
+        'DELETE FROM schedule_overrides WHERE id = $1 AND barber_id IN (SELECT id FROM barbers WHERE salon_id = $2) RETURNING id',
+        [req.params.id, salonId]
       );
 
       if (result.rows.length === 0) {
@@ -339,9 +340,10 @@ router.delete('/guest-days/:id',
   handleValidation,
   async (req, res, next) => {
     try {
+      const salonId = req.user.salon_id;
       const result = await db.query(
-        'DELETE FROM guest_assignments WHERE id = $1 RETURNING id',
-        [req.params.id]
+        'DELETE FROM guest_assignments WHERE id = $1 AND (barber_id IN (SELECT id FROM barbers WHERE salon_id = $2) OR host_salon_id = $2) RETURNING id',
+        [req.params.id, salonId]
       );
       if (result.rows.length === 0) {
         throw ApiError.notFound('Jour invite introuvable');

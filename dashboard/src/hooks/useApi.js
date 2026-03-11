@@ -2,7 +2,7 @@
 // React Query hooks — wraps api.js functions
 // ============================================
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import * as api from '../api';
 
 // ---------- Query Keys ----------
@@ -292,7 +292,7 @@ export function useBookingsHistory(params, options) {
     queryKey: keys.bookingsHistory(params),
     queryFn: () => api.getBookingsHistory(params),
     staleTime: 30_000,
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     ...options,
   });
 }
