@@ -23,7 +23,7 @@ async function queueReminders() {
        JOIN clients c ON b.client_id = c.id
        WHERE b.date = $1
          AND b.status = 'confirmed'
-         AND b.reminder_sent = false
+         AND (b.reminder_sent = false OR b.reminder_sent IS NULL)
          AND b.deleted_at IS NULL
          AND c.phone IS NOT NULL`,
       [tomorrowStr]
