@@ -114,4 +114,16 @@ router.get('/health', async (req, res, next) => {
   }
 });
 
+// POST /api/admin/system/trigger-reminders
+// Manually re-trigger SMS reminders for tomorrow (only sends to reminder_sent=false)
+router.post('/trigger-reminders', async (req, res, next) => {
+  try {
+    const { queueReminders } = require('../../cron/reminders');
+    await queueReminders();
+    res.json({ ok: true, message: 'Reminders triggered' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
