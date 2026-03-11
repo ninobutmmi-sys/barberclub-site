@@ -228,6 +228,7 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
   // Generate all possible slots
   const startMin = timeToMinutes(startTime);
   const endMin = timeToMinutes(endTime);
+  const slotSet = new Set(); // track unique start times
   const slots = [];
 
   // For today: skip slots starting within MIN_BOOKING_LEAD_MINUTES (public only)
@@ -240,12 +241,13 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
     }
   }
 
-  // Slots every SLOT_INTERVAL_ADMIN min for admin, SLOT_INTERVAL_PUBLIC min for clients
-  const step = options.adminMode ? SLOT_INTERVAL_ADMIN : SLOT_INTERVAL_PUBLIC;
-  for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
+  // Helper: check if a candidate slot is valid and add it
+  function tryAddSlot(slotStart) {
+    if (slotStart < startMin || slotStart < minSlotStart) return;
     const slotEnd = slotStart + duration;
+    if (slotEnd > endMin) return;
+    if (slotSet.has(slotStart)) return;
 
-    // Check if slot overlaps with any existing booking or blocked slot
     const overlapsBooking = existingBookings.some(
       (booking) => slotStart < booking.end && slotEnd > booking.start
     );
@@ -253,7 +255,8 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
       (blocked) => slotStart < blocked.end && slotEnd > blocked.start
     );
 
-    if (!overlapsBooking && !overlapsBlocked && slotStart >= minSlotStart) {
+    if (!overlapsBooking && !overlapsBlocked) {
+      slotSet.add(slotStart);
       slots.push({
         time: minutesToTime(slotStart),
         barber_id: barberId,
@@ -261,6 +264,23 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
       });
     }
   }
+
+  // 1. Regular grid slots (every SLOT_INTERVAL for public, every 5min for admin)
+  const step = options.adminMode ? SLOT_INTERVAL_ADMIN : SLOT_INTERVAL_PUBLIC;
+  for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
+    tryAddSlot(slotStart);
+  }
+
+  // 2. Gap-filling: propose slots right after each booking/block ends (public only)
+  if (!options.adminMode) {
+    const allOccupied = [...existingBookings, ...blockedSlots].sort((a, b) => a.start - b.start);
+    for (const occupied of allOccupied) {
+      tryAddSlot(occupied.end);
+    }
+  }
+
+  // Sort by time
+  slots.sort((a, b) => a.time.localeCompare(b.time));
 
   return slots;
 }
