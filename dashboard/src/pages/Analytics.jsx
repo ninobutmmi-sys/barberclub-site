@@ -831,7 +831,8 @@ export default function Analytics() {
   const loading = dashboardQuery.isLoading;
   const error = dashboardQuery.error?.message || '';
   const dashboard = dashboardQuery.data || null;
-  const revenue = revenueQuery.data || [];
+  const revenueRaw = revenueQuery.data;
+  const revenue = Array.isArray(revenueRaw) ? revenueRaw : (revenueRaw?.data || []);
   const serviceStats = serviceStatsQuery.data || null;
   const barberStats = barberStatsQuery.data || null;
   const peakHours = peakHoursQuery.data || null;

@@ -44,6 +44,7 @@ import BlockSlotModal from '../components/planning/BlockSlotModal';
 import BlockDetailModal from '../components/planning/BlockDetailModal';
 import TimeGrid from '../components/planning/TimeGrid';
 import MobileWeekStrip from '../components/planning/MobileWeekStrip';
+import MiniCalendar from '../components/planning/MiniCalendar';
 
 export default function Planning() {
   const isMobile = useMobile();
@@ -59,6 +60,7 @@ export default function Planning() {
   const [quickAction, setQuickAction] = useState(null);
   const [mobileFullDay, setMobileFullDay] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showMiniCal, setShowMiniCal] = useState(false);
 
   // Barber schedules (loaded separately since they don't change often)
   const [barberOffDays, setBarberOffDays] = useState({});
@@ -452,10 +454,18 @@ export default function Planning() {
               ))}
             </div>
 
-            <div className="plan-nav">
+            <div className="plan-nav mini-cal-wrapper">
               <button className="plan-nav-btn" onClick={goPrev}><ChevronLeft /></button>
-              <span className="plan-nav-label">{navDisplay}</span>
+              <span className="plan-nav-label" onClick={() => setShowMiniCal(v => !v)}>{navDisplay}</span>
               <button className="plan-nav-btn" onClick={goNext}><ChevronRight /></button>
+              {showMiniCal && (
+                <MiniCalendar
+                  currentDate={currentDate}
+                  view={view}
+                  onSelectDate={setCurrentDate}
+                  onClose={() => setShowMiniCal(false)}
+                />
+              )}
             </div>
 
             <button className="plan-today-btn" onClick={goToday}>Aujourd&apos;hui</button>
