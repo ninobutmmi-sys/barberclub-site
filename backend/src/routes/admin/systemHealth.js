@@ -118,9 +118,42 @@ router.get('/health', async (req, res, next) => {
 // Manually re-trigger SMS reminders for tomorrow (only sends to reminder_sent=false)
 router.post('/trigger-reminders', async (req, res, next) => {
   try {
+    const { getSalonConfig } = require('../../config/env');
+    const { getBrevoConfig } = require('../../services/notification');
+
+    // Debug: check config
+    const meylanConf = getSalonConfig('meylan');
+    const grenobleConf = getSalonConfig('grenoble');
+    const brevoGre = getBrevoConfig('grenoble');
+
+    // Check bookings for tomorrow
+    const nowParis = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+    const tomorrow = new Date(nowParis);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+    const check = await db.query(
+      `SELECT b.id, b.salon_id, b.reminder_sent, c.phone
+       FROM bookings b JOIN clients c ON b.client_id = c.id
+       WHERE b.date = $1 AND b.status = 'confirmed'
+       AND (b.reminder_sent = false OR b.reminder_sent IS NULL)
+       AND b.deleted_at IS NULL AND c.phone IS NOT NULL`, [tomorrowStr]
+    );
+
     const { queueReminders } = require('../../cron/reminders');
     await queueReminders();
-    res.json({ ok: true, message: 'Reminders triggered' });
+
+    res.json({
+      ok: true,
+      tomorrowDate: tomorrowStr,
+      pendingReminders: check.rows.length,
+      bySalon: {
+        meylan: check.rows.filter(r => (r.salon_id || 'meylan') === 'meylan').length,
+        grenoble: check.rows.filter(r => r.salon_id === 'grenoble').length,
+      },
+      grenobleKeySet: !!grenobleConf.brevo?.apiKey,
+      grenobleKeyPrefix: (brevoGre.apiKey || '').slice(0, 12) + '...',
+    });
   } catch (error) {
     next(error);
   }
