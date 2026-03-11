@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, startOfWeek } from 'date-fns';
+import { format, startOfWeek, addMonths, subMonths } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import useMobile from '../hooks/useMobile';
 import {
   useDashboard,
@@ -139,7 +140,7 @@ function KpiCard({ label, value, subtitle, trend, trendLabel, color, accent = 'b
 }
 
 // ============================================
-// Revenue Bar Chart
+// Revenue Area Chart (gradient)
 // ============================================
 
 function RevenueChart({ data }) {
@@ -147,61 +148,84 @@ function RevenueChart({ data }) {
     return <div className="empty-state">Aucune donnee de revenu</div>;
   }
 
-  const BAR_AREA_H = 200;
-  const maxRevenue = Math.max(...data.map((d) => parseInt(d.revenue) || 0), 1);
+  const W = 600, H = 200, PAD_L = 0, PAD_R = 0, PAD_T = 20, PAD_B = 30;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+  const values = data.map(d => parseInt(d.revenue) || 0);
+  const maxVal = Math.max(...values, 1);
+
+  // Build points
+  const points = values.map((v, i) => {
+    const x = PAD_L + (i / Math.max(values.length - 1, 1)) * chartW;
+    const y = PAD_T + chartH - (v / maxVal) * chartH;
+    return { x, y, v };
+  });
+
+  // Smooth curve (catmull-rom to bezier)
+  function smoothPath(pts) {
+    if (pts.length < 2) return '';
+    if (pts.length === 2) return `M${pts[0].x},${pts[0].y} L${pts[1].x},${pts[1].y}`;
+    let d = `M${pts[0].x},${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(i - 1, 0)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(i + 2, pts.length - 1)];
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+    }
+    return d;
+  }
+
+  const linePath = smoothPath(points);
+  const areaPath = linePath + ` L${points[points.length-1].x},${PAD_T + chartH} L${points[0].x},${PAD_T + chartH} Z`;
+
+  // Date labels (show ~6 evenly spaced)
+  const labelCount = Math.min(6, data.length);
+  const labelIndices = [];
+  for (let i = 0; i < labelCount; i++) {
+    labelIndices.push(Math.round(i * (data.length - 1) / Math.max(labelCount - 1, 1)));
+  }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: BAR_AREA_H, minWidth: data.length * 18, padding: '0 2px' }}>
-        {data.map((d, i) => {
-          const rev = parseInt(d.revenue) || 0;
-          const ratio = rev / maxRevenue;
-          const barH = Math.max(Math.round(ratio * BAR_AREA_H), rev > 0 ? 6 : 2);
-          const dateStr = d.period || '';
-          return (
-            <div
-              key={i}
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', minWidth: 12 }}
-              title={`${dateStr}: ${formatPriceInt(rev)}`}
-            >
-              <div
-                className="a-bar"
-                style={{
-                  width: '100%',
-                  maxWidth: 22,
-                  height: barH,
-                  background: rev > 0
-                    ? `linear-gradient(to top, rgba(59,130,246,${0.15 + ratio * 0.35}), rgba(59,130,246,${0.3 + ratio * 0.5}))`
-                    : 'rgba(var(--overlay),0.03)',
-                  boxShadow: rev > 0 && ratio > 0.3 ? `0 2px 8px rgba(59,130,246,${ratio * 0.2})` : 'none',
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
-      {/* Date labels */}
-      <div style={{ display: 'flex', gap: 2, padding: '0 2px', marginTop: 6 }}>
-        {data.map((d, i) => {
-          const dateStr = d.period || '';
-          const dayNum = dateStr.split('-')[2] || '';
-          const isWeekStart = i % 7 === 0;
-          return (
-            <div key={i} style={{
-              flex: 1, textAlign: 'center', fontSize: 9,
-              color: isWeekStart ? 'var(--text-secondary)' : 'var(--text-muted)',
-              fontWeight: isWeekStart ? 700 : 400,
-              lineHeight: 1, minWidth: 12,
-            }}>
-              {dayNum}
-            </div>
-          );
-        })}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{data[0]?.period}</span>
-        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{data[data.length - 1]?.period}</span>
-      </div>
+    <div style={{ position: 'relative' }}>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(59,130,246,0.35)" />
+            <stop offset="100%" stopColor="rgba(59,130,246,0)" />
+          </linearGradient>
+          <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="100%" stopColor="#60a5fa" />
+          </linearGradient>
+        </defs>
+        {/* Grid lines */}
+        {[0.25, 0.5, 0.75].map(pct => (
+          <line key={pct} x1={PAD_L} y1={PAD_T + chartH * (1-pct)} x2={W-PAD_R} y2={PAD_T + chartH * (1-pct)}
+            stroke="rgba(var(--overlay),0.04)" strokeWidth="1" />
+        ))}
+        {/* Area fill */}
+        <path d={areaPath} fill="url(#areaGrad)" />
+        {/* Line */}
+        <path d={linePath} fill="none" stroke="url(#lineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Dots on non-zero points */}
+        {points.map((p, i) => p.v > 0 && (
+          <circle key={i} cx={p.x} cy={p.y} r="3" fill="#3b82f6" stroke="var(--bg-card)" strokeWidth="1.5">
+            <title>{data[i]?.period}: {formatPriceInt(p.v)}</title>
+          </circle>
+        ))}
+        {/* Date labels */}
+        {labelIndices.map(i => (
+          <text key={i} x={points[i]?.x} y={H - 4} textAnchor="middle"
+            style={{ fontSize: 10, fill: 'var(--text-muted)', fontWeight: 500 }}>
+            {(data[i]?.period || '').split('-')[2]}
+          </text>
+        ))}
+      </svg>
     </div>
   );
 }
@@ -761,28 +785,46 @@ function MembersSection({ stats }) {
 // Main Analytics Page
 // ============================================
 
+// ============================================
+// Trend helper
+// ============================================
+
+function calcTrend(current, previous) {
+  if (!previous || previous === 0) return current > 0 ? 100 : null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
 export default function Analytics() {
   const isMobile = useMobile();
   const navigate = useNavigate();
   const [barberPeriod, setBarberPeriod] = useState('day');
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+
+  const monthStr = format(selectedMonth, 'yyyy-MM');
+  const monthLabel = format(selectedMonth, 'MMMM yyyy', { locale: fr });
+  const isCurrentMonth = monthStr === format(new Date(), 'yyyy-MM');
+
+  const monthParams = useMemo(() => ({ month: monthStr }), [monthStr]);
 
   // Compute from/to for barber stats period
-  const barberStatsParams = (() => {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    if (barberPeriod === 'day') return { from: today, to: today };
+  const barberStatsParams = useMemo(() => {
+    if (barberPeriod === 'day') {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      return { from: today, to: today };
+    }
     if (barberPeriod === 'week') {
       const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
-      return { from: format(monday, 'yyyy-MM-dd'), to: today };
+      return { from: format(monday, 'yyyy-MM-dd'), to: format(new Date(), 'yyyy-MM-dd') };
     }
-    return {}; // 'all' — no from/to, API defaults to last month
-  })();
+    return { month: monthStr }; // follow selected month
+  }, [barberPeriod, monthStr]);
 
-  const dashboardQuery = useDashboard();
-  const revenueQuery = useRevenue({ period: 'day' });
-  const serviceStatsQuery = useServiceStats({});
+  const dashboardQuery = useDashboard(monthParams);
+  const revenueQuery = useRevenue({ period: 'day', month: monthStr });
+  const serviceStatsQuery = useServiceStats(monthParams);
   const barberStatsQuery = useBarberStats(barberStatsParams);
-  const peakHoursQuery = usePeakHours({});
-  const occupancyQuery = useOccupancy({});
+  const peakHoursQuery = usePeakHours(monthParams);
+  const occupancyQuery = useOccupancy(monthParams);
   const inactiveQuery = useInactiveClients();
   const memberStatsQuery = useMemberStats();
 
@@ -797,6 +839,8 @@ export default function Analytics() {
   const inactiveClients = inactiveQuery.data?.clients || [];
   const memberStats = memberStatsQuery.data || null;
 
+  const prev = dashboard?.previous || null;
+
   function loadAll() {
     dashboardQuery.refetch();
     revenueQuery.refetch();
@@ -808,22 +852,63 @@ export default function Analytics() {
     memberStatsQuery.refetch();
   }
 
-  const todayBookings = dashboard?.today?.bookings || 0;
-  const todayCancelled = dashboard?.today?.cancelled || 0;
-  const todayTotal = todayBookings + todayCancelled;
-  const cancelRate = todayTotal > 0 ? Math.round((todayCancelled / todayTotal) * 100) : 0;
+  const monthBookings = dashboard?.month?.bookings || 0;
+  const monthCancelled = dashboard?.month?.cancelled || 0;
+  const monthTotal = monthBookings + monthCancelled;
+  const cancelRate = monthTotal > 0 ? Math.round((monthCancelled / monthTotal) * 100) : 0;
+  const prevCancelRate = prev ? (prev.bookings + (prev.cancelled || 0)) > 0 ? Math.round(((prev.cancelled || 0) / (prev.bookings + (prev.cancelled || 0))) * 100) : 0 : null;
 
-  const totalRev30 = revenue.reduce((sum, d) => sum + (parseInt(d.revenue) || 0), 0);
-  const avgDailyRev = revenue.length > 0 ? Math.round(totalRev30 / revenue.length) : 0;
+  const totalRevMonth = revenue.reduce((sum, d) => sum + (parseInt(d.revenue) || 0), 0);
+  const avgDailyRev = revenue.length > 0 ? Math.round(totalRevMonth / revenue.length) : 0;
 
   return (
     <>
       <div className="page-header">
-        <div>
-          <h2 className="page-title">Analytics</h2>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            Vue d'ensemble du salon
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <h2 className="page-title">Analytics</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+              Vue d&apos;ensemble du salon
+            </p>
+          </div>
+          {/* Month selector */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            background: 'rgba(var(--overlay),0.04)',
+            border: '1px solid rgba(var(--overlay),0.08)',
+            borderRadius: 10, padding: '4px 6px',
+          }}>
+            <button onClick={() => setSelectedMonth(m => subMonths(m, 1))} style={{
+              width: 30, height: 30, borderRadius: 7, border: 'none', background: 'transparent',
+              color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <span style={{
+              fontSize: 13, fontWeight: 700, color: 'var(--text)',
+              minWidth: 140, textAlign: 'center', textTransform: 'capitalize',
+              userSelect: 'none',
+            }}>
+              {monthLabel}
+            </span>
+            <button onClick={() => { if (!isCurrentMonth) setSelectedMonth(m => addMonths(m, 1)); }} style={{
+              width: 30, height: 30, borderRadius: 7, border: 'none', background: 'transparent',
+              color: isCurrentMonth ? 'var(--text-muted)' : 'var(--text-muted)', cursor: isCurrentMonth ? 'default' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              opacity: isCurrentMonth ? 0.3 : 1,
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            {!isCurrentMonth && (
+              <button onClick={() => setSelectedMonth(new Date())} style={{
+                fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)',
+                background: 'rgba(var(--overlay),0.06)', border: 'none', borderRadius: 6,
+                padding: '4px 10px', cursor: 'pointer', marginLeft: 4,
+              }}>
+                Auj.
+              </button>
+            )}
+          </div>
         </div>
         <button className="btn btn-secondary btn-sm" onClick={loadAll} disabled={loading} style={{ gap: 6 }}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={loading ? { animation: 'spin 1s linear infinite' } : {}}>
@@ -853,28 +938,29 @@ export default function Analytics() {
             <div style={{ display: 'flex', gap: isMobile ? 8 : 16, marginBottom: 32, flexWrap: 'wrap' }}>
               <KpiCard
                 className="a-stagger a-d1"
-                label="RDV aujourd'hui"
-                value={dashboard?.today?.bookings ?? '-'}
+                label="RDV"
+                value={monthBookings}
                 subtitle="rendez-vous"
+                trend={calcTrend(monthBookings, prev?.bookings)}
+                trendLabel={prev ? `${calcTrend(monthBookings, prev.bookings) > 0 ? '+' : ''}${calcTrend(monthBookings, prev.bookings)}% vs mois prec.` : undefined}
                 accent="blue"
                 icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>}
               />
               <KpiCard
                 className="a-stagger a-d2"
-                label="CA aujourd'hui"
-                value={formatPriceInt(dashboard?.today?.revenue || 0)}
+                label="Chiffre d'affaires"
+                value={formatPriceInt(dashboard?.month?.revenue || 0)}
                 subtitle={avgDailyRev > 0 ? `moy. ${formatPriceInt(avgDailyRev)}/j` : ''}
-                trend={dashboard?.today?.revenue && avgDailyRev > 0
-                  ? Math.round(((dashboard.today.revenue - avgDailyRev) / avgDailyRev) * 100)
-                  : null}
+                trend={calcTrend(dashboard?.month?.revenue || 0, prev?.revenue)}
                 accent="green"
                 icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
               />
               <KpiCard
                 className="a-stagger a-d3"
-                label="CA ce mois"
-                value={formatPriceInt(dashboard?.month?.revenue || 0)}
-                subtitle={`${dashboard?.month?.bookings || 0} RDV`}
+                label="Panier moyen"
+                value={formatPriceInt(dashboard?.month?.average_basket || 0)}
+                subtitle={`${monthBookings} RDV`}
+                trend={calcTrend(dashboard?.month?.average_basket || 0, prev?.average_basket)}
                 accent="amber"
                 icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>}
               />
@@ -882,8 +968,8 @@ export default function Analytics() {
                 className="a-stagger a-d4"
                 label="Taux annulation"
                 value={`${cancelRate}%`}
-                subtitle={`${todayCancelled} annul. / ${todayTotal}`}
-                trend={cancelRate > 10 ? cancelRate : cancelRate > 0 ? -1 : 0}
+                subtitle={`${monthCancelled} annul. / ${monthTotal}`}
+                trend={prevCancelRate !== null ? cancelRate - prevCancelRate : null}
                 color="invert"
                 accent="red"
                 icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>}
@@ -895,8 +981,8 @@ export default function Analytics() {
               <div className="a-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <div>
-                    <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>Chiffre d'affaires</h3>
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>30 derniers jours</span>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>Chiffre d&apos;affaires</h3>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{monthLabel}</span>
                   </div>
                   <div style={{
                     fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800,
@@ -905,7 +991,7 @@ export default function Analytics() {
                     borderRadius: 10,
                     border: '1px solid rgba(59,130,246,0.12)',
                   }}>
-                    {formatPriceInt(totalRev30)}
+                    {formatPriceInt(totalRevMonth)}
                   </div>
                 </div>
                 <RevenueChart data={revenue} />
@@ -1098,7 +1184,7 @@ export default function Analytics() {
               <div className="a-stagger a-d8 a-card" style={{ marginBottom: 32 }}>
                 <div style={{ marginBottom: 18 }}>
                   <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>Taux d'occupation</h3>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pourcentage de creneaux occupes cette semaine</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'capitalize' }}>{monthLabel}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                   {occupancy.barbers.map((b, i) => {
@@ -1148,7 +1234,7 @@ export default function Analytics() {
               className="a-stagger a-d8"
               icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
               title="Heures de pointe"
-              subtitle="Derniers 30 jours — Lundi a Samedi"
+              subtitle={`${monthLabel} — Lundi a Samedi`}
             />
             <div className="a-stagger a-d8 a-card" style={{ marginBottom: 32 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>

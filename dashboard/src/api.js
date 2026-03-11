@@ -251,7 +251,10 @@ export const deleteBlockedSlot = (id) =>
   request(`/admin/blocked-slots/${id}`, { method: 'DELETE' });
 
 // ---- Admin: Analytics ----
-export const getDashboard = () => request('/admin/analytics/dashboard');
+export const getDashboard = (params) => {
+  const qs = params ? new URLSearchParams(params).toString() : '';
+  return request(`/admin/analytics/dashboard${qs ? '?' + qs : ''}`);
+};
 export const getRevenue = (params) => {
   const qs = new URLSearchParams(params).toString();
   return request(`/admin/analytics/revenue?${qs}`);

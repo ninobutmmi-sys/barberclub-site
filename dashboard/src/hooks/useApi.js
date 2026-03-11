@@ -18,7 +18,7 @@ export const keys = {
   client: (id) => ['client', id],
   inactiveClients: ['inactiveClients'],
   bookingsHistory: (params) => ['bookingsHistory', params],
-  dashboard: ['dashboard'],
+  dashboard: (params) => ['dashboard', params],
   revenue: (params) => ['revenue', params],
   peakHours: (params) => ['peakHours', params],
   occupancy: (params) => ['occupancy', params],
@@ -298,10 +298,10 @@ export function useBookingsHistory(params, options) {
 }
 
 // ---------- Analytics ----------
-export function useDashboard(options) {
+export function useDashboard(params, options) {
   return useQuery({
-    queryKey: keys.dashboard,
-    queryFn: api.getDashboard,
+    queryKey: keys.dashboard(params),
+    queryFn: () => api.getDashboard(params),
     staleTime: 60_000,
     ...options,
   });

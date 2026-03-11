@@ -11,12 +11,27 @@ const router = Router();
 router.get('/dashboard', async (req, res, next) => {
   try {
     const salonId = req.user.salon_id;
+    const { month } = req.query;
+
     // Use Paris timezone for "today" to avoid UTC midnight issues
     const todayResult = await db.query(`SELECT (NOW() AT TIME ZONE 'Europe/Paris')::date AS today`);
     const today = todayResult.rows[0].today;
-    const firstOfMonth = today.substring(0, 8) + '01';
 
-    // Today's stats
+    // Determine date range based on month param or default (current month)
+    let firstOfMonth, lastOfMonth, prevFrom, prevTo, hasMonthParam = false;
+    if (month && /^\d{4}-\d{2}$/.test(month)) {
+      hasMonthParam = true;
+      const range = getMonthRange(month);
+      firstOfMonth = range.from;
+      lastOfMonth = range.to;
+      prevFrom = range.prevFrom;
+      prevTo = range.prevTo;
+    } else {
+      firstOfMonth = today.substring(0, 8) + '01';
+      lastOfMonth = today;
+    }
+
+    // Today's stats (always real today, regardless of month param)
     const todayStats = await db.query(
       `SELECT
          COUNT(*) FILTER (WHERE status IN ('confirmed', 'completed')) as bookings_today,
@@ -27,25 +42,26 @@ router.get('/dashboard', async (req, res, next) => {
       [today, salonId]
     );
 
-    // Monthly stats
+    // Monthly stats for selected month
     const monthStats = await db.query(
       `SELECT
          COUNT(*) FILTER (WHERE status IN ('confirmed', 'completed')) as bookings_month,
-         COALESCE(SUM(price) FILTER (WHERE status IN ('confirmed', 'completed')), 0) as revenue_month
+         COALESCE(SUM(price) FILTER (WHERE status IN ('confirmed', 'completed')), 0) as revenue_month,
+         COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_month
        FROM bookings
        WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL AND salon_id = $3`,
-      [firstOfMonth, today, salonId]
+      [firstOfMonth, lastOfMonth, salonId]
     );
 
-    // New clients this month (clients are global but count those who booked at this salon)
+    // New clients this month
     const newClients = await db.query(
       `SELECT COUNT(DISTINCT c.id) as count FROM clients c
        JOIN bookings b ON c.id = b.client_id
-       WHERE c.created_at >= $1 AND c.deleted_at IS NULL AND b.salon_id = $2`,
-      [firstOfMonth, salonId]
+       WHERE c.created_at >= $1 AND c.created_at < ($2::date + INTERVAL '1 day') AND c.deleted_at IS NULL AND b.salon_id = $3`,
+      [firstOfMonth, lastOfMonth, salonId]
     );
 
-    // Next bookings for each barber
+    // Next bookings for each barber (always real today)
     const nextBookings = await db.query(
       `SELECT DISTINCT ON (b.barber_id)
          b.id, b.start_time, b.end_time,
@@ -62,18 +78,10 @@ router.get('/dashboard', async (req, res, next) => {
       [today, salonId]
     );
 
-    // Empty slots today (hours with no bookings)
-    const todayBookings = await db.query(
-      `SELECT barber_id, start_time, end_time
-       FROM bookings
-       WHERE date = $1 AND status IN ('confirmed', 'completed') AND deleted_at IS NULL AND salon_id = $2`,
-      [today, salonId]
-    );
-
     const t = todayStats.rows[0];
     const m = monthStats.rows[0];
 
-    res.json({
+    const response = {
       today: {
         bookings: parseInt(t.bookings_today),
         revenue: parseInt(t.revenue_today),
@@ -82,13 +90,49 @@ router.get('/dashboard', async (req, res, next) => {
       month: {
         bookings: parseInt(m.bookings_month),
         revenue: parseInt(m.revenue_month),
+        cancelled: parseInt(m.cancelled_month),
         new_clients: parseInt(newClients.rows[0].count),
         average_basket: parseInt(m.bookings_month) > 0
           ? Math.round(parseInt(m.revenue_month) / parseInt(m.bookings_month))
           : 0,
       },
       next_bookings: nextBookings.rows,
-    });
+    };
+
+    // Previous month comparison when month param is provided
+    if (hasMonthParam) {
+      const prevMonthStats = await db.query(
+        `SELECT
+           COUNT(*) FILTER (WHERE status IN ('confirmed', 'completed')) as bookings_month,
+           COALESCE(SUM(price) FILTER (WHERE status IN ('confirmed', 'completed')), 0) as revenue_month,
+           COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled_month
+         FROM bookings
+         WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL AND salon_id = $3`,
+        [prevFrom, prevTo, salonId]
+      );
+
+      const prevNewClients = await db.query(
+        `SELECT COUNT(DISTINCT c.id) as count FROM clients c
+         JOIN bookings b ON c.id = b.client_id
+         WHERE c.created_at >= $1 AND c.created_at < ($2::date + INTERVAL '1 day') AND c.deleted_at IS NULL AND b.salon_id = $3`,
+        [prevFrom, prevTo, salonId]
+      );
+
+      const pm = prevMonthStats.rows[0];
+      response.previous = {
+        bookings: parseInt(pm.bookings_month),
+        revenue: parseInt(pm.revenue_month),
+        cancelled: parseInt(pm.cancelled_month),
+        new_clients: parseInt(prevNewClients.rows[0].count),
+        average_basket: parseInt(pm.bookings_month) > 0
+          ? Math.round(parseInt(pm.revenue_month) / parseInt(pm.bookings_month))
+          : 0,
+        period: { from: prevFrom, to: prevTo },
+      };
+      response.month.period = { from: firstOfMonth, to: lastOfMonth };
+    }
+
+    res.json(response);
   } catch (error) {
     next(error);
   }
@@ -102,13 +146,25 @@ router.get('/revenue',
     query('period').optional().isIn(['day', 'week', 'month']),
     query('from').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
     query('to').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
+    query('month').optional().matches(/^\d{4}-\d{2}$/),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
-      const { period = 'day', from, to } = req.query;
-      const toDate = to || getParisTodayISO();
-      const fromDate = from || getDefaultFrom(period);
+      const { period = 'day', month } = req.query;
+      let fromDate, toDate, prevFrom, prevTo, hasMonthParam = false;
+
+      if (month) {
+        hasMonthParam = true;
+        const range = getMonthRange(month);
+        fromDate = range.from;
+        toDate = range.to;
+        prevFrom = range.prevFrom;
+        prevTo = range.prevTo;
+      } else {
+        toDate = req.query.to || getParisTodayISO();
+        fromDate = req.query.from || getDefaultFrom(period);
+      }
 
       let groupBy, dateExpr;
       if (period === 'month') {
@@ -136,7 +192,26 @@ router.get('/revenue',
         [fromDate, toDate, salonId]
       );
 
-      res.json(result.rows);
+      const response = { data: result.rows };
+
+      if (hasMonthParam) {
+        const prevResult = await db.query(
+          `SELECT ${dateExpr} as period,
+                  COUNT(*) as booking_count,
+                  COALESCE(SUM(price), 0) as revenue
+           FROM bookings
+           WHERE date >= $1 AND date <= $2
+             AND status IN ('confirmed', 'completed')
+             AND deleted_at IS NULL AND salon_id = $3
+           GROUP BY ${groupBy}
+           ORDER BY ${groupBy}`,
+          [prevFrom, prevTo, salonId]
+        );
+        response.previous = prevResult.rows;
+      }
+
+      // Backward compatible: return array when no month param, object when month param
+      res.json(hasMonthParam ? response : result.rows);
     } catch (error) {
       next(error);
     }
@@ -191,13 +266,25 @@ router.get('/peak-hours',
   [
     query('from').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
     query('to').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
+    query('month').optional().matches(/^\d{4}-\d{2}$/),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const toDate = req.query.to || getParisTodayISO();
-      const fromDate = req.query.from || getDefaultFrom('month');
+      let fromDate, toDate, prevFrom, prevTo, hasMonthParam = false;
+
+      if (req.query.month) {
+        hasMonthParam = true;
+        const range = getMonthRange(req.query.month);
+        fromDate = range.from;
+        toDate = range.to;
+        prevFrom = range.prevFrom;
+        prevTo = range.prevTo;
+      } else {
+        toDate = req.query.to || getParisTodayISO();
+        fromDate = req.query.from || getDefaultFrom('month');
+      }
 
       // Bookings by day of week and hour
       const result = await db.query(
@@ -229,10 +316,47 @@ router.get('/peak-hours',
         [fromDate, toDate, salonId]
       );
 
-      res.json({
+      const response = {
         heatmap: result.rows,
         best_days: bestDays.rows,
-      });
+      };
+
+      if (hasMonthParam) {
+        const prevResult = await db.query(
+          `SELECT
+             EXTRACT(DOW FROM date) as day_of_week,
+             EXTRACT(HOUR FROM start_time) as hour,
+             COUNT(*) as count
+           FROM bookings
+           WHERE date >= $1 AND date <= $2
+             AND status IN ('confirmed', 'completed')
+             AND deleted_at IS NULL AND salon_id = $3
+           GROUP BY EXTRACT(DOW FROM date), EXTRACT(HOUR FROM start_time)
+           ORDER BY day_of_week, hour`,
+          [prevFrom, prevTo, salonId]
+        );
+
+        const prevBestDays = await db.query(
+          `SELECT
+             EXTRACT(DOW FROM date) as day_of_week,
+             COUNT(*) as booking_count,
+             COALESCE(SUM(price), 0) as revenue
+           FROM bookings
+           WHERE date >= $1 AND date <= $2
+             AND status IN ('confirmed', 'completed')
+             AND deleted_at IS NULL AND salon_id = $3
+           GROUP BY EXTRACT(DOW FROM date)
+           ORDER BY revenue DESC`,
+          [prevFrom, prevTo, salonId]
+        );
+
+        response.previous = {
+          heatmap: prevResult.rows,
+          best_days: prevBestDays.rows,
+        };
+      }
+
+      res.json(response);
     } catch (error) {
       next(error);
     }
@@ -246,12 +370,24 @@ router.get('/occupancy',
   [
     query('from').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
     query('to').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
+    query('month').optional().matches(/^\d{4}-\d{2}$/),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
-      const toDate = req.query.to || getParisTodayISO();
-      const fromDate = req.query.from || getDefaultFrom('month');
+      let fromDate, toDate, prevFrom, prevTo, hasMonthParam = false;
+
+      if (req.query.month) {
+        hasMonthParam = true;
+        const range = getMonthRange(req.query.month);
+        fromDate = range.from;
+        toDate = range.to;
+        prevFrom = range.prevFrom;
+        prevTo = range.prevTo;
+      } else {
+        toDate = req.query.to || getParisTodayISO();
+        fromDate = req.query.from || getDefaultFrom('month');
+      }
 
       const salonId = req.user.salon_id;
 
@@ -289,13 +425,46 @@ router.get('/occupancy',
       const totalSlots = workingDays * barberCount * slotsPerBarberPerDay;
       const occupancyRate = totalSlots > 0 ? Math.round((totalBookings / totalSlots) * 100) : 0;
 
-      res.json({
+      const response = {
         occupancy_rate: occupancyRate,
         total_bookings: totalBookings,
         total_available_slots: totalSlots,
         working_days: workingDays,
         period: { from: fromDate, to: toDate },
-      });
+      };
+
+      if (hasMonthParam) {
+        const prevDaysResult = await db.query(
+          `SELECT COUNT(DISTINCT date) as days
+           FROM bookings
+           WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL AND salon_id = $3`,
+          [prevFrom, prevTo, salonId]
+        );
+        const prevWorkingDays = Math.max(parseInt(prevDaysResult.rows[0].days), 1);
+
+        const prevBookingsResult = await db.query(
+          `SELECT COUNT(*) as count
+           FROM bookings
+           WHERE date >= $1 AND date <= $2
+             AND status IN ('confirmed', 'completed')
+             AND deleted_at IS NULL AND salon_id = $3`,
+          [prevFrom, prevTo, salonId]
+        );
+
+        const prevTotalBookings = parseInt(prevBookingsResult.rows[0].count);
+        const prevTotalSlots = prevWorkingDays * barberCount * slotsPerBarberPerDay;
+        const prevOccupancyRate = prevTotalSlots > 0 ? Math.round((prevTotalBookings / prevTotalSlots) * 100) : 0;
+
+        response.previous = {
+          occupancy_rate: prevOccupancyRate,
+          total_bookings: prevTotalBookings,
+          total_available_slots: prevTotalSlots,
+          working_days: prevWorkingDays,
+          period: { from: prevFrom, to: prevTo },
+        };
+      }
+
+      res.json(response);
     } catch (error) {
       next(error);
     }
@@ -309,12 +478,24 @@ router.get('/services',
   [
     query('from').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
     query('to').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
+    query('month').optional().matches(/^\d{4}-\d{2}$/),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
-      const toDate = req.query.to || getParisTodayISO();
-      const fromDate = req.query.from || getDefaultFrom('month');
+      let fromDate, toDate, prevFrom, prevTo, hasMonthParam = false;
+
+      if (req.query.month) {
+        hasMonthParam = true;
+        const range = getMonthRange(req.query.month);
+        fromDate = range.from;
+        toDate = range.to;
+        prevFrom = range.prevFrom;
+        prevTo = range.prevTo;
+      } else {
+        toDate = req.query.to || getParisTodayISO();
+        fromDate = req.query.from || getDefaultFrom('month');
+      }
 
       const salonId = req.user.salon_id;
       const result = await db.query(
@@ -346,10 +527,47 @@ router.get('/services',
         [fromDate, toDate, salonId]
       );
 
-      res.json({
+      const response = {
         services: result.rows,
         trends: trendResult.rows,
-      });
+      };
+
+      if (hasMonthParam) {
+        const prevResult = await db.query(
+          `SELECT s.name,
+                  COUNT(b.id) as booking_count,
+                  COALESCE(SUM(b.price), 0) as revenue,
+                  ROUND(AVG(b.price)) as avg_price
+           FROM services s
+           LEFT JOIN bookings b ON s.id = b.service_id
+             AND b.date >= $1 AND b.date <= $2
+             AND b.status IN ('confirmed', 'completed')
+             AND b.deleted_at IS NULL
+           WHERE s.deleted_at IS NULL AND s.salon_id = $3
+           GROUP BY s.id, s.name
+           ORDER BY booking_count DESC`,
+          [prevFrom, prevTo, salonId]
+        );
+
+        const prevTrendResult = await db.query(
+          `SELECT s.name, TO_CHAR(b.date, 'YYYY-MM') as month, COUNT(*) as count
+           FROM bookings b
+           JOIN services s ON b.service_id = s.id
+           WHERE b.date >= $1 AND b.date <= $2
+             AND b.status IN ('confirmed', 'completed')
+             AND b.deleted_at IS NULL AND b.salon_id = $3
+           GROUP BY s.name, TO_CHAR(b.date, 'YYYY-MM')
+           ORDER BY s.name, month`,
+          [prevFrom, prevTo, salonId]
+        );
+
+        response.previous = {
+          services: prevResult.rows,
+          trends: prevTrendResult.rows,
+        };
+      }
+
+      res.json(response);
     } catch (error) {
       next(error);
     }
@@ -363,12 +581,24 @@ router.get('/barbers',
   [
     query('from').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
     query('to').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
+    query('month').optional().matches(/^\d{4}-\d{2}$/),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
-      const toDate = req.query.to || getParisTodayISO();
-      const fromDate = req.query.from || getDefaultFrom('month');
+      let fromDate, toDate, prevFrom, prevTo, hasMonthParam = false;
+
+      if (req.query.month) {
+        hasMonthParam = true;
+        const range = getMonthRange(req.query.month);
+        fromDate = range.from;
+        toDate = range.to;
+        prevFrom = range.prevFrom;
+        prevTo = range.prevTo;
+      } else {
+        toDate = req.query.to || getParisTodayISO();
+        fromDate = req.query.from || getDefaultFrom('month');
+      }
 
       const salonId = req.user.salon_id;
       const result = await db.query(
@@ -409,10 +639,35 @@ router.get('/barbers',
         [salonId]
       );
 
-      res.json({
+      const response = {
         barbers: result.rows,
         loyalty: loyaltyResult.rows,
-      });
+      };
+
+      if (hasMonthParam) {
+        const prevResult = await db.query(
+          `SELECT br.name,
+                  COUNT(b.id) as booking_count,
+                  COALESCE(SUM(b.price), 0) as revenue,
+                  COUNT(DISTINCT b.client_id) as unique_clients,
+                  COUNT(b.id) FILTER (WHERE b.status = 'no_show') as no_shows
+           FROM barbers br
+           LEFT JOIN bookings b ON br.id = b.barber_id
+             AND b.date >= $1 AND b.date <= $2
+             AND b.deleted_at IS NULL
+             AND b.status IN ('confirmed', 'completed', 'no_show')
+           WHERE br.deleted_at IS NULL AND br.salon_id = $3
+           GROUP BY br.id, br.name
+           ORDER BY revenue DESC`,
+          [prevFrom, prevTo, salonId]
+        );
+
+        response.previous = {
+          barbers: prevResult.rows,
+        };
+      }
+
+      res.json(response);
     } catch (error) {
       next(error);
     }
@@ -738,6 +993,30 @@ function getDefaultFrom(period) {
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+// ============================================
+// Helper: derive date ranges from a YYYY-MM month string
+// ============================================
+function getMonthRange(monthStr) {
+  const [y, m] = monthStr.split('-').map(Number);
+  const from = `${y}-${String(m).padStart(2, '0')}-01`;
+  const lastDay = new Date(y, m, 0).getDate();
+  const to = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  // Cap 'to' at today if it's the current month
+  const today = getParisTodayISO();
+  const effectiveTo = to > today ? today : to;
+
+  // Previous month
+  const prevDate = new Date(y, m - 2, 1);
+  const prevY = prevDate.getFullYear();
+  const prevM = prevDate.getMonth() + 1;
+  const prevFrom = `${prevY}-${String(prevM).padStart(2, '0')}-01`;
+  const prevLastDay = new Date(prevY, prevM, 0).getDate();
+  const prevTo = `${prevY}-${String(prevM).padStart(2, '0')}-${String(prevLastDay).padStart(2, '0')}`;
+
+  return { from, to: effectiveTo, prevFrom, prevTo };
 }
 
 module.exports = router;
