@@ -506,7 +506,7 @@ function BarberPerformance({ data }) {
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
                 </svg>
-                {noShows} no-show{noShows > 1 ? 's' : ''}
+                {noShows} faux plan{noShows > 1 ? 's' : ''}
               </div>
             )}
           </div>
@@ -664,8 +664,8 @@ function MembersSection({ stats }) {
   const isMobile = useMobile();
   if (!stats) return null;
 
-  const memRev = parseInt(stats.revenue?.members) || 0;
-  const guestRev = parseInt(stats.revenue?.guests) || 0;
+  const memRev = parseInt(stats.revenue?.member) || 0;
+  const guestRev = parseInt(stats.revenue?.guest) || 0;
   const totalRev = memRev + guestRev || 1;
   const memPct = Math.round((memRev / totalRev) * 100);
   const guestPct = 100 - memPct;
@@ -678,7 +678,7 @@ function MembersSection({ stats }) {
           { label: 'Membres', value: stats.total_members, sub: `sur ${stats.total_clients} clients`, color: '#22c55e' },
           { label: 'Taux conversion', value: `${stats.conversion_rate}%`, sub: 'clients \u2192 membres', color: null },
           { label: 'Nouveaux ce mois', value: stats.new_members_this_month, sub: 'inscriptions', color: null },
-          { label: 'Panier moyen', value: formatPriceInt(stats.avg_spend?.members || 0), sub: `vs ${formatPriceInt(stats.avg_spend?.guests || 0)} invites`, color: '#22c55e' },
+          { label: 'Panier moyen', value: formatPriceInt(stats.avg_spend?.member || 0), sub: `vs ${formatPriceInt(stats.avg_spend?.guest || 0)} invites`, color: '#22c55e' },
         ].map((item, i) => (
           <div key={i} className="a-card a-card-lift" style={{ textAlign: 'center', padding: '20px 14px' }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
@@ -734,7 +734,7 @@ function MembersSection({ stats }) {
               border: '1px solid rgba(34,197,94,0.1)',
             }}>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#22c55e' }}>
-                {stats.avg_visits?.members || '0'}
+                {stats.avg_visits?.member || '0'}
               </div>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Membres</div>
             </div>
@@ -744,7 +744,7 @@ function MembersSection({ stats }) {
               border: '1px solid rgba(var(--overlay),0.05)',
             }}>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800 }}>
-                {stats.avg_visits?.guests || '0'}
+                {stats.avg_visits?.guest || '0'}
               </div>
               <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Invites</div>
             </div>
@@ -757,8 +757,8 @@ function MembersSection({ stats }) {
               </h4>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 52 }}>
                 {stats.monthly_signups.map((m, i) => {
-                  const max = Math.max(...stats.monthly_signups.map(s => parseInt(s.count) || 0), 1);
-                  const count = parseInt(m.count) || 0;
+                  const max = Math.max(...stats.monthly_signups.map(s => parseInt(s.signups || s.count) || 0), 1);
+                  const count = parseInt(m.signups || m.count) || 0;
                   const h = Math.max(Math.round((count / max) * 44), count > 0 ? 6 : 2);
                   const monthLabel = m.month?.substring(5, 7);
                   return (

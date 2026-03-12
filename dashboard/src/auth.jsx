@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 import { login as apiLogin, logout as apiLogout, getStoredUser } from './api';
+import { queryClient } from './App';
 
 const AuthContext = createContext(null);
 
@@ -16,6 +17,7 @@ export function AuthProvider({ children }) {
   const clearSalon = () => {
     localStorage.removeItem('bc_salon');
     setSalon(null);
+    queryClient.clear();
   };
 
   const login = async (email, password) => {
@@ -27,6 +29,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     await apiLogout();
     setUser(null);
+    queryClient.clear();
   };
 
   return (

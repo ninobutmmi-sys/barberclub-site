@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from './auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
@@ -26,6 +26,7 @@ const Clients = lazy(() => import('./pages/Clients'));
 const ClientDetail = lazy(() => import('./pages/ClientDetail'));
 const History = lazy(() => import('./pages/History'));
 const Messages = lazy(() => import('./pages/Messages'));
+const Waitlist = lazy(() => import('./pages/Waitlist'));
 const System = lazy(() => import('./pages/System'));
 const PageLoader = () => (
   <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e' }}>
@@ -68,6 +69,7 @@ function AppRoutes() {
         <Route path="clients/:id" element={<Suspense fallback={<PageLoader />}><ClientDetail /></Suspense>} />
         <Route path="history" element={<Suspense fallback={<PageLoader />}><History /></Suspense>} />
         <Route path="messages" element={<Suspense fallback={<PageLoader />}><Messages /></Suspense>} />
+        <Route path="waitlist" element={<Suspense fallback={<PageLoader />}><Waitlist /></Suspense>} />
         <Route path="system" element={<Suspense fallback={<PageLoader />}><System /></Suspense>} />
 
       </Route>

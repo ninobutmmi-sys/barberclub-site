@@ -44,7 +44,7 @@ export const HOUR_HEIGHT = 60 * PX_PER_MIN; // 180px
 export const STATUS_LABELS = {
   confirmed: 'Confirmé',
   completed: 'Terminé',
-  no_show: 'No-show',
+  no_show: 'Faux plan',
   cancelled: 'Annulé',
 };
 

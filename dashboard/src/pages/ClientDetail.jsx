@@ -93,7 +93,7 @@ export default function ClientDetail() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
           <StatCard label="Visites" value={client.visit_count} />
           <StatCard label="CA Total" value={formatPrice(client.total_spent)} />
-          <StatCard label="No-shows" value={client.no_show_count} danger={client.no_show_count > 0} />
+          <StatCard label="Faux plans" value={client.no_show_count} danger={client.no_show_count > 0} />
           <StatCard label="Annulations" value={client.cancelled_count} />
           <StatCard label="Service favori" value={client.favourite_service || '-'} small />
           <StatCard label="Barber favori" value={client.favourite_barber || '-'} small />

@@ -1,10 +1,6 @@
 import { useState } from 'react';
-import { updateAutomationTrigger } from '../api';
-import useMobile from '../hooks/useMobile';
 import {
   useAutomationTriggers, useUpdateAutomationTrigger,
-  useWaitlist, useWaitlistCount, useAddToWaitlist, useUpdateWaitlistEntry, useDeleteWaitlistEntry,
-  useBarbers, useServices,
   useNotificationStats, useNotificationLogs,
 } from '../hooks/useApi';
 
@@ -22,25 +18,15 @@ const TRIGGER_LABELS = {
 };
 
 export default function Automation({ embedded } = {}) {
-  const isMobile = useMobile();
-  const [tab, setTab] = useState('monitoring'); // monitoring | triggers | waitlist
+  const [tab, setTab] = useState('monitoring'); // monitoring | triggers
   const [editTrigger, setEditTrigger] = useState(null);
-  const [addWlModal, setAddWlModal] = useState(false);
 
   // React Query hooks
   const triggersQuery = useAutomationTriggers();
-  const waitlistQuery = useWaitlist({ status: 'waiting' });
-  const waitlistCountQuery = useWaitlistCount();
-  const barbersQuery = useBarbers();
-  const servicesQuery = useServices();
   const statsQuery = useNotificationStats({ enabled: tab === 'monitoring' });
   const logsQuery = useNotificationLogs({ limit: 15, offset: 0 }, { enabled: tab === 'monitoring' });
 
   const triggers = triggersQuery.data || [];
-  const waitlist = waitlistQuery.data || [];
-  const waitlistCount = waitlistCountQuery.data?.count ?? 0;
-  const barbers = barbersQuery.data || [];
-  const services = servicesQuery.data || [];
   const stats = statsQuery.data || null;
   const recentLogs = logsQuery.data?.notifications || [];
 
@@ -49,25 +35,10 @@ export default function Automation({ embedded } = {}) {
   const statsLoading = statsQuery.isLoading;
 
   const toggleMutation = useUpdateAutomationTrigger();
-  const deleteMutation = useDeleteWaitlistEntry();
-  const updateWlMutation = useUpdateWaitlistEntry();
 
   async function handleToggleTrigger(trigger) {
     try {
       await toggleMutation.mutateAsync({ type: trigger.type, data: { is_active: !trigger.is_active } });
-    } catch (err) { alert(err.message); }
-  }
-
-  async function handleDeleteWaitlist(id) {
-    if (!confirm('Retirer de la liste d\'attente ?')) return;
-    try {
-      await deleteMutation.mutateAsync(id);
-    } catch (err) { alert(err.message); }
-  }
-
-  async function handleMarkNotified(entry) {
-    try {
-      await updateWlMutation.mutateAsync({ id: entry.id, data: { status: 'notified' } });
     } catch (err) { alert(err.message); }
   }
 
@@ -96,7 +67,6 @@ export default function Automation({ embedded } = {}) {
           {[
             { id: 'monitoring', label: 'Monitoring' },
             { id: 'triggers', label: 'Triggers' },
-            { id: 'waitlist', label: 'Liste d\'attente' },
           ].map((t) => (
             <button
               key={t.id}
@@ -109,11 +79,6 @@ export default function Automation({ embedded } = {}) {
               }}
             >
               {t.label}
-              {t.id === 'waitlist' && waitlistCount > 0 && (
-                <span style={{ marginLeft: 6, background: '#3b82f6', color: '#fff', fontSize: 10, padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>
-                  {waitlistCount}
-                </span>
-              )}
             </button>
           ))}
         </div>
@@ -241,98 +206,6 @@ export default function Automation({ embedded } = {}) {
               </div>
             )}
 
-            {/* ====== WAITLIST TAB ====== */}
-            {tab === 'waitlist' && (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-                  <button className="btn btn-primary btn-sm" onClick={() => setAddWlModal(true)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                    Ajouter en attente
-                  </button>
-                </div>
-
-                {isMobile ? (
-                  <div className="mob-card-list">
-                    {waitlist.map((w) => (
-                      <div key={w.id} className="mob-card-item" style={{ flexWrap: 'wrap' }}>
-                        <div className="mob-card-left">
-                          <div className="mob-card-title">{w.client_name}</div>
-                          <div className="mob-card-sub">
-                            {new Date(w.preferred_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                            {w.preferred_time_start ? ` · ${w.preferred_time_start.slice(0, 5)}` : ''} — {w.service_name || '–'}
-                          </div>
-                        </div>
-                        <div className="mob-card-right" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span className={`badge badge-${w.status === 'waiting' ? 'active' : 'inactive'}`} style={{ fontSize: 9 }}>
-                            {w.status === 'waiting' ? 'En attente' : w.status === 'notified' ? 'Notifié' : w.status === 'booked' ? 'Réservé' : 'Expiré'}
-                          </span>
-                          {w.status === 'waiting' && (
-                            <button className="btn btn-primary btn-sm" style={{ fontSize: 10, padding: '3px 8px' }} onClick={(e) => { e.stopPropagation(); handleMarkNotified(w); }}>Notifier</button>
-                          )}
-                          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: 4 }} onClick={(e) => { e.stopPropagation(); handleDeleteWaitlist(w.id); }}>
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {waitlist.length === 0 && <div className="empty-state">Aucun client en liste d'attente</div>}
-                  </div>
-                ) : (
-                  <div className="table-wrapper">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Client</th>
-                          <th>Téléphone</th>
-                          <th>Barber souhaité</th>
-                          <th>Prestation</th>
-                          <th>Date souhaitée</th>
-                          <th>Créneau</th>
-                          <th>Statut</th>
-                          <th style={{ width: 120 }}></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {waitlist.map((w) => (
-                          <tr key={w.id}>
-                            <td style={{ fontWeight: 600 }}>{w.client_name}</td>
-                            <td style={{ fontSize: 12 }}>{w.client_phone}</td>
-                            <td style={{ fontSize: 12 }}>{w.barber_name || '–'}</td>
-                            <td style={{ fontSize: 12 }}>{w.service_name || '–'}</td>
-                            <td style={{ fontSize: 12 }}>
-                              {new Date(w.preferred_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                            </td>
-                            <td style={{ fontSize: 12 }}>
-                              {w.preferred_time_start ? `${w.preferred_time_start.slice(0, 5)} – ${w.preferred_time_end?.slice(0, 5) || '?'}` : 'Toute la journée'}
-                            </td>
-                            <td>
-                              <span className={`badge badge-${w.status === 'waiting' ? 'active' : w.status === 'notified' ? 'inactive' : 'inactive'}`}>
-                                {w.status === 'waiting' ? 'En attente' : w.status === 'notified' ? 'Notifié' : w.status === 'booked' ? 'Réservé' : 'Expiré'}
-                              </span>
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', gap: 4 }}>
-                                {w.status === 'waiting' && (
-                                  <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => handleMarkNotified(w)}>
-                                    Notifier
-                                  </button>
-                                )}
-                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteWaitlist(w.id)}>
-                                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {waitlist.length === 0 && (
-                          <tr><td colSpan="8" style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Aucun client en liste d'attente</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
-            )}
           </>
         )}
       </div>
@@ -345,14 +218,6 @@ export default function Automation({ embedded } = {}) {
         />
       )}
 
-      {/* Add to Waitlist Modal */}
-      {addWlModal && (
-        <AddWaitlistModal
-          barbers={barbers}
-          services={services}
-          onClose={() => setAddWlModal(false)}
-        />
-      )}
     </>
   );
 }
@@ -451,94 +316,3 @@ function TriggerConfigModal({ trigger, onClose }) {
   );
 }
 
-function AddWaitlistModal({ barbers, services, onClose }) {
-  const [clientName, setClientName] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
-  const [barberId, setBarberId] = useState(barbers[0]?.id || '');
-  const [serviceId, setServiceId] = useState(services[0]?.id || '');
-  const [date, setDate] = useState('');
-  const [timeStart, setTimeStart] = useState('');
-  const [timeEnd, setTimeEnd] = useState('');
-  const [error, setError] = useState('');
-  const mutation = useAddToWaitlist();
-  const saving = mutation.isPending;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      await mutation.mutateAsync({
-        client_name: clientName,
-        client_phone: clientPhone,
-        barber_id: barberId,
-        service_id: serviceId,
-        preferred_date: date,
-        preferred_time_start: timeStart || undefined,
-        preferred_time_end: timeEnd || undefined,
-      });
-      onClose();
-    } catch (err) { setError(err.message); }
-  };
-
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
-        <div className="modal-header">
-          <h3 className="modal-title">Ajouter en liste d'attente</h3>
-          <button className="btn-ghost" onClick={onClose}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          </button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            {error && <div className="login-error" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
-            <div className="input-row">
-              <div className="form-group">
-                <label className="label">Nom du client</label>
-                <input className="input" value={clientName} onChange={(e) => setClientName(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label className="label">Téléphone</label>
-                <input className="input" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} required placeholder="06..." />
-              </div>
-            </div>
-            <div className="input-row">
-              <div className="form-group">
-                <label className="label">Barber souhaité</label>
-                <select className="input" value={barberId} onChange={(e) => setBarberId(e.target.value)} required>
-                  {barbers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="label">Prestation</label>
-                <select className="input" value={serviceId} onChange={(e) => setServiceId(e.target.value)} required>
-                  {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="label">Date souhaitée</label>
-              <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-            </div>
-            <div className="input-row">
-              <div className="form-group">
-                <label className="label">Créneau début (optionnel)</label>
-                <input className="input" type="time" value={timeStart} onChange={(e) => setTimeStart(e.target.value)} min="09:00" max="19:00" />
-              </div>
-              <div className="form-group">
-                <label className="label">Créneau fin (optionnel)</label>
-                <input className="input" type="time" value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} min="09:00" max="19:00" />
-              </div>
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Annuler</button>
-            <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
-              {saving ? 'Ajout...' : 'Ajouter'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}

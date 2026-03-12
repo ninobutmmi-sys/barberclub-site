@@ -8,7 +8,7 @@ const LIMIT = 50;
 const STATUS_LABELS = {
   confirmed: 'Confirme',
   completed: 'Termine',
-  no_show: 'Absent',
+  no_show: 'Faux plan',
   cancelled: 'Annule',
 };
 
@@ -383,7 +383,7 @@ export default function History() {
                         <option value="">Tous</option>
                         <option value="confirmed">Confirme</option>
                         <option value="completed">Termine</option>
-                        <option value="no_show">Absent</option>
+                        <option value="no_show">Faux plan</option>
                         <option value="cancelled">Annule</option>
                       </select>
                     </div>
@@ -423,7 +423,7 @@ export default function History() {
                     <option value="">Tous</option>
                     <option value="confirmed">Confirme</option>
                     <option value="completed">Termine</option>
-                    <option value="no_show">Absent</option>
+                    <option value="no_show">Faux plan</option>
                     <option value="cancelled">Annule</option>
                   </select>
                 </div>

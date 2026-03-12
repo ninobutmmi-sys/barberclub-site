@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useNotifications } from '../hooks/useNotifications';
+import { useWaitlistCount } from '../hooks/useApi';
 import useMobile from '../hooks/useMobile';
 import usePushNotifications from '../hooks/usePushNotifications';
 import SearchBar from './SearchBar';
@@ -76,6 +77,10 @@ const NAV_GROUPS = [
         to: '/history', label: 'Historique',
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
       },
+      {
+        to: '/waitlist', label: 'Liste d\'attente', badge: true,
+        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>,
+      },
     ],
   },
   {
@@ -132,6 +137,7 @@ const DRAWER_NAV = [
   { to: '/services', label: 'Prestations', icon: NAV.find(n => n.to === '/services').icon },
   { to: '/barbers', label: 'Barbers', icon: NAV.find(n => n.to === '/barbers').icon },
   { to: '/history', label: 'Historique', icon: NAV.find(n => n.to === '/history').icon },
+  { to: '/waitlist', label: 'Liste d\'attente', icon: NAV.find(n => n.to === '/waitlist').icon, badge: true },
   { to: '/messages', label: 'Messages', icon: NAV.find(n => n.to === '/messages').icon },
 ];
 
@@ -143,6 +149,8 @@ export default function Layout() {
   const location = useLocation();
   const isMobile = useMobile();
   const { hasNew, newCount, bookings, markSeen } = useNotifications();
+  const waitlistCountQuery = useWaitlistCount();
+  const waitlistCount = waitlistCountQuery.data?.count ?? 0;
   const push = usePushNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const expandedDropdownRef = useRef(null);
@@ -334,6 +342,15 @@ export default function Layout() {
                 >
                   {item.icon}
                   <span className="sidebar-link-label">{item.label}</span>
+                  {item.badge && waitlistCount > 0 && (
+                    <span style={{
+                      marginLeft: 'auto', background: '#3b82f6', color: '#fff',
+                      fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10,
+                      minWidth: 18, textAlign: 'center', lineHeight: '16px',
+                    }}>
+                      {waitlistCount}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </div>
@@ -453,7 +470,12 @@ export default function Layout() {
                     onClick={() => setPlusOpen(false)}
                   >
                     {item.icon}
-                    {item.label}
+                    <span style={{ flex: 1, textAlign: 'left' }}>{item.label}</span>
+                    {item.badge && waitlistCount > 0 && (
+                      <span style={{ background: '#3b82f6', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 10 }}>
+                        {waitlistCount}
+                      </span>
+                    )}
                   </NavLink>
                 ))}
 
