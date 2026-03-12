@@ -62,6 +62,12 @@ export default function Planning() {
   const [refreshing, setRefreshing] = useState(false);
   const [showMiniCal, setShowMiniCal] = useState(false);
 
+  // Search client in planning
+  const [searchTerm, setSearchTerm] = useState('');
+  const [highlightedBookingId, setHighlightedBookingId] = useState(null);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef(null);
+
   // Barber schedules (loaded separately since they don't change often)
   const [barberOffDays, setBarberOffDays] = useState({});
   const [barberBreaks, setBarberBreaks] = useState({});
@@ -236,6 +242,51 @@ export default function Planning() {
     return { count: active.length, revenue: active.reduce((s, b) => s + (b.price || 0), 0) };
   }, [bookings]);
 
+  // Search: filter bookings matching search term
+  const searchResults = useMemo(() => {
+    if (!searchTerm || searchTerm.length < 2) return [];
+    const q = searchTerm.toLowerCase();
+    return bookings.filter((b) => {
+      if (b.status === 'cancelled') return false;
+      const full = `${b.client_first_name || ''} ${b.client_last_name || ''}`.toLowerCase();
+      return full.includes(q);
+    });
+  }, [searchTerm, bookings]);
+
+  // Auto-highlight if single result
+  useEffect(() => {
+    if (searchResults.length === 1) {
+      setHighlightedBookingId(searchResults[0].id);
+      setShowSearchResults(false);
+    } else if (searchResults.length > 1) {
+      setHighlightedBookingId(null);
+      setShowSearchResults(true);
+    } else {
+      setHighlightedBookingId(null);
+      setShowSearchResults(false);
+    }
+  }, [searchResults]);
+
+  // Close search results dropdown on outside click
+  useEffect(() => {
+    if (!showSearchResults) return;
+    function handleClick(e) {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearchResults(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showSearchResults]);
+
+  function selectSearchResult(bk) {
+    setHighlightedBookingId(bk.id);
+    setShowSearchResults(false);
+  }
+
+  function clearSearch() {
+    setSearchTerm('');
+    setHighlightedBookingId(null);
+    setShowSearchResults(false);
+  }
 
   const navDisplay = useMemo(() => {
     if (view === 'day') return format(currentDate, 'EEEE d MMMM yyyy', { locale: fr });
@@ -313,9 +364,14 @@ export default function Planning() {
     try { await apiDeleteBlockedSlot(id); setSelectedBlock(null); invalidatePlanning(); } catch (err) { alert(err.message); }
   }
 
-  // Keyboard shortcuts: <-/-> = prev/next, T = today
+  // Keyboard shortcuts: <-/-> = prev/next, T = today, Escape = clear search
   useEffect(() => {
     function handleKeyDown(e) {
+      if (e.key === 'Escape' && (searchTerm || highlightedBookingId)) {
+        e.preventDefault();
+        clearSearch();
+        return;
+      }
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (selectedBooking || showCreateModal || showBlockModal || selectedBlock || quickAction) return;
@@ -325,7 +381,7 @@ export default function Planning() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBooking, showCreateModal, showBlockModal, selectedBlock, quickAction]);
+  }, [selectedBooking, showCreateModal, showBlockModal, selectedBlock, quickAction, searchTerm, highlightedBookingId]);
 
   // Pull to refresh (mobile)
   const showPullRef = useRef(false);
@@ -475,6 +531,38 @@ export default function Planning() {
           </div>
 
           <div className="plan-controls">
+            <div className="plan-search-wrapper" ref={searchRef}>
+              <div className="plan-search-input-wrap">
+                <svg className="plan-search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input
+                  className="plan-search-input"
+                  type="text"
+                  placeholder="Chercher un client..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                  <button className="plan-search-clear" onClick={clearSearch} title="Effacer">
+                    <CloseIcon size={12} />
+                  </button>
+                )}
+              </div>
+              {showSearchResults && searchResults.length > 1 && (
+                <div className="plan-search-dropdown">
+                  {searchResults.map((bk) => {
+                    const barber = barbers.find((b) => b.id === bk.barber_id);
+                    return (
+                      <button key={bk.id} className="plan-search-result" onClick={() => selectSearchResult(bk)}>
+                        <span className="plan-search-result-name">{bk.client_first_name} {bk.client_last_name}</span>
+                        <span className="plan-search-result-meta">
+                          {bk.start_time?.slice(0, 5)} · {barber?.name?.split(' ')[0] || ''}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             <button className="plan-block-btn" onClick={handleBlockClick}>
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
               Bloquer
@@ -523,6 +611,7 @@ export default function Planning() {
               onSwipeRight={goPrev}
               guestAssignments={guestAssignments}
               compact={isMobile && mobileFullDay}
+              highlightedBookingId={highlightedBookingId}
             />
             {bookings.filter((b) => b.status !== 'cancelled').length === 0 && (
               <div style={{ padding: '40px 20px', textAlign: 'center', color: '#a8a29e' }}>

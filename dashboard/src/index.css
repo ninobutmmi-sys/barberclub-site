@@ -2728,6 +2728,120 @@ select.input {
 }
 
 /* ============================================
+   Planning Search
+   ============================================ */
+.plan-search-wrapper {
+  position: relative;
+}
+.plan-search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(var(--overlay), 0.06);
+  border: 1px solid rgba(var(--overlay), 0.10);
+  border-radius: 8px;
+  padding: 0 10px;
+  height: 34px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.plan-search-input-wrap:focus-within {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(var(--overlay), 0.08);
+}
+.plan-search-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.plan-search-input {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  width: 140px;
+  padding: 0;
+}
+.plan-search-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.plan-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--overlay), 0.10);
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.plan-search-clear:hover {
+  background: rgba(var(--overlay), 0.20);
+}
+.plan-search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  min-width: 220px;
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--overlay), 0.12);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+  animation: quickActionsIn 0.12s ease-out;
+}
+.plan-search-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+  transition: background 0.1s;
+}
+.plan-search-result:hover {
+  background: rgba(var(--overlay), 0.08);
+}
+.plan-search-result-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.plan-search-result-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Booking block highlight animation */
+@keyframes bookingHighlight {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0), 0 0 8px 0 rgba(250, 204, 21, 0); }
+  50% { box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.7), 0 0 16px 4px rgba(250, 204, 21, 0.3); }
+}
+.booking-block-highlight {
+  animation: bookingHighlight 1.2s ease-in-out 4;
+  z-index: 10 !important;
+  outline: 2px solid rgba(250, 204, 21, 0.8);
+  outline-offset: 1px;
+}
+
+/* ============================================
    Quick Actions Popover (Timify-style)
    ============================================ */
 .quick-actions-pop {

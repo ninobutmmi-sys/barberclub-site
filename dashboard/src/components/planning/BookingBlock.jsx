@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { timeToMinutes, HOUR_START, PX_PER_MIN, FALLBACK_COLOR, STATUS_OVERRIDES, hexToBlockStyle } from './helpers';
 import BookingHoverCard from './BookingHoverCard';
 
-export default function BookingBlock({ booking, onClick, pxPerMin }) {
+export default function BookingBlock({ booking, onClick, pxPerMin, highlighted }) {
   const px = pxPerMin || PX_PER_MIN;
   const startMin = timeToMinutes(booking.start_time) - HOUR_START * 60;
   const endMin = timeToMinutes(booking.end_time) - HOUR_START * 60;
@@ -49,6 +49,13 @@ export default function BookingBlock({ booking, onClick, pxPerMin }) {
     return () => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current); };
   }, []);
 
+  // Scroll into view when highlighted
+  useEffect(() => {
+    if (highlighted && blockRef.current) {
+      blockRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlighted]);
+
   const isOnline = booking.source === 'online';
   const isFirstVisit = booking.is_first_visit;
 
@@ -56,7 +63,8 @@ export default function BookingBlock({ booking, onClick, pxPerMin }) {
     <>
       <div
         ref={blockRef}
-        className={isFirstVisit ? 'planning-block-first-visit' : undefined}
+        data-booking-id={booking.id}
+        className={[isFirstVisit && 'planning-block-first-visit', highlighted && 'booking-block-highlight'].filter(Boolean).join(' ') || undefined}
         style={{
           position: 'absolute',
           top,

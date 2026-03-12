@@ -159,4 +159,23 @@ router.post('/trigger-reminders', async (req, res, next) => {
   }
 });
 
+// POST /api/admin/system/merge-services — one-time migration
+router.post('/merge-services', async (req, res, next) => {
+  try {
+    const keepId = 'a1000000-0000-0000-0000-000000000007'; // 20min
+    const removeId = 'a1000000-0000-0000-0000-000000000001'; // 30min duplicate
+
+    // Reassign bookings
+    const bk = await db.query('UPDATE bookings SET service_id = $1 WHERE service_id = $2', [keepId, removeId]);
+    // Reassign barber_services
+    const bs = await db.query('DELETE FROM barber_services WHERE service_id = $1', [removeId]);
+    // Delete duplicate service
+    const sv = await db.query('DELETE FROM services WHERE id = $1', [removeId]);
+
+    res.json({ ok: true, bookingsReassigned: bk.rowCount, barberServicesRemoved: bs.rowCount, serviceDeleted: sv.rowCount });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
