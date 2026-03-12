@@ -25,6 +25,8 @@ export const keys = {
   serviceStats: (params) => ['serviceStats', params],
   barberStats: (params) => ['barberStats', params],
   memberStats: ['memberStats'],
+  trends: ['trends'],
+  revenueHourly: (params) => ['revenueHourly', params],
   notificationLogs: (params) => ['notificationLogs', params],
   notificationStats: ['notificationStats'],
   brevoStatus: ['brevoStatus'],
@@ -356,6 +358,24 @@ export function useMemberStats(options) {
   return useQuery({
     queryKey: keys.memberStats,
     queryFn: api.getMemberStats,
+    staleTime: 5 * 60_000,
+    ...options,
+  });
+}
+
+export function useTrends(options) {
+  return useQuery({
+    queryKey: keys.trends,
+    queryFn: api.getTrends,
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useRevenueHourly(params, options) {
+  return useQuery({
+    queryKey: keys.revenueHourly(params),
+    queryFn: () => api.getRevenueHourly(params),
     staleTime: 5 * 60_000,
     ...options,
   });

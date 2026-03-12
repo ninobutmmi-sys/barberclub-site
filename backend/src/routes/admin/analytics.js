@@ -824,6 +824,16 @@ router.get('/trends', async (req, res, next) => {
       [salonId]
     );
 
+    // No-show cost for current month
+    const noShowCurrent = await db.query(
+      `SELECT COUNT(*) as count, COALESCE(SUM(price), 0) as cost
+       FROM bookings
+       WHERE TO_CHAR(date, 'YYYY-MM') = $1
+         AND status = 'no_show'
+         AND deleted_at IS NULL AND salon_id = $2`,
+      [currentMonth, salonId]
+    );
+
     res.json({
       monthly_revenue: monthlyRevenue.rows,
       projection: {
@@ -835,6 +845,10 @@ router.get('/trends', async (req, res, next) => {
         days_in_month: daysInMonth,
       },
       no_show_rate: noShowRate.rows,
+      no_show_current: {
+        count: parseInt(noShowCurrent.rows[0].count),
+        cost: parseInt(noShowCurrent.rows[0].cost),
+      },
     });
   } catch (error) {
     next(error);
@@ -961,6 +975,51 @@ router.get('/members', async (req, res, next) => {
     next(error);
   }
 });
+
+// ============================================
+// GET /api/admin/analytics/revenue-hourly — Revenue by hour by barber
+// ============================================
+router.get('/revenue-hourly',
+  [
+    query('month').optional().matches(/^\d{4}-\d{2}$/),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      let fromDate, toDate;
+
+      if (req.query.month) {
+        const range = getMonthRange(req.query.month);
+        fromDate = range.from;
+        toDate = range.to;
+      } else {
+        toDate = getParisTodayISO();
+        fromDate = toDate.substring(0, 8) + '01';
+      }
+
+      const result = await db.query(
+        `SELECT br.name as barber_name,
+                EXTRACT(HOUR FROM b.start_time)::int as hour,
+                COALESCE(SUM(b.price), 0) as revenue,
+                COUNT(*) as booking_count
+         FROM bookings b
+         JOIN barbers br ON b.barber_id = br.id
+         WHERE b.date >= $1 AND b.date <= $2
+           AND b.status IN ('confirmed', 'completed')
+           AND b.deleted_at IS NULL AND b.salon_id = $3
+           AND br.name != 'Admin'
+         GROUP BY br.name, EXTRACT(HOUR FROM b.start_time)
+         ORDER BY br.name, hour`,
+        [fromDate, toDate, salonId]
+      );
+
+      res.json(result.rows);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 // ============================================
 // Helper: get current date/time in Paris timezone

@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useNotifications } from '../hooks/useNotifications';
 import { useWaitlistCount } from '../hooks/useApi';
 import useMobile from '../hooks/useMobile';
+import useOffline from '../hooks/useOffline';
 import usePushNotifications from '../hooks/usePushNotifications';
 import SearchBar from './SearchBar';
 
@@ -152,6 +153,15 @@ export default function Layout() {
   const waitlistCountQuery = useWaitlistCount();
   const waitlistCount = waitlistCountQuery.data?.count ?? 0;
   const push = usePushNotifications();
+  const isOffline = useOffline();
+  const offlineSince = useMemo(() => {
+    if (!isOffline) return null;
+    try {
+      const ts = localStorage.getItem('bc_offline_cache_ts');
+      if (ts) return new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    } catch {}
+    return null;
+  }, [isOffline]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const expandedDropdownRef = useRef(null);
   const collapsedDropdownRef = useRef(null);
@@ -423,6 +433,22 @@ export default function Layout() {
       </aside>
 
       <main className={`main-content${collapsed ? ' sidebar-is-collapsed' : ''}`}>
+        {isOffline && (
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 100,
+            padding: '8px 16px',
+            background: 'rgba(245,158,11,0.15)',
+            borderBottom: '1px solid rgba(245,158,11,0.25)',
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: 13, fontWeight: 600, color: '#f59e0b',
+            backdropFilter: 'blur(8px)',
+          }}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+            </svg>
+            Vous etes hors-ligne{offlineSince ? ` — donnees depuis ${offlineSince}` : ''}
+          </div>
+        )}
         <Outlet />
       </main>
 

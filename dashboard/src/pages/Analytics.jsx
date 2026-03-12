@@ -12,6 +12,8 @@ import {
   useInactiveClients,
   useOccupancy,
   useMemberStats,
+  useTrends,
+  useRevenueHourly,
 } from '../hooks/useApi';
 
 // ============================================
@@ -782,6 +784,167 @@ function MembersSection({ stats }) {
 }
 
 // ============================================
+// Projection Card (current month only)
+// ============================================
+
+function ProjectionCard({ projection }) {
+  if (!projection) return null;
+
+  const realized = projection.revenue_so_far || 0;
+  const confirmed = projection.future_confirmed || 0;
+  const projected = projection.projected_total || 0;
+  const total = Math.max(projected, realized + confirmed, 1);
+  const pctRealized = Math.round((realized / total) * 100);
+  const pctConfirmed = Math.round((confirmed / total) * 100);
+
+  return (
+    <div className="a-card" style={{ padding: '24px 22px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
+        <div>
+          <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Projection du mois</h4>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            Jour {projection.days_elapsed}/{projection.days_in_month}
+          </span>
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800,
+          padding: '6px 14px', borderRadius: 10,
+          background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.12)',
+          color: '#22c55e',
+        }}>
+          {formatPriceInt(projected)}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ height: 14, background: 'rgba(var(--overlay),0.04)', borderRadius: 7, overflow: 'hidden', display: 'flex', marginBottom: 14 }}>
+        <div style={{
+          width: `${pctRealized}%`,
+          background: 'linear-gradient(90deg, #22c55e, #16a34a)',
+          borderRadius: '7px 0 0 7px',
+          transition: 'width 0.6s ease',
+        }} />
+        <div style={{
+          width: `${pctConfirmed}%`,
+          background: 'rgba(34,197,94,0.25)',
+          transition: 'width 0.6s ease',
+        }} />
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: '#22c55e' }} />
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Realise</span>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-display)' }}>{formatPriceInt(realized)}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(34,197,94,0.35)' }} />
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Confirme</span>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-display)' }}>{formatPriceInt(confirmed)}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 10, height: 10, borderRadius: 2, background: 'rgba(var(--overlay),0.08)', border: '1px dashed rgba(var(--overlay),0.15)' }} />
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Projection</span>
+          <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-display)' }}>{formatPriceInt(projected - realized - confirmed)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// Revenue Hourly Heatmap (barber x hour)
+// ============================================
+
+function RevenueHourlyHeatmap({ data }) {
+  if (!data || data.length === 0) {
+    return <div className="empty-state">Aucune donnee</div>;
+  }
+
+  // Build barber -> hour -> revenue map
+  const barberSet = new Set();
+  const grid = {};
+  let maxRev = 0;
+
+  data.forEach(row => {
+    const name = row.barber_name;
+    const hour = parseInt(row.hour);
+    const rev = parseInt(row.revenue) || 0;
+    barberSet.add(name);
+    if (!grid[name]) grid[name] = {};
+    grid[name][hour] = rev;
+    if (rev > maxRev) maxRev = rev;
+  });
+
+  const barbers = [...barberSet].sort();
+  const hours = [];
+  for (let h = 9; h <= 19; h++) hours.push(h);
+
+  function getCellColor(rev) {
+    if (!rev || maxRev === 0) return 'rgba(var(--overlay),0.02)';
+    const t = rev / maxRev;
+    if (t < 0.25) return `rgba(34,197,94,${0.08 + t * 0.3})`;
+    if (t < 0.5) return `rgba(34,197,94,${0.18 + t * 0.35})`;
+    if (t < 0.75) return `rgba(34,197,94,${0.30 + t * 0.35})`;
+    return `rgba(34,197,94,${0.45 + t * 0.35})`;
+  }
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `80px repeat(${hours.length}, 1fr)`, gap: 4 }}>
+        <div />
+        {hours.map(h => (
+          <div key={h} style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, padding: '4px 0' }}>
+            {h}h
+          </div>
+        ))}
+
+        {barbers.map(name => (
+          <div key={name} style={{ display: 'contents' }}>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', paddingRight: 8 }}>
+              {name}
+            </div>
+            {hours.map(h => {
+              const rev = grid[name]?.[h] || 0;
+              return (
+                <div
+                  key={h}
+                  title={`${name} ${h}h: ${formatPriceInt(rev)}`}
+                  style={{
+                    height: 36, borderRadius: 6,
+                    background: getCellColor(rev),
+                    border: '1px solid rgba(var(--overlay),0.03)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 9, fontWeight: 700,
+                    color: rev > 0 ? (rev / maxRev > 0.4 ? '#22c55e' : 'var(--text-secondary)') : 'transparent',
+                    cursor: 'default',
+                    transition: 'background 0.2s',
+                  }}
+                >
+                  {rev > 0 ? formatPriceInt(rev) : ''}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, justifyContent: 'flex-end' }}>
+        <span style={{ fontSize: 10, color: 'var(--text-muted)', marginRight: 4 }}>Moins</span>
+        {[0.03, 0.12, 0.25, 0.4, 0.6].map((op, i) => (
+          <div key={i} style={{
+            width: 16, height: 16, borderRadius: 4,
+            background: `rgba(34,197,94,${op})`,
+          }} />
+        ))}
+        <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 4 }}>Plus</span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
 // Main Analytics Page
 // ============================================
 
@@ -827,6 +990,8 @@ export default function Analytics() {
   const occupancyQuery = useOccupancy(monthParams);
   const inactiveQuery = useInactiveClients();
   const memberStatsQuery = useMemberStats();
+  const trendsQuery = useTrends({ enabled: isCurrentMonth });
+  const revenueHourlyQuery = useRevenueHourly(monthParams);
 
   const loading = dashboardQuery.isLoading;
   const error = dashboardQuery.error?.message || '';
@@ -839,6 +1004,8 @@ export default function Analytics() {
   const occupancy = occupancyQuery.data || null;
   const inactiveClients = inactiveQuery.data?.clients || [];
   const memberStats = memberStatsQuery.data || null;
+  const trends = trendsQuery.data || null;
+  const revenueHourly = revenueHourlyQuery.data || null;
 
   const prev = dashboard?.previous || null;
 
@@ -851,6 +1018,8 @@ export default function Analytics() {
     occupancyQuery.refetch();
     inactiveQuery.refetch();
     memberStatsQuery.refetch();
+    trendsQuery.refetch();
+    revenueHourlyQuery.refetch();
   }
 
   const monthBookings = dashboard?.month?.bookings || 0;
@@ -975,6 +1144,16 @@ export default function Analytics() {
                 accent="red"
                 icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>}
               />
+              {trends?.no_show_current && trends.no_show_current.count > 0 && (
+                <KpiCard
+                  className="a-stagger a-d4"
+                  label="Faux plans"
+                  value={trends.no_show_current.count}
+                  subtitle={`${formatPriceInt(trends.no_show_current.cost)} perdus`}
+                  accent="red"
+                  icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>}
+                />
+              )}
             </div>
 
             {/* ======== REVENUE + NEXT BOOKINGS ======== */}
@@ -1003,6 +1182,13 @@ export default function Analytics() {
                 <NextBookings bookings={dashboard?.next_bookings} />
               </div>
             </div>
+
+            {/* ======== PROJECTION (current month only) ======== */}
+            {isCurrentMonth && trends?.projection && (
+              <div className="a-stagger a-d5" style={{ marginBottom: 32 }}>
+                <ProjectionCard projection={trends.projection} />
+              </div>
+            )}
 
             {/* ======== SECTION: PRESTATIONS ======== */}
             <SectionTitle
@@ -1179,6 +1365,21 @@ export default function Analytics() {
             <div className="a-stagger a-d7" style={{ marginBottom: 32 }}>
               <BarberPerformance data={barberStats} />
             </div>
+
+            {/* ======== REVENUE HOURLY HEATMAP ======== */}
+            {revenueHourly && revenueHourly.length > 0 && (
+              <>
+                <SectionTitle
+                  className="a-stagger a-d7"
+                  icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#22c55e" strokeWidth="1.5" style={{ opacity: 0.7 }}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+                  title="Revenue par creneau"
+                  subtitle={`${monthLabel} — CA par heure et par barber`}
+                />
+                <div className="a-stagger a-d7 a-card" style={{ marginBottom: 32 }}>
+                  <RevenueHourlyHeatmap data={revenueHourly} />
+                </div>
+              </>
+            )}
 
             {/* ======== OCCUPANCY ======== */}
             {occupancy?.barbers && occupancy.barbers.length > 0 && (
