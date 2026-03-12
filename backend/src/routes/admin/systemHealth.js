@@ -180,4 +180,19 @@ router.post('/merge-services', async (req, res, next) => {
   }
 });
 
+// POST /api/admin/system/fix-notif-status — one-time fix
+router.post('/fix-notif-status', async (req, res, next) => {
+  try {
+    const result = await db.query(
+      `UPDATE notification_queue SET status = 'sent', sent_at = NOW()
+       WHERE status = 'failed' AND type = 'review_sms'
+       AND phone IN ('+33779065078', '0779065078', '+33632740039', '0632740039')
+       AND created_at >= '2026-03-12'`
+    );
+    res.json({ ok: true, updated: result.rowCount });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
