@@ -67,7 +67,8 @@ router.get('/',
                 br.id as barber_id, br.name as barber_name,
                 c.id as client_id, c.first_name as client_first_name,
                 c.last_name as client_last_name, c.phone as client_phone,
-                c.email as client_email, c.notes as client_notes
+                c.email as client_email, c.notes as client_notes,
+                (SELECT COUNT(*) FROM bookings b2 WHERE b2.client_id = c.id AND b2.status = 'no_show' AND b2.deleted_at IS NULL)::int as client_no_show_count
          FROM bookings b
          JOIN services s ON b.service_id = s.id
          JOIN barbers br ON b.barber_id = br.id

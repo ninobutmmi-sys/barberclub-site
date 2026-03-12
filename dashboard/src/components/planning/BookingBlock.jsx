@@ -58,6 +58,7 @@ export default function BookingBlock({ booking, onClick, pxPerMin, highlighted }
 
   const isOnline = booking.source === 'online';
   const isFirstVisit = booking.is_first_visit;
+  const noShowCount = booking.client_no_show_count || 0;
 
   return (
     <>
@@ -72,7 +73,7 @@ export default function BookingBlock({ booking, onClick, pxPerMin, highlighted }
           right: 1,
           height: Math.max(height, 26),
           background: color.bg,
-          borderLeft: `3px solid ${isFirstVisit ? '#f59e0b' : color.border}`,
+          borderLeft: `3px solid ${noShowCount > 0 ? '#ef4444' : isFirstVisit ? '#f59e0b' : color.border}`,
           borderRadius: '0 4px 4px 0',
           padding: isTiny ? '2px 5px' : '4px 6px',
           cursor: 'pointer',
@@ -112,6 +113,12 @@ export default function BookingBlock({ booking, onClick, pxPerMin, highlighted }
               <span className="planning-block-new-badge">
                 <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor" stroke="none"><path d="M12 2l2.09 6.26L20.18 9.27l-5.09 3.9L16.18 19.27 12 16l-4.18 3.27 1.09-6.1-5.09-3.9 6.09-1.01z"/></svg>
                 1er RDV
+              </span>
+            )}
+            {noShowCount > 0 && !isTiny && (
+              <span className="planning-block-noshow-badge">
+                <svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                {noShowCount > 1 ? `${noShowCount} faux plans` : 'faux plan'}
               </span>
             )}
           </div>

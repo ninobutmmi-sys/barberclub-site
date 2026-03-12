@@ -2722,6 +2722,23 @@ select.input {
   white-space: nowrap;
 }
 
+.planning-block-noshow-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 /* Gold left border accent for first-visit blocks */
 .planning-block-first-visit {
   box-shadow: inset 0 0 0 0 transparent;
