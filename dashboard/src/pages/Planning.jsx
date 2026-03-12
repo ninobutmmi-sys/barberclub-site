@@ -239,7 +239,8 @@ export default function Planning() {
 
   const stats = useMemo(() => {
     const active = bookings.filter((b) => b.status !== 'cancelled');
-    return { count: active.length, revenue: active.reduce((s, b) => s + (b.price || 0), 0) };
+    const billable = active.filter((b) => b.status !== 'no_show');
+    return { count: active.length, revenue: billable.reduce((s, b) => s + (b.price || 0), 0) };
   }, [bookings]);
 
   // Search: filter bookings matching search term
