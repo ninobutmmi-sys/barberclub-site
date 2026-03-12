@@ -252,8 +252,8 @@ async function brevoSMS(phone, content, salonId = 'meylan') {
   }
   const brevo = getBrevoConfig(salonId);
   if (!brevo.apiKey) {
-    logger.warn('Brevo API key not configured, skipping SMS', { salonId });
-    return;
+    logger.error('Brevo API key not configured — SMS not sent', { salonId, phone });
+    throw new Error(`Brevo API key not configured for salon ${salonId}`);
   }
   const recipient = formatPhoneInternational(phone);
   const controller = new AbortController();
