@@ -444,6 +444,22 @@ router.post('/waitlist',
         throw ApiError.badRequest('La date ne peut pas etre dans le passe');
       }
 
+      // Validate barber works on this day (skip silently if not — for "any" barber mode)
+      const jsDay = reqDate.getDay();
+      const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday convention
+      const barberSchedule = await db.query(
+        `SELECT is_working FROM schedules
+         WHERE barber_id = $1 AND day_of_week = $2 AND salon_id = $3`,
+        [barber_id, dayOfWeek, salonId]
+      );
+      if (barberSchedule.rows.length > 0 && !barberSchedule.rows[0].is_working) {
+        // Barber doesn't work this day — skip silently (return success to not break "any" barber loop)
+        return res.status(201).json({
+          message: 'Barber ne travaille pas ce jour',
+          skipped: true,
+        });
+      }
+
       // Check for duplicate: same phone + barber + date already waiting
       const existing = await db.query(
         `SELECT id FROM waitlist
