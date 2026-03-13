@@ -107,6 +107,9 @@ async function sendNotification(notification) {
     case 'reminder_sms':
       await sendReminderSMS(notification);
       break;
+    case 'review_sms':
+      await brevoSMS(notification.phone, notification.message, notification.salon_id || 'meylan');
+      break;
     default:
       throw new Error(`Unknown notification type: ${notification.type}`);
   }
