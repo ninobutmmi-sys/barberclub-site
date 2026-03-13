@@ -271,33 +271,25 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
     tryAddSlot(slotStart);
   }
 
-  // 2. Gap-filling: propose slots right after each booking/block ends
+  // 2. Gap-filling
+  const allOccupied = [...existingBookings, ...blockedSlots].sort((a, b) => a.start - b.start);
   if (options.adminMode) {
     // Admin: always show gap-fill slots (5min granularity)
-    const allOccupied = [...existingBookings, ...blockedSlots].sort((a, b) => a.start - b.start);
     for (const occupied of allOccupied) {
       tryAddSlot(occupied.end);
     }
   } else {
-    // Public: smart gap-fill — only propose an off-grid slot if the next grid slot is already taken.
-    // Example: booking ends at 09:20, next grid slot 09:30 is booked → propose 09:20.
-    // If 09:30 is free → don't propose 09:20 (client takes 09:30 instead, no gap).
-    const allOccupied = [...existingBookings, ...blockedSlots].sort((a, b) => a.start - b.start);
+    // Public: propose off-grid slots ONLY in small gaps where the service fits
+    // but a regular 30-min slot doesn't. E.g. 20-min gap → allow barbe/enfant (20min).
     for (const occupied of allOccupied) {
-      const candidate = occupied.end;
-      // Skip if already on the grid (already handled above)
-      if ((candidate - startMin) % SLOT_INTERVAL_PUBLIC === 0) continue;
-      // Find the next grid slot after this candidate
-      const nextGrid = startMin + Math.ceil((candidate - startMin) / SLOT_INTERVAL_PUBLIC) * SLOT_INTERVAL_PUBLIC;
-      // Check if the next grid slot is blocked by a booking or blocked slot
-      const nextGridEnd = nextGrid + duration;
-      const nextGridBlocked = existingBookings.some(
-        (b) => nextGrid < b.end && nextGridEnd > b.start
-      ) || blockedSlots.some(
-        (b) => nextGrid < b.end && nextGridEnd > b.start
-      );
-      if (nextGridBlocked) {
-        tryAddSlot(candidate);
+      const gapStart = occupied.end;
+      // Find the next occupied block after this gap
+      const nextOccupied = allOccupied.find(o => o.start > gapStart);
+      const gapEnd = nextOccupied ? nextOccupied.start : endMin;
+      const gapSize = gapEnd - gapStart;
+      // Only propose if: service fits in gap AND gap is too small for a regular 30-min grid slot
+      if (duration <= gapSize && gapSize < SLOT_INTERVAL_PUBLIC) {
+        tryAddSlot(gapStart);
       }
     }
   }
