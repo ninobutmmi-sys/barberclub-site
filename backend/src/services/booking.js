@@ -327,7 +327,7 @@ async function createBooking(data) {
         const rdvUrl = `${config.apiUrl}/r/rdv/${result.id}/${result.cancel_token}`;
         const dateFR = notification.formatDateFR(bookingDetails.date);
         const timeFmt = notification.formatTime(bookingDetails.start_time);
-        const smsMsg = `${salonConf.name} - Confirmation\n\nVotre RDV le ${dateFR} a ${timeFmt} avec ${bookingDetails.barber_name} est confirme.\n\n${salonConf.address}\n\nGerer votre RDV : ${rdvUrl}`;
+        const smsMsg = `${salonConf.name} - RDV confirme le ${dateFR} a ${timeFmt} avec ${bookingDetails.barber_name}. ${salonConf.address}`;
         try {
           await notification.queueNotification(result.id, 'confirmation_sms', {
             phone: bookingDetails.client_phone, message: smsMsg, salonId,

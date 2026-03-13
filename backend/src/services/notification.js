@@ -400,11 +400,10 @@ async function sendReminderSMS(data) {
     return;
   }
 
-  const rdvUrl = `${config.apiUrl}/r/rdv/${data.booking_id}/${data.cancel_token}`;
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `${salon.name} - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.\n\nGerer votre RDV : ${rdvUrl}`;
+  const message = `${salon.name} - Rappel RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.`;
 
   await brevoSMS(data.phone, message, salonId);
 
@@ -890,11 +889,10 @@ async function sendReminderSMSDirect(data) {
   const salonId = data.salon_id || 'meylan';
   const salon = config.getSalonConfig(salonId);
 
-  const rdvUrl = `${config.apiUrl}/r/rdv/${data.booking_id}/${data.cancel_token}`;
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `${salon.name} - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.\n\nGerer votre RDV : ${rdvUrl}`;
+  const message = `${salon.name} - Rappel RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.`;
 
   await brevoSMS(data.phone, message, salonId);
 }
@@ -907,11 +905,10 @@ async function sendConfirmationSMS(data) {
   const salonId = data.salon_id || 'meylan';
   const salon = config.getSalonConfig(salonId);
 
-  const rdvUrl = `${config.apiUrl}/r/rdv/${data.booking_id}/${data.cancel_token}`;
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `${salon.name} - Confirmation\n\nVotre RDV le ${dateFR} a ${timeFormatted} avec ${data.barber_name} est confirme.\n\n${salon.address}\n\nGerer votre RDV : ${rdvUrl}`;
+  const message = `${salon.name} - RDV confirme le ${dateFR} a ${timeFormatted} avec ${data.barber_name}. ${salon.address}`;
 
   await brevoSMS(data.phone, message, salonId);
   logger.info('Confirmation SMS sent', { bookingId: data.booking_id, phone: data.phone, salonId });
