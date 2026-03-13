@@ -15,7 +15,7 @@ router.get('/', async (req, res, next) => {
   try {
     const salonId = req.user.salon_id;
     const result = await db.query(
-      `SELECT s.id, s.name, s.description, s.price, s.duration, s.is_active, s.sort_order, s.color,
+      `SELECT s.id, s.name, s.description, s.price, s.duration, s.duration_saturday, s.is_active, s.sort_order, s.color,
               COALESCE(
                 json_agg(json_build_object('id', b.id, 'name', b.name))
                 FILTER (WHERE b.id IS NOT NULL), '[]'
@@ -43,6 +43,7 @@ router.post('/',
     body('description').optional({ values: 'falsy' }).trim().isLength({ max: 1000 }),
     body('price').isInt({ min: 0 }).withMessage('Prix invalide (en centimes)'),
     body('duration').isInt({ min: 5, max: 480 }).withMessage('Durée invalide (5-480 minutes)'),
+    body('duration_saturday').optional({ values: 'null' }).isInt({ min: 5, max: 480 }).withMessage('Durée samedi invalide'),
     body('color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide (format #RRGGBB)'),
     body('barber_ids').optional().isArray(),
     body('barber_ids.*').optional().matches(uuidRegex),
@@ -51,7 +52,7 @@ router.post('/',
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const { name, description, price, duration, color, barber_ids } = req.body;
+      const { name, description, price, duration, duration_saturday, color, barber_ids } = req.body;
 
       // Get max sort order
       const maxOrder = await db.query(
@@ -60,9 +61,9 @@ router.post('/',
       );
 
       const result = await db.query(
-        `INSERT INTO services (name, description, price, duration, sort_order, color, salon_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [name, description || null, price, duration, maxOrder.rows[0].next, color || '#22c55e', salonId]
+        `INSERT INTO services (name, description, price, duration, duration_saturday, sort_order, color, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [name, description || null, price, duration, duration_saturday || null, maxOrder.rows[0].next, color || '#22c55e', salonId]
       );
 
       const service = result.rows[0];
@@ -95,6 +96,7 @@ router.put('/:id',
     body('description').optional({ values: 'falsy' }).trim().isLength({ max: 1000 }),
     body('price').optional().isInt({ min: 0 }),
     body('duration').optional().isInt({ min: 5, max: 480 }),
+    body('duration_saturday').optional({ values: 'null' }).custom(v => v === null || (Number.isInteger(v) && v >= 5 && v <= 480)).withMessage('Durée samedi invalide'),
     body('is_active').optional().isBoolean(),
     body('sort_order').optional().isInt({ min: 0 }),
     body('color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide (format #RRGGBB)'),
@@ -106,7 +108,7 @@ router.put('/:id',
     try {
       const salonId = req.user.salon_id;
       const { id } = req.params;
-      const { name, description, price, duration, is_active, sort_order, color, barber_ids } = req.body;
+      const { name, description, price, duration, duration_saturday, is_active, sort_order, color, barber_ids } = req.body;
 
       const fields = [];
       const values = [];
@@ -116,6 +118,7 @@ router.put('/:id',
       if (description !== undefined) { fields.push(`description = $${paramIndex++}`); values.push(description || null); }
       if (price !== undefined) { fields.push(`price = $${paramIndex++}`); values.push(price); }
       if (duration !== undefined) { fields.push(`duration = $${paramIndex++}`); values.push(duration); }
+      if (duration_saturday !== undefined) { fields.push(`duration_saturday = $${paramIndex++}`); values.push(duration_saturday); }
       if (is_active !== undefined) { fields.push(`is_active = $${paramIndex++}`); values.push(is_active); }
       if (sort_order !== undefined) { fields.push(`sort_order = $${paramIndex++}`); values.push(sort_order); }
       if (color !== undefined) { fields.push(`color = $${paramIndex++}`); values.push(color); }

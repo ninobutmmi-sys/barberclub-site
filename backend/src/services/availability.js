@@ -38,13 +38,21 @@ async function getBarberHomeSalon(barberId) {
 async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   // 1. Get service duration
   const serviceResult = await db.query(
-    'SELECT duration FROM services WHERE id = $1 AND deleted_at IS NULL',
+    'SELECT duration, duration_saturday FROM services WHERE id = $1 AND deleted_at IS NULL',
     [serviceId]
   );
   if (serviceResult.rows.length === 0) {
     return [];
   }
-  const duration = serviceResult.rows[0].duration;
+
+  // Check if date is Saturday (dayOfWeek 5) → use saturday-specific duration if set
+  const dateObj = new Date(date + 'T00:00:00');
+  const jsDay = dateObj.getDay(); // 0=Sunday
+  const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // Convert to 0=Monday
+  const isSaturday = dayOfWeek === 5;
+  const duration = (isSaturday && serviceResult.rows[0].duration_saturday)
+    ? serviceResult.rows[0].duration_saturday
+    : serviceResult.rows[0].duration;
 
   // 2. Determine which barbers to check
   const salonId = options.salonId || 'meylan';
@@ -82,10 +90,7 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
 
   if (barberIds.length === 0) return [];
 
-  // 3. Get JS day of week (0=Monday ... 6=Sunday) from date
-  const dateObj = new Date(date + 'T00:00:00');
-  const jsDay = dateObj.getDay(); // 0=Sunday
-  const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // Convert to 0=Monday
+  // 3. dayOfWeek already computed above
 
   // 4. For each barber, compute available slots
   const allSlots = [];

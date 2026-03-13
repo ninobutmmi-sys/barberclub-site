@@ -134,7 +134,7 @@ router.get('/services', publicLimiter,
       const serviceSalonId = barberHomeSalon !== salonId ? barberHomeSalon : salonId;
 
       queryText = `
-        SELECT s.id, s.name, s.price, s.duration, s.description
+        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description
         FROM services s
         JOIN barber_services bs ON s.id = bs.service_id
         WHERE bs.barber_id = $1 AND s.is_active = true AND s.deleted_at IS NULL AND s.salon_id = $2
@@ -143,7 +143,7 @@ router.get('/services', publicLimiter,
     } else {
       // All active services
       queryText = `
-        SELECT id, name, price, duration, description
+        SELECT id, name, price, duration, duration_saturday, description
         FROM services
         WHERE is_active = true AND deleted_at IS NULL AND salon_id = $1
         ORDER BY sort_order`;

@@ -50,7 +50,7 @@ export default function Services() {
                 <div style={{ width: 12, height: 12, borderRadius: 3, background: s.color || '#22c55e', flexShrink: 0, border: '1px solid rgba(var(--overlay),0.1)' }} />
                 <div className="mob-card-left">
                   <div className="mob-card-title">{s.name}</div>
-                  <div className="mob-card-sub">{formatPrice(s.price)} · {s.duration} min</div>
+                  <div className="mob-card-sub">{formatPrice(s.price)} · {s.duration} min{s.duration_saturday ? ` (sam ${s.duration_saturday})` : ''}</div>
                 </div>
                 <div className="mob-card-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span className={`badge badge-${s.is_active ? 'active' : 'inactive'}`} style={{ fontSize: 9 }}>
@@ -91,7 +91,7 @@ export default function Services() {
                       </div>
                     </td>
                     <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{formatPrice(s.price)}</td>
-                    <td>{s.duration} min</td>
+                    <td>{s.duration} min{s.duration_saturday ? ` (sam ${s.duration_saturday})` : ''}</td>
                     <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                       {s.barbers?.map((b) => b.name).join(', ') || '-'}
                     </td>
@@ -137,6 +137,7 @@ function ServiceModal({ service, barbers, onClose }) {
   const [description, setDescription] = useState(service?.description || '');
   const [price, setPrice] = useState(service ? (service.price / 100).toFixed(2) : '');
   const [duration, setDuration] = useState(service?.duration || 30);
+  const [durationSaturday, setDurationSaturday] = useState(service?.duration_saturday || '');
   const [color, setColor] = useState(service?.color || '#22c55e');
   const [isActive, setIsActive] = useState(service?.is_active ?? true);
   const [selectedBarbers, setSelectedBarbers] = useState(
@@ -160,6 +161,7 @@ function ServiceModal({ service, barbers, onClose }) {
       description: description || undefined,
       price: Math.round(parseFloat(price) * 100),
       duration: parseInt(duration),
+      duration_saturday: durationSaturday ? parseInt(durationSaturday) : null,
       color,
       is_active: isActive,
       barber_ids: selectedBarbers,
@@ -215,6 +217,10 @@ function ServiceModal({ service, barbers, onClose }) {
               <div className="form-group">
                 <label className="label">Durée (min)</label>
                 <input className="input" type="number" min="5" max="480" value={duration} onChange={(e) => setDuration(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="label">Samedi (min)</label>
+                <input className="input" type="number" min="5" max="480" value={durationSaturday} onChange={(e) => setDurationSaturday(e.target.value)} placeholder="—" />
               </div>
             </div>
 

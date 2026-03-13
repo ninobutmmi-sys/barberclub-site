@@ -63,14 +63,20 @@ async function createBooking(data) {
 
     // 1. Get service details (price, duration)
     const serviceResult = await client.query(
-      'SELECT id, name, price, duration FROM services WHERE id = $1 AND is_active = true AND deleted_at IS NULL',
+      'SELECT id, name, price, duration, duration_saturday FROM services WHERE id = $1 AND is_active = true AND deleted_at IS NULL',
       [data.service_id]
     );
     if (serviceResult.rows.length === 0) {
       throw ApiError.badRequest('Prestation introuvable ou inactive');
     }
     const service = serviceResult.rows[0];
-    const effectiveDuration = parseInt(data.duration, 10) || service.duration;
+    // Saturday-specific duration (dayOfWeek 5 = Saturday)
+    const bookDateObj = new Date(data.date + 'T00:00:00');
+    const bookJsDay = bookDateObj.getDay();
+    const bookDayOfWeek = bookJsDay === 0 ? 6 : bookJsDay - 1;
+    const serviceDuration = (bookDayOfWeek === 5 && service.duration_saturday)
+      ? service.duration_saturday : service.duration;
+    const effectiveDuration = parseInt(data.duration, 10) || serviceDuration;
 
     // 2. Resolve barber (handle 'any' mode)
     let barberId = data.barber_id;
@@ -639,7 +645,8 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
   const result = await db.transaction(async (client) => {
     // 1. Fetch booking with lock
     const bookingResult = await client.query(
-      `SELECT b.*, s.name as service_name, s.duration as service_duration, s.price as service_price,
+      `SELECT b.*, s.name as service_name, s.duration as service_duration,
+              s.duration_saturday as service_duration_saturday, s.price as service_price,
               br.name as barber_name,
               c.first_name, c.last_name, c.phone, c.email
        FROM bookings b
@@ -699,8 +706,13 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
       throw ApiError.badRequest(`Impossible de réserver plus de ${MAX_BOOKING_ADVANCE_MONTHS} mois à l'avance`);
     }
 
-    // 4. Calculate new end time
-    const newEndTime = availability.addMinutesToTime(newStartTime, booking.service_duration);
+    // 4. Calculate new end time (Saturday-specific duration)
+    const reschDateObj = new Date(newDate + 'T00:00:00');
+    const reschJsDay = reschDateObj.getDay();
+    const reschDayOfWeek = reschJsDay === 0 ? 6 : reschJsDay - 1;
+    const reschDuration = (reschDayOfWeek === 5 && booking.service_duration_saturday)
+      ? booking.service_duration_saturday : booking.service_duration;
+    const newEndTime = availability.addMinutesToTime(newStartTime, reschDuration);
 
     // 5-6. Validate barber schedule + blocked slots for new date
     await availability.validateBarberSlot(client, booking.barber_id, newDate, newStartTime, newEndTime);

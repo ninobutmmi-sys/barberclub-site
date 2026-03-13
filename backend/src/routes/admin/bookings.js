@@ -312,11 +312,17 @@ router.put('/:id',
         const newBarberId = barber_id || booking.barber_id;
         const newServiceId = service_id || booking.service_id;
 
-        // Get service duration
-        const serviceResult = await client.query('SELECT duration, price, name FROM services WHERE id = $1', [newServiceId]);
+        // Get service duration (Saturday-specific if applicable)
+        const serviceResult = await client.query('SELECT duration, duration_saturday, price, name FROM services WHERE id = $1', [newServiceId]);
         if (serviceResult.rows.length === 0) throw ApiError.badRequest('Service introuvable');
 
-        const { duration, price } = serviceResult.rows[0];
+        const svcRow = serviceResult.rows[0];
+        const adminDateObj = new Date(newDate + 'T00:00:00');
+        const adminJsDay = adminDateObj.getDay();
+        const adminDayOfWeek = adminJsDay === 0 ? 6 : adminJsDay - 1;
+        const duration = (adminDayOfWeek === 5 && svcRow.duration_saturday)
+          ? svcRow.duration_saturday : svcRow.duration;
+        const price = svcRow.price;
         const newEndTime = end_time || addMinutesToTime(newStartTime, duration);
 
         // Get new barber name if barber changed
