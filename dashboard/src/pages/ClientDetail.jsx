@@ -7,6 +7,12 @@ function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
 }
 
+function formatDateFR(dateStr) {
+  if (!dateStr) return '–';
+  const d = new Date(dateStr.slice(0, 10) + 'T00:00:00');
+  return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 export default function ClientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -144,7 +150,7 @@ export default function ClientDetail() {
             {client.bookings?.map((b) => (
               <div key={b.id} className="mob-card-item" style={{ cursor: 'default' }}>
                 <div className="mob-card-left">
-                  <div className="mob-card-title">{b.date} · {b.start_time?.slice(0, 5)}</div>
+                  <div className="mob-card-title">{formatDateFR(b.date)} · {b.start_time?.slice(0, 5)}</div>
                   <div className="mob-card-sub">{b.service_name} — {b.barber_name}</div>
                 </div>
                 <div className="mob-card-right">
@@ -171,7 +177,7 @@ export default function ClientDetail() {
               <tbody>
                 {client.bookings?.map((b) => (
                   <tr key={b.id}>
-                    <td style={{ fontWeight: 600, fontSize: 13 }}>{b.date}</td>
+                    <td style={{ fontWeight: 600, fontSize: 13 }}>{formatDateFR(b.date)}</td>
                     <td style={{ fontSize: 13 }}>{b.start_time?.slice(0, 5)} - {b.end_time?.slice(0, 5)}</td>
                     <td style={{ fontSize: 13 }}>{b.service_name}</td>
                     <td style={{ fontSize: 13 }}>{b.barber_name}</td>

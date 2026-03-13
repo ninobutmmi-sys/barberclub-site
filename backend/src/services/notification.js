@@ -445,8 +445,8 @@ function htmlToText(html) {
     .trim();
 }
 
-// Base URL for hosted assets (production domain)
-const ASSETS_BASE = config.siteUrl || 'https://barberclub-grenoble.fr';
+// Base URL for hosted assets (Cloudflare Pages — stable URL for email images)
+const ASSETS_BASE = 'https://barberclub-site.pages.dev';
 const LOGO_URL = `${ASSETS_BASE}/assets/images/common/logo-blanc.png`;
 const CROWN_URL = `${ASSETS_BASE}/assets/images/common/couronne.png`;
 
@@ -459,6 +459,7 @@ const CARD_BORDER = '#292524';
 const TEXT_PRIMARY = '#FAFAF9';
 const TEXT_SECONDARY = '#A8A29E';
 const TEXT_MUTED = '#78716C';
+const INSTAGRAM_URL = 'https://www.instagram.com/barberclub_grenoble/';
 
 /**
  * Extract display label from salon name (e.g. "BarberClub Meylan" → "Meylan")
@@ -470,6 +471,9 @@ function getSalonLabel(salonId) {
 function emailShell(content, { showHero = true, marketing = false, salonId = 'meylan' } = {}) {
   const salon = config.getSalonConfig(salonId);
   const salonLabel = getSalonLabel(salonId);
+  const salonHeroImg = `${ASSETS_BASE}${salon.heroImage}`;
+  const siteUrl = config.siteUrl || 'https://barberclub-grenoble.fr';
+  const phoneClean = (salon.phone || '').replace(/[\s.-]/g, '');
 
   return `
 <!DOCTYPE html>
@@ -498,24 +502,41 @@ function emailShell(content, { showHero = true, marketing = false, salonId = 'me
         <table role="presentation" class="dark-bg" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="${DARK_BG}" style="max-width:600px;width:100%;background-color:${DARK_BG};border-left:1px solid ${CARD_BORDER};border-right:1px solid ${CARD_BORDER};">
 
     ${showHero ? `
-          <!-- HERO — Logo + salon name on dark bg -->
+          <!-- HERO — Salon photo with logo overlay -->
           <tr>
-            <td bgcolor="#000000" style="background-color:#000000;text-align:center;padding:40px 24px 32px;">
-              <img src="${LOGO_URL}" alt="BarberClub" width="200" style="width:200px;height:auto;display:inline-block;">
-              <p style="margin:10px 0 0;color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">${salonLabel}</p>
+            <td bgcolor="#000000" style="background-color:#000000;padding:0;position:relative;">
+              <!--[if gte mso 9]>
+              <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:600px;height:260px;">
+                <v:fill type="frame" src="${salonHeroImg}" />
+                <v:textbox inset="0,0,0,0">
+              <![endif]-->
+              <div style="background:url('${salonHeroImg}') center/cover no-repeat #000;min-height:220px;text-align:center;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr><td style="background:linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.7) 100%);padding:44px 24px 36px;text-align:center;">
+                    <img src="${CROWN_URL}" alt="" width="22" style="width:22px;height:auto;opacity:0.8;margin-bottom:8px;display:inline-block;">
+                    <br>
+                    <img src="${LOGO_URL}" alt="BarberClub" width="180" style="width:180px;height:auto;display:inline-block;">
+                    <p style="margin:10px 0 0;color:${ACCENT};font-size:10px;letter-spacing:5px;text-transform:uppercase;font-weight:700;">${salonLabel}</p>
+                  </td></tr>
+                </table>
+              </div>
+              <!--[if gte mso 9]>
+                </v:textbox>
+              </v:rect>
+              <![endif]-->
             </td>
           </tr>
           <tr>
-            <td style="height:2px;background:linear-gradient(90deg, transparent 0%, ${ACCENT_DIM} 30%, ${ACCENT} 50%, ${ACCENT_DIM} 70%, transparent 100%);font-size:0;line-height:0;">&nbsp;</td>
+            <td style="height:2px;background:linear-gradient(90deg, transparent 0%, ${ACCENT_DIM} 20%, ${ACCENT} 50%, ${ACCENT_DIM} 80%, transparent 100%);font-size:0;line-height:0;">&nbsp;</td>
           </tr>
     ` : `
           <!-- Compact header without hero -->
           <tr>
             <td bgcolor="${DARK_BG}" style="background-color:${DARK_BG};text-align:center;padding:36px 24px 20px;border-bottom:1px solid ${CARD_BORDER};">
-              <img src="${CROWN_URL}" alt="" width="28" style="width:28px;height:auto;margin-bottom:8px;opacity:0.7;">
+              <img src="${CROWN_URL}" alt="" width="22" style="width:22px;height:auto;margin-bottom:8px;opacity:0.7;">
               <br>
               <img src="${LOGO_URL}" alt="BarberClub" width="170" style="width:170px;height:auto;">
-              <p style="margin:8px 0 0;color:${TEXT_SECONDARY};font-size:10px;letter-spacing:4px;text-transform:uppercase;font-weight:600;">${salonLabel}</p>
+              <p style="margin:8px 0 0;color:${ACCENT};font-size:10px;letter-spacing:5px;text-transform:uppercase;font-weight:700;">${salonLabel}</p>
             </td>
           </tr>
     `}
@@ -529,11 +550,40 @@ function emailShell(content, { showHero = true, marketing = false, salonId = 'me
 
           <!-- FOOTER -->
           <tr>
-            <td bgcolor="${DARK_BG}" style="background-color:${DARK_BG};border-top:1px solid ${CARD_BORDER};padding:24px 32px 28px;text-align:center;">
-              <img src="${CROWN_URL}" alt="" width="16" style="width:16px;height:auto;opacity:0.3;margin-bottom:10px;">
-              <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;letter-spacing:0.3px;">${escapeHtml(salon.name)} &mdash; ${escapeHtml(salon.address)}</p>
-              <p style="margin:0;color:${TEXT_MUTED};font-size:10px;opacity:0.6;">Paiement sur place uniquement</p>
-              ${marketing ? `<p style="margin:8px 0 0;color:${TEXT_MUTED};font-size:10px;opacity:0.5;">Si vous ne souhaitez plus recevoir ces emails, r&eacute;pondez &laquo;&nbsp;STOP&nbsp;&raquo; &agrave; cet email.</p>` : ''}
+            <td bgcolor="#000000" style="background-color:#000000;border-top:1px solid ${CARD_BORDER};padding:28px 32px 32px;text-align:center;">
+              <!-- Social + Contact row -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 16px;">
+                <tr>
+                  <!-- Instagram -->
+                  <td style="padding:0 12px;">
+                    <a href="${INSTAGRAM_URL}" style="color:${TEXT_MUTED};text-decoration:none;font-size:12px;letter-spacing:0.5px;">
+                      <img src="https://cdn-icons-png.flaticon.com/512/174/174855.png" alt="Instagram" width="18" height="18" style="width:18px;height:18px;vertical-align:middle;opacity:0.6;margin-right:6px;">Instagram
+                    </a>
+                  </td>
+                  <!-- Phone -->
+                  ${salon.phone ? `<td style="padding:0 12px;border-left:1px solid ${CARD_BORDER};">
+                    <a href="tel:${phoneClean}" style="color:${TEXT_MUTED};text-decoration:none;font-size:12px;letter-spacing:0.5px;">
+                      &#9742; ${escapeHtml(salon.phone)}
+                    </a>
+                  </td>` : ''}
+                  <!-- Website -->
+                  <td style="padding:0 12px;border-left:1px solid ${CARD_BORDER};">
+                    <a href="${siteUrl}" style="color:${TEXT_MUTED};text-decoration:none;font-size:12px;letter-spacing:0.5px;">
+                      barberclub-grenoble.fr
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Separator -->
+              <div style="height:1px;background:${CARD_BORDER};margin:0 40px 16px;"></div>
+
+              <!-- Address -->
+              <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;letter-spacing:0.3px;">
+                ${escapeHtml(salon.name)} &mdash; <a href="${salon.mapsUrl}" style="color:${TEXT_MUTED};text-decoration:underline;">${escapeHtml(salon.address)}</a>
+              </p>
+              <p style="margin:0;color:${TEXT_MUTED};font-size:10px;opacity:0.5;">Paiement sur place uniquement</p>
+              ${marketing ? `<p style="margin:10px 0 0;color:${TEXT_MUTED};font-size:10px;opacity:0.5;">Si vous ne souhaitez plus recevoir ces emails, r&eacute;pondez &laquo;&nbsp;STOP&nbsp;&raquo; &agrave; cet email.</p>` : ''}
             </td>
           </tr>
 
@@ -555,6 +605,9 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
   address = escapeHtml(address);
   mapsUrl = mapsUrl || '#';
 
+  // Build barber photo URL from name
+  const barberPhotoUrl = getBarberPhotoUrl(barberName);
+
   const content = `
       <div style="text-align:center;margin-bottom:32px;">
         <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous confirm&eacute;</h2>
@@ -566,10 +619,10 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
       <!-- Time highlight -->
       <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
         <tr>
-          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};text-align:center;padding:20px;border-radius:16px;">
-            <p style="margin:0 0 4px;color:${TEXT_MUTED};font-size:11px;text-transform:uppercase;letter-spacing:2px;">Votre rendez-vous</p>
-            <p style="margin:0;color:${ACCENT};font-size:32px;font-weight:800;letter-spacing:1px;">${time}</p>
-            <p style="margin:4px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${date}</p>
+          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};text-align:center;padding:24px 20px;border-radius:16px;">
+            <p style="margin:0 0 4px;color:${ACCENT};font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:600;">Votre rendez-vous</p>
+            <p style="margin:0;color:${ACCENT};font-size:36px;font-weight:800;letter-spacing:1px;">${time}</p>
+            <p style="margin:6px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${date}</p>
           </td>
         </tr>
       </table>
@@ -589,12 +642,19 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
               <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
               <tr>
                 <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
-                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:14px;text-align:right;">${barberName}</td>
+                <td style="padding:10px 0;text-align:right;">
+                  ${barberPhotoUrl ? `<img src="${barberPhotoUrl}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px;object-fit:cover;border:1.5px solid ${ACCENT_DIM};">` : ''}
+                  <span style="color:${TEXT_SECONDARY};font-size:14px;vertical-align:middle;">${barberName}</span>
+                </td>
               </tr>
               <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
               <tr>
                 <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
-                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;"><a href="${mapsUrl}" style="color:${TEXT_SECONDARY};text-decoration:underline;">${address}</a></td>
+                <td style="padding:10px 0;text-align:right;">
+                  <a href="${mapsUrl}" style="color:${TEXT_SECONDARY};font-size:13px;text-decoration:none;">
+                    &#128205; <span style="text-decoration:underline;">${address}</span>
+                  </a>
+                </td>
               </tr>
               <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
               <tr>
@@ -612,9 +672,17 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
           G&eacute;rer mon rendez-vous
         </a>
       </div>
-      <p style="text-align:center;color:${TEXT_MUTED};font-size:11px;margin:0;">
-        Modification ou annulation gratuite jusqu'&agrave; 12h avant
-      </p>`;
+
+      <!-- Cancellation policy -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+        <tr>
+          <td style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 18px;text-align:center;">
+            <p style="margin:0;color:${TEXT_SECONDARY};font-size:12px;line-height:1.5;">
+              &#9432; Modification ou annulation <strong style="color:${TEXT_PRIMARY};">gratuite jusqu'&agrave; 12h</strong> avant le rendez-vous
+            </p>
+          </td>
+        </tr>
+      </table>`;
 
   return emailShell(content, { salonId });
 }
@@ -622,6 +690,19 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
 // ============================================
 // Helpers
 // ============================================
+
+/**
+ * Build barber photo URL from barber name
+ * Maps: "Lucas" -> /assets/images/barbers/lucas.png, "Julien" -> julien.jpg, etc.
+ */
+function getBarberPhotoUrl(barberName) {
+  if (!barberName) return null;
+  const name = barberName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const known = ['lucas', 'julien', 'tom', 'alan', 'nathan', 'clement'];
+  if (!known.includes(name)) return null;
+  // Use /email/ subfolder with real JPEG files (originals are AVIF with wrong extension)
+  return `${ASSETS_BASE}/assets/images/barbers/email/${name}.jpg`;
+}
 
 function formatDateFR(dateStr) {
   const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -688,7 +769,7 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
 
       <!-- Cancelled details -->
       <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
-        <tr><td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td style="height:3px;background:linear-gradient(90deg, rgba(239,68,68,0.3), rgba(239,68,68,0.6), rgba(239,68,68,0.3));font-size:0;line-height:0;">&nbsp;</td></tr>
         <tr>
           <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:24px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
@@ -755,6 +836,9 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
     ? `${config.siteUrl}${salon.bookingPath}/mon-rdv.html?id=${booking_id}&token=${cancel_token}`
     : null;
 
+  const effectiveBarber = new_barber_name || barber_name;
+  const barberPhotoUrl = getBarberPhotoUrl(effectiveBarber);
+
   const html = emailShell(`
       <div style="text-align:center;margin-bottom:32px;">
         <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous d&eacute;plac&eacute;</h2>
@@ -803,12 +887,19 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
               <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
               <tr>
                 <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
-                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:14px;text-align:right;">${new_barber_name || barber_name}</td>
+                <td style="padding:10px 0;text-align:right;">
+                  ${barberPhotoUrl ? `<img src="${barberPhotoUrl}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px;object-fit:cover;border:1.5px solid ${ACCENT_DIM};">` : ''}
+                  <span style="color:${TEXT_SECONDARY};font-size:14px;vertical-align:middle;">${effectiveBarber}</span>
+                </td>
               </tr>
               <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
               <tr>
                 <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
-                <td style="padding:10px 0;color:${TEXT_SECONDARY};font-size:13px;text-align:right;">${escapeHtml(salon.address)}</td>
+                <td style="padding:10px 0;text-align:right;">
+                  <a href="${salon.mapsUrl}" style="color:${TEXT_SECONDARY};font-size:13px;text-decoration:none;">
+                    &#128205; <span style="text-decoration:underline;">${escapeHtml(salon.address)}</span>
+                  </a>
+                </td>
               </tr>
               <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
               <tr>
@@ -825,9 +916,16 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
           G&eacute;rer mon rendez-vous
         </a>
       </div>
-      <p style="text-align:center;color:${TEXT_MUTED};font-size:11px;margin:0;">
-        Modification ou annulation gratuite jusqu'&agrave; 12h avant
-      </p>` : ''}`, { showHero: false, salonId });
+      <!-- Cancellation policy -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;">
+        <tr>
+          <td style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 18px;text-align:center;">
+            <p style="margin:0;color:${TEXT_SECONDARY};font-size:12px;line-height:1.5;">
+              &#9432; Modification ou annulation <strong style="color:${TEXT_PRIMARY};">gratuite jusqu'&agrave; 12h</strong> avant le rendez-vous
+            </p>
+          </td>
+        </tr>
+      </table>` : ''}`, { showHero: false, salonId });
 
   await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html, salonId, {
     bookingId: booking_id, type: 'reschedule_email', recipientName: first_name,

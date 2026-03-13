@@ -34,7 +34,7 @@ const SALONS = {
   meylan: {
     name: process.env.SALON_NAME || 'BarberClub Meylan',
     address: process.env.SALON_ADDRESS || '26 Av. du Grésivaudan, 38700 Corenc',
-    phone: process.env.SALON_PHONE || '',
+    phone: process.env.SALON_PHONE || '04 58 28 21 75',
     googleReviewUrl: process.env.GOOGLE_REVIEW_URL || '',
     bookingPath: '/pages/meylan',
     mapsUrl: 'https://maps.google.com/?q=26+Av+du+Gr%C3%A9sivaudan+38700+Corenc',

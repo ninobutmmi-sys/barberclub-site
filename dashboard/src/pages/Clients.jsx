@@ -9,6 +9,12 @@ function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
 }
 
+function formatDateFR(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr.slice(0, 10) + 'T00:00:00');
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 const PAGE_SIZE = 20;
 
 export default function Clients() {
@@ -205,7 +211,7 @@ export default function Clients() {
                           {formatPrice(c.total_spent)}
                         </td>
                         <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                          {tab === 'accounts' ? (c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : '-') : (c.last_visit || '-')}
+                          {tab === 'accounts' ? (c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : '-') : formatDateFR(c.last_visit)}
                         </td>
                       </tr>
                     ))}
