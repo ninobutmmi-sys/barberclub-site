@@ -195,4 +195,25 @@ router.post('/fix-notif-status', async (req, res, next) => {
   }
 });
 
+// POST /api/admin/system/requeue-failed — re-queue today's failed notifs
+router.post('/requeue-failed', async (req, res, next) => {
+  try {
+    const salonId = req.user.salon_id;
+    const result = await db.query(
+      `UPDATE notification_queue nq
+       SET status = 'pending', attempts = 0, last_error = NULL, next_retry_at = NOW()
+       FROM bookings b
+       WHERE nq.booking_id = b.id
+         AND b.salon_id = $1
+         AND nq.status = 'failed'
+         AND nq.created_at >= CURRENT_DATE
+       RETURNING nq.id, nq.type`,
+      [salonId]
+    );
+    res.json({ requeued: result.rowCount, details: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
