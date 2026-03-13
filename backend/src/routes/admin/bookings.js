@@ -2,7 +2,7 @@ const { Router } = require('express');
 const { body, param, query } = require('express-validator');
 const { handleValidation } = require('../../middleware/validate');
 const bookingService = require('../../services/booking');
-const { sendCancellationEmail, sendRescheduleEmail, sendWaitlistSMS } = require('../../services/notification');
+const { sendCancellationEmail, sendRescheduleEmail, sendWaitlistSMS, queueNotification } = require('../../services/notification');
 const config = require('../../config/env');
 const { ApiError } = require('../../utils/errors');
 const logger = require('../../utils/logger');
@@ -377,7 +377,13 @@ router.put('/:id',
           cancel_token: txResult.booking.cancel_token,
           booking_id: txResult.booking.id,
           salon_id: salonId,
-        }).catch((err) => logger.error('Email notification failed', { error: err.message }));
+        }).catch((err) => {
+          logger.error('Direct reschedule email failed, queueing for retry', { error: err.message });
+          queueNotification(txResult.booking.id, 'reschedule_email', {
+            email: txResult.booking.email, salonId,
+            metadata: { old_date: txResult.oldDate, old_time: txResult.oldTime, new_barber_name: txResult.newBarberName },
+          }).catch((qErr) => logger.error('Failed to queue reschedule email', { error: qErr.message }));
+        });
       }
 
       logAudit(req, 'update', 'booking', req.params.id, {
@@ -543,7 +549,7 @@ router.delete('/:id',
         throw ApiError.notFound('RDV introuvable');
       }
 
-      // Send cancellation email if requested (non-blocking)
+      // Send cancellation email if requested — direct + queue fallback
       if (notify && bookingInfo && bookingInfo.email) {
         const dateStr = typeof bookingInfo.date === 'string'
           ? bookingInfo.date.slice(0, 10) : bookingInfo.date;
@@ -556,7 +562,12 @@ router.delete('/:id',
           start_time: bookingInfo.start_time,
           price: bookingInfo.price,
           salon_id: salonId,
-        }).catch((err) => logger.error('Email notification failed', { error: err.message }));
+        }).catch((err) => {
+          logger.error('Direct cancellation email failed, queueing for retry', { error: err.message });
+          queueNotification(req.params.id, 'cancellation_email', {
+            email: bookingInfo.email, salonId,
+          }).catch((qErr) => logger.error('Failed to queue cancellation email', { error: qErr.message }));
+        });
       }
 
       // Notify waitlist clients if a slot opened up
@@ -588,7 +599,13 @@ router.delete('/:id',
               + `Reserve vite : ${bookingUrl}`;
             sendWaitlistSMS({ phone: entry.client_phone, message: smsText, salon_id: salonId })
               .then(() => db.query("UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1", [entry.id]))
-              .catch((err) => logger.error('Waitlist SMS failed', { waitlistId: entry.id, error: err.message }));
+              .catch((err) => {
+                logger.error('Direct waitlist SMS failed, queueing for retry', { waitlistId: entry.id, error: err.message });
+                queueNotification(null, 'waitlist_sms', {
+                  phone: entry.client_phone, message: smsText, salonId,
+                  recipientName: entry.client_name,
+                }).catch(() => {});
+              });
           }
         } catch (err) {
           logger.error('Waitlist check failed after admin cancel', { error: err.message });

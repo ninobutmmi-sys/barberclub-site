@@ -11,17 +11,35 @@ const {
 const { alertCircuitOpen, alertCircuitClosed } = require('../utils/discord');
 
 /**
- * Queue a notification for async sending
- * @param {string} bookingId
- * @param {string} type - 'confirmation_email', 'reminder_sms', 'review_email'
+ * Queue a notification for async sending (universal)
+ * All notification types go through this single entry point.
+ * The queue processor (processPendingNotifications) handles retries.
+ *
+ * @param {string|null} bookingId - booking UUID (null for campaigns)
+ * @param {string} type - notification type (confirmation_email, reminder_sms, etc.)
+ * @param {object} [opts] - extra data stored in the queue row
+ * @param {string} [opts.phone] - recipient phone (SMS types)
+ * @param {string} [opts.email] - recipient email (email types)
+ * @param {string} [opts.message] - pre-built SMS text
+ * @param {string} [opts.salonId] - salon identifier
+ * @param {string} [opts.recipientName] - for audit
+ * @param {object} [opts.metadata] - extra JSON (e.g. old_date/old_time for reschedule)
  */
-async function queueNotification(bookingId, type) {
+async function queueNotification(bookingId, type, opts = {}) {
+  const { phone, email, message, salonId, recipientName, metadata } = opts;
+  const channel = type.endsWith('_sms') ? 'sms' : 'email';
   await db.query(
-    `INSERT INTO notification_queue (booking_id, type, status, next_retry_at)
-     VALUES ($1, $2, 'pending', NOW())`,
-    [bookingId, type]
+    `INSERT INTO notification_queue
+       (booking_id, type, status, channel, phone, email, message, salon_id, recipient_name, metadata, next_retry_at)
+     VALUES ($1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, NOW())`,
+    [
+      bookingId || null, type, channel,
+      phone || null, email || null, message || null,
+      salonId || null, recipientName || null,
+      metadata ? JSON.stringify(metadata) : null,
+    ]
   );
-  logger.info('Notification queued', { bookingId, type });
+  logger.info('Notification queued', { bookingId, type, channel });
 }
 
 /**
@@ -50,17 +68,22 @@ async function processPendingNotifications() {
 
   const claimedIds = claimed.rows.map(r => r.id);
 
-  // Now fetch full data for claimed notifications (include salon_id from booking)
+  // Fetch full data for claimed notifications
+  // LEFT JOINs: SMS types store phone+message in the row and may not need booking data
   const result = await db.query(
-    `SELECT nq.*, b.date, b.start_time, b.end_time, b.price, b.cancel_token, b.salon_id,
+    `SELECT nq.*,
+            b.date, b.start_time, b.end_time, b.price, b.cancel_token,
+            COALESCE(nq.salon_id, b.salon_id) as salon_id,
             s.name as service_name,
             br.name as barber_name,
-            c.first_name, c.last_name, c.phone, c.email
+            c.first_name, c.last_name,
+            COALESCE(nq.phone, c.phone) as phone,
+            COALESCE(nq.email, c.email) as email
      FROM notification_queue nq
-     JOIN bookings b ON nq.booking_id = b.id
-     JOIN services s ON b.service_id = s.id
-     JOIN barbers br ON b.barber_id = br.id
-     JOIN clients c ON b.client_id = c.id
+     LEFT JOIN bookings b ON nq.booking_id = b.id
+     LEFT JOIN services s ON b.service_id = s.id
+     LEFT JOIN barbers br ON b.barber_id = br.id
+     LEFT JOIN clients c ON b.client_id = c.id
      WHERE nq.id = ANY($1)`,
     [claimedIds]
   );
@@ -97,21 +120,58 @@ async function processPendingNotifications() {
 }
 
 /**
- * Actually send a notification based on its type
+ * Send a notification based on its type.
+ * ALL types are handled here — single code path for the queue processor.
+ *
+ * SMS types: phone + message are pre-stored in the queue row.
+ * Email types: booking data comes from LEFT JOINs on the queue row.
  */
 async function sendNotification(notification) {
-  switch (notification.type) {
+  const type = notification.type;
+
+  // ── SMS types: use pre-stored phone + message ──
+  if (type.endsWith('_sms')) {
+    if (!notification.phone || !notification.message) {
+      // Legacy fallback for old reminder_sms entries queued without message
+      if (type === 'reminder_sms' && notification.booking_id) {
+        await sendReminderSMS(notification);
+        return;
+      }
+      throw new Error(`Missing phone/message for ${type}`);
+    }
+    await brevoSMS(notification.phone, notification.message, notification.salon_id || 'meylan');
+    // Post-send: mark reminder_sent on booking (confirmation_sms / reminder_sms)
+    if ((type === 'reminder_sms' || type === 'confirmation_sms') && notification.booking_id) {
+      await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [notification.booking_id]);
+    }
+    return;
+  }
+
+  // ── Email types: build template from JOINed booking data ──
+  switch (type) {
     case 'confirmation_email':
       await sendConfirmationEmail(notification);
       break;
-    case 'reminder_sms':
-      await sendReminderSMS(notification);
+    case 'cancellation_email':
+      await sendCancellationEmail(notification);
       break;
-    case 'review_sms':
-      await brevoSMS(notification.phone, notification.message, notification.salon_id || 'meylan');
+    case 'reschedule_email': {
+      const meta = typeof notification.metadata === 'string'
+        ? JSON.parse(notification.metadata)
+        : (notification.metadata || {});
+      await sendRescheduleEmail({
+        ...notification,
+        old_date: meta.old_date,
+        old_time: meta.old_time,
+        new_date: notification.date,
+        new_time: notification.start_time,
+        new_barber_name: meta.new_barber_name || notification.barber_name,
+      });
       break;
+    }
     default:
-      throw new Error(`Unknown notification type: ${notification.type}`);
+      // Don't throw on unknown types — just skip (prevents stuck queue entries)
+      logger.warn(`Unknown notification type: ${type}, skipping`, { id: notification.id });
   }
 }
 
@@ -190,8 +250,8 @@ async function brevoEmail(to, subject, htmlContent, salonId = 'meylan', meta = {
   }
   const brevo = getBrevoConfig(salonId);
   if (!brevo.apiKey) {
-    logger.warn('Brevo API key not configured, skipping email', { salonId });
-    return;
+    logger.error('Brevo API key not configured — email not sent', { salonId, to });
+    throw new Error(`Brevo API key not configured for salon ${salonId}`);
   }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), BREVO_REQUEST_TIMEOUT_MS);
@@ -665,14 +725,10 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
         </a>
       </div>`, { showHero: false, salonId });
 
-  try {
-    await brevoEmail(email, `RDV annulé - ${service_name} le ${dateFormatted}`, html, salonId, {
-      type: 'cancellation_email', recipientName: first_name,
-    });
-    logger.info('Cancellation email sent', { email, salonId });
-  } catch (err) {
-    logger.error('Cancellation email failed', { error: err.message, salonId });
-  }
+  await brevoEmail(email, `RDV annulé - ${service_name} le ${dateFormatted}`, html, salonId, {
+    type: 'cancellation_email', recipientName: first_name,
+  });
+  logger.info('Cancellation email sent', { email, salonId });
 }
 
 /**
@@ -774,14 +830,10 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
         Modification ou annulation gratuite jusqu'&agrave; 12h avant
       </p>` : ''}`, { showHero: false, salonId });
 
-  try {
-    await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html, salonId, {
-      bookingId: booking_id, type: 'reschedule_email', recipientName: first_name,
-    });
-    logger.info('Reschedule email sent', { email, salonId });
-  } catch (err) {
-    logger.error('Reschedule email failed', { error: err.message, salonId });
-  }
+  await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html, salonId, {
+    bookingId: booking_id, type: 'reschedule_email', recipientName: first_name,
+  });
+  logger.info('Reschedule email sent', { email, salonId });
 }
 
 /**

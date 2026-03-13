@@ -316,7 +316,19 @@ async function createBooking(data) {
         await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [result.id]);
         logger.info('Confirmation SMS sent (booking within 24h)', { bookingId: result.id, hoursUntil: Math.round(hoursUntilBooking) });
       } catch (err) {
-        logger.error('Confirmation SMS failed', { bookingId: result.id, error: err.message });
+        logger.error('Direct confirmation SMS failed, queueing for retry', { bookingId: result.id, error: err.message });
+        const salonConf = config.getSalonConfig(salonId);
+        const rdvUrl = `${config.apiUrl}/r/rdv/${result.id}/${result.cancel_token}`;
+        const dateFR = notification.formatDateFR(bookingDetails.date);
+        const timeFmt = notification.formatTime(bookingDetails.start_time);
+        const smsMsg = `${salonConf.name} - Confirmation\n\nVotre RDV le ${dateFR} a ${timeFmt} avec ${bookingDetails.barber_name} est confirme.\n\n${salonConf.address}\n\nGerer votre RDV : ${rdvUrl}`;
+        try {
+          await notification.queueNotification(result.id, 'confirmation_sms', {
+            phone: bookingDetails.client_phone, message: smsMsg, salonId,
+          });
+        } catch (qErr) {
+          logger.error('Failed to queue confirmation SMS', { bookingId: result.id, error: qErr.message });
+        }
       }
     }
   }
@@ -489,24 +501,28 @@ async function cancelBooking(bookingId, cancelToken) {
 
   logger.info('Booking cancelled', { bookingId, date: booking.date, time: booking.start_time });
 
-  // Send cancellation email (with retry fallback) — outside transaction
-  const cancelEmailData = {
-    email: booking.client_email,
-    first_name: booking.first_name,
-    service_name: booking.service_name,
-    barber_name: booking.barber_name,
-    date: booking.date,
-    start_time: booking.start_time,
-    price: booking.price,
-    salon_id: booking.salon_id || 'meylan',
-  };
+  // Send cancellation email — direct send + queue fallback
+  const cancelSalonId = booking.salon_id || 'meylan';
   try {
-    await notification.sendCancellationEmail(cancelEmailData);
+    await notification.sendCancellationEmail({
+      email: booking.client_email,
+      first_name: booking.first_name,
+      service_name: booking.service_name,
+      barber_name: booking.barber_name,
+      date: booking.date,
+      start_time: booking.start_time,
+      price: booking.price,
+      salon_id: cancelSalonId,
+    });
   } catch (err) {
-    logger.error('Cancellation email failed, retrying once...', { bookingId, error: err.message });
-    notification.sendCancellationEmail(cancelEmailData).catch(
-      (e) => logger.error('Cancellation email retry failed', { bookingId, error: e.message })
-    );
+    logger.error('Direct cancellation email failed, queueing for retry', { bookingId, error: err.message });
+    try {
+      await notification.queueNotification(bookingId, 'cancellation_email', {
+        email: booking.client_email, salonId: cancelSalonId,
+      });
+    } catch (qErr) {
+      logger.error('Failed to queue cancellation email', { bookingId, error: qErr.message });
+    }
   }
 
   // Check waitlist — notify clients waiting for this barber/date/time
@@ -546,7 +562,13 @@ async function cancelBooking(bookingId, cancelToken) {
         await db.query("UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1", [entry.id]);
         logger.info('Waitlist SMS sent after cancellation', { waitlistId: entry.id, phone: entry.client_phone, salonId });
       } catch (smsErr) {
-        logger.error('Waitlist SMS failed', { waitlistId: entry.id, error: smsErr.message });
+        logger.error('Direct waitlist SMS failed, queueing for retry', { waitlistId: entry.id, error: smsErr.message });
+        try {
+          await notification.queueNotification(null, 'waitlist_sms', {
+            phone: entry.client_phone, message: smsText, salonId,
+            recipientName: entry.client_name,
+          });
+        } catch (_) { /* silent */ }
       }
     }
   } catch (err) {

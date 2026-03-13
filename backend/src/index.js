@@ -319,7 +319,7 @@ app.use((err, req, res, next) => {
 // ============================================
 
 if (config.nodeEnv === 'production') {
-  cron.schedule('*/2 * * * *',  trackCron('processQueue', processQueue));
+  cron.schedule('*/1 * * * *',  trackCron('processQueue', processQueue));
   cron.schedule('0 18 * * *',   trackCron('queueReminders', queueReminders));
   cron.schedule('0 3 * * *',    trackCron('cleanupNotifications', cleanupOldNotifications));
   cron.schedule('30 3 * * *',   trackCron('cleanupExpiredTokens', cleanupExpiredTokens));

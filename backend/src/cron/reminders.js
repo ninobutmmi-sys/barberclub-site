@@ -1,16 +1,15 @@
 const db = require('../config/database');
-const notification = require('../services/notification');
+const config = require('../config/env');
+const { queueNotification, formatDateFR, formatTime } = require('../services/notification');
 const logger = require('../utils/logger');
 
 /**
- * Send SMS reminders for tomorrow's bookings
- * Runs every day at 18:00 (sends reminder the evening before)
- * Sends directly via Brevo (queue fallback if direct fails)
- * Handles both salons — uses booking.salon_id for correct SMS content
+ * Queue SMS reminders for tomorrow's bookings.
+ * Runs every day at 18:00 — builds messages and inserts into notification_queue.
+ * The queue processor (processQueue, every 1 min) handles actual sending + retries.
  */
 async function queueReminders() {
   try {
-    // Find tomorrow's confirmed bookings that haven't had a reminder sent
     const nowParis = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
     const tomorrow = new Date(nowParis);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -34,42 +33,36 @@ async function queueReminders() {
       return;
     }
 
-    let sent = 0;
-    let failed = 0;
+    let queued = 0;
 
     for (const booking of result.rows) {
       const salonId = booking.salon_id || 'meylan';
+      const salon = config.getSalonConfig(salonId);
+      const apiUrl = config.apiUrl || 'https://barberclub-grenoble.fr';
+      const rdvUrl = `${apiUrl}/r/rdv/${booking.id}/${booking.cancel_token}`;
+      const timeFormatted = formatTime(booking.start_time);
+      const dateFR = formatDateFR(typeof booking.date === 'string' ? booking.date.slice(0, 10) : booking.date);
+      const message = `${salon.name} - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.\n\nGerer votre RDV : ${rdvUrl}`;
+
       try {
-        await notification.sendReminderSMSDirect({
-          booking_id: booking.id,
-          cancel_token: booking.cancel_token,
-          phone: booking.phone,
-          date: booking.date,
-          start_time: booking.start_time,
-          salon_id: salonId,
-        });
+        // Mark BEFORE queuing to prevent duplicates on next cron run
         await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [booking.id]);
-        // Log to notification_queue for SMS history
-        await db.query(
-          `INSERT INTO notification_queue (booking_id, type, status, channel, phone, salon_id, sent_at, attempts)
-           VALUES ($1, 'reminder_sms', 'sent', 'sms', $2, $3, NOW(), 1)`,
-          [booking.id, booking.phone, salonId]
-        );
-        sent++;
+        await queueNotification(booking.id, 'reminder_sms', {
+          phone: booking.phone,
+          message,
+          salonId,
+        });
+        queued++;
       } catch (err) {
-        logger.error('Direct reminder SMS failed, queueing for retry', { bookingId: booking.id, error: err.message });
-        try {
-          await notification.queueNotification(booking.id, 'reminder_sms');
-        } catch (qErr) {
-          logger.error('Failed to queue reminder SMS fallback', { bookingId: booking.id, error: qErr.message });
-        }
-        failed++;
+        logger.error('Failed to queue reminder SMS', { bookingId: booking.id, error: err.message });
+        // Revert reminder_sent so next cron picks it up
+        await db.query('UPDATE bookings SET reminder_sent = false WHERE id = $1', [booking.id]).catch(() => {});
       }
     }
 
-    logger.info(`SMS reminders for ${tomorrowStr}: ${sent} sent, ${failed} failed`);
+    logger.info(`SMS reminders for ${tomorrowStr}: ${queued} queued`);
   } catch (error) {
-    logger.error('Failed to send reminders', { error: error.message });
+    logger.error('Failed to queue reminders', { error: error.message });
   }
 }
 
