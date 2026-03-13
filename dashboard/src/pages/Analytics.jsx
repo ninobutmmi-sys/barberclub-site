@@ -967,7 +967,6 @@ export default function Analytics() {
   const [barberUnlocked, setBarberUnlocked] = useState(() => sessionStorage.getItem('bc_barber_stats_unlocked') === '1');
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(false);
 
   function handlePinSubmit(e) {
     e.preventDefault();
@@ -1049,6 +1048,72 @@ export default function Analytics() {
 
   const totalRevMonth = revenue.reduce((sum, d) => sum + (parseInt(d.revenue) || 0), 0);
   const avgDailyRev = revenue.length > 0 ? Math.round(totalRevMonth / revenue.length) : 0;
+
+  // ---- Lock screen si pas deverrouille ----
+  if (!barberUnlocked) {
+    return (
+      <>
+        <div className="page-header">
+          <h2 className="page-title">Analytics</h2>
+        </div>
+        <div className="page-body" style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          minHeight: '60vh',
+        }}>
+          <div style={{
+            textAlign: 'center', maxWidth: 380,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
+          }}>
+            <div style={{
+              width: 72, height: 72, borderRadius: 20,
+              background: 'rgba(var(--overlay),0.06)',
+              border: '1px solid rgba(var(--overlay),0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Acces protege</h3>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Les analytics sont reservees au gerant.
+                <br />Entrez le mot de passe pour continuer.
+              </p>
+            </div>
+            <form onSubmit={handlePinSubmit} style={{ width: '100%' }}>
+              <input
+                type="password"
+                value={pinInput}
+                onChange={e => { setPinInput(e.target.value); setPinError(false); }}
+                placeholder="Mot de passe"
+                autoFocus
+                style={{
+                  width: '100%', padding: '12px 16px', fontSize: 15,
+                  background: 'rgba(var(--overlay),0.06)',
+                  border: `1px solid ${pinError ? '#ef4444' : 'rgba(var(--overlay),0.1)'}`,
+                  borderRadius: 12, color: 'var(--text)',
+                  fontFamily: 'var(--font)', outline: 'none',
+                  boxSizing: 'border-box', textAlign: 'center',
+                }}
+              />
+              {pinError && (
+                <p style={{ fontSize: 12, color: '#ef4444', marginTop: 8 }}>Mot de passe incorrect</p>
+              )}
+              <button type="submit" style={{
+                marginTop: 14, width: '100%', padding: '12px 0',
+                borderRadius: 12, border: 'none', cursor: 'pointer',
+                background: '#3b82f6', color: '#fff',
+                fontSize: 14, fontWeight: 700,
+              }}>
+                Deverrouiller
+              </button>
+            </form>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -1357,144 +1422,47 @@ export default function Analytics() {
               </div>
             </div>
 
-            {/* ======== SECTION: BARBERS (protege par mot de passe) ======== */}
-            {barberUnlocked ? (
+            {/* ======== SECTION: BARBERS ======== */}
+            <SectionTitle
+              className="a-stagger a-d7"
+              icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
+              title="Performance barbers"
+              subtitle={barberPeriod === 'day' ? "Aujourd'hui" : barberPeriod === 'week' ? 'Cette semaine' : 'Derniers 30 jours'}
+              right={
+                <div style={{ display: 'flex', gap: 4, background: 'rgba(var(--overlay),0.04)', borderRadius: 8, padding: 3 }}>
+                  {[
+                    { key: 'day', label: 'Jour' },
+                    { key: 'week', label: 'Semaine' },
+                    { key: 'all', label: 'Mois' },
+                  ].map((p) => (
+                    <button key={p.key} onClick={() => setBarberPeriod(p.key)} style={{
+                      padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                      fontSize: 11, fontWeight: 700, letterSpacing: '0.02em',
+                      background: barberPeriod === p.key ? 'rgba(var(--overlay),0.12)' : 'transparent',
+                      color: barberPeriod === p.key ? 'var(--text)' : 'var(--text-muted)',
+                      transition: 'all 0.15s',
+                    }}>{p.label}</button>
+                  ))}
+                </div>
+              }
+            />
+            <div className="a-stagger a-d7" style={{ marginBottom: 32 }}>
+              <BarberPerformance data={barberStats} />
+            </div>
+
+            {/* ======== REVENUE HOURLY HEATMAP ======== */}
+            {revenueHourly && revenueHourly.length > 0 && (
               <>
                 <SectionTitle
                   className="a-stagger a-d7"
-                  icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
-                  title="Performance barbers"
-                  subtitle={barberPeriod === 'day' ? "Aujourd'hui" : barberPeriod === 'week' ? 'Cette semaine' : 'Derniers 30 jours'}
-                  right={
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ display: 'flex', gap: 4, background: 'rgba(var(--overlay),0.04)', borderRadius: 8, padding: 3 }}>
-                        {[
-                          { key: 'day', label: 'Jour' },
-                          { key: 'week', label: 'Semaine' },
-                          { key: 'all', label: 'Mois' },
-                        ].map((p) => (
-                          <button key={p.key} onClick={() => setBarberPeriod(p.key)} style={{
-                            padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                            fontSize: 11, fontWeight: 700, letterSpacing: '0.02em',
-                            background: barberPeriod === p.key ? 'rgba(var(--overlay),0.12)' : 'transparent',
-                            color: barberPeriod === p.key ? 'var(--text)' : 'var(--text-muted)',
-                            transition: 'all 0.15s',
-                          }}>{p.label}</button>
-                        ))}
-                      </div>
-                      <button onClick={() => { setBarberUnlocked(false); sessionStorage.removeItem('bc_barber_stats_unlocked'); }} style={{
-                        padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(var(--overlay),0.08)',
-                        background: 'transparent', cursor: 'pointer', fontSize: 11, color: 'var(--text-muted)',
-                        display: 'flex', alignItems: 'center', gap: 4,
-                      }}>
-                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        Verrouiller
-                      </button>
-                    </div>
-                  }
+                  icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#22c55e" strokeWidth="1.5" style={{ opacity: 0.7 }}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
+                  title="Revenue par creneau"
+                  subtitle={`${monthLabel} — CA par heure et par barber`}
                 />
-                <div className="a-stagger a-d7" style={{ marginBottom: 32 }}>
-                  <BarberPerformance data={barberStats} />
+                <div className="a-stagger a-d7 a-card" style={{ marginBottom: 32 }}>
+                  <RevenueHourlyHeatmap data={revenueHourly} />
                 </div>
-
-                {/* ======== REVENUE HOURLY HEATMAP ======== */}
-                {revenueHourly && revenueHourly.length > 0 && (
-                  <>
-                    <SectionTitle
-                      className="a-stagger a-d7"
-                      icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#22c55e" strokeWidth="1.5" style={{ opacity: 0.7 }}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
-                      title="Revenue par creneau"
-                      subtitle={`${monthLabel} — CA par heure et par barber`}
-                    />
-                    <div className="a-stagger a-d7 a-card" style={{ marginBottom: 32 }}>
-                      <RevenueHourlyHeatmap data={revenueHourly} />
-                    </div>
-                  </>
-                )}
               </>
-            ) : (
-              <div className="a-stagger a-d7" style={{ marginBottom: 32 }}>
-                <div className="a-card" style={{
-                  textAlign: 'center', padding: '48px 24px',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
-                }}>
-                  <div style={{
-                    width: 56, height: 56, borderRadius: 16,
-                    background: 'rgba(var(--overlay),0.06)',
-                    border: '1px solid rgba(var(--overlay),0.08)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Performance barbers</h3>
-                    <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Section protegee par mot de passe</p>
-                  </div>
-                  <button onClick={() => { setShowPinModal(true); setPinError(false); setPinInput(''); }} style={{
-                    padding: '10px 28px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                    background: 'rgba(59,130,246,0.12)', color: '#3b82f6',
-                    fontSize: 13, fontWeight: 700,
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    transition: 'background 0.2s',
-                  }}>
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
-                    Deverrouiller
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* PIN Modal */}
-            {showPinModal && (
-              <div style={{
-                position: 'fixed', inset: 0, zIndex: 10000,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-              }} onClick={() => setShowPinModal(false)}>
-                <div style={{
-                  background: 'var(--bg-card)', border: '1px solid var(--border)',
-                  borderRadius: 16, padding: '28px 32px', maxWidth: 360, width: '90%',
-                  boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-                }} onClick={e => e.stopPropagation()}>
-                  <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
-                    Mot de passe requis
-                  </h3>
-                  <form onSubmit={handlePinSubmit}>
-                    <input
-                      type="password"
-                      value={pinInput}
-                      onChange={e => { setPinInput(e.target.value); setPinError(false); }}
-                      placeholder="Mot de passe"
-                      autoFocus
-                      style={{
-                        width: '100%', padding: '10px 14px', fontSize: 14,
-                        background: 'rgba(var(--overlay),0.06)',
-                        border: `1px solid ${pinError ? '#ef4444' : 'rgba(var(--overlay),0.1)'}`,
-                        borderRadius: 10, color: 'var(--text)',
-                        fontFamily: 'var(--font)', outline: 'none',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                    {pinError && (
-                      <p style={{ fontSize: 12, color: '#ef4444', marginTop: 8 }}>Mot de passe incorrect</p>
-                    )}
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-                      <button type="button" onClick={() => setShowPinModal(false)} className="btn btn-secondary" style={{ padding: '8px 20px', fontSize: 13 }}>
-                        Annuler
-                      </button>
-                      <button type="submit" style={{
-                        padding: '8px 20px', fontSize: 13, fontWeight: 600,
-                        background: '#3b82f6', color: '#fff', border: 'none',
-                        borderRadius: 8, cursor: 'pointer',
-                      }}>
-                        Valider
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
             )}
 
             {/* ======== OCCUPANCY ======== */}
