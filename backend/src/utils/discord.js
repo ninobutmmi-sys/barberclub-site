@@ -61,12 +61,15 @@ function alertCronFailure(cronLabel, consecutiveFailures, errorMessage) {
   );
 }
 
-function alertCircuitOpen(salonId, failures) {
+function alertCircuitOpen(salonId, failures, reason) {
   if (!canSend(`circuit_open_${salonId}`)) return;
+  const msg = reason
+    ? `Brevo (${salonId}) — ${reason}. Les notifications sont suspendues.`
+    : `Brevo (${salonId}) — ${failures} echecs consecutifs. Les notifications sont suspendues.`;
   sendDiscordAlert(
-    'Circuit breaker OUVERT',
-    `Brevo (${salonId}) — ${failures} echecs consecutifs. Les notifications sont suspendues.`,
-    0xff9900
+    reason ? 'CLE BREVO DESACTIVEE' : 'Circuit breaker OUVERT',
+    msg,
+    0xff0000
   );
 }
 

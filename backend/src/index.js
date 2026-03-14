@@ -346,11 +346,18 @@ if (config.nodeEnv !== 'test') {
     const ws = require('./services/websocket');
     ws.init(server);
 
-    server.listen(PORT, () => {
+    server.listen(PORT, async () => {
       logger.info(`BarberClub API running on port ${PORT}`, {
         env: config.nodeEnv,
         cors: config.corsOrigins,
       });
+      // Check Brevo API keys on startup
+      try {
+        const { checkBrevoKeys } = require('./services/notification');
+        await checkBrevoKeys();
+      } catch (err) {
+        logger.error('Brevo key check failed on startup', { error: err.message });
+      }
     });
 
     // Graceful shutdown — finish in-flight requests + close DB pool

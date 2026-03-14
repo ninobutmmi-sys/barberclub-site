@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useNotifications } from '../hooks/useNotifications';
-import { useWaitlistCount } from '../hooks/useApi';
+import { useWaitlistCount, useSystemHealth } from '../hooks/useApi';
 import useMobile from '../hooks/useMobile';
 import useOffline from '../hooks/useOffline';
 import usePushNotifications from '../hooks/usePushNotifications';
@@ -154,6 +154,14 @@ export default function Layout() {
   const waitlistCount = waitlistCountQuery.data?.count ?? 0;
   const push = usePushNotifications();
   const isOffline = useOffline();
+  const healthQuery = useSystemHealth({ refetchInterval: 5 * 60 * 1000, staleTime: 4 * 60 * 1000 });
+  const brevoAlert = useMemo(() => {
+    const status = healthQuery.data?.notifications?.brevo_status;
+    if (!status) return null;
+    const disabled = Object.entries(status).filter(([, v]) => v?.keyDisabled);
+    if (disabled.length === 0) return null;
+    return disabled.map(([salon]) => salon);
+  }, [healthQuery.data]);
   const offlineSince = useMemo(() => {
     if (!isOffline) return null;
     try {
@@ -433,6 +441,26 @@ export default function Layout() {
       </aside>
 
       <main className={`main-content${collapsed ? ' sidebar-is-collapsed' : ''}`}>
+        {brevoAlert && (
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 101,
+            padding: '10px 16px',
+            background: 'rgba(220,38,38,0.15)',
+            borderBottom: '1px solid rgba(220,38,38,0.3)',
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: 13, fontWeight: 600, color: '#ef4444',
+            backdropFilter: 'blur(8px)',
+          }}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span>
+              Cle Brevo desactivee pour <strong>{brevoAlert.join(', ')}</strong> — les emails et SMS ne fonctionnent pas.
+              {' '}Reactiver la cle sur <a href="https://app.brevo.com" target="_blank" rel="noopener noreferrer" style={{ color: '#ef4444', textDecoration: 'underline' }}>app.brevo.com</a>
+            </span>
+          </div>
+        )}
         {isOffline && (
           <div style={{
             position: 'sticky', top: 0, zIndex: 100,

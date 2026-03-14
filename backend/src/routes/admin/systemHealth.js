@@ -106,6 +106,7 @@ router.get('/health', async (req, res, next) => {
         sms_cost_estimate: Math.round(smsCost * 100) / 100,
         brevo_sender: config.brevo?.senderEmail || null,
         brevo_sms_sender: config.brevo?.smsSender || null,
+        brevo_status: (() => { try { return require('../../services/notification').getBrevoStatus(); } catch { return null; } })(),
       },
       recent_errors: recentErrors.rows,
     });
