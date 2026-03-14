@@ -411,7 +411,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
               Enregistrer
             </button>
           )}
-          {booking.status === 'confirmed' && (
+          {(booking.status === 'confirmed' || booking.status === 'completed') && (
             <button className="btn btn-secondary btn-sm" style={{ color: 'var(--warning, #f59e0b)' }} onClick={() => onStatusChange(booking.id, 'no_show')}>Faux plan</button>
           )}
           {booking.status === 'no_show' && (

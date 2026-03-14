@@ -450,9 +450,6 @@ export default function Planning() {
                 <span className="plan-kpi-val">{stats.count}</span>
                 <span style={{ fontSize: 9, opacity: 0.6 }}>rdv</span>
               </span>
-              <span className="plan-kpi-chip" style={{ padding: '2px 6px' }}>
-                <span className="plan-kpi-val">{formatPrice(stats.revenue)}</span>
-              </span>
               <button className="plan-today-btn" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => setCurrentDate(new Date())}>Auj.</button>
               <button
                 onClick={() => setMobileFullDay((v) => !v)}
