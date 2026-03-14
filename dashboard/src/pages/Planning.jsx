@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../auth';
 import {
   updateBookingStatus as apiUpdateBookingStatus,
   updateBooking as apiUpdateBooking,
@@ -47,6 +48,7 @@ import MobileWeekStrip from '../components/planning/MobileWeekStrip';
 import MiniCalendar from '../components/planning/MiniCalendar';
 
 export default function Planning() {
+  const { salon } = useAuth();
   const isMobile = useMobile();
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -486,10 +488,12 @@ export default function Planning() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                   RDV <span className="plan-kpi-val">{stats.count}</span>
                 </span>
+                {salon !== 'grenoble' && (
                 <span className="plan-kpi-chip">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                   CA <span className="plan-kpi-val">{formatPrice(stats.revenue)}</span>
                 </span>
+                )}
               </div>
             </div>
 
