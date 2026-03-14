@@ -107,8 +107,11 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   // 4. For each barber, compute available slots
   const allSlots = [];
 
+  // For time-restricted services, use service duration as slot interval for optimal packing
+  const slotStep = restrictionWindow ? duration : undefined;
+
   for (const bId of barberIds) {
-    const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration, { ...options, salonId });
+    const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration, { ...options, salonId, slotStep });
     allSlots.push(...slots);
   }
 
@@ -292,7 +295,8 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
   }
 
   // 1. Regular grid slots (every SLOT_INTERVAL for public, every 5min for admin)
-  const step = options.adminMode ? SLOT_INTERVAL_ADMIN : SLOT_INTERVAL_PUBLIC;
+  // slotStep override: for time-restricted services, use service duration for tight packing
+  const step = options.slotStep || (options.adminMode ? SLOT_INTERVAL_ADMIN : SLOT_INTERVAL_PUBLIC);
   for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
     tryAddSlot(slotStart);
   }
