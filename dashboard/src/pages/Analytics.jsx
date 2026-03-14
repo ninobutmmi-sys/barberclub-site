@@ -1048,6 +1048,10 @@ export default function Analytics() {
 
   const totalRevMonth = revenue.reduce((sum, d) => sum + (parseInt(d.revenue) || 0), 0);
   const avgDailyRev = revenue.length > 0 ? Math.round(totalRevMonth / revenue.length) : 0;
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const todayRev = revenue.find(d => d.period === todayStr);
+  const todayRevenue = todayRev ? parseInt(todayRev.revenue) || 0 : 0;
+  const todayBookings = todayRev ? parseInt(todayRev.booking_count) || 0 : 0;
 
   // ---- Lock screen si pas deverrouille ----
   if (!barberUnlocked) {
@@ -1209,6 +1213,16 @@ export default function Analytics() {
                 accent="green"
                 icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>}
               />
+              {isCurrentMonth && (
+              <KpiCard
+                className="a-stagger a-d2"
+                label="CA aujourd'hui"
+                value={formatPriceInt(todayRevenue)}
+                subtitle={todayBookings > 0 ? `${todayBookings} RDV` : 'aucun RDV'}
+                accent="cyan"
+                icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>}
+              />
+              )}
               <KpiCard
                 className="a-stagger a-d3"
                 label="Panier moyen"
