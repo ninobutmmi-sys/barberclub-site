@@ -38,7 +38,7 @@ async function getBarberHomeSalon(barberId) {
 async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   // 1. Get service duration
   const serviceResult = await db.query(
-    'SELECT duration, duration_saturday FROM services WHERE id = $1 AND deleted_at IS NULL',
+    'SELECT duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND deleted_at IS NULL',
     [serviceId]
   );
   if (serviceResult.rows.length === 0) {
@@ -53,6 +53,18 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   const duration = (isSaturday && serviceResult.rows[0].duration_saturday)
     ? serviceResult.rows[0].duration_saturday
     : serviceResult.rows[0].duration;
+
+  // Check time restrictions (service available only on certain days/times)
+  const timeRestrictions = serviceResult.rows[0].time_restrictions;
+  let restrictionWindow = null;
+  if (timeRestrictions && timeRestrictions.length > 0) {
+    const restriction = timeRestrictions.find(r => r.day_of_week === dayOfWeek);
+    if (!restriction) return []; // Service not available this day
+    restrictionWindow = {
+      start: timeToMinutes(restriction.start_time || '00:00'),
+      end: timeToMinutes(restriction.end_time || '23:59'),
+    };
+  }
 
   // 2. Determine which barbers to check
   const salonId = options.salonId || 'meylan';
@@ -102,6 +114,15 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
 
   // 5. Sort by time, then by barber sort order
   allSlots.sort((a, b) => a.time.localeCompare(b.time));
+
+  // 6. Apply time restriction window (filter slots outside allowed hours)
+  if (restrictionWindow) {
+    return allSlots.filter(slot => {
+      const slotStart = timeToMinutes(slot.time);
+      const slotEnd = slotStart + duration;
+      return slotStart >= restrictionWindow.start && slotEnd <= restrictionWindow.end;
+    });
+  }
 
   return allSlots;
 }

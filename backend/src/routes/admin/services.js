@@ -15,7 +15,7 @@ router.get('/', async (req, res, next) => {
   try {
     const salonId = req.user.salon_id;
     const result = await db.query(
-      `SELECT s.id, s.name, s.description, s.price, s.duration, s.duration_saturday, s.is_active, s.sort_order, s.color,
+      `SELECT s.id, s.name, s.description, s.price, s.duration, s.duration_saturday, s.is_active, s.sort_order, s.color, s.time_restrictions,
               COALESCE(
                 json_agg(json_build_object('id', b.id, 'name', b.name))
                 FILTER (WHERE b.id IS NOT NULL), '[]'
@@ -47,12 +47,13 @@ router.post('/',
     body('color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide (format #RRGGBB)'),
     body('barber_ids').optional().isArray(),
     body('barber_ids.*').optional().matches(uuidRegex),
+    body('time_restrictions').optional({ values: 'null' }).isArray(),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const { name, description, price, duration, duration_saturday, color, barber_ids } = req.body;
+      const { name, description, price, duration, duration_saturday, color, barber_ids, time_restrictions } = req.body;
 
       // Get max sort order
       const maxOrder = await db.query(
@@ -61,9 +62,9 @@ router.post('/',
       );
 
       const result = await db.query(
-        `INSERT INTO services (name, description, price, duration, duration_saturday, sort_order, color, salon_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-        [name, description || null, price, duration, duration_saturday || null, maxOrder.rows[0].next, color || '#22c55e', salonId]
+        `INSERT INTO services (name, description, price, duration, duration_saturday, sort_order, color, salon_id, time_restrictions)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [name, description || null, price, duration, duration_saturday || null, maxOrder.rows[0].next, color || '#22c55e', salonId, time_restrictions ? JSON.stringify(time_restrictions) : null]
       );
 
       const service = result.rows[0];
@@ -108,7 +109,7 @@ router.put('/:id',
     try {
       const salonId = req.user.salon_id;
       const { id } = req.params;
-      const { name, description, price, duration, duration_saturday, is_active, sort_order, color, barber_ids } = req.body;
+      const { name, description, price, duration, duration_saturday, is_active, sort_order, color, barber_ids, time_restrictions } = req.body;
 
       const fields = [];
       const values = [];
@@ -122,6 +123,7 @@ router.put('/:id',
       if (is_active !== undefined) { fields.push(`is_active = $${paramIndex++}`); values.push(is_active); }
       if (sort_order !== undefined) { fields.push(`sort_order = $${paramIndex++}`); values.push(sort_order); }
       if (color !== undefined) { fields.push(`color = $${paramIndex++}`); values.push(color); }
+      if (time_restrictions !== undefined) { fields.push(`time_restrictions = $${paramIndex++}`); values.push(time_restrictions ? JSON.stringify(time_restrictions) : null); }
 
       if (fields.length > 0) {
         values.push(id, salonId);
