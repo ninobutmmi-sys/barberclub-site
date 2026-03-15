@@ -147,6 +147,8 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
     });
   }
 
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+
   async function handlePhotoUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -154,14 +156,28 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
     setPhotoUploading(true);
     try {
       const compressed = await compressPhoto(file);
-      await uploadClientPhoto(booking.client_id, compressed);
+      setPendingPhoto(compressed);
+    } catch (err) {
+      setPhotoError(err.message || 'Erreur image');
+    } finally {
+      setPhotoUploading(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  }
+
+  async function savePendingPhoto() {
+    if (!pendingPhoto) return;
+    setPhotoError('');
+    setPhotoUploading(true);
+    try {
+      await uploadClientPhoto(booking.client_id, pendingPhoto);
       const updated = await getClientPhotos(booking.client_id);
       setPhotos(updated);
+      setPendingPhoto(null);
     } catch (err) {
       setPhotoError(err.message || 'Erreur upload');
     } finally {
       setPhotoUploading(false);
-      if (photoInputRef.current) photoInputRef.current.value = '';
     }
   }
 
@@ -475,7 +491,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
                   Photos coupe
                 </span>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>
-                  {photos.length}/2
+                  {photos.length + (pendingPhoto ? 1 : 0)}/2
                 </span>
               </div>
 
@@ -505,7 +521,24 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
                     </div>
                   ))}
 
-                  {photos.length < 2 && (
+                  {pendingPhoto && (
+                    <div style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '2px solid rgba(59,130,246,0.5)', flexShrink: 0, opacity: 0.8 }}>
+                      <img src={pendingPhoto} alt="Nouvelle photo" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <button
+                        onClick={() => setPendingPhoto(null)}
+                        style={{
+                          position: 'absolute', top: 3, right: 3, width: 20, height: 20,
+                          borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.6)',
+                          color: '#fff', fontSize: 12, cursor: 'pointer', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', lineHeight: 1, padding: 0,
+                        }}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  )}
+
+                  {photos.length + (pendingPhoto ? 1 : 0) < 2 && !pendingPhoto && (
                     <label style={{
                       width: 80, height: 80, borderRadius: 8, cursor: 'pointer', flexShrink: 0,
                       border: '2px dashed rgba(var(--overlay),0.15)', display: 'flex',
@@ -576,6 +609,11 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
           {isDirty && (
             <button className="btn btn-primary btn-sm btn-save" onClick={() => { setNotifyClient(false); setSubView('confirm-edit'); }} style={{ marginLeft: 'auto' }}>
               Enregistrer
+            </button>
+          )}
+          {pendingPhoto && (
+            <button className="btn btn-primary btn-sm" onClick={savePendingPhoto} disabled={photoUploading}>
+              {photoUploading ? 'Envoi...' : 'Enregistrer la photo'}
             </button>
           )}
           {(booking.status === 'confirmed' || booking.status === 'completed') && (
