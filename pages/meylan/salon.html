@@ -114,12 +114,20 @@
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
         body { font-family: 'Inter', -apple-system, sans-serif; background: #000; color: #fff; min-height: 100vh; overflow-x: hidden; }
+        @media (pointer: fine) { body { cursor: none; } }
 
-        .bg-fixed {
-            position: fixed; inset: 0; z-index: -1;
-            background: url('../../assets/images/salons/meylan/salon-meylan.jpg') center/cover no-repeat;
-            filter: blur(25px) brightness(0.2); transform: scale(1.15);
-        }
+        /* CURSOR */
+        .cursor-dot { position: fixed; width: 8px; height: 8px; background: #fff; border-radius: 50%; pointer-events: none; z-index: 10001; mix-blend-mode: difference; transform: translate(-50%,-50%); }
+        .cursor-ring { position: fixed; width: 40px; height: 40px; border: 1.5px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: none; z-index: 10001; mix-blend-mode: difference; transition: width 0.35s cubic-bezier(0.16,1,0.3,1), height 0.35s cubic-bezier(0.16,1,0.3,1), border-color 0.3s; transform: translate(-50%,-50%); }
+        .cursor-ring.hovering { width: 64px; height: 64px; border-color: rgba(255,255,255,0.8); }
+        @media (pointer: coarse) { .cursor-dot, .cursor-ring { display: none !important; } }
+
+        /* GRAIN */
+        .grain { position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 180px; }
+
+        /* PAGE TRANSITION */
+        .page-transition { position: fixed; inset: 0; z-index: 9999; background: #000; pointer-events: none; opacity: 0; transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1); }
+        .page-transition.active { opacity: 1; pointer-events: all; }
 
         /* HEADER */
         .header {
@@ -145,8 +153,13 @@
         .page-header { position: relative; z-index: 1; padding: 110px 20px 10px; text-align: center; }
         .page-title {
             font-family: 'Orbitron', sans-serif; font-size: 36px; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; overflow: hidden;
         }
+        .page-title .letter {
+            display: inline-block; opacity: 0; transform: translateY(110%);
+            transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1);
+        }
+        body.loaded .page-title .letter { opacity: 1; transform: translateY(0); }
         .page-subtitle { font-size: 12px; color: rgba(255,255,255,0.5); letter-spacing: 0.15em; text-transform: uppercase; }
         .page-intro {
             max-width: 520px; margin: 16px auto 0; font-size: 15px; line-height: 1.7;
@@ -373,10 +386,15 @@
             .nav-cta:hover .nav-cta-btn { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255,255,255,0.4); }
         }
 
+        @media (pointer: fine) { a, button, .nav-cta, .stat-card, .photo-item, .presta-row, .faq-item summary, .social-link, .cross-salon a { cursor: none; } }
+
         /* REDUCED MOTION */
         @media (prefers-reduced-motion: reduce) {
             *, .salon-section { animation: none !important; transition: none !important; }
             .salon-section { opacity: 1; }
+            .page-title .letter { opacity: 1; transform: none; }
+            .cursor-dot, .cursor-ring { display: none; }
+            body { cursor: auto; }
         }
         .skip-to-content {
             position: absolute; top: -40px; left: 0; background: #fff; color: #000;
@@ -388,8 +406,11 @@
 </head>
 
 <body>
+    <div class="grain"></div>
+    <div class="page-transition"></div>
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
     <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
-    <div class="bg-fixed"></div>
 
     <header class="header" id="header">
         <a href="./" class="back-btn" onclick="if(history.length>1){history.back();return false}">
@@ -402,7 +423,7 @@
     </header>
 
     <div class="page-header">
-        <h1 class="page-title">Le Salon</h1>
+        <h1 class="page-title" data-split>Le Salon</h1>
         <p class="page-subtitle">BarberClub Meylan</p>
         <p class="page-intro">Ton barbershop premium aux portes de Grenoble. Fondé par Lucas et Julien, deux passionnés du métier, au 26 Avenue du Grésivaudan à Corenc.</p>
     </div>
@@ -580,27 +601,67 @@
     </nav>
 
     <script>
-        const header = document.getElementById('header');
-        window.addEventListener('scroll', () => {
-            header.classList.toggle('scrolled', window.scrollY > 50);
-        }, { passive: true });
+    /* --- LETTER SPLIT --- */
+    document.querySelectorAll('[data-split]').forEach(el => {
+        const text = el.textContent;
+        el.innerHTML = '';
+        text.split('').forEach((ch, i) => {
+            const span = document.createElement('span');
+            span.className = 'letter';
+            span.textContent = ch === ' ' ? '\u00A0' : ch;
+            span.style.transitionDelay = (i * 0.04) + 's';
+            el.appendChild(span);
+        });
+    });
+    requestAnimationFrame(() => { document.body.classList.add('loaded'); });
 
-        function openLightbox(el) {
-            const img = el.querySelector('img');
-            const source = el.querySelector('source[type="image/webp"]');
-            const lb = document.getElementById('lightbox-img');
-            lb.src = source ? source.srcset : img.src;
-            lb.alt = img.alt;
-            document.getElementById('lightbox').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
+    /* --- CUSTOM CURSOR --- */
+    if (window.matchMedia('(pointer: fine)').matches) {
+        const dot = document.querySelector('.cursor-dot');
+        const ring = document.querySelector('.cursor-ring');
+        let mx = -100, my = -100, rx = -100, ry = -100;
+        document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; dot.style.left = mx + 'px'; dot.style.top = my + 'px'; });
+        (function loop() { rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15; ring.style.left = rx + 'px'; ring.style.top = ry + 'px'; requestAnimationFrame(loop); })();
+        document.querySelectorAll('a, button, .stat-card, .photo-item, .presta-row, .faq-item summary, .nav-cta').forEach(el => {
+            el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+        });
+    }
 
-        function closeLightbox() {
-            document.getElementById('lightbox').classList.remove('active');
-            document.body.style.overflow = '';
-        }
+    /* --- PAGE TRANSITION --- */
+    const trans = document.querySelector('.page-transition');
+    window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
+    document.querySelectorAll('a[href]').forEach(a => {
+        const href = a.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto') || href.startsWith('tel') || a.target === '_blank') return;
+        a.addEventListener('click', e => {
+            e.preventDefault();
+            trans.classList.add('active');
+            setTimeout(() => { window.location.href = a.href; }, 700);
+        });
+    });
 
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+    /* --- HEADER SCROLL --- */
+    const header = document.getElementById('header');
+    window.addEventListener('scroll', () => {
+        header.classList.toggle('scrolled', window.scrollY > 50);
+    }, { passive: true });
+
+    /* --- LIGHTBOX --- */
+    function openLightbox(el) {
+        const img = el.querySelector('img');
+        const source = el.querySelector('source[type="image/webp"]');
+        const lb = document.getElementById('lightbox-img');
+        lb.src = source ? source.srcset : img.src;
+        lb.alt = img.alt;
+        document.getElementById('lightbox').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
     </script>
     <script src="../../assets/js/cookie-consent.js" defer></script>
 </body>

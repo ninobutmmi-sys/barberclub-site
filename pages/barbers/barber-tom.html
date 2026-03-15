@@ -15,21 +15,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <!-- SEO -->
     <link rel="canonical" href="https://barberclub-grenoble.fr/pages/barbers/barber-tom.html">
-    <!-- Open Graph -->
     <meta property="og:title" content="Tom - Barbier Expert Grenoble | BarberClub - Coupes Tendances & Dessins">
     <meta property="og:description" content="Découvrez Tom, barbier chez BarberClub Grenoble. Surdoué et passionné, il maîtrise les coupes tendances et dessins précis. Style net et moderne au 5 Rue Clôt Bey.">
     <meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/barbers/tom.png">
     <meta property="og:url" content="https://barberclub-grenoble.fr/pages/barbers/barber-tom.html">
     <meta property="og:type" content="profile">
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Tom - Barbier Expert Grenoble | BarberClub - Coupes Tendances & Dessins">
     <meta name="twitter:description" content="Découvrez Tom, barbier chez BarberClub Grenoble. Surdoué et passionné, il maîtrise les coupes tendances et dessins précis. Style net et moderne au 5 Rue Clôt Bey.">
     <meta name="twitter:image" content="https://barberclub-grenoble.fr/assets/images/barbers/tom.png">
     <style>
-        /* ORBITRON EXTRA BOLD FONT */
         @font-face {
             font-family: 'Orbitron';
             src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
@@ -45,9 +41,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        html {
-            scroll-behavior: smooth;
-        }
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: 'Inter', -apple-system, sans-serif;
@@ -57,36 +51,112 @@
             overflow-x: hidden;
         }
 
-        /* HEADER */
+        /* ===== CUSTOM CURSOR ===== */
+        @media (pointer: fine) {
+            * { cursor: none !important; }
+        }
+        .cursor-dot {
+            position: fixed;
+            top: 0; left: 0;
+            width: 8px; height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10001;
+            mix-blend-mode: difference;
+            transform: translate(-50%, -50%);
+            transition: transform 0.05s ease;
+            display: none;
+        }
+        .cursor-ring {
+            position: fixed;
+            top: 0; left: 0;
+            width: 40px; height: 40px;
+            border: 1.5px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10001;
+            mix-blend-mode: difference;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s ease, height 0.3s ease, border-color 0.3s ease;
+            display: none;
+        }
+        .cursor-ring.hovering {
+            width: 60px; height: 60px;
+            border-color: rgba(255,255,255,0.8);
+        }
+
+        /* ===== GRAIN OVERLAY ===== */
+        .grain {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 9000;
+            pointer-events: none;
+            opacity: 0.03;
+        }
+
+        /* ===== PAGE TRANSITION ===== */
+        .page-transition {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .page-transition.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* ===== LETTER REVEAL ===== */
+        .profile-name .letter {
+            display: inline-block;
+            transform: translateY(110%);
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            transition-delay: var(--delay);
+        }
+        .page.loaded .profile-name .letter {
+            transform: translateY(0);
+        }
+
+        /* ===== STAGGERED ENTRANCE ===== */
+        .stagger {
+            opacity: 0;
+            transform: translateY(25px);
+            transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .page.loaded .stagger {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===== HEADER ===== */
         .header {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0;
             z-index: 100;
             padding: 8px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0,0,0,0.9);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid transparent;
             transition: all 0.3s ease;
         }
-
         .header.scrolled {
-            background: rgba(0, 0, 0, 1);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: #000;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-
         .back-btn {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.1);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border-radius: 50%;
@@ -94,94 +164,74 @@
             text-decoration: none;
             transition: all 0.3s ease;
         }
-
         .back-btn:active {
             transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255,255,255,0.2);
         }
+        .back-btn svg { width: 18px; height: 18px; }
+        .logo { height: 40px; width: auto; }
+        .header-spacer { width: 40px; }
 
-        .back-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        .logo {
-            height: 60px;
-            width: auto;
-        }
-
-        .header-spacer {
-            width: 40px;
-        }
-
-        /* HERO SECTION */
+        /* ===== HERO ===== */
         .hero {
             position: relative;
             padding-top: 60px;
+            overflow: hidden;
         }
-
+        .hero-media-wrap { overflow: hidden; }
         .hero-video {
             width: 100%;
             aspect-ratio: 9/16;
             max-height: 70vh;
             object-fit: cover;
-            object-position: center;
             display: block;
+            animation: kenburns 20s ease infinite alternate;
         }
-
-        .hero-photo {
-            width: 100%;
-            aspect-ratio: 9/16;
-            max-height: 70vh;
-            object-fit: cover;
-            display: block;
+        @keyframes kenburns {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); }
         }
-
         .hero-gradient {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            bottom: 0; left: 0; right: 0;
             height: 200px;
             background: linear-gradient(to top, #000 0%, transparent 100%);
             pointer-events: none;
         }
 
-        /* PROFILE INFO */
+        /* ===== PROFILE ===== */
         .profile {
             position: relative;
             z-index: 10;
             margin-top: -80px;
             padding: 0 20px;
         }
-
         .profile-header {
             text-align: center;
             margin-bottom: 24px;
+            overflow: hidden;
         }
-
         .profile-name {
             font-family: 'Orbitron', sans-serif;
             font-size: 42px;
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 4px;
+            overflow: hidden;
         }
-
         .profile-role {
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255,255,255,0.5);
             text-transform: uppercase;
             letter-spacing: 0.15em;
             margin-bottom: 16px;
         }
-
         .profile-salon {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255,255,255,0.1);
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 12px;
@@ -189,55 +239,47 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+        .profile-salon svg { width: 14px; height: 14px; }
 
-        .profile-salon svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        /* INFO CARDS */
+        /* ===== INFO CARDS ===== */
         .info-section {
             display: flex;
             gap: 12px;
             margin-bottom: 24px;
         }
-
         .info-card {
             flex: 1;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255,255,255,0.05);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px;
             padding: 16px;
             text-align: center;
         }
-
         .info-value {
             font-family: 'Orbitron', sans-serif;
             font-size: 24px;
             font-weight: 600;
             margin-bottom: 4px;
         }
-
         .info-label {
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255,255,255,0.5);
             text-transform: uppercase;
             letter-spacing: 0.1em;
         }
 
-        /* BIO */
+        /* ===== BIO ===== */
         .bio-section {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255,255,255,0.05);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 24px;
         }
-
         .bio-title {
             font-family: 'Orbitron', sans-serif;
             font-size: 16px;
@@ -245,52 +287,16 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 12px;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255,255,255,0.7);
         }
-
         .bio-text {
             font-size: 14px;
             line-height: 1.6;
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(255,255,255,0.8);
         }
 
-        /* SOCIAL LINKS */
-        .social-section {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .social-link {
-            width: 50px;
-            height: 75px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            color: #fff;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .social-link:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .social-link svg {
-            width: 22px;
-            height: 22px;
-        }
-
-        /* CTA BUTTON */
-        .cta-section {
-            margin-bottom: 32px;
-        }
-
+        /* ===== CTA BUTTON ===== */
+        .cta-section { margin-bottom: 32px; }
         .cta-btn {
             display: flex;
             align-items: center;
@@ -309,23 +315,35 @@
             letter-spacing: 0.05em;
             text-decoration: none;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
-
+        .cta-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmer-cta 3s infinite;
+        }
+        @keyframes shimmer-cta {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
         .cta-btn:active {
             transform: scale(0.98);
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255,255,255,0.9);
         }
-
         .cta-btn svg {
-            width: 20px;
-            height: 20px;
+            width: 20px; height: 20px;
+            position: relative; z-index: 1;
+        }
+        .cta-btn span {
+            position: relative; z-index: 1;
         }
 
-        /* GALLERY SECTION */
-        .gallery-section {
-            padding: 0 0 100px;
-        }
-
+        /* ===== GALLERY ===== */
+        .gallery-section { padding: 0 0 100px; }
         .section-title {
             font-family: 'Orbitron', sans-serif;
             font-size: 24px;
@@ -338,170 +356,119 @@
             align-items: center;
             gap: 12px;
         }
-
         .section-title::after {
             content: '';
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(to right, rgba(255, 255, 255, 0.3), transparent);
+            flex: 1; height: 1px;
+            background: linear-gradient(to right, rgba(255,255,255,0.3), transparent);
         }
-
-        /* MASONRY GALLERY */
         .gallery {
             columns: 2;
             column-gap: 8px;
             padding: 0 8px;
         }
-
         .gallery-item {
             break-inside: avoid;
             margin-bottom: 8px;
             border-radius: 12px;
             overflow: hidden;
-            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
         }
-
+        .gallery-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
         .gallery-item img,
         .gallery-item video {
             width: 100%;
             display: block;
             object-fit: cover;
-            background: rgba(255, 255, 255, 0.05);
         }
 
-        /* Placeholder images */
-        .gallery-placeholder {
-            width: 100%;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .gallery-placeholder::after {
-            content: '';
+        /* ===== ACCESSIBILITY ===== */
+        .skip-to-content {
             position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
-            animation: shimmer 2s infinite;
+            top: -40px; left: 0;
+            background: #fff; color: #000;
+            padding: 8px 16px;
+            z-index: 10000;
+            font-size: 14px;
+            text-decoration: none;
+            transition: top 0.2s;
+        }
+        .skip-to-content:focus { top: 0; }
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
         }
 
-        @keyframes shimmer {
-            0% {
-                transform: translateX(-100%);
-            }
-
-            100% {
-                transform: translateX(100%);
-            }
-        }
-
-        .gallery-placeholder svg {
-            width: 30px;
-            height: 30px;
-            opacity: 0.2;
-        }
-
-        /* DESKTOP */
+        /* ===== DESKTOP 768px ===== */
         @media (min-width: 768px) {
             .back-btn:hover {
-                background: rgba(255, 255, 255, 0.2);
+                background: rgba(255,255,255,0.2);
                 transform: scale(1.05);
             }
-
-            .logo {
-                height: 75px;
-            }
-
-            .social-link:hover {
-                background: rgba(255, 255, 255, 0.2);
-                transform: translateY(-2px);
-            }
-
+            .logo { height: 50px; }
             .cta-btn:hover {
                 transform: scale(1.02);
-                box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+                box-shadow: 0 8px 30px rgba(255,255,255,0.2);
             }
         }
 
-        /* DESKTOP LARGE - Split layout */
+        /* ===== DESKTOP 1024px - SPLIT LAYOUT ===== */
         @media (min-width: 1024px) {
-            html {
-                background: #000;
-            }
-
+            html { background: #000; }
             body {
                 background: url('../../assets/images/salons/grenoble/salon-grenoble.jpg') center center / cover no-repeat fixed;
                 min-height: 100vh;
             }
-
             body::before {
                 content: '';
                 position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.85);
-                pointer-events: none;
-                z-index: 0;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.85);
+                pointer-events: none; z-index: 0;
             }
-
             body::after {
                 content: '';
                 position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
+                top: 0; left: 0; right: 0; bottom: 0;
                 background:
-                    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
-                    radial-gradient(ellipse at 70% 80%, rgba(255, 255, 255, 0.03) 0%, transparent 40%);
-                pointer-events: none;
-                z-index: 0;
+                    radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.05) 0%, transparent 50%),
+                    radial-gradient(ellipse at 70% 80%, rgba(255,255,255,0.03) 0%, transparent 40%);
+                pointer-events: none; z-index: 0;
             }
-
-            .header {
-                z-index: 100;
-            }
-
+            .header { z-index: 100; }
+            .logo { height: 50px; }
             .hero {
                 position: fixed;
-                left: 0;
-                top: 0;
-                width: 45%;
-                height: 100vh;
+                left: 0; top: 0;
+                width: 45%; height: 100vh;
                 padding-top: 120px;
                 display: flex;
                 align-items: flex-start;
                 justify-content: center;
                 background: transparent;
                 z-index: 1;
+                overflow: visible;
             }
-
-            .hero-video,
-            .hero-photo {
-                width: 80%;
-                max-width: 400px;
-                height: auto;
+            .hero-media-wrap {
+                width: 80%; max-width: 400px;
+                border-radius: 24px;
+                overflow: hidden;
+                box-shadow: 0 25px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);
+            }
+            .hero-video {
+                width: 100%; max-width: none;
                 max-height: 75vh;
                 aspect-ratio: 9/16;
-                border-radius: 24px;
-                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
-                            0 0 0 1px rgba(255, 255, 255, 0.1);
+                border-radius: 0;
             }
-
-            .hero-gradient {
-                display: none;
-            }
-
+            .hero-gradient { display: none; }
             .profile {
-                position: relative;
-                z-index: 2;
-                margin-left: 45%;
-                margin-top: 0;
+                position: relative; z-index: 2;
+                margin-left: 45%; margin-top: 0;
                 padding: 100px 60px 40px;
                 max-width: 600px;
                 min-height: 100vh;
@@ -509,118 +476,63 @@
                 flex-direction: column;
                 justify-content: center;
             }
-
             .profile-header {
                 text-align: left;
                 margin-bottom: 32px;
             }
-
-            .profile-name {
-                font-size: 56px;
-            }
-
-            .profile-role {
-                font-size: 16px;
-            }
-
+            .profile-name { font-size: 56px; }
+            .profile-role { font-size: 16px; }
             .info-section {
                 justify-content: flex-start;
-                gap: 16px;
-                margin-bottom: 32px;
+                gap: 16px; margin-bottom: 32px;
             }
-
             .info-card {
                 flex: 0 0 auto;
                 min-width: 140px;
                 padding: 20px 24px;
             }
-
-            .info-value {
-                font-size: 28px;
-            }
-
-            .bio-section {
-                padding: 24px;
-                margin-bottom: 32px;
-            }
-
-            .bio-title {
-                font-size: 18px;
-            }
-
-            .bio-text {
-                font-size: 15px;
-                line-height: 1.7;
-            }
-
-            .cta-section {
-                margin-bottom: 0;
-            }
-
+            .info-value { font-size: 28px; }
+            .bio-section { padding: 24px; margin-bottom: 32px; }
+            .bio-title { font-size: 18px; }
+            .bio-text { font-size: 15px; line-height: 1.7; }
+            .cta-section { margin-bottom: 0; }
             .cta-btn {
                 width: auto;
                 display: inline-flex;
                 padding: 20px 40px;
                 font-size: 14px;
             }
-
             .gallery-section {
-                position: relative;
-                z-index: 2;
+                position: relative; z-index: 2;
                 margin-left: 45%;
                 padding: 40px 60px 100px;
                 max-width: 700px;
             }
-
             .section-title {
-                padding: 0;
-                font-size: 28px;
+                padding: 0; font-size: 28px;
                 margin-bottom: 24px;
             }
-
             .gallery {
-                columns: 2;
-                column-gap: 16px;
-                padding: 0;
-                max-width: none;
+                columns: 2; column-gap: 16px;
+                padding: 0; max-width: none;
             }
-
             .gallery-item {
                 margin-bottom: 16px;
                 border-radius: 16px;
             }
         }
 
-        /* REDUCED MOTION */
+        /* ===== REDUCED MOTION ===== */
         @media (prefers-reduced-motion: reduce) {
-
-            *,
-            .gallery-placeholder::after {
+            *, .gallery-item, .stagger, .profile-name .letter {
                 animation: none !important;
                 transition: none !important;
+                opacity: 1 !important;
+                transform: none !important;
             }
-        }
-        .skip-to-content {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            background: #fff;
-            color: #000;
-            padding: 8px 16px;
-            z-index: 10000;
-            font-size: 14px;
-            text-decoration: none;
-            transition: top 0.2s;
-        }
-        .skip-to-content:focus {
-            top: 0;
-        }
-        a:focus-visible, button:focus-visible {
-            outline: 2px solid #fff;
-            outline-offset: 2px;
+            .cta-btn::before { animation: none !important; }
         }
     </style>
-    <!-- Schema.org JSON-LD -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -642,117 +554,216 @@
 </head>
 
 <body>
+    <!-- Grain texture overlay -->
+    <svg class="grain" xmlns="http://www.w3.org/2000/svg">
+        <filter id="grain-filter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+        </filter>
+        <rect width="100%" height="100%" filter="url(#grain-filter)"/>
+    </svg>
+
+    <!-- Page transition overlay -->
+    <div class="page-transition" id="pageTransition"></div>
+
+    <!-- Custom cursor -->
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+
     <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
-    <!-- HEADER -->
-    <header class="header" id="header">
-        <a href="../grenoble/barbers.html" class="back-btn" onclick="if(history.length>1){history.back();return false}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-        </a>
-        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
-        <div class="header-spacer"></div>
-    </header>
 
-    <!-- HERO -->
-    <section class="hero" id="main-content">
-        <video class="hero-video" autoplay loop muted playsinline preload="none">
-            <source src="../../assets/videos/barbers/tom.mp4" type="video/mp4">
-        </video>
-        <div class="hero-gradient"></div>
-    </section>
+    <div class="page" id="page">
 
-    <!-- PROFILE -->
-    <div class="profile">
-        <div class="profile-header">
-            <h1 class="profile-name">Tom</h1>
-            <p class="profile-role">Barber</p>
-            <span class="profile-salon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
+        <header class="header" id="header">
+            <a href="../grenoble/barbers.html" class="back-btn" data-link>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
-                Salon de Grenoble
-            </span>
-        </div>
+            </a>
+            <a href="../../" class="logo-link" data-link><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+            <div class="header-spacer"></div>
+        </header>
 
-        <!-- Info Cards -->
-        <div class="info-section">
-            <div class="info-card">
-                <div class="info-value">17</div>
-                <div class="info-label">Ans</div>
+        <section class="hero" id="main-content">
+            <div class="hero-media-wrap">
+                <video class="hero-video" autoplay loop muted playsinline poster="../../assets/images/barbers/tom.png">
+                    <source src="../../assets/videos/barbers/tom.mp4" type="video/mp4">
+                </video>
+            </div>
+            <div class="hero-gradient"></div>
+        </section>
+
+        <div class="profile">
+            <div class="profile-header">
+                <h1 class="profile-name" data-split>Tom</h1>
+                <p class="profile-role stagger" style="transition-delay:0.4s">Barber</p>
+                <span class="profile-salon stagger" style="transition-delay:0.5s">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    Salon de Grenoble
+                </span>
+            </div>
+
+            <div class="info-section stagger" style="transition-delay:0.6s">
+                <div class="info-card">
+                    <div class="info-value">17</div>
+                    <div class="info-label">Ans</div>
+                </div>
+            </div>
+
+            <div class="bio-section stagger" style="transition-delay:0.7s">
+                <h2 class="bio-title">À propos</h2>
+                <p class="bio-text">
+                    Surdoué et passionné, Tom maîtrise parfaitement les coupes tendances et les dessins précis.
+                    Avec lui, tu repars toujours avec un style net et moderne.
+                </p>
+            </div>
+
+            <div class="cta-section stagger" style="transition-delay:0.8s">
+                <a href="../grenoble/reserver.html?barber=Tom" class="cta-btn" id="ctaBtn" data-link>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <span>Prendre RDV avec Tom</span>
+                </a>
             </div>
         </div>
 
-        <!-- Bio -->
-        <div class="bio-section">
-            <h2 class="bio-title">À propos</h2>
-            <p class="bio-text">
-                Surdoué et passionné, Tom maîtrise parfaitement les coupes tendances et les dessins précis.
-                Avec lui, tu repars toujours avec un style net et moderne.
-            </p>
-        </div>
+        <section class="gallery-section stagger" style="transition-delay:0.9s">
+            <h2 class="section-title">Ses Réalisations</h2>
+            <div class="gallery">
+                <div class="gallery-item">
+                    <img loading="lazy" src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe 2.jpg" alt="Coupe Tom">
+                </div>
+                <div class="gallery-item">
+                    <video autoplay loop muted playsinline>
+                        <source src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe 3.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <div class="gallery-item">
+                    <video autoplay loop muted playsinline>
+                        <source src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe 4.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <div class="gallery-item">
+                    <img loading="lazy" src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe 6.jpg" alt="Coupe Tom">
+                </div>
+                <div class="gallery-item">
+                    <img loading="lazy" src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe 7.jpg" alt="Coupe Tom">
+                </div>
+                <div class="gallery-item">
+                    <img loading="lazy" src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe8.jpg" alt="Coupe Tom">
+                </div>
+            </div>
+        </section>
 
-
-
-        <!-- CTA Button -->
-        <div class="cta-section">
-            <a href="../grenoble/reserver.html?barber=Tom" class="cta-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                Prendre RDV avec Tom
-            </a>
-        </div>
     </div>
 
-    <!-- GALLERY -->
-    <section class="gallery-section">
-        <h2 class="section-title">Ses Réalisations</h2>
-
-        <div class="gallery">
-            <!-- Real work from Tom -->
-            <div class="gallery-item">
-                <img loading="lazy" src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe 2.jpg" alt="Coupe Tom">
-            </div>
-            <div class="gallery-item">
-                <video autoplay loop muted playsinline>
-                    <source src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe 3.mp4" type="video/mp4">
-                </video>
-            </div>
-            <div class="gallery-item">
-                <video autoplay loop muted playsinline>
-                    <source src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe 4.mp4" type="video/mp4">
-                </video>
-            </div>
-            <div class="gallery-item">
-                <img loading="lazy" src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe 6.jpg" alt="Coupe Tom">
-            </div>
-            <div class="gallery-item">
-                <img loading="lazy" src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe 7.jpg" alt="Coupe Tom">
-            </div>
-            <div class="gallery-item">
-                <img loading="lazy" src="../../assets/videos/Barbers-coupes/Coupes TOM/Coupe8.jpg" alt="Coupe Tom">
-            </div>
-        </div>
-    </section>
-
     <script>
-        // Header scroll effect
-        const header = document.getElementById('header');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                header.classList.add('scrolled');
-            } else {
-                header.classList.remove('scrolled');
-            }
+        /* Header scroll */
+        var header = document.getElementById('header');
+        window.addEventListener('scroll', function() {
+            header.classList.toggle('scrolled', window.scrollY > 50);
         }, { passive: true });
+
+        /* Letter reveal */
+        document.querySelectorAll('[data-split]').forEach(function(el) {
+            var text = el.textContent.trim();
+            el.textContent = '';
+            text.split('').forEach(function(char, i) {
+                var span = document.createElement('span');
+                span.className = 'letter';
+                span.textContent = char === ' ' ? '\u00A0' : char;
+                span.style.setProperty('--delay', (0.15 + i * 0.06) + 's');
+                el.appendChild(span);
+            });
+        });
+
+        /* Staggered entrance */
+        window.addEventListener('load', function() {
+            requestAnimationFrame(function() {
+                document.getElementById('page').classList.add('loaded');
+            });
+        });
+
+        /* Gallery IntersectionObserver */
+        var galleryObs = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    galleryObs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.gallery-item').forEach(function(item) {
+            galleryObs.observe(item);
+        });
+
+        /* Page transition */
+        var trans = document.getElementById('pageTransition');
+        document.querySelectorAll('a[data-link]').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                var href = link.getAttribute('href');
+                if (!href || href.charAt(0) === '#') return;
+                e.preventDefault();
+                trans.classList.add('active');
+                setTimeout(function() { window.location.href = href; }, 700);
+            });
+        });
+
+        /* bfcache fix */
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) trans.classList.remove('active');
+        });
+
+        /* Custom cursor (pointer: fine only) */
+        if (window.matchMedia('(pointer: fine)').matches) {
+            var dot = document.getElementById('cursorDot');
+            var ring = document.getElementById('cursorRing');
+            dot.style.display = 'block';
+            ring.style.display = 'block';
+            var mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
+
+            document.addEventListener('mousemove', function(e) {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                dot.style.left = mouseX + 'px';
+                dot.style.top = mouseY + 'px';
+            });
+
+            (function animateRing() {
+                ringX += (mouseX - ringX) * 0.15;
+                ringY += (mouseY - ringY) * 0.15;
+                ring.style.left = ringX + 'px';
+                ring.style.top = ringY + 'px';
+                requestAnimationFrame(animateRing);
+            })();
+
+            document.querySelectorAll('a, button, .cta-btn').forEach(function(el) {
+                el.addEventListener('mouseenter', function() { ring.classList.add('hovering'); });
+                el.addEventListener('mouseleave', function() { ring.classList.remove('hovering'); });
+            });
+
+            /* Magnetic CTA */
+            var ctaBtn = document.getElementById('ctaBtn');
+            if (ctaBtn) {
+                ctaBtn.addEventListener('mousemove', function(e) {
+                    var rect = ctaBtn.getBoundingClientRect();
+                    var x = e.clientX - rect.left - rect.width / 2;
+                    var y = e.clientY - rect.top - rect.height / 2;
+                    ctaBtn.style.transform = 'translate(' + (x * 0.15) + 'px, ' + (y * 0.15) + 'px)';
+                });
+                ctaBtn.addEventListener('mouseleave', function() {
+                    ctaBtn.style.transform = 'translate(0, 0)';
+                });
+            }
+        }
     </script>
-<script src="../../assets/js/cookie-consent.js" defer></script>
+    <script src="../../assets/js/cookie-consent.js" defer></script>
 </body>
 
 </html>

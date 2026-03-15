@@ -8,23 +8,24 @@
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Clément - Barbier Grenoble | BarberClub - Expérience & Coupe Impeccable</title>
+    <title>Clément - Barbier Grenoble | BarberClub - Coupes Impeccables</title>
     <link rel="manifest" href="../../config/manifest.json">
     <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
     <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- SEO -->
     <link rel="canonical" href="https://barberclub-grenoble.fr/pages/barbers/barber-clement.html">
     <!-- Open Graph -->
-    <meta property="og:title" content="Clément - Barbier Grenoble | BarberClub - Expérience & Coupe Impeccable">
+    <meta property="og:title" content="Clément - Barbier Grenoble | BarberClub - Coupes Impeccables">
     <meta property="og:description" content="Découvrez Clément, barbier chez BarberClub Grenoble. Accueillant et expérimenté, il vous met à l'aise pour une coupe impeccable. 5 Rue Clôt Bey, 38000 Grenoble.">
     <meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/barbers/clement.png">
     <meta property="og:url" content="https://barberclub-grenoble.fr/pages/barbers/barber-clement.html">
     <meta property="og:type" content="profile">
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Clément - Barbier Grenoble | BarberClub - Expérience & Coupe Impeccable">
+    <meta name="twitter:title" content="Clément - Barbier Grenoble | BarberClub - Coupes Impeccables">
     <meta name="twitter:description" content="Découvrez Clément, barbier chez BarberClub Grenoble. Accueillant et expérimenté, il vous met à l'aise pour une coupe impeccable. 5 Rue Clôt Bey, 38000 Grenoble.">
     <meta name="twitter:image" content="https://barberclub-grenoble.fr/assets/images/barbers/clement.png">
     <style>
@@ -56,6 +57,80 @@
             overflow-x: hidden;
         }
 
+        /* CUSTOM CURSOR (desktop with fine pointer only) */
+        @media (pointer: fine) {
+            *, a, button { cursor: none !important; }
+
+            .cursor-dot {
+                width: 8px;
+                height: 8px;
+                background: #fff;
+                border-radius: 50%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                pointer-events: none;
+                z-index: 10001;
+                mix-blend-mode: difference;
+                transition: transform 0.1s ease;
+            }
+
+            .cursor-ring {
+                width: 40px;
+                height: 40px;
+                border: 1.5px solid rgba(255, 255, 255, 0.5);
+                border-radius: 50%;
+                position: fixed;
+                top: 0;
+                left: 0;
+                pointer-events: none;
+                z-index: 10001;
+                mix-blend-mode: difference;
+                transition: width 0.3s ease, height 0.3s ease, border-color 0.3s ease, transform 0.15s ease;
+                transform: translate(-50%, -50%);
+            }
+
+            .cursor-ring.hover {
+                width: 60px;
+                height: 60px;
+                border-color: rgba(255, 255, 255, 0.8);
+            }
+        }
+
+        /* GRAIN TEXTURE OVERLAY */
+        .grain {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            width: 200%;
+            height: 200%;
+            z-index: 9000;
+            pointer-events: none;
+            opacity: 0.03;
+        }
+
+        /* PAGE TRANSITION OVERLAY */
+        .page-transition {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .page-transition.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* HEADER */
         .header {
             position: fixed;
             top: 0;
@@ -104,7 +179,7 @@
         }
 
         .logo {
-            height: 60px;
+            height: 40px;
             width: auto;
         }
 
@@ -112,9 +187,11 @@
             width: 40px;
         }
 
+        /* HERO SECTION */
         .hero {
             position: relative;
             padding-top: 60px;
+            overflow: hidden;
         }
 
         .hero-video {
@@ -122,7 +199,14 @@
             aspect-ratio: 9/16;
             max-height: 70vh;
             object-fit: cover;
+            object-position: center;
             display: block;
+            animation: kenBurns 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes kenBurns {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); }
         }
 
         .hero-gradient {
@@ -135,6 +219,7 @@
             pointer-events: none;
         }
 
+        /* PROFILE INFO */
         .profile {
             position: relative;
             z-index: 10;
@@ -154,6 +239,17 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 4px;
+            overflow: hidden;
+        }
+
+        .profile-name .letter {
+            display: inline-block;
+            transform: translateY(110%);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .page.loaded .profile-name .letter {
+            transform: translateY(0);
         }
 
         .profile-role {
@@ -162,6 +258,15 @@
             text-transform: uppercase;
             letter-spacing: 0.15em;
             margin-bottom: 16px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transition-delay: 0.5s;
+        }
+
+        .page.loaded .profile-role {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .profile-salon {
@@ -175,6 +280,15 @@
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transition-delay: 0.6s;
+        }
+
+        .page.loaded .profile-salon {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .profile-salon svg {
@@ -182,10 +296,20 @@
             height: 14px;
         }
 
+        /* INFO CARDS */
         .info-section {
             display: flex;
             gap: 12px;
             margin-bottom: 24px;
+            opacity: 0;
+            transform: translateY(25px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transition-delay: 0.7s;
+        }
+
+        .page.loaded .info-section {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .info-card {
@@ -213,6 +337,7 @@
             letter-spacing: 0.1em;
         }
 
+        /* BIO */
         .bio-section {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
@@ -221,6 +346,15 @@
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 24px;
+            opacity: 0;
+            transform: translateY(25px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transition-delay: 0.8s;
+        }
+
+        .page.loaded .bio-section {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .bio-title {
@@ -239,39 +373,18 @@
             color: rgba(255, 255, 255, 0.8);
         }
 
-        .social-section {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .social-link {
-            width: 50px;
-            height: 75px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            color: #fff;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .social-link:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .social-link svg {
-            width: 22px;
-            height: 22px;
-        }
-
+        /* CTA BUTTON */
         .cta-section {
             margin-bottom: 32px;
+            opacity: 0;
+            transform: translateY(25px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transition-delay: 0.9s;
+        }
+
+        .page.loaded .cta-section {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .cta-btn {
@@ -292,6 +405,24 @@
             letter-spacing: 0.05em;
             text-decoration: none;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: ctaShimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes ctaShimmer {
+            0% { left: -100%; }
+            50%, 100% { left: 100%; }
         }
 
         .cta-btn:active {
@@ -302,10 +433,27 @@
         .cta-btn svg {
             width: 20px;
             height: 20px;
+            position: relative;
+            z-index: 1;
         }
 
+        .cta-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* GALLERY SECTION */
         .gallery-section {
             padding: 0 0 100px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transition-delay: 1.0s;
+        }
+
+        .page.loaded .gallery-section {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .section-title {
@@ -328,6 +476,7 @@
             background: linear-gradient(to right, rgba(255, 255, 255, 0.3), transparent);
         }
 
+        /* MASONRY GALLERY */
         .gallery {
             columns: 2;
             column-gap: 8px;
@@ -340,13 +489,14 @@
             border-radius: 12px;
             overflow: hidden;
             position: relative;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
         }
 
-        .gallery-item video {
-            width: 100%;
-            display: block;
-            object-fit: cover;
-            background: rgba(255, 255, 255, 0.05);
+        .gallery-item.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .gallery-item img,
@@ -357,36 +507,7 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
-        /* Play indicator for videos */
-        .gallery-item .play-indicator {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 50px;
-            height: 75px;
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .gallery-item:hover .play-indicator {
-            opacity: 1;
-        }
-
-        .gallery-item .play-indicator svg {
-            width: 24px;
-            height: 24px;
-            fill: #fff;
-            margin-left: 4px;
-        }
-
-        /* DESKTOP */
+        /* DESKTOP 768px */
         @media (min-width: 768px) {
             .back-btn:hover {
                 background: rgba(255, 255, 255, 0.2);
@@ -394,12 +515,7 @@
             }
 
             .logo {
-                height: 75px;
-            }
-
-            .social-link:hover {
-                background: rgba(255, 255, 255, 0.2);
-                transform: translateY(-2px);
+                height: 50px;
             }
 
             .cta-btn:hover {
@@ -445,6 +561,10 @@
                 z-index: 0;
             }
 
+            .logo {
+                height: 50px;
+            }
+
             .header {
                 z-index: 100;
             }
@@ -461,6 +581,7 @@
                 justify-content: center;
                 background: transparent;
                 z-index: 1;
+                overflow: visible;
             }
 
             .hero-video,
@@ -473,6 +594,7 @@
                 border-radius: 24px;
                 box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
                             0 0 0 1px rgba(255, 255, 255, 0.1);
+                animation: none;
             }
 
             .hero-gradient {
@@ -573,12 +695,32 @@
             }
         }
 
+        /* REDUCED MOTION */
         @media (prefers-reduced-motion: reduce) {
-            * {
+            *,
+            *::before,
+            *::after {
                 animation: none !important;
                 transition: none !important;
             }
+
+            .profile-name .letter {
+                transform: translateY(0) !important;
+            }
+
+            .profile-role,
+            .profile-salon,
+            .info-section,
+            .bio-section,
+            .cta-section,
+            .gallery-section,
+            .gallery-item {
+                opacity: 1 !important;
+                transform: translateY(0) !important;
+            }
         }
+
+        /* ACCESSIBILITY */
         .skip-to-content {
             position: absolute;
             top: -40px;
@@ -591,22 +733,25 @@
             text-decoration: none;
             transition: top 0.2s;
         }
+
         .skip-to-content:focus {
             top: 0;
         }
+
         a:focus-visible, button:focus-visible {
             outline: 2px solid #fff;
             outline-offset: 2px;
         }
     </style>
+    <!-- Schema.org JSON-LD -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@type": "Person",
         "name": "Clément",
         "jobTitle": "Barbier",
-        "image": "https://barberclub-grenoble.fr/assets/images/barbers/clement.png",
         "description": "Découvrez Clément, barbier chez BarberClub Grenoble. Accueillant et expérimenté, il vous met à l'aise pour une coupe impeccable. 5 Rue Clôt Bey, 38000 Grenoble.",
+        "image": "https://barberclub-grenoble.fr/assets/images/barbers/clement.png",
         "worksFor": {
             "@type": "BarberShop",
             "name": "BarberClub Grenoble"
@@ -620,115 +765,240 @@
 </head>
 
 <body>
+    <!-- PAGE TRANSITION -->
+    <div class="page-transition" id="pageTransition"></div>
+
+    <!-- GRAIN TEXTURE -->
+    <svg class="grain" xmlns="http://www.w3.org/2000/svg">
+        <filter id="grain-filter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+        </filter>
+        <rect width="100%" height="100%" filter="url(#grain-filter)"/>
+    </svg>
+
+    <!-- CUSTOM CURSOR -->
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+
     <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
-    <header class="header" id="header">
-        <a href="../grenoble/barbers.html" class="back-btn" onclick="if(history.length>1){history.back();return false}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-        </a>
-        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
-        <div class="header-spacer"></div>
-    </header>
 
-    <section class="hero" id="main-content">
-        <video class="hero-video" autoplay loop muted playsinline preload="none">
-            <source src="../../assets/videos/barbers/clement.mp4" type="video/mp4">
-        </video>
-        <div class="hero-gradient"></div>
-    </section>
-
-    <div class="profile">
-        <div class="profile-header">
-            <h1 class="profile-name">Clément</h1>
-            <p class="profile-role">Barber</p>
-            <span class="profile-salon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
+    <!-- PAGE WRAPPER -->
+    <div class="page" id="page">
+        <!-- HEADER -->
+        <header class="header" id="header">
+            <a href="../grenoble/barbers.html" class="back-btn trans-link" onclick="if(history.length>1){event.preventDefault();transitionTo(document.referrer||'../grenoble/barbers.html');return false}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
-                Salon de Grenoble
-            </span>
-        </div>
+            </a>
+            <a href="../../" class="logo-link trans-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+            <div class="header-spacer"></div>
+        </header>
 
-        <div class="info-section">
-            <div class="info-card">
-                <div class="info-value">20</div>
-                <div class="info-label">Ans</div>
+        <!-- HERO -->
+        <section class="hero" id="main-content">
+            <video class="hero-video" autoplay loop muted playsinline poster="../../assets/images/barbers/clement.png">
+                <source src="../../assets/videos/barbers/clement.mp4" type="video/mp4">
+            </video>
+            <div class="hero-gradient"></div>
+        </section>
+
+        <!-- PROFILE -->
+        <div class="profile">
+            <div class="profile-header">
+                <h1 class="profile-name" data-split>Clément</h1>
+                <p class="profile-role">Barber</p>
+                <span class="profile-salon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    Salon de Grenoble
+                </span>
+            </div>
+
+            <!-- Info Cards -->
+            <div class="info-section">
+                <div class="info-card">
+                    <div class="info-value">20</div>
+                    <div class="info-label">Ans</div>
+                </div>
+            </div>
+
+            <!-- Bio -->
+            <div class="bio-section">
+                <h2 class="bio-title">À propos</h2>
+                <p class="bio-text">
+                    Accueillant et expérimenté, Clem sait te mettre à l'aise tout en réalisant une coupe impeccable.
+                    Un moment agréable et un résultat sûr.
+                </p>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="cta-section">
+                <a href="../grenoble/reserver.html?barber=Clement" class="cta-btn trans-link" id="ctaBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <span>Prendre RDV avec Clément</span>
+                </a>
             </div>
         </div>
 
-        <div class="bio-section">
-            <h2 class="bio-title">À propos</h2>
-            <p class="bio-text">
-                Accueillant et expérimenté, Clem sait te mettre à l'aise tout en réalisant une coupe impeccable.
-                Un moment agréable et un résultat sûr.
-            </p>
-        </div>
-
-
-
-        <div class="cta-section">
-            <a href="../grenoble/reserver.html?barber=Clement" class="cta-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                Prendre RDV avec Clément
-            </a>
-        </div>
+        <!-- GALLERY -->
+        <section class="gallery-section">
+            <h2 class="section-title">Ses Réalisations</h2>
+            <div class="gallery">
+                <!-- Image -->
+                <div class="gallery-item">
+                    <img loading="lazy" src="../../assets/videos/coupes-clement/IMG_0365.PNG" alt="Coupe Clément">
+                </div>
+                <!-- Video 1 -->
+                <div class="gallery-item">
+                    <video autoplay loop muted playsinline preload="none">
+                        <source src="../../assets/videos/coupes-clement/IMG_0861.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <!-- Video 2 -->
+                <div class="gallery-item">
+                    <video autoplay loop muted playsinline preload="none">
+                        <source src="../../assets/videos/coupes-clement/IMG_1497.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <!-- Video 3 -->
+                <div class="gallery-item">
+                    <video autoplay loop muted playsinline preload="none">
+                        <source src="../../assets/videos/coupes-clement/IMG_1508.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <!-- Video 4 -->
+                <div class="gallery-item">
+                    <video autoplay loop muted playsinline preload="none">
+                        <source src="../../assets/videos/coupes-clement/IMG_2205.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <!-- Video 5 -->
+                <div class="gallery-item">
+                    <video autoplay loop muted playsinline preload="none">
+                        <source src="../../assets/videos/coupes-clement/IMG_1995.mp4" type="video/mp4">
+                    </video>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <section class="gallery-section">
-        <h2 class="section-title">Ses Réalisations</h2>
-        <div class="gallery">
-            <!-- Image -->
-            <div class="gallery-item">
-                <img loading="lazy" src="../../assets/videos/coupes-clement/IMG_0365.PNG" alt="Coupe réalisée par Clément">
-            </div>
-            <!-- Video 1 -->
-            <div class="gallery-item">
-                <video autoplay loop muted playsinline preload="none">
-                    <source src="../../assets/videos/coupes-clement/IMG_0861.mp4" type="video/mp4">
-                </video>
-            </div>
-            <!-- Video 2 -->
-            <div class="gallery-item">
-                <video autoplay loop muted playsinline preload="none">
-                    <source src="../../assets/videos/coupes-clement/IMG_1497.mp4" type="video/mp4">
-                </video>
-            </div>
-            <!-- Video 3 -->
-            <div class="gallery-item">
-                <video autoplay loop muted playsinline preload="none">
-                    <source src="../../assets/videos/coupes-clement/IMG_1508.mp4" type="video/mp4">
-                </video>
-            </div>
-            <!-- Video 4 -->
-            <div class="gallery-item">
-                <video autoplay loop muted playsinline preload="none">
-                    <source src="../../assets/videos/coupes-clement/IMG_2205.mp4" type="video/mp4">
-                </video>
-            </div>
-            <!-- Video 5 -->
-            <div class="gallery-item">
-                <video autoplay loop muted playsinline preload="none">
-                    <source src="../../assets/videos/coupes-clement/IMG_1995.mp4" type="video/mp4">
-                </video>
-            </div>
-        </div>
-    </section>
-
     <script>
-        const header = document.getElementById('header');
-        window.addEventListener('scroll', () => {
+        // PAGE TRANSITION
+        var trans = document.getElementById('pageTransition');
+
+        function transitionTo(url) {
+            trans.classList.add('active');
+            setTimeout(function() { window.location.href = url; }, 700);
+        }
+
+        // bfcache fix
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) trans.classList.remove('active');
+        });
+
+        // Intercept all transition links
+        document.querySelectorAll('.trans-link').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                if (link.classList.contains('back-btn')) return; // handled by onclick
+                e.preventDefault();
+                transitionTo(link.href);
+            });
+        });
+
+        // LETTER REVEAL
+        document.querySelectorAll('[data-split]').forEach(function(el) {
+            var text = el.textContent;
+            el.innerHTML = '';
+            text.split('').forEach(function(char, i) {
+                var span = document.createElement('span');
+                span.className = 'letter';
+                span.textContent = char === ' ' ? '\u00A0' : char;
+                span.style.transitionDelay = (0.15 + i * 0.06) + 's';
+                el.appendChild(span);
+            });
+        });
+
+        // STAGGERED ENTRANCE
+        window.addEventListener('load', function() {
+            requestAnimationFrame(function() {
+                document.getElementById('page').classList.add('loaded');
+            });
+        });
+
+        // HEADER SCROLL
+        var header = document.getElementById('header');
+        window.addEventListener('scroll', function() {
             header.classList.toggle('scrolled', window.scrollY > 50);
         }, { passive: true });
+
+        // GALLERY INTERSECTION OBSERVER
+        var galleryObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    galleryObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+        document.querySelectorAll('.gallery-item').forEach(function(item) {
+            galleryObserver.observe(item);
+        });
+
+        // CUSTOM CURSOR (desktop only)
+        if (window.matchMedia('(pointer: fine)').matches) {
+            var dot = document.getElementById('cursorDot');
+            var ring = document.getElementById('cursorRing');
+            var mouseX = 0, mouseY = 0;
+            var ringX = 0, ringY = 0;
+
+            document.addEventListener('mousemove', function(e) {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                dot.style.transform = 'translate(' + (mouseX - 4) + 'px, ' + (mouseY - 4) + 'px)';
+            });
+
+            function animateRing() {
+                ringX += (mouseX - ringX) * 0.15;
+                ringY += (mouseY - ringY) * 0.15;
+                ring.style.left = ringX + 'px';
+                ring.style.top = ringY + 'px';
+                requestAnimationFrame(animateRing);
+            }
+            animateRing();
+
+            // Ring expands on hovering links
+            document.querySelectorAll('a, button, .cta-btn').forEach(function(el) {
+                el.addEventListener('mouseenter', function() { ring.classList.add('hover'); });
+                el.addEventListener('mouseleave', function() { ring.classList.remove('hover'); });
+            });
+        }
+
+        // MAGNETIC CTA (desktop only)
+        if (window.matchMedia('(pointer: fine)').matches) {
+            var cta = document.getElementById('ctaBtn');
+            if (cta) {
+                cta.addEventListener('mousemove', function(e) {
+                    var rect = cta.getBoundingClientRect();
+                    var x = e.clientX - rect.left - rect.width / 2;
+                    var y = e.clientY - rect.top - rect.height / 2;
+                    cta.style.transform = 'translate(' + (x * 0.15) + 'px, ' + (y * 0.3) + 'px)';
+                });
+                cta.addEventListener('mouseleave', function() {
+                    cta.style.transform = '';
+                });
+            }
+        }
     </script>
-<script src="../../assets/js/cookie-consent.js" defer></script>
+    <script src="../../assets/js/cookie-consent.js" defer></script>
 </body>
 
 </html>

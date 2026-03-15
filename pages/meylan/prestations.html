@@ -118,16 +118,20 @@
             min-height: 100vh;
             overflow-x: hidden;
         }
+        @media (pointer: fine) { body { cursor: none; } }
 
-        /* BACKGROUND IMAGE FLOUE */
-        .bg-fixed {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            background: url('../../assets/images/salons/meylan/salon-meylan.jpg') center/cover no-repeat;
-            filter: blur(25px) brightness(0.2);
-            transform: scale(1.15);
-        }
+        /* CURSOR */
+        .cursor-dot { position: fixed; width: 8px; height: 8px; background: #fff; border-radius: 50%; pointer-events: none; z-index: 10001; mix-blend-mode: difference; transform: translate(-50%,-50%); }
+        .cursor-ring { position: fixed; width: 40px; height: 40px; border: 1.5px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: none; z-index: 10001; mix-blend-mode: difference; transition: width 0.35s cubic-bezier(0.16,1,0.3,1), height 0.35s cubic-bezier(0.16,1,0.3,1), border-color 0.3s; transform: translate(-50%,-50%); }
+        .cursor-ring.hovering { width: 64px; height: 64px; border-color: rgba(255,255,255,0.8); }
+        @media (pointer: coarse) { .cursor-dot, .cursor-ring { display: none !important; } }
+
+        /* GRAIN */
+        .grain { position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 180px; }
+
+        /* PAGE TRANSITION */
+        .page-transition { position: fixed; inset: 0; z-index: 9999; background: #000; pointer-events: none; opacity: 0; transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1); }
+        .page-transition.active { opacity: 1; pointer-events: all; }
 
         /* HEADER */
         .header {
@@ -199,12 +203,18 @@
 
         .page-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 36px;
+            font-size: clamp(28px, 8vw, 42px);
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
             margin-bottom: 6px;
+            overflow: hidden;
         }
+        .page-title .letter {
+            display: inline-block; opacity: 0; transform: translateY(110%);
+            transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1);
+        }
+        body.loaded .page-title .letter { opacity: 1; transform: translateY(0); }
 
         .page-subtitle {
             font-size: 12px;
@@ -948,6 +958,8 @@
             animation: fadeIn 0.4s ease 0.3s both;
         }
 
+        @media (pointer: fine) { a, .nav-cta, .tarif-card, .review-card, .barber-card { cursor: none; } }
+
         /* REDUCED MOTION */
         @media (prefers-reduced-motion: reduce) {
 
@@ -963,10 +975,12 @@
             .tarifs-section,
             .tarif-card,
             .barber-card,
-            .reveal {
+            .reveal,
+            .page-title .letter {
                 opacity: 1;
                 transform: none;
             }
+            .cursor-dot, .cursor-ring { display: none; } body { cursor: auto; }
         }
         .skip-to-content {
             position: absolute;
@@ -991,9 +1005,12 @@
 </head>
 
 <body>
+    <div class="grain"></div>
+    <div class="page-transition"></div>
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+
     <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
-    <!-- BACKGROUND FLOUE -->
-    <div class="bg-fixed"></div>
 
     <!-- HEADER -->
     <header class="header" id="header">
@@ -1009,7 +1026,7 @@
 
     <!-- PAGE HEADER -->
     <div class="page-header">
-        <h1 class="page-title">Tarifs Meylan</h1>
+        <h1 class="page-title" data-split>Tarifs Meylan</h1>
         <p class="page-subtitle">Nos prestations</p>
         <p class="page-intro">Découvre les prestations et tarifs du salon BarberClub Meylan. Coupe classique, skin fade, soin barbe premium, choisis ta presta et réserve en ligne.</p>
     </div>
@@ -1375,11 +1392,14 @@
     <!-- BOTTOM NAV -->
     <nav class="bottom-nav">
         <div class="nav-row">
-            <a href="index.html" class="nav-item">
+            <a href="barbers.html" class="nav-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                 </svg>
-                Accueil
+                Barbers
             </a>
             <a href="prestations.html" class="nav-item active">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1418,37 +1438,67 @@
     </nav>
 
     <script>
-        // Header scroll effect
+        /* --- LETTER SPLIT --- */
+        document.querySelectorAll('[data-split]').forEach(el => {
+            const text = el.textContent;
+            el.innerHTML = '';
+            text.split('').forEach((ch, i) => {
+                const span = document.createElement('span');
+                span.className = 'letter';
+                span.textContent = ch === ' ' ? '\u00A0' : ch;
+                span.style.transitionDelay = (i * 0.04) + 's';
+                el.appendChild(span);
+            });
+        });
+
+        /* Mark page as loaded for letter reveal */
+        requestAnimationFrame(() => { document.body.classList.add('loaded'); });
+
+        /* --- CUSTOM CURSOR (pointer:fine only) --- */
+        if (window.matchMedia('(pointer: fine)').matches) {
+            const dot = document.querySelector('.cursor-dot');
+            const ring = document.querySelector('.cursor-ring');
+            let mx = -100, my = -100, rx = -100, ry = -100;
+            document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; dot.style.left = mx + 'px'; dot.style.top = my + 'px'; });
+            (function loop() { rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15; ring.style.left = rx + 'px'; ring.style.top = ry + 'px'; requestAnimationFrame(loop); })();
+            document.querySelectorAll('a, button, .tarif-card, .review-card, .barber-card, .nav-cta, .reviews-dots span').forEach(el => {
+                el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+                el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+            });
+        }
+
+        /* --- PAGE TRANSITION --- */
+        const trans = document.querySelector('.page-transition');
+        window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
+        document.querySelectorAll('a[href]').forEach(a => {
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto') || href.startsWith('tel') || a.target === '_blank') return;
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                trans.classList.add('active');
+                setTimeout(() => { window.location.href = a.href; }, 700);
+            });
+        });
+
+        /* --- HEADER SCROLL --- */
         const header = document.getElementById('header');
         window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                header.classList.add('scrolled');
-            } else {
-                header.classList.remove('scrolled');
-            }
+            header.classList.toggle('scrolled', window.scrollY > 50);
         }, { passive: true });
 
-        // Scroll reveal
-        const observerOptions = {
-            threshold: 0.15,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
+        /* --- SCROLL REVEAL --- */
         const revealObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                    revealObserver.unobserve(entry.target);
-                }
+                if (entry.isIntersecting) { entry.target.classList.add('visible'); revealObserver.unobserve(entry.target); }
             });
-        }, observerOptions);
+        }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
 
         document.querySelectorAll('.reviews-section, .instagram-section, .barbers-section').forEach(el => {
             el.classList.add('reveal');
             revealObserver.observe(el);
         });
 
-        // Stagger animation for tarif cards
+        /* --- TARIF CARDS STAGGER --- */
         document.querySelectorAll('.tarif-category-group').forEach(group => {
             const cards = group.querySelectorAll('.tarif-card');
             const cardObserver = new IntersectionObserver((entries) => {
@@ -1462,50 +1512,33 @@
                     }
                 });
             }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
-
             cards.forEach(card => cardObserver.observe(card));
         });
 
+        /* --- BARBERS GRID --- */
         const barbersGrid = document.querySelector('.barbers-grid');
         if (barbersGrid) {
             const gridObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('visible');
-                        gridObserver.unobserve(entry.target);
-                    }
-                });
+                entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); gridObserver.unobserve(entry.target); } });
             }, { threshold: 0.2 });
             gridObserver.observe(barbersGrid);
         }
 
-        // Reviews carousel dots
+        /* --- REVIEWS CAROUSEL --- */
         const carousel = document.querySelector('.reviews-carousel');
         const dots = document.querySelectorAll('.reviews-dots span');
-        const cards = document.querySelectorAll('.review-card');
-
-        if (carousel && dots.length && cards.length) {
+        const reviewCards = document.querySelectorAll('.review-card');
+        if (carousel && dots.length && reviewCards.length) {
             const updateDots = () => {
-                const scrollLeft = carousel.scrollLeft;
-                const cardWidth = cards[0].offsetWidth + 12;
-                const activeIndex = Math.round(scrollLeft / cardWidth);
-
-                dots.forEach((dot, i) => {
-                    dot.classList.toggle('active', i === activeIndex);
-                });
+                const cardWidth = reviewCards[0].offsetWidth + 12;
+                const activeIndex = Math.round(carousel.scrollLeft / cardWidth);
+                dots.forEach((dot, i) => dot.classList.toggle('active', i === activeIndex));
             };
-
             carousel.addEventListener('scroll', updateDots, { passive: true });
-
             dots.forEach((dot, i) => {
                 dot.addEventListener('click', () => {
-                    const cardWidth = cards[0].offsetWidth + 12;
-                    carousel.scrollTo({
-                        left: i * cardWidth,
-                        behavior: 'smooth'
-                    });
+                    carousel.scrollTo({ left: i * (reviewCards[0].offsetWidth + 12), behavior: 'smooth' });
                 });
-                dot.style.cursor = 'pointer';
             });
         }
     </script>

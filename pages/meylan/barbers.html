@@ -1,546 +1,398 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nos Barbiers Meylan | Équipe BarberClub Corenc - Coiffeurs Experts</title>
-    <meta name="description"
-        content="Rencontrez l'équipe de barbiers BarberClub Meylan près de Corenc : Lucas, Julien. Coiffeurs experts en dégradés et barbe. Prenez RDV !">
-    <meta name="keywords"
-        content="barbier meylan, coiffeur homme meylan, équipe barber corenc, meilleur barbier meylan, coiffeur isère">
-    <link rel="manifest" href="../../config/manifest.json">
-    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
-    <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
-    <link rel="canonical" href="https://barberclub-grenoble.fr/pages/meylan/barbers.html">
-    <!-- Open Graph -->
-    <meta property="og:title" content="Nos Barbiers Meylan | Équipe BarberClub Corenc - Coiffeurs Experts">
-    <meta property="og:description" content="Rencontrez l'équipe de barbiers BarberClub Meylan près de Corenc : Lucas, Julien. Coiffeurs experts en dégradés et barbe. Prenez RDV !">
-    <meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/meylan/salon-meylan.jpg">
-    <meta property="og:url" content="https://barberclub-grenoble.fr/pages/meylan/barbers.html">
-    <meta property="og:type" content="website">
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Nos Barbiers Meylan | Équipe BarberClub Corenc - Coiffeurs Experts">
-    <meta name="twitter:description" content="Rencontrez l'équipe de barbiers BarberClub Meylan près de Corenc : Lucas, Julien. Coiffeurs experts en dégradés et barbe. Prenez RDV !">
-    <meta name="twitter:image" content="https://barberclub-grenoble.fr/assets/images/salons/meylan/salon-meylan.jpg">
-    <style>
-        /* ORBITRON EXTRA BOLD FONT */
-        @font-face {
-            font-family: 'Orbitron';
-            src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
-            font-weight: 800;
-            font-style: normal;
-            font-display: swap;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Nos Barbiers Meylan | Équipe BarberClub Corenc - Coiffeurs Experts</title>
+<meta name="description" content="Rencontrez l'équipe de barbiers BarberClub Meylan près de Corenc : Lucas, Julien. Coiffeurs experts en dégradés et barbe. Prenez RDV !">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="../../config/manifest.json">
+<link rel="icon" type="image/png" href="../../assets/icons/favicon.png">
+<link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+<link rel="canonical" href="https://barberclub-grenoble.fr/pages/meylan/barbers.html">
+<meta property="og:title" content="Nos Barbiers Meylan | Équipe BarberClub">
+<meta property="og:description" content="Lucas et Julien, co-fondateurs de BarberClub Meylan. Coiffeurs experts en dégradés et barbe.">
+<meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/barbers/lucas.png">
+<meta property="og:url" content="https://barberclub-grenoble.fr/pages/meylan/barbers.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BarberShop","name":"BarberClub Meylan","url":"https://barberclub-grenoble.fr/pages/meylan/barbers.html","employee":[{"@type":"Person","name":"Lucas","jobTitle":"Co-Fondateur & Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/lucas.png"},{"@type":"Person","name":"Julien","jobTitle":"Co-Fondateur & Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/julien.jpg"}]}
+</script>
+<style>
+@font-face {
+  font-family: 'Orbitron';
+  src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+  font-weight: 800; font-display: swap;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: #000; color: #fff;
+  overflow-x: hidden; min-height: 100vh; min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+@media (pointer: fine) { body { cursor: none; } }
 
+/* ═══ CURSOR ═══ */
+.cursor-dot { position: fixed; width: 8px; height: 8px; background: #fff; border-radius: 50%; pointer-events: none; z-index: 10001; mix-blend-mode: difference; transform: translate(-50%,-50%); }
+.cursor-ring { position: fixed; width: 40px; height: 40px; border: 1.5px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: none; z-index: 10001; mix-blend-mode: difference; transition: width 0.35s cubic-bezier(0.16,1,0.3,1), height 0.35s cubic-bezier(0.16,1,0.3,1), border-color 0.3s; transform: translate(-50%,-50%); }
+.cursor-ring.hovering { width: 64px; height: 64px; border-color: rgba(255,255,255,0.8); }
+@media (pointer: coarse) { .cursor-dot, .cursor-ring { display: none !important; } }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+/* ═══ GRAIN ═══ */
+.grain { position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 180px; }
 
-        html {
-            scroll-behavior: smooth;
-        }
+/* ═══ PAGE TRANSITION ═══ */
+.page-transition { position: fixed; inset: 0; z-index: 9999; background: #000; pointer-events: none; opacity: 0; transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1); }
+.page-transition.active { opacity: 1; pointer-events: all; }
 
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: #000;
-            color: #fff;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
+/* ═══ HEADER ═══ */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top));
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: all 0.3s ease;
+}
+.header.scrolled { background: rgba(0,0,0,1); border-bottom-color: rgba(255,255,255,0.1); }
+.back-btn {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-radius: 50%; color: #fff; text-decoration: none;
+  transition: all 0.3s ease;
+}
+@media (pointer: fine) { .back-btn { cursor: none; } }
+.back-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
+.back-btn svg { width: 18px; height: 18px; }
+.logo { height: 40px; width: auto; }
+.header-spacer { width: 40px; }
 
-        .bg-fixed {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            background: url('../../assets/images/salons/meylan/salon-meylan.jpg') center/cover no-repeat;
-            filter: blur(25px) brightness(0.2);
-            transform: scale(1.15);
-        }
+/* ═══ PAGE TITLE ═══ */
+.page-header {
+  padding: 80px 20px 20px; text-align: center;
+  position: relative; z-index: 5;
+}
+.page-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(26px, 8vw, 42px); font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  overflow: hidden;
+}
+.page-title .letter {
+  display: inline-block; opacity: 0; transform: translateY(110%);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+.page.loaded .page-title .letter { opacity: 1; transform: translateY(0); }
+.page-subtitle {
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgba(255,255,255,0.3); margin-top: 6px;
+  opacity: 0; transition: opacity 0.6s ease 0.5s;
+}
+.page.loaded .page-subtitle { opacity: 1; }
+.page-intro {
+  max-width: 520px; margin: 14px auto 0;
+  font-size: 13px; line-height: 1.6;
+  color: rgba(255,255,255,0.45); text-align: center;
+  opacity: 0; transition: opacity 0.6s ease 0.6s;
+}
+.page.loaded .page-intro { opacity: 1; }
 
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            padding: 8px 16px;
-            padding-top: max(8px, env(safe-area-inset-top));
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            transition: all 0.3s ease;
-        }
+/* ═══ BARBERS GRID ═══ */
+.barbers {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  padding: 10px 16px 100px;
+  max-width: 440px; margin: 0 auto;
+  position: relative; z-index: 5;
+}
 
-        .header.scrolled {
-            background: rgba(0, 0, 0, 1);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
-        }
+.barber-card {
+  position: relative; border-radius: 16px; overflow: hidden;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  text-decoration: none; color: #fff;
+  display: block;
+  transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+  opacity: 0; transform: translateY(20px);
+}
+@media (pointer: fine) { .barber-card { cursor: none; } }
+.page.loaded .barber-card { opacity: 1; transform: translateY(0); }
+.page.loaded .barber-card:nth-child(1) { transition-delay: 0.3s; }
+.page.loaded .barber-card:nth-child(2) { transition-delay: 0.4s; }
+.page.loaded .barber-card:nth-child(3) { transition-delay: 0.5s; }
+.page.loaded .barber-card:nth-child(4) { transition-delay: 0.6s; }
 
-        .back-btn {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 50%;
-            color: #fff;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
+.barber-card:active { transform: scale(0.97) !important; }
 
-        .back-btn:active {
-            transform: scale(0.95);
-            background: rgba(255, 255, 255, 0.2);
-        }
+/* Media */
+.barber-media {
+  position: relative; width: 100%; aspect-ratio: 3/4;
+  overflow: hidden;
+}
+.barber-media img, .barber-media video {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.16,1,0.3,1);
+}
+.barber-card:hover .barber-media img,
+.barber-card:hover .barber-media video { transform: scale(1.05); }
 
-        .back-btn svg {
-            width: 18px;
-            height: 18px;
-        }
+.barber-media-overlay {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.8) 100%);
+}
 
-        .logo {
-            height: 40px;
-            width: auto;
-        }
+/* Info */
+.barber-info {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 14px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+}
+.barber-details { flex: 1; }
+.barber-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(16px, 5vw, 20px); font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  line-height: 1;
+}
+.barber-role {
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(255,255,255,0.5); margin-top: 4px;
+}
+.barber-cta {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+.barber-cta svg { width: 14px; height: 14px; }
+.barber-card:hover .barber-cta {
+  background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4);
+}
 
-        .header-spacer {
-            width: 40px;
-        }
+/* ═══ BOTTOM NAV ═══ */
+.bottom-nav {
+  position: fixed; bottom: 12px; left: 12px; right: 12px; z-index: 50;
+  background: rgba(10,10,10,0.95);
+  backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px;
+  padding: 8px 4px; padding-bottom: max(8px, env(safe-area-inset-bottom));
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.page.loaded .bottom-nav { opacity: 1; transition-delay: 0.7s; }
+.nav-row {
+  display: flex; justify-content: space-around; align-items: flex-end;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  color: rgba(255,255,255,0.4); text-decoration: none;
+  font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em;
+  transition: color 0.3s ease; padding: 4px 8px;
+}
+@media (pointer: fine) { .nav-item { cursor: none; } }
+.nav-item.active { color: #fff; }
+.nav-item svg { width: 20px; height: 20px; }
+.nav-cta {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  text-decoration: none; margin-top: -26px;
+}
+@media (pointer: fine) { .nav-cta { cursor: none; } }
+.nav-cta-btn {
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; border-radius: 50%; color: #000;
+  box-shadow: 0 4px 20px rgba(255,255,255,0.3);
+  transition: all 0.3s ease;
+}
+.nav-cta-btn svg { width: 22px; height: 22px; }
+.nav-cta:active .nav-cta-btn { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255,255,255,0.2); }
+.nav-cta-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; }
 
-        .page-header {
-            position: relative;
-            z-index: 1;
-            padding: 110px 20px 30px;
-            text-align: center;
-        }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .page-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 36px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 6px;
-        }
+/* ═══ DESKTOP ═══ */
+@media (min-width: 768px) {
+  .barbers { max-width: 600px; gap: 20px; padding-bottom: 60px; }
+  .barber-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.2); box-shadow: 0 16px 50px rgba(0,0,0,0.4); }
+  .barber-name { font-size: clamp(18px, 3vw, 22px); }
+  .back-btn:hover { background: rgba(255,255,255,0.15); }
+  .logo { height: 50px; }
+  .bottom-nav { left: 50%; right: auto; transform: translateX(-50%); width: 500px; border-radius: 28px; bottom: 16px; }
+}
 
-        .page-subtitle {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-        }
-
-        .page-intro {
-            max-width: 520px;
-            margin: 16px auto 0;
-            font-size: 14px;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.55);
-            text-align: center;
-        }
-
-        .content {
-            position: relative;
-            z-index: 1;
-            padding: 10px 16px 120px;
-        }
-
-        .barbers-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .barber-card {
-            display: block;
-            position: relative;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            color: #fff;
-        }
-
-        .barber-card:active {
-            transform: scale(0.97);
-        }
-
-        .barber-photo {
-            width: 100%;
-            aspect-ratio: 1;
-            object-fit: cover;
-            background: rgba(255, 255, 255, 0.05);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .barber-card:active .barber-photo {
-            transform: scale(1.05);
-        }
-
-        .barber-arrow {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            border-radius: 50%;
-            opacity: 0.7;
-            transition: all 0.3s ease;
-        }
-
-        .barber-arrow svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        .barber-info {
-            padding: 14px;
-            text-align: center;
-        }
-
-        .barber-name {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 18px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 4px;
-        }
-
-        .barber-role {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-
-
-        /* BOTTOM NAV */
-        .bottom-nav {
-            position: fixed;
-            bottom: 12px;
-            left: 12px;
-            right: 12px;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 8px 4px;
-            padding-bottom: max(8px, env(safe-area-inset-bottom));
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            z-index: 50;
-        }
-
-        .nav-row {
-            display: flex;
-            justify-content: space-around;
-            align-items: flex-end;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            color: rgba(255, 255, 255, 0.4);
-            text-decoration: none;
-            font-size: 9px;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            transition: color 0.3s ease;
-            padding: 4px 8px;
-        }
-
-        .nav-item.active {
-            color: #fff;
-        }
-
-        .nav-item svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        /* CTA Central */
-        .nav-cta {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-            text-decoration: none;
-            margin-top: -26px;
-        }
-
-        .nav-cta-btn {
-            width: 52px;
-            height: 52px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #fff;
-            border-radius: 50%;
-            color: #000;
-            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .nav-cta-btn svg {
-            width: 22px;
-            height: 22px;
-        }
-
-        .nav-cta:active .nav-cta-btn {
-            transform: scale(0.95);
-            box-shadow: 0 2px 12px rgba(255, 255, 255, 0.2);
-        }
-
-        .nav-cta-label {
-            font-size: 9px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            color: #fff;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .barber-card {
-            opacity: 0;
-            animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        .barber-card:nth-child(1) {
-            animation-delay: 0.1s;
-        }
-
-        .barber-card:nth-child(2) {
-            animation-delay: 0.15s;
-        }
-
-        @media (min-width: 768px) {
-            .content {
-                max-width: 600px;
-                margin: 0 auto;
-            }
-
-            .logo {
-                height: 75px;
-            }
-
-            .barber-card:hover {
-                transform: translateY(-4px);
-                border-color: rgba(255, 255, 255, 0.2);
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation: none !important;
-                transition: none !important;
-            }
-
-            .barber-card {
-                opacity: 1;
-            }
-        }
-        .skip-to-content {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            background: #fff;
-            color: #000;
-            padding: 8px 16px;
-            z-index: 10000;
-            font-size: 14px;
-            text-decoration: none;
-            transition: top 0.2s;
-        }
-        .skip-to-content:focus {
-            top: 0;
-        }
-        a:focus-visible, button:focus-visible {
-            outline: 2px solid #fff;
-            outline-offset: 2px;
-        }
-    </style>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {"@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://barberclub-grenoble.fr/"},
-        {"@type": "ListItem", "position": 2, "name": "Meylan", "item": "https://barberclub-grenoble.fr/pages/meylan/"},
-        {"@type": "ListItem", "position": 3, "name": "Nos Barbers", "item": "https://barberclub-grenoble.fr/pages/meylan/barbers.html"}
-      ]
-    }
-    </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BarberShop",
-      "name": "BarberClub Meylan",
-      "image": "https://barberclub-grenoble.fr/assets/images/salons/meylan/salon-meylan.jpg",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "26 Av. du Grésivaudan",
-        "addressLocality": "Corenc",
-        "postalCode": "38700",
-        "addressCountry": "FR"
-      },
-      "url": "https://barberclub-grenoble.fr/pages/meylan/barbers.html",
-      "employee": [
-        {"@type": "Person", "name": "Lucas", "jobTitle": "Barbier", "image": "https://barberclub-grenoble.fr/assets/images/barbers/lucas.png"},
-        {"@type": "Person", "name": "Julien", "jobTitle": "Fondateur & Barbier", "image": "https://barberclub-grenoble.fr/assets/images/barbers/julien.jpg"}
-      ]
-    }
-    </script>
+/* ═══ REDUCED MOTION ═══ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0s !important; transition-duration: 0.01ms !important; }
+  .page-title .letter, .page-subtitle, .page-intro, .barber-card, .bottom-nav, .back-btn { opacity: 1; transform: none; }
+  .cursor-dot, .cursor-ring { display: none; } body { cursor: auto; }
+}
+a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px; border-radius: 4px; }
+</style>
 </head>
-
 <body>
-    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
-    <div class="bg-fixed"></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="page-transition" aria-hidden="true"></div>
+<div class="cursor-dot" aria-hidden="true"></div>
+<div class="cursor-ring" aria-hidden="true"></div>
 
-    <header class="header" id="header">
-        <a href="./" class="back-btn" onclick="if(history.length>1){history.back();return false}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-        </a>
-        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
-        <div class="header-spacer"></div>
-    </header>
+<div class="page" id="page">
 
-    <div class="page-header">
-        <h1 class="page-title">Nos Barbers à Meylan</h1>
-        <p class="page-subtitle">L'équipe BarberClub</p>
-        <p class="page-intro">Lucas et Julien, co-fondateurs de BarberClub, t'accueillent au salon de Meylan. Deux barbers complémentaires qui maîtrisent aussi bien les dégradés que les soins barbe premium.</p>
-    </div>
+  <header class="header" id="header">
+    <a href="./" class="back-btn" aria-label="Retour">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </a>
+    <a href="../../"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+    <div class="header-spacer"></div>
+  </header>
 
-    <div class="content" id="main-content">
-        <div class="barbers-grid">
-            <a href="../barbers/barber-lucas.html" class="barber-card">
-                <img loading="lazy" src="../../assets/images/barbers/lucas.png" alt="Lucas - Barbier BarberClub Meylan" class="barber-photo">
-                <div class="barber-info">
-                    <h3 class="barber-name">Lucas</h3>
-                    <p class="barber-role">Co-Fondateur</p>
-                </div>
-                <span class="barber-arrow">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                </span>
-            </a>
+  <div class="page-header">
+    <h1 class="page-title" data-split>Nos Barbers</h1>
+    <p class="page-subtitle">L'équipe BarberClub Meylan</p>
+    <p class="page-intro">Lucas et Julien, co-fondateurs de BarberClub, t'accueillent au salon de Meylan. Deux barbers complémentaires qui maîtrisent aussi bien les dégradés que les soins barbe premium.</p>
+  </div>
 
-            <a href="../barbers/barber-julien.html" class="barber-card">
-                <img loading="lazy" src="../../assets/images/barbers/julien.jpg" alt="Julien - Barbier BarberClub Meylan" class="barber-photo">
-                <div class="barber-info">
-                    <h3 class="barber-name">Julien</h3>
-                    <p class="barber-role">Co-Fondateur</p>
-                </div>
-                <span class="barber-arrow">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                </span>
-            </a>
+  <div class="barbers">
+
+    <a href="../barbers/barber-lucas.html" class="barber-card" data-tilt>
+      <div class="barber-media">
+        <video autoplay muted loop playsinline poster="../../assets/images/barbers/lucas.png">
+          <source src="../../assets/videos/barbers/lucas.mp4" type="video/mp4">
+          <img src="../../assets/images/barbers/lucas.png" alt="Lucas">
+        </video>
+        <div class="barber-media-overlay"></div>
+      </div>
+      <div class="barber-info">
+        <div class="barber-details">
+          <h2 class="barber-name">Lucas</h2>
+          <p class="barber-role">Co-Fondateur</p>
         </div>
-    </div>
-
-    <nav class="bottom-nav">
-        <div class="nav-row">
-            <a href="barbers.html" class="nav-item active">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                Barbers
-            </a>
-            <a href="prestations.html" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-                    <line x1="7" y1="7" x2="7.01" y2="7" />
-                </svg>
-                Tarifs
-            </a>
-            <a href="reserver.html" class="nav-cta">
-                <div class="nav-cta-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                </div>
-                <span class="nav-cta-label">Réserver</span>
-            </a>
-            <a href="salon.html" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                    <polyline points="9 22 9 12 15 12 15 22" />
-                </svg>
-                Salon
-            </a>
-            <a href="contact.html" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                    <circle cx="12" cy="10" r="3" />
-                </svg>
-                Contact
-            </a>
+        <div class="barber-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </div>
-    </nav>
+      </div>
+    </a>
 
-    <script>
-        const header = document.getElementById('header');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                header.classList.add('scrolled');
-            } else {
-                header.classList.remove('scrolled');
-            }
-        }, { passive: true });
-    </script>
+    <a href="../barbers/barber-julien.html" class="barber-card" data-tilt>
+      <div class="barber-media">
+        <img src="../../assets/images/barbers/julien.jpg" alt="Julien - Barbier BarberClub Meylan">
+        <div class="barber-media-overlay"></div>
+      </div>
+      <div class="barber-info">
+        <div class="barber-details">
+          <h2 class="barber-name">Julien</h2>
+          <p class="barber-role">Co-Fondateur</p>
+        </div>
+        <div class="barber-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-row">
+      <a href="barbers.html" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Barbers
+      </a>
+      <a href="prestations.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        Tarifs
+      </a>
+      <a href="reserver.html" class="nav-cta">
+        <div class="nav-cta-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <span class="nav-cta-label">Réserver</span>
+      </a>
+      <a href="galerie.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Salon
+      </a>
+      <a href="contact.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Contact
+      </a>
+    </div>
+  </nav>
+
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+  const page = document.getElementById('page');
+  requestAnimationFrame(() => page.classList.add('loaded'));
+
+  /* Header scroll */
+  const header = document.getElementById('header');
+  window.addEventListener('scroll', () => {
+    header.classList.toggle('scrolled', window.scrollY > 50);
+  }, { passive: true });
+
+  /* Letter split */
+  document.querySelectorAll('[data-split]').forEach(el => {
+    const text = el.textContent; el.innerHTML = '';
+    [...text].forEach((ch, i) => {
+      const s = document.createElement('span');
+      s.className = 'letter';
+      s.textContent = ch === ' ' ? '\u00A0' : ch;
+      s.style.transitionDelay = `${0.15 + i * 0.06}s`;
+      el.appendChild(s);
+    });
+  });
+
+  /* 3D tilt on cards (desktop) */
+  if (!isTouch && !prefersReduced) {
+    document.querySelectorAll('[data-tilt]').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width;
+        const y = (e.clientY - r.top) / r.height;
+        card.style.transform = `perspective(800px) rotateX(${(0.5-y)*8}deg) rotateY(${(x-0.5)*8}deg) translateY(-4px)`;
+      });
+      card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+    });
+  }
+
+  /* Custom cursor */
+  if (!isTouch) {
+    const dot = document.querySelector('.cursor-dot'), ring = document.querySelector('.cursor-ring');
+    let mx=-100,my=-100,rx=-100,ry=-100;
+    document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; dot.style.left=mx+'px'; dot.style.top=my+'px'; });
+    (function loop(){ rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(loop); })();
+    document.querySelectorAll('a,[data-tilt]').forEach(el => {
+      el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+      el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+    });
+  }
+
+  /* Page transition — reset on back/forward nav */
+  const trans = document.querySelector('.page-transition');
+  window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
+  document.querySelectorAll('a[href]').forEach(link => {
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
+    link.addEventListener('click', function(e) {
+      e.preventDefault(); trans.classList.add('active');
+      setTimeout(() => { window.location.href = href; }, 700);
+    });
+  });
+})();
+</script>
 <script src="../../assets/js/cookie-consent.js" defer></script>
 </body>
-
 </html>

@@ -1,599 +1,966 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>BarberClub | Barbier & Coiffeur Homme Grenoble, Meylan, Isère</title>
+<meta name="description" content="BarberClub : barbier et coiffeur homme à Grenoble et Meylan. Dégradés, barbe, coupes tendance. 2 salons premium en Isère. Réservez en ligne !">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="canonical" href="https://barberclub-grenoble.fr/">
+<meta property="og:title" content="BarberClub - Barbier & Coiffeur Homme Grenoble & Meylan">
+<meta property="og:description" content="2 salons de barbier premium en Isère. Coupes tendance, dégradés, taille de barbe.">
+<meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/grenoble/salon-grenoble.jpg">
+<meta property="og:url" content="https://barberclub-grenoble.fr/">
+<link rel="manifest" href="config/manifest.json">
+<link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+<link rel="icon" type="image/png" href="assets/icons/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Orbitron';
+  src: url('assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-display: swap;
+}
 
-    <!-- SEO Meta Tags -->
-    <title>BarberClub | Barbier & Coiffeur Homme Grenoble, Meylan, Isère</title>
-    <meta name="description"
-        content="BarberClub : votre barbier et coiffeur homme à Grenoble et Meylan. Salons premium en Isère pour dégradés, taille de barbe, coupes tendance. Proche Corenc. Réservez en ligne !">
-    <meta name="keywords"
-        content="barber grenoble, coiffeur grenoble, coiffeur meylan, coiffeur isère, coiffeur corenc, barbier grenoble, barbier meylan, coiffeur homme grenoble, salon coiffure grenoble, dégradé grenoble, barbershop grenoble, coupe homme isère">
-    <meta name="author" content="BarberClub">
-    <meta name="robots" content="index, follow">
-    <meta name="geo.region" content="FR-38">
-    <meta name="geo.placename" content="Grenoble, Meylan">
-    <link rel="canonical" href="https://barberclub-grenoble.fr">
-    <meta name="google-site-verification" content="wjTLgxwpU2wUpMAFH5Svk76sVQTTMKa7V1hcwvECp2w" />
+/* ═══════════════════════════════════════
+   RESET
+   ═══════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+  height: 100%; height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+@media (pointer: fine) { body { cursor: none; } }
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="BarberClub - Barbier & Coiffeur Homme Grenoble & Meylan">
-    <meta property="og:description"
-        content="Vos barbiers premium en Isère. 2 salons : Grenoble centre et Meylan. Coupes tendance, dégradés, barbe. Réservez en ligne !">
-    <meta property="og:url" content="https://barberclub-grenoble.fr">
-    <meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/grenoble/salon-grenoble.jpg">
-    <meta property="og:locale" content="fr_FR">
-    <meta property="og:site_name" content="BarberClub">
+/* ═══════════════════════════════════════
+   CUSTOM CURSOR (desktop)
+   ═══════════════════════════════════════ */
+.cursor-dot {
+  position: fixed; width: 8px; height: 8px;
+  background: #fff; border-radius: 50%;
+  pointer-events: none; z-index: 10001;
+  mix-blend-mode: difference;
+  transform: translate(-50%, -50%);
+  will-change: left, top;
+}
+.cursor-ring {
+  position: fixed; width: 40px; height: 40px;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  border-radius: 50%; pointer-events: none; z-index: 10001;
+  mix-blend-mode: difference;
+  transition: width 0.35s cubic-bezier(0.16,1,0.3,1), height 0.35s cubic-bezier(0.16,1,0.3,1), border-color 0.3s;
+  transform: translate(-50%, -50%);
+  will-change: left, top;
+}
+.cursor-ring.hovering { width: 64px; height: 64px; border-color: rgba(255,255,255,0.8); }
+@media (pointer: coarse) { .cursor-dot, .cursor-ring { display: none !important; } }
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="BarberClub - Barbier Grenoble & Meylan">
-    <meta name="twitter:description" content="Vos barbiers premium en Isère. 2 salons : Grenoble et Meylan.">
-    <meta name="twitter:image" content="https://barberclub-grenoble.fr/assets/images/salons/grenoble/salon-grenoble.jpg">
+/* ═══════════════════════════════════════
+   GRAIN
+   ═══════════════════════════════════════ */
+.grain {
+  position: fixed; inset: 0; z-index: 9000; pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat; background-size: 180px;
+}
 
-    <!-- Mobile & PWA -->
-    <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="config/manifest.json">
-    <link rel="icon" type="image/png" sizes="96x96" href="assets/icons/favicon.png">
-    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+/* ═══════════════════════════════════════
+   PAGE TRANSITION
+   ═══════════════════════════════════════ */
+.page-transition {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #000; pointer-events: none;
+  opacity: 0; transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+.page-transition.active { opacity: 1; pointer-events: all; }
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
-        rel="stylesheet">
+/* ═══════════════════════════════════════
+   CINEMATIC INTRO — Glow Focus
+   ═══════════════════════════════════════ */
+.intro {
+  position: fixed; inset: 0; z-index: 9998;
+  background: #000;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.6s ease, filter 0.6s ease, visibility 0.6s;
+  overflow: hidden;
+}
+.intro.done { opacity: 0; filter: blur(10px); visibility: hidden; pointer-events: none; }
 
-    <!-- Schema.org Organization -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "BarberClub",
-        "description": "Barbier et coiffeur homme premium en Isère. Salons à Grenoble et Meylan.",
-        "url": "https://barberclub-grenoble.fr",
-        "logo": "https://barberclub-grenoble.fr/assets/images/common/logo-blanc.png",
-        "areaServed": [
-            {
-                "@type": "City",
-                "name": "Grenoble"
-            },
-            {
-                "@type": "City",
-                "name": "Meylan"
-            },
-            {
-                "@type": "City",
-                "name": "Corenc"
-            },
-            {
-                "@type": "AdministrativeArea",
-                "name": "Isère"
-            }
-        ],
-        "sameAs": [
-            "https://www.instagram.com/barberclub.grenoble",
-            "https://www.instagram.com/barberclub.meylan"
-        ]
-    }
-    </script>
-    <style>
-        @font-face {
-            font-family: 'Orbitron';
-            src: url('assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
-            font-weight: 800;
-            font-style: normal;
-            font-display: swap;
-        }
+.intro-stage {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+.intro-logo {
+  height: 28vh; width: auto;
+  filter: invert(1);
+  animation: logoFocus 1.8s ease-out forwards;
+}
+@keyframes logoFocus {
+  0%   { opacity: 0;   filter: invert(1) blur(30px) brightness(2);   transform: scale(1.12); }
+  10%  { opacity: 0.5; filter: invert(1) blur(18px) brightness(1.7); transform: scale(1.05); }
+  20%  { opacity: 0.3; filter: invert(1) blur(24px) brightness(1.5); transform: scale(1.08); }
+  35%  { opacity: 0.8; filter: invert(1) blur(8px) brightness(1.3);  transform: scale(1.02); }
+  45%  { opacity: 0.6; filter: invert(1) blur(14px) brightness(1.2); transform: scale(1.04); }
+  60%  { opacity: 0.95;filter: invert(1) blur(2px) brightness(1.1);  transform: scale(1.005); }
+  75%  { opacity: 1;   filter: invert(1) blur(0px) brightness(1.4);  transform: scale(1); }
+  100% { opacity: 1;   filter: invert(1) blur(0px) brightness(1);    transform: scale(1); }
+}
 
-        html,
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background: #000;
-            color: #fff;
-            overflow-x: hidden;
-            min-height: 100vh;
-            min-height: 100dvh;
-        }
+.intro-glow {
+  position: absolute; height: 28vh; width: auto;
+  filter: invert(1) blur(15px) brightness(1.5);
+  pointer-events: none;
+  animation: glowPulse 1.8s ease-out forwards;
+}
+@keyframes glowPulse {
+  0%   { opacity: 0;   filter: invert(1) blur(45px) brightness(2.5); transform: scale(1.2); }
+  10%  { opacity: 0.6; filter: invert(1) blur(30px) brightness(2);   transform: scale(1.1); }
+  20%  { opacity: 0.3; filter: invert(1) blur(40px) brightness(1.7); transform: scale(1.13); }
+  35%  { opacity: 0.65;filter: invert(1) blur(20px) brightness(1.5); transform: scale(1.05); }
+  45%  { opacity: 0.35;filter: invert(1) blur(28px) brightness(1.3); transform: scale(1.08); }
+  60%  { opacity: 0.3; filter: invert(1) blur(12px) brightness(1.2); transform: scale(1.02); }
+  75%  { opacity: 0.35;filter: invert(1) blur(10px) brightness(1.5); transform: scale(1.01); }
+  100% { opacity: 0.1; filter: invert(1) blur(10px) brightness(1.2); transform: scale(1); }
+}
 
-        /* LAYOUT */
-        .landing {
-            min-height: 100vh;
-            min-height: 100dvh;
-            display: flex;
-            flex-direction: column;
-        }
+.intro-bloom {
+  position: absolute; height: 28vh; width: auto;
+  filter: invert(1) blur(60px) brightness(1.3);
+  pointer-events: none;
+  animation: bloomPulse 1.8s ease-out forwards;
+}
+@keyframes bloomPulse {
+  0%   { opacity: 0;    transform: scale(1.3); }
+  15%  { opacity: 0.3;  transform: scale(1.15); }
+  40%  { opacity: 0.25; transform: scale(1.1); }
+  75%  { opacity: 0.15; transform: scale(1.05); }
+  100% { opacity: 0.05; transform: scale(1.03); }
+}
 
-        /* HEADER */
-        .header {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            padding: 20px 20px 40px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 14px;
-            background: linear-gradient(to bottom,
-                    rgba(0, 0, 0, 1) 0%,
-                    rgba(0, 0, 0, 0.85) 40%,
-                    transparent 100%);
-            height: auto;
-        }
 
-        .logo {
-            height: 65px;
-            width: auto;
-        }
+/* ═══════════════════════════════════════
+   LANDING — SPLIT LAYOUT
+   ═══════════════════════════════════════ */
+.landing {
+  height: 100%; height: 100dvh;
+  display: flex; flex-direction: column;
+  position: relative;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.landing.visible { opacity: 1; }
 
-        .header-tagline {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
+/* ═══════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════ */
+.header {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 500;
+  padding: 18px 20px 40px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 50%, transparent 100%);
+  pointer-events: none;
+}
+.logo-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  opacity: 0; transform: translateY(-15px);
+  transition: opacity 0.7s ease 0.3s, transform 0.7s cubic-bezier(0.16,1,0.3,1) 0.3s;
+}
+.landing.visible .logo-wrap { opacity: 1; transform: translateY(0); }
+.crown { width: 16px; height: auto; opacity: 0.3; animation: crownFloat 5s ease-in-out infinite; }
+@keyframes crownFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-3px) rotate(1deg); }
+  75% { transform: translateY(-1.5px) rotate(-0.5deg); }
+}
+.logo { height: 52px; width: auto; }
+@media (min-width: 768px) {
+  .header { padding: 22px 30px 50px; }
+  .logo { height: 68px; }
+  .crown { width: 20px; }
+}
 
-        @media (min-width: 768px) {
-            .header {
-                padding: 20px 30px 50px;
-            }
+/* ═══════════════════════════════════════
+   SALONS CONTAINER
+   ═══════════════════════════════════════ */
+.salons { flex: 1; display: flex; flex-direction: column; position: relative; }
+@media (min-width: 768px) { .salons { flex-direction: row; } }
 
-            .logo {
-                height: 80px;
-            }
+/* ═══════════════════════════════════════
+   SALON CARD
+   ═══════════════════════════════════════ */
+.salon {
+  flex: 1; position: relative;
+  min-height: 50vh; min-height: 50dvh;
+  overflow: hidden; display: flex; align-items: flex-end;
+  text-decoration: none; color: #fff;
+}
+@media (pointer: fine) { .salon { cursor: none; } }
+@media (min-width: 768px) { .salon { min-height: 100vh; min-height: 100dvh; } }
 
-        }
+/* ═══════════════════════════════════════
+   BACKGROUND — KEN BURNS
+   ═══════════════════════════════════════ */
+.salon-bg {
+  position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
+  background-size: cover; background-position: center;
+  filter: brightness(0.3) saturate(0.7);
+  will-change: transform;
+  animation: kenBurns1 22s ease-in-out infinite alternate;
+  transition: filter 0.8s ease;
+}
+.salon-grenoble .salon-bg {
+  background-image: url('assets/images/salons/grenoble/salon-grenoble.jpg');
+}
+.salon-meylan .salon-bg {
+  background-image: url('assets/images/salons/meylan/salon-meylan-interieur.jpg');
+  animation-name: kenBurns2;
+}
+@keyframes kenBurns1 {
+  0%   { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.18) translate(-2%, -1.5%); }
+}
+@keyframes kenBurns2 {
+  0%   { transform: scale(1.12) translate(-1%, 0.5%); }
+  100% { transform: scale(1) translate(1%, -0.5%); }
+}
 
-        /* SALONS */
-        .salons {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
+/* ═══════════════════════════════════════
+   TOUCH LIGHT LAYER — brighter version revealed by touch
+   ═══════════════════════════════════════ */
+.salon-light {
+  position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
+  background-size: cover; background-position: center;
+  filter: brightness(0.75) saturate(1.3) contrast(1.05);
+  pointer-events: none; z-index: 1;
+  will-change: mask-image, -webkit-mask-image;
+  -webkit-mask-image: radial-gradient(circle 0px at -100px -100px, black 0%, transparent 100%);
+  mask-image: radial-gradient(circle 0px at -100px -100px, black 0%, transparent 100%);
+  transition: -webkit-mask-image 0.08s, mask-image 0.08s;
+}
+.salon-grenoble .salon-light {
+  background-image: url('assets/images/salons/grenoble/salon-grenoble.jpg');
+}
+.salon-meylan .salon-light {
+  background-image: url('assets/images/salons/meylan/salon-meylan-interieur.jpg');
+}
+/* Desktop: light follows mouse */
+@media (pointer: fine) {
+  .salon-light { filter: brightness(0.65) saturate(1.2); }
+}
 
-        @media (min-width: 768px) {
-            .salons {
-                flex-direction: row;
-            }
-        }
+/* ═══════════════════════════════════════
+   GRADIENT OVERLAY
+   ═══════════════════════════════════════ */
+.salon-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(0deg,
+    rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.3) 35%,
+    rgba(0,0,0,0.05) 60%, rgba(0,0,0,0.15) 100%);
+  pointer-events: none; z-index: 2;
+}
 
-        /* SALON CARD */
-        .salon {
-            flex: 1;
-            position: relative;
-            min-height: 50vh;
-            min-height: 50dvh;
-            overflow: hidden;
-            display: flex;
-            align-items: flex-end;
-            text-decoration: none;
-            color: #fff;
-            cursor: pointer;
-        }
+/* ═══════════════════════════════════════
+   VOLUMETRIC LIGHT (gyro-reactive)
+   ═══════════════════════════════════════ */
+.volumetric-light {
+  position: absolute; inset: 0; z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 60% 40% at var(--vl-x, 50%) var(--vl-y, 10%),
+    rgba(255,255,255,0.04) 0%, transparent 70%
+  );
+  mix-blend-mode: screen;
+  transition: background 0.3s;
+}
 
-        @media (min-width: 768px) {
-            .salon {
-                min-height: 100vh;
-                min-height: 100dvh;
-            }
-        }
+/* ═══════════════════════════════════════
+   PARTICLES
+   ═══════════════════════════════════════ */
+.particles { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
+.particle {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  animation: particleFloat linear infinite;
+}
+@keyframes particleFloat {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  8% { opacity: 0.5; }
+  92% { opacity: 0.5; }
+  100% { transform: translateY(-110vh) translateX(20px); opacity: 0; }
+}
 
-        /* BACKGROUND IMAGE */
-        .salon-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-size: cover;
-            background-position: center center;
-            filter: brightness(0.4);
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.6s ease;
-        }
+/* ═══════════════════════════════════════
+   SALON CONTENT
+   ═══════════════════════════════════════ */
+.salon-content {
+  position: relative; z-index: 10;
+  width: 100%; padding: 28px 24px;
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 4px;
+  transform-style: preserve-3d;
+  /* Staggered entrance */
+  opacity: 0; transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16,1,0.3,1);
+}
+.landing.visible .salon-grenoble .salon-content {
+  opacity: 1; transform: translateY(0); transition-delay: 0.2s;
+}
+.landing.visible .salon-meylan .salon-content {
+  opacity: 1; transform: translateY(0); transition-delay: 0.45s;
+}
+@media (min-width: 768px) {
+  .salon-content { padding: 50px; align-items: center; text-align: center; }
+}
 
-        .salon-grenoble .salon-bg {
-            background-image: url('assets/images/salons/grenoble/salon-grenoble.jpg');
-        }
+/* ═══════════════════════════════════════
+   SALON TITLE — letter reveal
+   ═══════════════════════════════════════ */
+.salon-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 38px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  line-height: 1; overflow: hidden; position: relative;
+}
+.salon-title .letter {
+  display: inline-block; opacity: 0;
+  transform: translateY(105%);
+  transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+.landing.visible .salon-title .letter { opacity: 1; transform: translateY(0); }
 
-        .salon-meylan .salon-bg {
-            background-image: url('assets/images/salons/meylan/salon-meylan-interieur.jpg');
-        }
+/* Shimmer */
+.salon-title::after {
+  content: ''; position: absolute;
+  top: 0; left: -100%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  animation: shimmer 5s ease-in-out infinite 4s;
+  pointer-events: none;
+}
+@keyframes shimmer {
+  0% { left: -60%; } 35% { left: 120%; } 100% { left: 120%; }
+}
+@media (min-width: 768px) { .salon-title { font-size: 60px; } }
 
-        .salon:active .salon-bg {
-            transform: scale(1.03);
-            filter: brightness(0.55);
-        }
+/* Location */
+.salon-location {
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgba(255,255,255,0.25); font-weight: 500;
+  margin-bottom: 14px;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.landing.visible .salon-grenoble .salon-location { opacity: 1; transform: translateY(0); transition-delay: 0.7s; }
+.landing.visible .salon-meylan .salon-location { opacity: 1; transform: translateY(0); transition-delay: 0.9s; }
+@media (min-width: 768px) { .salon-location { font-size: 11px; margin-bottom: 18px; } }
 
-        /* OVERLAY */
-        .salon-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(0deg,
-                    rgba(0, 0, 0, 0.85) 0%,
-                    rgba(0, 0, 0, 0.3) 40%,
-                    rgba(0, 0, 0, 0.1) 70%,
-                    rgba(0, 0, 0, 0) 100%);
-            pointer-events: none;
-        }
+/* ═══════════════════════════════════════
+   CTA BUTTON
+   ═══════════════════════════════════════ */
+.salon-cta {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 10px; width: 100%; max-width: 260px;
+  padding: 16px 24px;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 14px; color: #fff;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  text-decoration: none; min-height: 54px;
+  position: relative; overflow: hidden;
+  opacity: 0; transform: translateY(14px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16,1,0.3,1),
+              background 0.35s, border-color 0.35s, box-shadow 0.35s;
+}
+@media (pointer: fine) { .salon-cta { cursor: none; } }
+.landing.visible .salon-grenoble .salon-cta { opacity: 1; transform: translateY(0); transition-delay: 0.85s; }
+.landing.visible .salon-meylan .salon-cta { opacity: 1; transform: translateY(0); transition-delay: 1.05s; }
 
-        /* CONTENT */
-        .salon-content {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            padding: 30px 24px;
-            padding-bottom: max(30px, env(safe-area-inset-bottom));
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
+/* Animated shimmer sweep */
+.salon-cta::after {
+  content: ''; position: absolute;
+  top: 0; left: -80%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  animation: ctaShimmer 6s ease-in-out infinite 5s;
+  pointer-events: none;
+}
+@keyframes ctaShimmer { 0% { left: -50%; } 25% { left: 120%; } 100% { left: 120%; } }
 
-        @media (min-width: 768px) {
-            .salon-content {
-                padding: 50px;
-                align-items: center;
-                text-align: center;
-            }
-        }
+.salon:active .salon-cta, .salon:hover .salon-cta {
+  background: rgba(255,255,255,0.16);
+  border-color: rgba(255,255,255,0.35);
+  box-shadow: 0 0 30px rgba(255,255,255,0.06);
+}
+.salon-cta:active { transform: scale(0.96) !important; }
+@media (min-width: 768px) { .salon-cta { width: auto; max-width: none; padding: 16px 38px; } }
 
-        /* TITLE */
-        .salon-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 38px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            line-height: 1;
-            text-shadow: 0 0 60px rgba(255, 255, 255, 0.1);
-        }
+/* Ripple */
+.ripple {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transform: scale(0); animation: rippleAnim 0.7s ease-out forwards;
+  pointer-events: none; z-index: 2;
+}
+@keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
 
-        .salon-location {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.35);
-            letter-spacing: 0.06em;
-            margin-bottom: 10px;
-        }
+.cta-icon { width: 16px; height: 16px; transition: transform 0.4s cubic-bezier(0.16,1,0.3,1); position: relative; z-index: 1; }
+.cta-text { position: relative; z-index: 1; }
+.salon:hover .cta-icon, .salon:active .cta-icon { transform: translateX(4px); }
 
-        @media (min-width: 768px) {
-            .salon-title {
-                font-size: 60px;
-            }
+/* ═══════════════════════════════════════
+   SEPARATOR
+   ═══════════════════════════════════════ */
+/* ═══════════════════════════════════════
+   SEPARATOR — glowing line with traveling light
+   ═══════════════════════════════════════ */
+.separator {
+  position: relative; z-index: 50;
+  height: 3px;
+}
+.separator-line {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.08);
+  opacity: 0; transform: scaleX(0); transform-origin: center;
+  transition: opacity 0.8s ease, transform 1s cubic-bezier(0.16,1,0.3,1);
+  transition-delay: 0.6s;
+}
+.landing.visible .separator-line { opacity: 1; transform: scaleX(1); }
 
-            .salon-location {
-                font-size: 12px;
-            }
-        }
+/* Bright center glow */
+.separator-line::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.5) 30%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.5) 70%, transparent 95%);
+  box-shadow: 0 0 12px rgba(255,255,255,0.5), 0 0 30px rgba(255,255,255,0.15), 0 0 60px rgba(255,255,255,0.05);
+}
 
-        /* BUTTON */
-        .salon-cta {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            max-width: 260px;
-            padding: 16px 24px;
-            background: rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 14px;
-            color: #fff;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            min-height: 54px;
-            position: relative;
-            overflow: hidden;
-        }
+/* Traveling light orb */
+.separator-line::after {
+  content: ''; position: absolute;
+  top: -6px; width: 40px; height: 15px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.15) 40%, transparent 70%);
+  animation: sepTravelH 4s ease-in-out infinite;
+}
+@keyframes sepTravelH {
+  0%   { left: 5%;  opacity: 0.3; }
+  50%  { left: 85%; opacity: 1; }
+  100% { left: 5%;  opacity: 0.3; }
+}
 
-        .salon-cta::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            border-radius: 14px;
-        }
+/* Soft aura around separator */
+.separator-glow {
+  position: absolute;
+  top: -20px; left: 10%; right: 10%; height: 43px;
+  background: radial-gradient(ellipse 80% 50% at 50% 50%, rgba(255,255,255,0.06), transparent 70%);
+  animation: sepPulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sepPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
-        .salon:active .salon-cta {
-            transform: scale(0.97);
-            background: rgba(255, 255, 255, 0.12);
-        }
+/* Desktop: vertical */
+@media (min-width: 768px) {
+  .separator {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 3px; height: 100%;
+  }
+  .separator-line {
+    transform: scaleY(0); transform-origin: center;
+  }
+  .landing.visible .separator-line { transform: scaleY(1); }
+  .separator-line::before {
+    background: linear-gradient(180deg, transparent 5%, rgba(255,255,255,0.5) 30%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.5) 70%, transparent 95%);
+    box-shadow: 0 0 12px rgba(255,255,255,0.5), 0 0 30px rgba(255,255,255,0.15), 0 0 60px rgba(255,255,255,0.05);
+  }
+  .separator-line::after {
+    top: auto; left: -6px;
+    width: 15px; height: 40px;
+    animation: sepTravelV 4s ease-in-out infinite;
+  }
+  @keyframes sepTravelV {
+    0%   { top: 5%;  opacity: 0.3; }
+    50%  { top: 85%; opacity: 1; }
+    100% { top: 5%;  opacity: 0.3; }
+  }
+  .separator-glow {
+    top: 10%; bottom: 10%; left: -25px; right: auto;
+    width: 53px; height: auto;
+    background: radial-gradient(ellipse 50% 80% at 50% 50%, rgba(255,255,255,0.04), transparent 70%);
+  }
+}
 
-        .salon:active .salon-cta::before {
-            opacity: 1;
-        }
+/* ═══════════════════════════════════════
+   TOUCH HINT (mobile)
+   ═══════════════════════════════════════ */
+.touch-hint {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%); z-index: 600;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+.landing.visible .touch-hint { opacity: 1; transition-delay: 1.5s; }
+.touch-hint.hidden { opacity: 0 !important; transition-delay: 0s; }
+.touch-hint span {
+  font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgba(255,255,255,0.18); font-weight: 500;
+}
+.hand-icon {
+  width: 20px; height: 20px;
+  border: 1.5px solid rgba(255,255,255,0.18);
+  border-radius: 50%;
+  position: relative;
+  animation: touchPulse 2s ease-in-out infinite;
+}
+.hand-icon::after {
+  content: ''; position: absolute;
+  inset: 3px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+}
+@keyframes touchPulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
 
-        @media (min-width: 768px) {
-            .salon-cta {
-                width: auto;
-                max-width: none;
-                padding: 16px 36px;
-            }
+/* Hide on desktop */
+@media (pointer: fine) { .touch-hint { display: none !important; } }
 
-            .salon:hover .salon-bg {
-                transform: scale(1.03);
-                filter: brightness(0.55);
-            }
+/* ═══════════════════════════════════════
+   MOBILE
+   ═══════════════════════════════════════ */
+@media (max-width: 767px) {
+  html, body { overflow-y: auto; }
+  .salon-cta { font-size: 11px; padding: 14px 22px; }
+  .salon-title { font-size: 34px; }
+}
 
-            .salon:hover .salon-cta {
-                background: rgba(255, 255, 255, 0.1);
-                border-color: rgba(255, 255, 255, 0.25);
-                transform: translateY(-2px);
-            }
+/* ═══════════════════════════════════════
+   REDUCED MOTION
+   ═══════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important; animation-delay: 0s !important; transition-duration: 0.01ms !important;
+  }
+  .salon-bg { animation: none !important; }
+  .salon-title .letter, .salon-location, .salon-cta, .salon-content { opacity: 1; transform: none; }
+  .separator-line { opacity: 1; transform: none; }
+  .cursor-dot, .cursor-ring { display: none; }
+  body { cursor: auto; }
+  .logo-wrap { opacity: 1; transform: none; }
+  .particle { display: none; }
+  .intro { display: none; }
+  .landing { opacity: 1; }
+  .touch-hint { display: none; }
+}
 
-            .salon:hover .salon-cta::before {
-                opacity: 1;
-            }
-        }
-
-        .cta-icon {
-            width: 16px;
-            height: 16px;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            z-index: 1;
-        }
-
-        .salon:hover .cta-icon {
-            transform: translateX(3px);
-        }
-
-        .cta-text {
-            position: relative;
-            z-index: 1;
-        }
-
-        /* SEPARATOR */
-        .separator {
-            height: 1px;
-            background: linear-gradient(90deg, transparent 5%, rgba(255, 255, 255, 0.6) 30%, rgba(255, 255, 255, 0.6) 70%, transparent 95%);
-            position: relative;
-            z-index: 50;
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5),
-                0 0 20px rgba(255, 255, 255, 0.2);
-        }
-
-        .separator::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 160px;
-            height: 50px;
-            background: radial-gradient(ellipse, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
-        }
-
-        @media (min-width: 768px) {
-            .separator {
-                position: absolute;
-                top: 0;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 1px;
-                height: 100%;
-                background: linear-gradient(180deg,
-                        transparent 5%,
-                        rgba(255, 255, 255, 0.5) 20%,
-                        rgba(255, 255, 255, 0.5) 80%,
-                        transparent 95%);
-                box-shadow: 0 0 8px rgba(255, 255, 255, 0.5),
-                    0 0 20px rgba(255, 255, 255, 0.2);
-            }
-
-            .separator::before {
-                width: 50px;
-                height: 160px;
-            }
-        }
-
-        /* ANIMATIONS */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(25px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes scaleIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        @keyframes expandH {
-            from {
-                transform: scaleX(0);
-                opacity: 0;
-            }
-            to {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-        }
-
-        @keyframes expandV {
-            from {
-                transform: translateX(-50%) scaleY(0);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(-50%) scaleY(1);
-                opacity: 1;
-            }
-        }
-
-        .logo {
-            animation: scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        .salon-content {
-            opacity: 0;
-            animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        .salon-grenoble .salon-content {
-            animation-delay: 0.25s;
-        }
-
-        .salon-meylan .salon-content {
-            animation-delay: 0.4s;
-        }
-
-        .separator {
-            animation: expandH 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards;
-            transform-origin: center;
-            opacity: 0;
-        }
-
-        @media (min-width: 768px) {
-            .separator {
-                animation: expandV 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards;
-            }
-        }
-
-        .salon-bg {
-            animation: fadeIn 1.2s ease forwards;
-        }
-
-        /* REDUCED MOTION */
-        @media (prefers-reduced-motion: reduce) {
-
-            *,
-            *::before,
-            *::after {
-                animation-duration: 0.01ms !important;
-                animation-delay: 0s !important;
-                transition-duration: 0.01ms !important;
-            }
-
-            .salon-content,
-            .separator,
-            .logo {
-                opacity: 1;
-                transform: none;
-            }
-        }
-        .skip-to-content {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            background: #fff;
-            color: #000;
-            padding: 8px 16px;
-            z-index: 10000;
-            font-size: 14px;
-            text-decoration: none;
-            transition: top 0.2s;
-        }
-        .skip-to-content:focus {
-            top: 0;
-        }
-        a:focus-visible, button:focus-visible {
-            outline: 2px solid #fff;
-            outline-offset: 2px;
-        }
-    </style>
+/* ═══════════════════════════════════════
+   FOCUS
+   ═══════════════════════════════════════ */
+a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px; border-radius: 4px; }
+</style>
 </head>
-
 <body>
-    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
-    <div class="landing">
-        <header class="header">
-            <img src="assets/images/common/logo-blanc.png" alt="BarberClub" class="logo">
-            <h1 class="header-tagline">Barbier & Coiffeur Homme Grenoble et Meylan</h1>
-        </header>
 
-        <main class="salons" id="main-content">
-            <a href="pages/grenoble/" class="salon salon-grenoble">
-                <div class="salon-bg"></div>
-                <div class="salon-overlay"></div>
-                <div class="salon-content">
-                    <h2 class="salon-title">Grenoble</h2>
-                    <p class="salon-location">Centre-ville</p>
-                    <span class="salon-cta">
-                        <span class="cta-text">Découvrir</span>
-                        <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
-                    </span>
-                </div>
-            </a>
+<!-- Grain -->
+<div class="grain" aria-hidden="true"></div>
+<!-- Page transition -->
+<div class="page-transition" aria-hidden="true"></div>
+<!-- Custom cursor -->
+<div class="cursor-dot" aria-hidden="true"></div>
+<div class="cursor-ring" aria-hidden="true"></div>
 
-            <div class="separator"></div>
+<!-- ═══════ CINEMATIC INTRO ═══════ -->
+<div class="intro" aria-hidden="true">
+  <div class="intro-stage">
+    <img src="assets/icons/favicon.png" alt="" class="intro-bloom">
+    <img src="assets/icons/favicon.png" alt="" class="intro-glow">
+    <img src="assets/icons/favicon.png" alt="" class="intro-logo">
+  </div>
+</div>
 
-            <a href="pages/meylan/" class="salon salon-meylan">
-                <div class="salon-bg"></div>
-                <div class="salon-overlay"></div>
-                <div class="salon-content">
-                    <h2 class="salon-title">Meylan</h2>
-                    <p class="salon-location">Près de Corenc</p>
-                    <span class="salon-cta">
-                        <span class="cta-text">Découvrir</span>
-                        <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
-                    </span>
-                </div>
-            </a>
-        </main>
+<!-- ═══════ LANDING ═══════ -->
+<div class="landing">
 
+  <header class="header">
+    <div class="logo-wrap">
+      <img src="assets/images/common/couronne.png" alt="" class="crown" aria-hidden="true">
+      <img src="assets/images/common/logo-blanc.png" alt="BarberClub" class="logo">
+    </div>
+  </header>
+
+
+  <main class="salons">
+
+    <a href="pages/grenoble/" class="salon salon-grenoble" data-salon>
+      <div class="salon-bg"></div>
+      <div class="salon-light"></div>
+      <div class="salon-overlay"></div>
+      <div class="volumetric-light"></div>
+      <div class="particles" aria-hidden="true"></div>
+      <div class="salon-content">
+        <h2 class="salon-title" data-split>Grenoble</h2>
+        <p class="salon-location">Centre-ville</p>
+        <span class="salon-cta" data-magnetic>
+          <span class="cta-text">Découvrir</span>
+          <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </span>
+      </div>
+    </a>
+
+    <div class="separator" aria-hidden="true">
+      <div class="separator-line"></div>
+      <div class="separator-glow"></div>
     </div>
 
-    <script>
-        // Register Service Worker for PWA (only if cookies not refused)
-        if ('serviceWorker' in navigator && localStorage.getItem('bc_cookie_consent') !== 'refused') {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
-            });
-        }
-    </script>
-<script src="assets/js/cookie-consent.js" defer></script>
-</body>
+    <a href="pages/meylan/" class="salon salon-meylan" data-salon>
+      <div class="salon-bg"></div>
+      <div class="salon-light"></div>
+      <div class="salon-overlay"></div>
+      <div class="volumetric-light"></div>
+      <div class="particles" aria-hidden="true"></div>
+      <div class="salon-content">
+        <h2 class="salon-title" data-split>Meylan</h2>
+        <p class="salon-location">Près de Corenc</p>
+        <span class="salon-cta" data-magnetic>
+          <span class="cta-text">Découvrir</span>
+          <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </span>
+      </div>
+    </a>
 
+  </main>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+
+  /* ═══════════════════════════════════════
+     INTRO → LANDING transition
+     ═══════════════════════════════════════ */
+  const intro = document.querySelector('.intro');
+  const landing = document.querySelector('.landing');
+  const alreadySeen = sessionStorage.getItem('bc_intro_seen');
+
+  if (alreadySeen) {
+    // Skip intro on return visits (same session)
+    intro.classList.add('done');
+    landing.classList.add('visible');
+  } else {
+    const INTRO_DURATION = 2400;
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        intro.classList.add('done');
+        landing.classList.add('visible');
+        sessionStorage.setItem('bc_intro_seen', '1');
+      }, INTRO_DURATION);
+    });
+    // Allow skip intro on tap/click
+    intro.addEventListener('click', () => {
+      intro.classList.add('done');
+      landing.classList.add('visible');
+      sessionStorage.setItem('bc_intro_seen', '1');
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     LETTER SPLIT (salon titles)
+     ═══════════════════════════════════════ */
+  document.querySelectorAll('[data-split]').forEach(el => {
+    const text = el.textContent;
+    el.innerHTML = '';
+    const isGrenoble = el.closest('.salon-grenoble');
+    const baseDelay = isGrenoble ? 0.25 : 0.5;
+    [...text].forEach((ch, i) => {
+      const s = document.createElement('span');
+      s.className = 'letter';
+      s.textContent = ch === ' ' ? '\u00A0' : ch;
+      s.style.transitionDelay = `${baseDelay + i * 0.06}s`;
+      el.appendChild(s);
+    });
+  });
+
+  /* ═══════════════════════════════════════
+     PARTICLES
+     ═══════════════════════════════════════ */
+  if (!prefersReduced) {
+    document.querySelectorAll('.particles').forEach(c => {
+      for (let i = 0; i < 15; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const size = 1 + Math.random() * 2.5;
+        p.style.cssText = `
+          left: ${Math.random() * 100}%;
+          bottom: -3%;
+          width: ${size}px; height: ${size}px;
+          animation-duration: ${7 + Math.random() * 14}s;
+          animation-delay: ${Math.random() * 12}s;
+          opacity: 0;
+        `;
+        c.appendChild(p);
+      }
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     TOUCH → LIGHT EFFECT (mobile)
+     The brighter layer is revealed in a circle around the finger
+     ═══════════════════════════════════════ */
+  if (isTouch && !prefersReduced) {
+    const touchHint = document.querySelector('.touch-hint');
+    document.querySelectorAll('.salon').forEach(salon => {
+      const light = salon.querySelector('.salon-light');
+      if (!light) return;
+
+      let lightActive = false;
+
+      salon.addEventListener('touchstart', e => {
+        lightActive = true;
+        if (touchHint) touchHint.classList.add('hidden');
+        updateLight(e.touches[0], salon, light);
+      }, { passive: true });
+
+      salon.addEventListener('touchmove', e => {
+        if (!lightActive) return;
+        updateLight(e.touches[0], salon, light);
+      }, { passive: true });
+
+      salon.addEventListener('touchend', () => {
+        lightActive = false;
+        // Fade out the light
+        light.style.webkitMaskImage = 'radial-gradient(circle 0px at -200px -200px, black 0%, transparent 100%)';
+        light.style.maskImage = 'radial-gradient(circle 0px at -200px -200px, black 0%, transparent 100%)';
+      }, { passive: true });
+    });
+
+    function updateLight(touch, salon, light) {
+      const rect = salon.getBoundingClientRect();
+      const x = touch.clientX - rect.left + 40; // offset for the -40px inset
+      const y = touch.clientY - rect.top + 40;
+      const grad = `radial-gradient(circle 120px at ${x}px ${y}px, black 0%, transparent 100%)`;
+      light.style.webkitMaskImage = grad;
+      light.style.maskImage = grad;
+    }
+
+    // Hide touch hint after 5s
+    setTimeout(() => { if (touchHint) touchHint.classList.add('hidden'); }, 7000);
+  }
+
+  /* ═══════════════════════════════════════
+     MOUSE → LIGHT EFFECT (desktop)
+     ═══════════════════════════════════════ */
+  if (!isTouch && !prefersReduced) {
+    document.querySelectorAll('.salon').forEach(salon => {
+      const light = salon.querySelector('.salon-light');
+      if (!light) return;
+
+      salon.addEventListener('mousemove', e => {
+        const rect = salon.getBoundingClientRect();
+        const x = e.clientX - rect.left + 40;
+        const y = e.clientY - rect.top + 40;
+        const grad = `radial-gradient(circle 150px at ${x}px ${y}px, black 0%, transparent 100%)`;
+        light.style.webkitMaskImage = grad;
+        light.style.maskImage = grad;
+      });
+
+      salon.addEventListener('mouseleave', () => {
+        light.style.webkitMaskImage = 'radial-gradient(circle 0px at -200px -200px, black 0%, transparent 100%)';
+        light.style.maskImage = 'radial-gradient(circle 0px at -200px -200px, black 0%, transparent 100%)';
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     GYROSCOPE → PARALLAX + VOLUMETRIC LIGHT (mobile)
+     ═══════════════════════════════════════ */
+  if (isTouch && !prefersReduced) {
+    const bgs = document.querySelectorAll('.salon-bg');
+    const lights = document.querySelectorAll('.salon-light');
+    const vLights = document.querySelectorAll('.volumetric-light');
+
+    function handleOrientation(e) {
+      const beta = Math.max(-30, Math.min(30, e.beta || 0));
+      const gamma = Math.max(-30, Math.min(30, e.gamma || 0));
+      const tx = (gamma / 30) * -15;
+      const ty = (beta / 60) * -10;
+      // Parallax on backgrounds
+      bgs.forEach(bg => {
+        bg.style.transform = `translate(${tx}px, ${ty}px) scale(1.1)`;
+      });
+      // Same parallax on light layers
+      lights.forEach(l => {
+        l.style.transform = `translate(${tx}px, ${ty}px) scale(1.1)`;
+      });
+      // Volumetric light position shifts
+      const vlX = 50 + (gamma / 30) * 20;
+      const vlY = 10 + (beta / 60) * 15;
+      vLights.forEach(vl => {
+        vl.style.setProperty('--vl-x', vlX + '%');
+        vl.style.setProperty('--vl-y', vlY + '%');
+      });
+    }
+
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // iOS 13+ — request on first touch
+      document.addEventListener('touchstart', function reqGyro() {
+        DeviceOrientationEvent.requestPermission().then(state => {
+          if (state === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+          }
+        }).catch(() => {});
+        document.removeEventListener('touchstart', reqGyro);
+      }, { once: true });
+    } else if (typeof DeviceOrientationEvent !== 'undefined') {
+      window.addEventListener('deviceorientation', handleOrientation, { passive: true });
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     MOUSE PARALLAX (desktop)
+     ═══════════════════════════════════════ */
+  if (!isTouch && !prefersReduced) {
+    const vLights = document.querySelectorAll('.volumetric-light');
+    document.addEventListener('mousemove', e => {
+      document.querySelectorAll('.salon').forEach(salon => {
+        const rect = salon.getBoundingClientRect();
+        if (e.clientX < rect.left || e.clientX > rect.right) return;
+        const lx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+        const ly = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+        // Background parallax
+        const bg = salon.querySelector('.salon-bg');
+        bg.style.transform = `translate(${lx * -12}px, ${ly * -10}px) scale(1.1)`;
+        // Light layer follows too
+        const light = salon.querySelector('.salon-light');
+        if (light) light.style.transform = `translate(${lx * -12}px, ${ly * -10}px) scale(1.1)`;
+        // Volumetric light
+        const vl = salon.querySelector('.volumetric-light');
+        if (vl) {
+          vl.style.setProperty('--vl-x', (50 + lx * 25) + '%');
+          vl.style.setProperty('--vl-y', (30 + ly * 15) + '%');
+        }
+      });
+    });
+    document.querySelectorAll('.salon').forEach(salon => {
+      salon.addEventListener('mouseleave', () => {
+        const bg = salon.querySelector('.salon-bg');
+        const light = salon.querySelector('.salon-light');
+        bg.style.transform = '';
+        if (light) light.style.transform = '';
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     CUSTOM CURSOR (desktop)
+     ═══════════════════════════════════════ */
+  if (!isTouch) {
+    const dot = document.querySelector('.cursor-dot');
+    const ring = document.querySelector('.cursor-ring');
+    let mx = -100, my = -100, rx = -100, ry = -100;
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+    });
+    (function loop() {
+      rx += (mx - rx) * 0.12;
+      ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(loop);
+    })();
+    document.querySelectorAll('a, [data-magnetic]').forEach(el => {
+      el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+      el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     MAGNETIC BUTTONS (desktop)
+     ═══════════════════════════════════════ */
+  if (!isTouch && !prefersReduced) {
+    document.querySelectorAll('[data-magnetic]').forEach(btn => {
+      btn.addEventListener('mousemove', e => {
+        const r = btn.getBoundingClientRect();
+        const dx = (e.clientX - r.left - r.width / 2) * 0.3;
+        const dy = (e.clientY - r.top - r.height / 2) * 0.3;
+        btn.style.transform = `translate(${dx}px, ${dy}px)`;
+      });
+      btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     3D TILT (desktop)
+     ═══════════════════════════════════════ */
+  if (!isTouch && !prefersReduced) {
+    document.querySelectorAll('[data-salon]').forEach(salon => {
+      salon.addEventListener('mousemove', e => {
+        const r = salon.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width;
+        const y = (e.clientY - r.top) / r.height;
+        const content = salon.querySelector('.salon-content');
+        content.style.transform = `perspective(800px) rotateX(${(0.5 - y) * 5}deg) rotateY(${(x - 0.5) * 5}deg)`;
+      });
+      salon.addEventListener('mouseleave', () => {
+        salon.querySelector('.salon-content').style.transform = '';
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════
+     RIPPLE (everywhere)
+     ═══════════════════════════════════════ */
+  document.querySelectorAll('.salon-cta').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      const r = this.getBoundingClientRect();
+      const rip = document.createElement('span');
+      rip.className = 'ripple';
+      const sz = Math.max(r.width, r.height);
+      rip.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX - r.left - sz/2}px;top:${e.clientY - r.top - sz/2}px`;
+      this.appendChild(rip);
+      rip.addEventListener('animationend', () => rip.remove());
+    });
+  });
+
+  /* ═══════════════════════════════════════
+     PAGE TRANSITION (everywhere)
+     ═══════════════════════════════════════ */
+  const trans = document.querySelector('.page-transition');
+  window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
+  document.querySelectorAll('.salon').forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const href = this.getAttribute('href');
+      // Dramatic zoom + darken on clicked salon
+      const bg = this.querySelector('.salon-bg');
+      bg.style.transition = 'transform 0.8s cubic-bezier(0.4,0,0.2,1), filter 0.8s ease';
+      bg.style.transform = 'scale(1.4)';
+      bg.style.filter = 'brightness(0.08)';
+      // Fade out other salon
+      const other = [...this.closest('.salons').querySelectorAll('.salon')].find(s => s !== this);
+      if (other) { other.style.transition = 'opacity 0.5s ease'; other.style.opacity = '0'; }
+      // Fade separator
+      const sep = document.querySelector('.separator-line');
+      if (sep) { sep.style.transition = 'opacity 0.4s'; sep.style.opacity = '0'; }
+      // Black overlay
+      trans.classList.add('active');
+      setTimeout(() => { window.location.href = href; }, 800);
+    });
+  });
+})();
+</script>
+</body>
 </html>

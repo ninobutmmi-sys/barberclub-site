@@ -161,8 +161,8 @@ html, body {
 }
 .hero-title {
   font-family: 'Orbitron', sans-serif;
-  font-size: clamp(36px, 11vw, 90px); font-weight: 800;
-  text-transform: uppercase; letter-spacing: 0.04em;
+  font-size: clamp(48px, 16vw, 90px); font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em;
   line-height: 0.95; overflow: hidden; position: relative;
 }
 .hero-title .letter {
@@ -436,7 +436,6 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
 
   /* Page transition */
   const trans = document.querySelector('.page-transition');
-  window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
   document.querySelectorAll('.nav-item,.back-btn').forEach(link => {
     link.addEventListener('click', function(e) {
       e.preventDefault(); trans.classList.add('active');
