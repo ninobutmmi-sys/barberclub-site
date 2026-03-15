@@ -372,6 +372,52 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
             </div>
           </div>
 
+          {/* CLIENT STATS */}
+          {(booking.client_visit_count > 0 || booking.client_no_show_count > 0) && (
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 4,
+              padding: '10px 14px',
+              background: 'rgba(var(--overlay),0.03)',
+              border: '1px solid rgba(var(--overlay),0.05)',
+              borderRadius: 10,
+            }}>
+              {booking.client_visit_count > 0 && (
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)',
+                  padding: '3px 10px', borderRadius: 6,
+                  background: 'rgba(34,197,94,0.08)',
+                }}>
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#22c55e" strokeWidth="2"><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  {booking.client_visit_count} visite{booking.client_visit_count > 1 ? 's' : ''}
+                </span>
+              )}
+              {booking.client_no_show_count > 0 && (
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 12, fontWeight: 700,
+                  color: booking.client_no_show_count >= 2 ? '#ef4444' : '#f59e0b',
+                  padding: '3px 10px', borderRadius: 6,
+                  background: booking.client_no_show_count >= 2 ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.08)',
+                }}>
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  {booking.client_no_show_count} faux plan{booking.client_no_show_count > 1 ? 's' : ''}
+                </span>
+              )}
+              {booking.client_favourite_service && (
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 12, color: 'var(--text-muted)',
+                  padding: '3px 10px', borderRadius: 6,
+                  background: 'rgba(var(--overlay),0.04)',
+                }}>
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  {booking.client_favourite_service}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* CRÉNEAU SECTION — editable if confirmed or completed */}
           <div className="bk-section">
             <div className="bk-section-title">

@@ -116,9 +116,9 @@ export default function BookingBlock({ booking, onClick, pxPerMin, highlighted }
               </span>
             )}
             {noShowCount > 0 && !isTiny && (
-              <span className="planning-block-noshow-badge">
+              <span className={`planning-block-noshow-badge${noShowCount >= 2 ? ' recidiviste' : ''}`}>
                 <svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                {noShowCount > 1 ? `${noShowCount} faux plans` : 'faux plan'}
+                {noShowCount >= 2 ? `${noShowCount}x recidiviste` : 'faux plan'}
               </span>
             )}
           </div>

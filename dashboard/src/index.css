@@ -2148,6 +2148,117 @@ select.input {
   transform: translateX(4px);
 }
 
+/* ---- ANALYTICS GRID & MOBILE ---- */
+.a-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.a-heatmap-scroll {
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.a-heatmap-scroll::after {
+  content: '';
+  position: sticky;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--bg-card));
+  flex-shrink: 0;
+  display: none;
+}
+
+.a-donut-layout {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+/* ---- ANALYTICS: Today Hero ---- */
+.a-today-hero {
+  background: linear-gradient(165deg, rgba(var(--overlay),0.05) 0%, rgba(var(--overlay),0.015) 100%);
+  border: 1px solid rgba(var(--overlay),0.06);
+  border-left: 3px solid #3b82f6;
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 28px;
+  position: relative;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.a-today-hero:hover {
+  border-color: rgba(var(--overlay),0.13);
+  border-left-color: #3b82f6;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+}
+
+/* ---- ANALYTICS: Tab Bar ---- */
+.a-tab-bar {
+  display: flex;
+  gap: 2px;
+  background: rgba(var(--overlay),0.04);
+  border-radius: 8px;
+  padding: 3px;
+}
+.a-tab-bar button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.a-tab-bar button.active {
+  background: rgba(var(--overlay),0.12);
+  color: var(--text);
+}
+.a-tab-bar button:hover:not(.active) {
+  color: var(--text-secondary);
+}
+
+/* ---- ANALYTICS: Stat Strip ---- */
+.a-stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  background: linear-gradient(165deg, rgba(var(--overlay),0.04) 0%, rgba(var(--overlay),0.01) 100%);
+  border: 1px solid rgba(var(--overlay),0.06);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.a-stat-strip-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-right: 1px solid rgba(var(--overlay),0.06);
+  white-space: nowrap;
+}
+.a-stat-strip-item:last-child {
+  border-right: none;
+}
+
+/* ---- ANALYTICS: Projection Inline ---- */
+.a-projection-inline {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(var(--overlay),0.06);
+}
+
 /* ---- RESPONSIVE ---- */
 @media (max-width: 1023px) {
   .sidebar { display: none; }
@@ -2473,7 +2584,17 @@ select.input {
   }
 
   /* ---- ANALYTICS MOBILE ---- */
-  .a-kpi { min-width: unset; flex: 0 0 calc(50% - 8px); }
+  .a-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; margin-bottom: 24px; }
+  .a-kpi { min-width: unset; flex: unset; padding: 16px 14px; }
+  .a-card { padding: 16px; border-radius: 12px; }
+  .a-heatmap-scroll::after { display: block; }
+  .a-heatmap-scroll .a-heatcell { height: 30px !important; font-size: 9px !important; }
+  .a-donut-layout { flex-direction: column; gap: 16px; }
+  .a-today-hero { padding: 18px 16px; margin-bottom: 20px; border-radius: 12px; }
+  .a-tab-bar button { padding: 5px 10px; font-size: 11px; }
+  .a-stat-strip { flex-direction: column; }
+  .a-stat-strip-item { border-right: none; border-bottom: 1px solid rgba(var(--overlay),0.06); padding: 8px 14px; }
+  .a-stat-strip-item:last-child { border-bottom: none; }
 
   /* KPI chips visible on mobile too */
   .plan-kpis { display: flex; }
@@ -2737,6 +2858,14 @@ select.input {
   line-height: 1;
   vertical-align: middle;
   white-space: nowrap;
+}
+.planning-block-noshow-badge.recidiviste {
+  animation: noshow-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(239,68,68,0.5);
+}
+@keyframes noshow-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(239,68,68,0.4); }
+  50% { box-shadow: 0 0 10px rgba(239,68,68,0.7); }
 }
 
 /* Gold left border accent for first-visit blocks */

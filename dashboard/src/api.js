@@ -283,6 +283,10 @@ export const getBarberStats = (params) => {
 };
 export const getMemberStats = () => request('/admin/analytics/members');
 export const getTrends = () => request('/admin/analytics/trends');
+export const getNoShowStats = (params) => {
+  const qs = params ? new URLSearchParams(params).toString() : '';
+  return request(`/admin/analytics/no-shows${qs ? '?' + qs : ''}`);
+};
 export const getRevenueHourly = (params) => {
   const qs = params ? new URLSearchParams(params).toString() : '';
   return request(`/admin/analytics/revenue-hourly${qs ? '?' + qs : ''}`);
