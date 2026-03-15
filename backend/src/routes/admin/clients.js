@@ -1,4 +1,5 @@
 const { Router } = require('express');
+const express = require('express');
 const { param, query, body } = require('express-validator');
 const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
@@ -6,6 +7,7 @@ const db = require('../../config/database');
 const { logAudit } = require('../../middleware/auditLog');
 
 const router = Router();
+const photoBodyParser = express.json({ limit: '500kb' });
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ============================================
@@ -303,6 +305,103 @@ router.delete('/:id',
 
       logAudit(req, 'delete', 'client', req.params.id);
       res.json({ message: 'Données client supprimées (RGPD)' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /api/admin/clients/:id/photos — List client photos
+// ============================================
+router.get('/:id/photos',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const result = await db.query(
+        `SELECT id, photo_data, created_at FROM client_photos
+         WHERE client_id = $1 ORDER BY created_at DESC`,
+        [req.params.id]
+      );
+      res.json(result.rows);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// POST /api/admin/clients/:id/photos — Upload photo (base64 JPEG)
+// ============================================
+router.post('/:id/photos',
+  photoBodyParser,
+  [
+    param('id').matches(uuidRegex),
+    body('photo_data').notEmpty().withMessage('Photo requise')
+      .custom(val => {
+        // Must be a data URL or raw base64, max ~200Ko encoded
+        const size = typeof val === 'string' ? val.length : 0;
+        if (size > 300000) throw new Error('Photo trop volumineuse (max ~200Ko)');
+        return true;
+      }),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { photo_data } = req.body;
+
+      // Check client exists
+      const clientCheck = await db.query(
+        'SELECT id FROM clients WHERE id = $1 AND deleted_at IS NULL',
+        [id]
+      );
+      if (clientCheck.rows.length === 0) {
+        throw ApiError.notFound('Client introuvable');
+      }
+
+      // Check max 2 photos
+      const countResult = await db.query(
+        'SELECT COUNT(*) as count FROM client_photos WHERE client_id = $1',
+        [id]
+      );
+      if (parseInt(countResult.rows[0].count, 10) >= 2) {
+        throw ApiError.badRequest('Maximum 2 photos par client');
+      }
+
+      const result = await db.query(
+        `INSERT INTO client_photos (client_id, photo_data, created_by)
+         VALUES ($1, $2, $3) RETURNING id, created_at`,
+        [id, photo_data, req.user.id]
+      );
+
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// DELETE /api/admin/clients/:id/photos/:photoId — Delete photo
+// ============================================
+router.delete('/:id/photos/:photoId',
+  [
+    param('id').matches(uuidRegex),
+    param('photoId').matches(uuidRegex),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const result = await db.query(
+        'DELETE FROM client_photos WHERE id = $1 AND client_id = $2 RETURNING id',
+        [req.params.photoId, req.params.id]
+      );
+      if (result.rows.length === 0) {
+        throw ApiError.notFound('Photo introuvable');
+      }
+      res.json({ message: 'Photo supprimée' });
     } catch (error) {
       next(error);
     }
