@@ -353,8 +353,8 @@
 
         .barber-card.selected {
             border-color: rgba(255, 255, 255, 0.9);
-            background: rgba(255, 255, 255, 0.07);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.09);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
 
         .barber-avatar {
@@ -373,7 +373,13 @@
 
         .barber-card.selected .barber-avatar {
             border-color: #fff;
-            box-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.25), 0 0 40px rgba(255, 255, 255, 0.08);
+            animation: avatarGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes avatarGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.25), 0 0 40px rgba(255, 255, 255, 0.08); }
+            50% { box-shadow: 0 0 28px rgba(255, 255, 255, 0.35), 0 0 50px rgba(255, 255, 255, 0.12); }
         }
 
         .barber-avatar img {
@@ -803,6 +809,7 @@
         }
 
         .calendar-day {
+            position: relative;
             aspect-ratio: 1;
             display: flex;
             align-items: center;
@@ -834,21 +841,32 @@
         }
 
         .calendar-day.today:not(.disabled) {
-            border-color: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.06);
             color: #fff;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .calendar-day.selected {
             background: #fff;
             color: #000;
-            font-weight: 700;
-            box-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
+            font-weight: 800;
+            transform: scale(1.1);
+            box-shadow: 0 0 16px rgba(255, 255, 255, 0.15), 0 0 40px rgba(255, 255, 255, 0.05);
         }
 
         .calendar-day:not(.empty):not(.past):not(.disabled):not(.selected):hover {
             background: rgba(255, 255, 255, 0.06);
         }
+
+        .cal-dot {
+            position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+            width: 4px; height: 4px; border-radius: 50%;
+            background: rgba(34, 197, 94, 0.6);
+        }
+        .calendar-day.selected .cal-dot,
+        .calendar-day.past .cal-dot,
+        .calendar-day.disabled .cal-dot { display: none; }
 
         /* TIME SLOTS */
         .slots-section {
@@ -1513,9 +1531,11 @@
             max-width: 350px;
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.07);
+            border-left: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 18px;
             padding: 22px;
             margin-bottom: 32px;
+            text-align: left;
         }
 
         .success-detail-row {
@@ -1532,6 +1552,12 @@
         .success-detail-value {
             font-size: 13px;
             font-weight: 600;
+        }
+
+        .success-detail-row:last-child .success-detail-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 800;
         }
 
         .success-actions {
@@ -1612,7 +1638,7 @@
         .practical-card-icon svg {
             width: 18px;
             height: 18px;
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(255, 255, 255, 0.7);
             flex-shrink: 0;
         }
 
@@ -2433,6 +2459,19 @@
         }
 
         /* ========================================
+           CONFETTI
+           ======================================== */
+        .confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 100; overflow: hidden; }
+        .confetti-piece {
+            position: absolute; top: -10px;
+            animation: confettiFall 3s ease-in forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* ========================================
            REDUCED MOTION
            ======================================== */
         @media (prefers-reduced-motion: reduce) {
@@ -2833,6 +2872,7 @@
 
             <!-- STEP 5: SUCCESS -->
             <div class="step" id="step5">
+                <div class="confetti-container" id="confettiContainer"></div>
                 <div class="success-container">
                     <div class="success-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -3136,6 +3176,7 @@
             // Update action bar visibility
             if (n === 5) {
                 actionBar.style.display = 'none';
+                launchConfetti();
             } else if (n === 4) {
                 if (state.loggedClient) {
                     // Already logged in — show connected mode
@@ -3913,6 +3954,25 @@
             }
         }
 
+        // ---- CONFETTI ----
+        function launchConfetti() {
+            const c = $('#confettiContainer'); if (!c) return; c.innerHTML = '';
+            const colors = ['#fff','rgba(255,255,255,0.6)','rgba(255,255,255,0.3)','#22c55e','rgba(34,197,94,0.4)'];
+            for (let i = 0; i < 30; i++) {
+                const el = document.createElement('div');
+                el.className = 'confetti-piece';
+                el.style.left = Math.random()*100+'%';
+                el.style.background = colors[Math.floor(Math.random()*colors.length)];
+                el.style.animationDelay = Math.random()*1.5+'s';
+                el.style.animationDuration = (2+Math.random()*2)+'s';
+                const sz = 4+Math.random()*6;
+                el.style.width = sz+'px'; el.style.height = sz+'px';
+                el.style.borderRadius = Math.random()>0.5?'50%':'2px';
+                c.appendChild(el);
+            }
+            setTimeout(() => c.innerHTML = '', 5000);
+        }
+
         // ---- STEP 5: SUCCESS ----
         function renderSuccess() {
             const b = state.booking;
@@ -3921,6 +3981,10 @@
                 : state.selectedBarber.name;
 
             $('#successDetails').innerHTML = `
+                <div class="success-detail-row" style="border-bottom:1px solid rgba(255,255,255,0.06);padding-bottom:10px;margin-bottom:4px;">
+                    <span class="success-detail-label">Référence</span>
+                    <span class="success-detail-value" style="font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:0.1em;opacity:0.6;">${b.id ? b.id.substring(0,8).toUpperCase() : ''}</span>
+                </div>
                 <div class="success-detail-row">
                     <span class="success-detail-label">Barber</span>
                     <span class="success-detail-value">${esc(barberName)}</span>
