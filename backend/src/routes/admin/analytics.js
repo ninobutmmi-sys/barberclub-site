@@ -1078,4 +1078,194 @@ function getMonthRange(monthStr) {
   return { from, to: effectiveTo, prevFrom, prevTo };
 }
 
+// ============================================
+// GET /api/admin/analytics/no-shows — Detailed no-show analysis
+// ============================================
+router.get('/no-shows', async (req, res, next) => {
+  try {
+    const salonId = req.user.salon_id;
+    const { month } = req.query;
+
+    let from, to;
+    if (month && /^\d{4}-\d{2}$/.test(month)) {
+      const range = getMonthRange(month);
+      from = range.from;
+      to = range.to;
+    } else {
+      const todayResult = await db.query(`SELECT (NOW() AT TIME ZONE 'Europe/Paris')::date AS today`);
+      const today = todayResult.rows[0].today;
+      from = today.substring(0, 8) + '01';
+      to = today;
+    }
+
+    // 1. Overview: count, cost, rate
+    const overview = await db.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE status = 'no_show') as no_show_count,
+         COALESCE(SUM(price) FILTER (WHERE status = 'no_show'), 0) as no_show_cost,
+         COUNT(*) FILTER (WHERE status IN ('confirmed', 'completed', 'no_show')) as total_bookings
+       FROM bookings
+       WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL AND salon_id = $3`,
+      [from, to, salonId]
+    );
+
+    const totalBookings = parseInt(overview.rows[0].total_bookings) || 0;
+    const noShowCount = parseInt(overview.rows[0].no_show_count) || 0;
+    const rate = totalBookings > 0 ? Math.round((noShowCount / totalBookings) * 1000) / 10 : 0;
+
+    // 2. By barber
+    const byBarber = await db.query(
+      `SELECT br.name as barber_name,
+              COUNT(b.id) as no_show_count,
+              COALESCE(SUM(b.price), 0) as cost,
+              COUNT(b.id)::numeric / NULLIF(
+                (SELECT COUNT(*) FROM bookings b2
+                 WHERE b2.barber_id = br.id AND b2.date >= $1 AND b2.date <= $2
+                   AND b2.deleted_at IS NULL AND b2.salon_id = $3
+                   AND b2.status IN ('confirmed','completed','no_show')), 0) * 100 as rate
+       FROM bookings b
+       JOIN barbers br ON b.barber_id = br.id
+       WHERE b.date >= $1 AND b.date <= $2 AND b.deleted_at IS NULL
+         AND b.salon_id = $3 AND b.status = 'no_show'
+       GROUP BY br.id, br.name
+       ORDER BY no_show_count DESC`,
+      [from, to, salonId]
+    );
+
+    // 3. By service
+    const byService = await db.query(
+      `SELECT s.name as service_name,
+              COUNT(b.id) as no_show_count,
+              COALESCE(SUM(b.price), 0) as cost
+       FROM bookings b
+       JOIN services s ON b.service_id = s.id
+       WHERE b.date >= $1 AND b.date <= $2 AND b.deleted_at IS NULL
+         AND b.salon_id = $3 AND b.status = 'no_show'
+       GROUP BY s.id, s.name
+       ORDER BY no_show_count DESC`,
+      [from, to, salonId]
+    );
+
+    // 4. By day of week (PostgreSQL DOW: 0=Sun..6=Sat)
+    const byDay = await db.query(
+      `SELECT EXTRACT(DOW FROM date)::int as day_of_week,
+              COUNT(*) as no_show_count
+       FROM bookings
+       WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL
+         AND salon_id = $3 AND status = 'no_show'
+       GROUP BY day_of_week
+       ORDER BY day_of_week`,
+      [from, to, salonId]
+    );
+
+    // 5. By hour
+    const byHour = await db.query(
+      `SELECT EXTRACT(HOUR FROM start_time::time)::int as hour,
+              COUNT(*) as no_show_count
+       FROM bookings
+       WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL
+         AND salon_id = $3 AND status = 'no_show'
+       GROUP BY hour
+       ORDER BY hour`,
+      [from, to, salonId]
+    );
+
+    // 6. Top recidivistes (clients with most no-shows, lifetime)
+    const topClients = await db.query(
+      `SELECT c.id, c.first_name, c.last_name, c.phone,
+              COUNT(b.id) as total_no_shows,
+              COALESCE(SUM(b.price), 0) as total_cost,
+              MAX(b.date) as last_no_show
+       FROM bookings b
+       JOIN clients c ON b.client_id = c.id
+       WHERE b.deleted_at IS NULL AND b.salon_id = $1 AND b.status = 'no_show'
+       GROUP BY c.id, c.first_name, c.last_name, c.phone
+       HAVING COUNT(b.id) >= 2
+       ORDER BY total_no_shows DESC, total_cost DESC
+       LIMIT 15`,
+      [salonId]
+    );
+
+    // 7. Monthly trend (last 6 months)
+    const trend = await db.query(
+      `SELECT TO_CHAR(date, 'YYYY-MM') as month,
+              COUNT(*) as total,
+              COUNT(*) FILTER (WHERE status = 'no_show') as no_shows,
+              COALESCE(SUM(price) FILTER (WHERE status = 'no_show'), 0) as cost,
+              ROUND(COUNT(*) FILTER (WHERE status = 'no_show')::numeric /
+                    NULLIF(COUNT(*), 0) * 100, 1) as rate
+       FROM bookings
+       WHERE date >= (CURRENT_DATE - INTERVAL '6 months')
+         AND deleted_at IS NULL AND salon_id = $1
+         AND status != 'cancelled'
+       GROUP BY TO_CHAR(date, 'YYYY-MM')
+       ORDER BY month`,
+      [salonId]
+    );
+
+    // 8. Recent no-shows list (last 10 for the selected month)
+    const recent = await db.query(
+      `SELECT b.id, b.date, b.start_time, b.price,
+              c.first_name as client_first_name, c.last_name as client_last_name, c.phone as client_phone,
+              br.name as barber_name, s.name as service_name
+       FROM bookings b
+       LEFT JOIN clients c ON b.client_id = c.id
+       JOIN barbers br ON b.barber_id = br.id
+       JOIN services s ON b.service_id = s.id
+       WHERE b.date >= $1 AND b.date <= $2 AND b.deleted_at IS NULL
+         AND b.salon_id = $3 AND b.status = 'no_show'
+       ORDER BY b.date DESC, b.start_time DESC
+       LIMIT 10`,
+      [from, to, salonId]
+    );
+
+    res.json({
+      overview: {
+        count: noShowCount,
+        cost: parseInt(overview.rows[0].no_show_cost),
+        rate,
+        total_bookings: totalBookings,
+      },
+      by_barber: byBarber.rows.map(r => ({
+        barber_name: r.barber_name,
+        count: parseInt(r.no_show_count),
+        cost: parseInt(r.cost),
+        rate: r.rate ? Math.round(parseFloat(r.rate) * 10) / 10 : 0,
+      })),
+      by_service: byService.rows.map(r => ({
+        service_name: r.service_name,
+        count: parseInt(r.no_show_count),
+        cost: parseInt(r.cost),
+      })),
+      by_day: byDay.rows.map(r => ({
+        day_of_week: parseInt(r.day_of_week),
+        count: parseInt(r.no_show_count),
+      })),
+      by_hour: byHour.rows.map(r => ({
+        hour: parseInt(r.hour),
+        count: parseInt(r.no_show_count),
+      })),
+      top_clients: topClients.rows.map(r => ({
+        id: r.id,
+        first_name: r.first_name,
+        last_name: r.last_name,
+        phone: r.phone,
+        total_no_shows: parseInt(r.total_no_shows),
+        total_cost: parseInt(r.total_cost),
+        last_no_show: r.last_no_show,
+      })),
+      trend: trend.rows.map(r => ({
+        month: r.month,
+        total: parseInt(r.total),
+        no_shows: parseInt(r.no_shows),
+        cost: parseInt(r.cost),
+        rate: parseFloat(r.rate) || 0,
+      })),
+      recent: recent.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
