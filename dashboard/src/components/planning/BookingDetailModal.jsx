@@ -518,7 +518,6 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
                         ref={photoInputRef}
                         type="file"
                         accept="image/*"
-                        capture="environment"
                         onChange={handlePhotoUpload}
                         disabled={photoUploading}
                         style={{ display: 'none' }}
