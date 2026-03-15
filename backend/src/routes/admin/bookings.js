@@ -68,7 +68,9 @@ router.get('/',
                 c.id as client_id, c.first_name as client_first_name,
                 c.last_name as client_last_name, c.phone as client_phone,
                 c.email as client_email, c.notes as client_notes,
-                (SELECT COUNT(*) FROM bookings b2 WHERE b2.client_id = c.id AND b2.status = 'no_show' AND b2.deleted_at IS NULL)::int as client_no_show_count
+                (SELECT COUNT(*) FROM bookings b2 WHERE b2.client_id = c.id AND b2.status = 'no_show' AND b2.deleted_at IS NULL)::int as client_no_show_count,
+                (SELECT COUNT(*) FROM bookings b2 WHERE b2.client_id = c.id AND b2.status = 'completed' AND b2.deleted_at IS NULL)::int as client_visit_count,
+                (SELECT s2.name FROM bookings b2 JOIN services s2 ON b2.service_id = s2.id WHERE b2.client_id = c.id AND b2.status = 'completed' AND b2.deleted_at IS NULL GROUP BY s2.name ORDER BY COUNT(*) DESC LIMIT 1) as client_favourite_service
          FROM bookings b
          JOIN services s ON b.service_id = s.id
          JOIN barbers br ON b.barber_id = br.id
