@@ -626,10 +626,385 @@ function addMinutesToTime(timeStr, minutesToAdd) {
   return minutesToTime(totalMinutes);
 }
 
+/**
+ * Get month-level availability summary (batch — max 7 queries)
+ * Returns { "YYYY-MM-DD": { total, status, alternatives? } } for each day of the month
+ */
+async function getMonthAvailabilitySummary(serviceId, year, month, barberId, salonId, includeAlternatives = false) {
+  // 1. Get service duration
+  const serviceResult = await db.query(
+    'SELECT duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND deleted_at IS NULL',
+    [serviceId]
+  );
+  if (serviceResult.rows.length === 0) return {};
+  const service = serviceResult.rows[0];
+
+  // 2. Get barber IDs
+  let barberIds;
+  let specificBarber = false;
+  if (!barberId || barberId === 'any') {
+    const barbersResult = await db.query(
+      `SELECT b.id, b.name, b.salon_id FROM barbers b
+       JOIN barber_services bs ON b.id = bs.barber_id
+       WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
+       ORDER BY b.sort_order`,
+      [serviceId, salonId]
+    );
+    barberIds = barbersResult.rows.map(r => r.id);
+  } else {
+    barberIds = [barberId];
+    specificBarber = true;
+  }
+  if (barberIds.length === 0) return {};
+
+  // Date range for the month
+  const firstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+  const lastDayNum = new Date(year, month + 1, 0).getDate();
+  const lastDay = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayNum).padStart(2, '0')}`;
+
+  // 3. Get all schedules for these barbers
+  const schedulesResult = await db.query(
+    `SELECT barber_id, day_of_week, start_time, end_time, is_working, break_start, break_end
+     FROM schedules WHERE barber_id = ANY($1) AND salon_id = $2`,
+    [barberIds, salonId]
+  );
+  const schedulesMap = {}; // { barber_id: { day_of_week: { start_time, end_time, is_working, break_start, break_end } } }
+  for (const row of schedulesResult.rows) {
+    if (!schedulesMap[row.barber_id]) schedulesMap[row.barber_id] = {};
+    schedulesMap[row.barber_id][row.day_of_week] = row;
+  }
+
+  // 4. Get schedule overrides for the month
+  const overridesResult = await db.query(
+    `SELECT barber_id, date, is_day_off, start_time, end_time
+     FROM schedule_overrides WHERE barber_id = ANY($1) AND date >= $2 AND date <= $3 AND salon_id = $4`,
+    [barberIds, firstDay, lastDay, salonId]
+  );
+  const overridesMap = {}; // { barber_id: { "YYYY-MM-DD": { is_day_off, start_time, end_time } } }
+  for (const row of overridesResult.rows) {
+    if (!overridesMap[row.barber_id]) overridesMap[row.barber_id] = {};
+    overridesMap[row.barber_id][row.date] = row;
+  }
+
+  // 5. Get guest assignments for the month
+  const guestResult = await db.query(
+    `SELECT barber_id, date, host_salon_id, start_time, end_time
+     FROM guest_assignments WHERE date >= $1 AND date <= $2
+       AND (barber_id = ANY($3) OR host_salon_id = $4)`,
+    [firstDay, lastDay, barberIds, salonId]
+  );
+  const guestMap = {}; // { barber_id: { "YYYY-MM-DD": { host_salon_id, start_time, end_time } } }
+  for (const row of guestResult.rows) {
+    if (!guestMap[row.barber_id]) guestMap[row.barber_id] = {};
+    guestMap[row.barber_id][row.date] = row;
+  }
+
+  // Also collect guest barbers visiting this salon (for alternatives)
+  const guestVisitors = {};
+  for (const row of guestResult.rows) {
+    if (row.host_salon_id === salonId && !barberIds.includes(row.barber_id)) {
+      if (!guestVisitors[row.date]) guestVisitors[row.date] = [];
+      guestVisitors[row.date].push(row);
+    }
+  }
+
+  // 6. Get ALL bookings for these barbers for the month
+  const bookingsResult = await db.query(
+    `SELECT barber_id, date, start_time, end_time
+     FROM bookings WHERE barber_id = ANY($1) AND date >= $2 AND date <= $3
+       AND status != 'cancelled' AND deleted_at IS NULL
+     ORDER BY start_time`,
+    [barberIds, firstDay, lastDay]
+  );
+  const bookingsMap = {}; // { barber_id: { "YYYY-MM-DD": [{ start, end }] } }
+  for (const row of bookingsResult.rows) {
+    if (!bookingsMap[row.barber_id]) bookingsMap[row.barber_id] = {};
+    if (!bookingsMap[row.barber_id][row.date]) bookingsMap[row.barber_id][row.date] = [];
+    bookingsMap[row.barber_id][row.date].push({
+      start: timeToMinutes(row.start_time),
+      end: timeToMinutes(row.end_time),
+    });
+  }
+
+  // 7. Get ALL blocked slots for the month
+  const blockedResult = await db.query(
+    `SELECT barber_id, date, start_time, end_time
+     FROM blocked_slots WHERE barber_id = ANY($1) AND date >= $2 AND date <= $3
+     ORDER BY start_time`,
+    [barberIds, firstDay, lastDay]
+  );
+  const blockedMap = {}; // { barber_id: { "YYYY-MM-DD": [{ start, end }] } }
+  for (const row of blockedResult.rows) {
+    if (!blockedMap[row.barber_id]) blockedMap[row.barber_id] = {};
+    if (!blockedMap[row.barber_id][row.date]) blockedMap[row.barber_id][row.date] = [];
+    blockedMap[row.barber_id][row.date].push({
+      start: timeToMinutes(row.start_time),
+      end: timeToMinutes(row.end_time),
+    });
+  }
+
+  // For alternatives: get all barbers in this salon (not just selected)
+  let altBarbers = [];
+  if (includeAlternatives && specificBarber) {
+    const altResult = await db.query(
+      `SELECT b.id, b.name FROM barbers b
+       JOIN barber_services bs ON b.id = bs.barber_id
+       WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL
+         AND b.salon_id = $2 AND b.id != $3
+       ORDER BY b.sort_order`,
+      [serviceId, salonId, barberId]
+    );
+    altBarbers = altResult.rows;
+
+    // Pre-fetch data for alternative barbers too
+    const altIds = altBarbers.map(b => b.id);
+    if (altIds.length > 0) {
+      const altSched = await db.query(
+        `SELECT barber_id, day_of_week, start_time, end_time, is_working, break_start, break_end
+         FROM schedules WHERE barber_id = ANY($1) AND salon_id = $2`,
+        [altIds, salonId]
+      );
+      for (const row of altSched.rows) {
+        if (!schedulesMap[row.barber_id]) schedulesMap[row.barber_id] = {};
+        schedulesMap[row.barber_id][row.day_of_week] = row;
+      }
+      const altOverrides = await db.query(
+        `SELECT barber_id, date, is_day_off, start_time, end_time
+         FROM schedule_overrides WHERE barber_id = ANY($1) AND date >= $2 AND date <= $3 AND salon_id = $4`,
+        [altIds, firstDay, lastDay, salonId]
+      );
+      for (const row of altOverrides.rows) {
+        if (!overridesMap[row.barber_id]) overridesMap[row.barber_id] = {};
+        overridesMap[row.barber_id][row.date] = row;
+      }
+      const altBookings = await db.query(
+        `SELECT barber_id, date, start_time, end_time
+         FROM bookings WHERE barber_id = ANY($1) AND date >= $2 AND date <= $3
+           AND status != 'cancelled' AND deleted_at IS NULL ORDER BY start_time`,
+        [altIds, firstDay, lastDay]
+      );
+      for (const row of altBookings.rows) {
+        if (!bookingsMap[row.barber_id]) bookingsMap[row.barber_id] = {};
+        if (!bookingsMap[row.barber_id][row.date]) bookingsMap[row.barber_id][row.date] = [];
+        bookingsMap[row.barber_id][row.date].push({
+          start: timeToMinutes(row.start_time),
+          end: timeToMinutes(row.end_time),
+        });
+      }
+      const altBlocked = await db.query(
+        `SELECT barber_id, date, start_time, end_time
+         FROM blocked_slots WHERE barber_id = ANY($1) AND date >= $2 AND date <= $3 ORDER BY start_time`,
+        [altIds, firstDay, lastDay]
+      );
+      for (const row of altBlocked.rows) {
+        if (!blockedMap[row.barber_id]) blockedMap[row.barber_id] = {};
+        if (!blockedMap[row.barber_id][row.date]) blockedMap[row.barber_id][row.date] = [];
+        blockedMap[row.barber_id][row.date].push({
+          start: timeToMinutes(row.start_time),
+          end: timeToMinutes(row.end_time),
+        });
+      }
+      const altGuest = await db.query(
+        `SELECT barber_id, date, host_salon_id, start_time, end_time
+         FROM guest_assignments WHERE barber_id = ANY($1) AND date >= $2 AND date <= $3`,
+        [altIds, firstDay, lastDay]
+      );
+      for (const row of altGuest.rows) {
+        if (!guestMap[row.barber_id]) guestMap[row.barber_id] = {};
+        guestMap[row.barber_id][row.date] = row;
+      }
+    }
+  }
+
+  // Now calculate availability for each date
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const result = {};
+
+  for (let d = 1; d <= lastDayNum; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dateObj = new Date(year, month, d);
+    dateObj.setHours(0, 0, 0, 0);
+    const jsDay = dateObj.getDay();
+    const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
+    const isSaturday = dayOfWeek === 5;
+
+    // Skip past dates
+    if (dateStr < todayStr) continue;
+
+    const duration = (isSaturday && service.duration_saturday)
+      ? service.duration_saturday
+      : service.duration;
+
+    // Check time restrictions
+    const timeRestrictions = service.time_restrictions;
+    let restrictionWindow = null;
+    if (timeRestrictions && timeRestrictions.length > 0) {
+      const restriction = timeRestrictions.find(r => r.day_of_week === dayOfWeek);
+      if (!restriction) {
+        result[dateStr] = { total: 0, status: 'full' };
+        continue;
+      }
+      restrictionWindow = {
+        start: timeToMinutes(restriction.start_time || '00:00'),
+        end: timeToMinutes(restriction.end_time || '23:59'),
+      };
+    }
+
+    // Min slot start for today
+    const minSlotStart = dateStr === todayStr ? nowMinutes + MIN_BOOKING_LEAD_MINUTES : 0;
+
+    let totalSlots = 0;
+
+    for (const bId of barberIds) {
+      const count = countSlotsForBarber(bId, dateStr, dayOfWeek, duration, minSlotStart,
+        schedulesMap, overridesMap, guestMap, bookingsMap, blockedMap, salonId, restrictionWindow);
+      totalSlots += count;
+    }
+
+    const entry = {
+      total: totalSlots,
+      status: totalSlots >= 4 ? 'available' : totalSlots > 0 ? 'low' : 'full',
+    };
+
+    // Alternatives when full and specific barber
+    if (entry.status === 'full' && includeAlternatives && specificBarber && altBarbers.length > 0) {
+      const alternatives = [];
+      for (const alt of altBarbers) {
+        const altCount = countSlotsForBarber(alt.id, dateStr, dayOfWeek, duration, minSlotStart,
+          schedulesMap, overridesMap, guestMap, bookingsMap, blockedMap, salonId, restrictionWindow);
+        if (altCount > 0) {
+          const sampleTimes = getSampleTimesForBarber(alt.id, dateStr, dayOfWeek, duration, minSlotStart,
+            schedulesMap, overridesMap, guestMap, bookingsMap, blockedMap, salonId, restrictionWindow, 3);
+          alternatives.push({
+            barber_id: alt.id,
+            barber_name: alt.name,
+            slot_count: altCount,
+            sample_times: sampleTimes,
+          });
+        }
+      }
+      if (alternatives.length > 0) {
+        entry.alternatives = alternatives;
+      }
+    }
+
+    result[dateStr] = entry;
+  }
+
+  return result;
+}
+
+/**
+ * Count available slots for a barber on a date using pre-fetched data (no DB queries)
+ */
+function countSlotsForBarber(barberId, dateStr, dayOfWeek, duration, minSlotStart,
+  schedulesMap, overridesMap, guestMap, bookingsMap, blockedMap, salonId, restrictionWindow) {
+  const times = getWorkingHours(barberId, dateStr, dayOfWeek, schedulesMap, overridesMap, guestMap, salonId);
+  if (!times) return 0;
+
+  const { startMin, endMin, blockedRanges } = times;
+  const existingBookings = (bookingsMap[barberId] && bookingsMap[barberId][dateStr]) || [];
+  const blockedSlots = (blockedMap[barberId] && blockedMap[barberId][dateStr]) || [];
+  const allBlocked = [...blockedSlots, ...blockedRanges];
+
+  let count = 0;
+  const step = SLOT_INTERVAL_PUBLIC;
+  for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
+    if (slotStart < minSlotStart) continue;
+    if (restrictionWindow && (slotStart < restrictionWindow.start || slotStart + duration > restrictionWindow.end)) continue;
+    const slotEnd = slotStart + duration;
+    const overlapsBooking = existingBookings.some(b => slotStart < b.end && slotEnd > b.start);
+    const overlapsBlocked = allBlocked.some(b => slotStart < b.end && slotEnd > b.start);
+    if (!overlapsBooking && !overlapsBlocked) count++;
+  }
+  return count;
+}
+
+/**
+ * Get sample times for a barber (for alternatives display)
+ */
+function getSampleTimesForBarber(barberId, dateStr, dayOfWeek, duration, minSlotStart,
+  schedulesMap, overridesMap, guestMap, bookingsMap, blockedMap, salonId, restrictionWindow, max) {
+  const times = getWorkingHours(barberId, dateStr, dayOfWeek, schedulesMap, overridesMap, guestMap, salonId);
+  if (!times) return [];
+
+  const { startMin, endMin, blockedRanges } = times;
+  const existingBookings = (bookingsMap[barberId] && bookingsMap[barberId][dateStr]) || [];
+  const blockedSlots = (blockedMap[barberId] && blockedMap[barberId][dateStr]) || [];
+  const allBlocked = [...blockedSlots, ...blockedRanges];
+
+  const samples = [];
+  const step = SLOT_INTERVAL_PUBLIC;
+  for (let slotStart = startMin; slotStart + duration <= endMin && samples.length < max; slotStart += step) {
+    if (slotStart < minSlotStart) continue;
+    if (restrictionWindow && (slotStart < restrictionWindow.start || slotStart + duration > restrictionWindow.end)) continue;
+    const slotEnd = slotStart + duration;
+    const overlapsBooking = existingBookings.some(b => slotStart < b.end && slotEnd > b.start);
+    const overlapsBlocked = allBlocked.some(b => slotStart < b.end && slotEnd > b.start);
+    if (!overlapsBooking && !overlapsBlocked) {
+      samples.push(minutesToTime(slotStart));
+    }
+  }
+  return samples;
+}
+
+/**
+ * Get working hours for a barber on a date using pre-fetched data
+ * Returns { startMin, endMin, blockedRanges } or null if not working
+ */
+function getWorkingHours(barberId, dateStr, dayOfWeek, schedulesMap, overridesMap, guestMap, salonId) {
+  // Check guest assignment
+  const guest = guestMap[barberId] && guestMap[barberId][dateStr];
+  if (guest) {
+    if (guest.host_salon_id === salonId) {
+      return {
+        startMin: timeToMinutes(guest.start_time),
+        endMin: timeToMinutes(guest.end_time),
+        blockedRanges: [],
+      };
+    }
+    // Guest elsewhere → not available
+    return null;
+  }
+
+  // Check override
+  const override = overridesMap[barberId] && overridesMap[barberId][dateStr];
+  if (override) {
+    if (override.is_day_off) return null;
+    return {
+      startMin: timeToMinutes(override.start_time),
+      endMin: timeToMinutes(override.end_time),
+      blockedRanges: [],
+    };
+  }
+
+  // Default schedule
+  const sched = schedulesMap[barberId] && schedulesMap[barberId][dayOfWeek];
+  if (!sched || !sched.is_working) return null;
+
+  const blockedRanges = [];
+  if (sched.break_start && sched.break_end) {
+    blockedRanges.push({
+      start: timeToMinutes(sched.break_start),
+      end: timeToMinutes(sched.break_end),
+    });
+  }
+
+  return {
+    startMin: timeToMinutes(sched.start_time),
+    endMin: timeToMinutes(sched.end_time),
+    blockedRanges,
+  };
+}
+
 module.exports = {
   getAvailableSlots,
   isSlotAvailable,
   findBestBarber,
   addMinutesToTime,
   validateBarberSlot,
+  getMonthAvailabilitySummary,
 };

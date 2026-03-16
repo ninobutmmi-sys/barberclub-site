@@ -720,7 +720,7 @@
             align-items: center;
             gap: 12px;
             margin: 20px 0;
-            color: rgba(255, 255, 255, 0.25);
+            color: rgba(255, 255, 255, 0.45);
             font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 0.08em;
@@ -731,7 +731,7 @@
             content: '';
             flex: 1;
             height: 1px;
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.15);
         }
 
         /* ========================================
@@ -862,11 +862,118 @@
         .cal-dot {
             position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
             width: 4px; height: 4px; border-radius: 50%;
-            background: rgba(34, 197, 94, 0.6);
+            transition: background 0.3s;
         }
+        .cal-dot--available { background: rgba(34, 197, 94, 0.7); }
+        .cal-dot--low { background: rgba(251, 146, 60, 0.8); }
+        .cal-dot--full { background: rgba(255, 255, 255, 0.15); }
         .calendar-day.selected .cal-dot,
         .calendar-day.past .cal-dot,
         .calendar-day.disabled .cal-dot { display: none; }
+
+        .calendar-day.complet:not(.selected) {
+            color: rgba(255, 255, 255, 0.25);
+            text-decoration: line-through;
+            text-decoration-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .full-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 28px 20px;
+            text-align: center;
+        }
+        .full-card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .full-card-date {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            margin-bottom: 16px;
+        }
+        .full-card-msg {
+            font-size: 13px;
+            color: rgba(255,255,255,0.35);
+            margin-bottom: 20px;
+        }
+        .waitlist-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 14px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .waitlist-btn:active { transform: scale(0.96); }
+        .alt-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 24px 0 16px;
+            color: rgba(255,255,255,0.25);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .alt-divider::before, .alt-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+        .alt-barber {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 10px;
+        }
+        .alt-barber-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .alt-times {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .alt-time {
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+        }
+        .alt-switch-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .alt-switch-btn:active { transform: scale(0.96); }
 
         /* TIME SLOTS */
         .slots-section {
@@ -1995,6 +2102,16 @@
                 background: rgba(255, 255, 255, 0.08);
             }
 
+            .waitlist-btn:hover {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: rgba(255, 255, 255, 0.2);
+            }
+
+            .alt-switch-btn:hover {
+                background: rgba(255, 255, 255, 0.14);
+                border-color: rgba(255, 255, 255, 0.2);
+            }
+
             .action-btn:not(:disabled):hover {
                 box-shadow: 0 6px 28px rgba(255, 255, 255, 0.12);
             }
@@ -2082,17 +2199,80 @@
             }
         }
 
+        .desktop-hero { display: none; }
+
+        @keyframes kenBurnsSlow {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.1) translate(-1%, -1%); }
+        }
+
         /* ========================================
-           DESKTOP (min 1024px)
+           DESKTOP — V1 SPLIT (min 1024px)
            ======================================== */
         @media (min-width: 1024px) {
+            html, body { background: #000; }
+
+            /* --- Desktop hero (left half) --- */
+            .desktop-hero {
+                display: block;
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 50%;
+                height: 100vh;
+                overflow: hidden;
+                z-index: 1;
+            }
+
+            .desktop-hero-img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                animation: kenBurnsSlow 25s ease-in-out infinite alternate;
+            }
+
+            .desktop-hero-gradient {
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: 200px;
+                background: linear-gradient(to left, rgba(0,0,0,0.6) 0%, transparent 100%);
+            }
+
+            /* --- Vertical separator --- */
+            body::before {
+                content: '';
+                position: fixed;
+                left: 50%;
+                top: 0;
+                width: 1px;
+                height: 100%;
+                background: linear-gradient(to bottom, transparent 5%, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.08) 70%, transparent 95%);
+                box-shadow: 0 0 60px 15px rgba(255,255,255,0.015);
+                z-index: 5;
+                pointer-events: none;
+            }
+
+            body::after { display: none; }
+
+            /* --- Page content on right half --- */
             .page {
-                max-width: 880px;
+                position: relative;
+                z-index: 2;
+                margin-left: 50%;
+                max-width: 50vw;
             }
 
             .header {
+                position: sticky;
+                top: 0;
+                z-index: 100;
                 padding: 18px 32px;
-                border-bottom-color: rgba(255, 255, 255, 0.04);
+                background: rgba(0,0,0,0.7);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-bottom: 1px solid rgba(255,255,255,0.06);
             }
 
             .header-title {
@@ -2104,254 +2284,204 @@
             }
 
             .step-title {
-                font-size: 30px;
+                font-size: 26px;
                 margin-bottom: 8px;
             }
 
             .step-desc {
-                font-size: 15px;
-                margin-bottom: 32px;
-            }
-
-            .progress-bar {
-                padding: 24px 48px 28px;
-            }
-
-            .progress-step {
-                width: 88px;
-            }
-
-            .progress-circle {
-                width: 38px;
-                height: 38px;
                 font-size: 14px;
-            }
-
-            .progress-label {
-                font-size: 11px;
-                margin-top: 8px;
-            }
-
-            .progress-line {
-                margin-top: 19px;
-            }
-
-            /* Step 1: Barber cards — 2 columns */
-            .barber-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 14px;
-            }
-
-            .barber-card {
-                padding: 20px;
-                border-radius: 20px;
-            }
-
-            .barber-avatar {
-                width: 64px;
-                height: 64px;
-            }
-
-            .barber-name {
-                font-size: 16px;
-            }
-
-            .barber-role {
-                font-size: 13px;
-            }
-
-            /* Step 2: Service cards — 2 columns */
-            .service-list {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-            }
-
-            .service-card {
-                padding: 18px 20px;
-                border-radius: 16px;
-            }
-
-            .service-name {
-                font-size: 15px;
-            }
-
-            .service-price {
-                font-size: 15px;
-            }
-
-            /* Step 3: Calendar + Slots side by side */
-            #step3 .step-title,
-            #step3 .step-desc {
-                text-align: center;
-            }
-
-            .quick-suggestions {
-                max-width: 600px;
-                margin-left: auto;
-                margin-right: auto;
                 margin-bottom: 28px;
             }
 
+            .progress-bar {
+                padding: 20px 32px 24px;
+            }
+
+            .progress-step {
+                width: 80px;
+            }
+
+            .progress-circle {
+                width: 36px;
+                height: 36px;
+                font-size: 13px;
+            }
+
+            .progress-label {
+                font-size: 10px;
+                margin-top: 6px;
+            }
+
+            .progress-line {
+                margin-top: 18px;
+            }
+
+            /* Step 1: Barber cards — single column */
+            .barber-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .barber-card {
+                padding: 18px;
+                border-radius: 16px;
+            }
+
+            .barber-avatar {
+                width: 56px;
+                height: 56px;
+            }
+
+            .barber-name {
+                font-size: 15px;
+            }
+
+            .barber-role {
+                font-size: 12px;
+            }
+
+            /* Step 2: Service cards — single column */
+            .service-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .service-card {
+                padding: 16px 18px;
+                border-radius: 14px;
+            }
+
+            .service-name {
+                font-size: 14px;
+            }
+
+            .service-price {
+                font-size: 14px;
+            }
+
+            /* Step 3: Calendar + Slots stacked */
+            #step3 .step-title,
+            #step3 .step-desc {
+                text-align: left;
+            }
+
+            .quick-suggestions {
+                margin-bottom: 24px;
+            }
+
             .quick-divider {
-                max-width: 600px;
-                margin-left: auto;
-                margin-right: auto;
+                margin: 16px 0;
             }
 
             #step3 .calendar-section {
-                float: left;
-                width: 52%;
-                padding-right: 24px;
-                margin-bottom: 0;
-            }
-
-            #step3 .slots-section {
-                float: right;
-                width: 48%;
-                padding-left: 24px;
-                border-left: 1px solid rgba(255, 255, 255, 0.06);
-                min-height: 320px;
-            }
-
-            /* Clearfix for float layout */
-            #step3::after {
-                content: '';
-                display: table;
-                clear: both;
+                margin-bottom: 24px;
             }
 
             .slots-grid {
                 grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
+                gap: 8px;
             }
 
             .slots-title {
-                margin-bottom: 16px;
-            }
-
-            .slot-btn {
-                padding: 14px 10px;
-                font-size: 15px;
-            }
-
-            .calendar-day {
-                font-size: 15px;
-                border-radius: 14px;
-            }
-
-            /* Step 4: Two-column layout — summary left, forms right */
-            #step4.active {
-                display: grid;
-                grid-template-columns: 340px 1fr;
-                gap: 0 40px;
-                align-items: start;
-            }
-
-            #step4.active .step-title {
-                grid-column: 1 / -1;
-            }
-
-            #step4.active .step-desc {
-                grid-column: 1 / -1;
-            }
-
-            .summary-card {
-                grid-column: 1;
-                grid-row: 3 / 20;
-                position: sticky;
-                top: 100px;
-                padding: 26px;
-                border-radius: 20px;
-                margin-bottom: 0;
-            }
-
-            .summary-label {
-                font-size: 13px;
-            }
-
-            .summary-value {
-                font-size: 15px;
-            }
-
-            .auth-choice {
-                grid-column: 2;
-            }
-
-            #step4 .auth-form-section {
-                grid-column: 2;
-            }
-
-            .auth-form-card {
-                padding: 28px 24px;
-                border-radius: 20px;
-            }
-
-            .auth-signup-card {
-                border-radius: 20px;
-                padding: 24px 24px 22px;
-            }
-
-            .auth-option {
-                padding: 22px 20px;
-            }
-
-            .auth-signup-cta {
-                margin-top: 24px;
-            }
-
-            /* Step 5: Success — wider and more spacious */
-            .success-container {
-                padding: 60px 40px;
-            }
-
-            .success-icon {
-                width: 96px;
-                height: 96px;
-                margin-bottom: 32px;
-            }
-
-            .success-icon svg {
-                width: 44px;
-                height: 44px;
-            }
-
-            .success-title {
-                font-size: 32px;
                 margin-bottom: 14px;
             }
 
-            .success-text {
-                font-size: 15px;
-                max-width: 380px;
-                margin-bottom: 40px;
-            }
-
-            .success-details {
-                max-width: 420px;
-                padding: 28px;
-                border-radius: 20px;
-                margin-bottom: 40px;
-            }
-
-            .success-detail-label {
-                font-size: 13px;
-            }
-
-            .success-detail-value {
+            .slot-btn {
+                padding: 12px 8px;
                 font-size: 14px;
             }
 
+            .calendar-day {
+                font-size: 14px;
+                border-radius: 12px;
+            }
+
+            /* Step 4: Stacked layout */
+            .summary-card {
+                padding: 22px;
+                border-radius: 18px;
+                margin-bottom: 20px;
+            }
+
+            .summary-label {
+                font-size: 12px;
+            }
+
+            .summary-value {
+                font-size: 14px;
+            }
+
+            .auth-form-card {
+                padding: 24px 20px;
+                border-radius: 18px;
+            }
+
+            .auth-signup-card {
+                border-radius: 18px;
+                padding: 20px 20px 18px;
+            }
+
+            .auth-option {
+                padding: 20px 18px;
+            }
+
+            .auth-signup-cta {
+                margin-top: 20px;
+            }
+
+            /* Step 5: Success */
+            .success-container {
+                padding: 48px 32px;
+            }
+
+            .success-icon {
+                width: 88px;
+                height: 88px;
+                margin-bottom: 28px;
+            }
+
+            .success-icon svg {
+                width: 40px;
+                height: 40px;
+            }
+
+            .success-title {
+                font-size: 28px;
+                margin-bottom: 12px;
+            }
+
+            .success-text {
+                font-size: 14px;
+                max-width: 360px;
+                margin-bottom: 36px;
+            }
+
+            .success-details {
+                max-width: 400px;
+                padding: 24px;
+                border-radius: 18px;
+                margin-bottom: 36px;
+            }
+
+            .success-detail-label {
+                font-size: 12px;
+            }
+
+            .success-detail-value {
+                font-size: 13px;
+            }
+
             .success-actions {
-                max-width: 420px;
+                max-width: 400px;
                 flex-direction: row;
                 flex-wrap: wrap;
             }
 
             .success-btn {
                 flex: 1;
-                min-width: 180px;
+                min-width: 160px;
             }
 
             .success-btn:last-child {
@@ -2359,7 +2489,7 @@
             }
 
             .practical-info {
-                max-width: 420px;
+                max-width: 400px;
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
                 gap: 10px;
@@ -2374,19 +2504,22 @@
             }
 
             .cancel-note {
-                max-width: 420px;
+                max-width: 400px;
             }
 
             /* Action bar — desktop refinement */
             .action-bar {
-                padding: 20px 40px 24px;
+                position: sticky;
+                bottom: 0;
+                z-index: 50;
+                padding: 16px 32px 20px;
                 background: linear-gradient(to top, rgba(0,0,0,1) 50%, rgba(0,0,0,0.85) 75%, rgba(0,0,0,0));
             }
 
             .action-btn {
-                max-width: 360px;
-                padding: 18px 28px;
-                font-size: 14px;
+                max-width: 320px;
+                padding: 16px 24px;
+                font-size: 13px;
             }
         }
 
@@ -2504,6 +2637,9 @@
 
 <body>
     <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
+
+    <div class="desktop-hero"><img src="../../assets/images/salons/grenoble/salon-grenoble.jpg" alt="" class="desktop-hero-img"><div class="desktop-hero-gradient"></div></div>
+
     <!-- LOADING -->
     <div class="page-loading" id="pageLoading">
         <div class="loading-spinner"></div>
@@ -3017,6 +3153,7 @@
             booking: null,          // Response from POST /api/bookings
             isLoading: false,
             loggedClient: null,     // { id, name, email } when logged in
+            monthAvailability: {},  // { "YYYY-MM-DD": { total, status, alternatives? } }
         };
 
         // ---- DOM REFS ----
@@ -3512,13 +3649,22 @@
                 const isSelected = state.selectedDate === dateStr;
                 const off = !isPast && isOffDay(dateObj);
 
+                const avail = state.monthAvailability[dateStr];
+                const isFull = avail && avail.status === 'full';
+
                 let cls = 'calendar-day';
                 if (isPast || off) cls += ' past';
                 if (off) cls += ' disabled';
                 if (isToday) cls += ' today';
                 if (isSelected && !off && !isPast) cls += ' selected';
+                if (isFull && !isPast && !off) cls += ' complet';
 
-                html += `<div class="${cls}" data-date="${dateStr}">${d}</div>`;
+                let dot = '';
+                if (avail && !isPast && !off) {
+                    dot = `<span class="cal-dot cal-dot--${avail.status}"></span>`;
+                }
+
+                html += `<div class="${cls}" data-date="${dateStr}">${d}${dot}</div>`;
             }
 
             $('#calDays').innerHTML = html;
@@ -3552,6 +3698,45 @@
                         <button onclick="loadSlots()" style="padding:10px 20px;background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.15);border-radius:10px;font-family:Orbitron,sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Réessayer</button>
                     </div>`;
             }
+        }
+
+        async function loadMonthAvailability() {
+            if (!state.selectedService) return;
+            try {
+                const barberId = state.selectedBarber.id;
+                const barberParam = barberId !== 'any' ? `&barber_id=${barberId}` : '';
+                const includeAlt = barberId !== 'any' ? '&include_alternatives=true' : '';
+                const url = `/availability/month?service_id=${state.selectedService.id}&year=${state.calendarYear}&month=${state.calendarMonth}${barberParam}${includeAlt}`;
+                state.monthAvailability = await api(url);
+                renderCalendarDots();
+            } catch (e) {
+                // Fallback: calendar works normally without dots
+                state.monthAvailability = {};
+            }
+        }
+
+        function renderCalendarDots() {
+            $$('#calDays .calendar-day:not(.empty):not(.past):not(.disabled)').forEach(el => {
+                const dateStr = el.dataset.date;
+                const avail = state.monthAvailability[dateStr];
+                // Remove existing dot
+                const oldDot = el.querySelector('.cal-dot');
+                if (oldDot) oldDot.remove();
+                el.classList.remove('complet');
+
+                if (avail) {
+                    if (avail.status === 'full') el.classList.add('complet');
+                    const dot = document.createElement('span');
+                    dot.className = `cal-dot cal-dot--${avail.status}`;
+                    el.appendChild(dot);
+                }
+            });
+        }
+
+        function switchToBarber(barberId, barberName) {
+            state.selectedBarber = state.barbers.find(b => b.id === barberId) || { id: barberId, name: barberName };
+            loadSlots();
+            loadMonthAvailability();
         }
 
         function joinWaitlist() {
@@ -3626,12 +3811,42 @@
             const slotsSection = $('#slotsSection');
 
             if (state.slots.length === 0) {
-                slotsSection.innerHTML = `<p class="slots-empty">Aucun créneau disponible ce jour.<br>Essayez une autre date.</p>
-                    <div style="text-align:center;margin-top:12px;">
-                        <button onclick="joinWaitlist()" style="padding:12px 24px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;color:#fff;font-family:Inter,sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .3s ease;">
-                            Me prévenir si une place se libère
-                        </button>
-                    </div>`;
+                const barberName = state.selectedBarber.id !== 'any' ? esc(state.selectedBarber.name) : '';
+                const dateLabel = formatDateFR(state.selectedDate);
+                const avail = state.monthAvailability[state.selectedDate];
+                const alternatives = avail && avail.alternatives ? avail.alternatives : [];
+
+                let html = '<div class="full-card">';
+                if (barberName) {
+                    html += `<div class="full-card-title">${barberName} est complet</div>`;
+                    html += `<div class="full-card-date">${dateLabel}</div>`;
+                } else {
+                    html += `<div class="full-card-title">Complet</div>`;
+                    html += `<div class="full-card-date">${dateLabel}</div>`;
+                }
+                html += `<div class="full-card-msg">Aucun créneau disponible.</div>`;
+                html += `<button class="waitlist-btn" onclick="joinWaitlist()">Me prévenir si une place se libère</button>`;
+
+                if (alternatives.length > 0) {
+                    html += '<div class="alt-divider">Disponible avec</div>';
+                    for (const alt of alternatives) {
+                        html += `<div class="alt-barber">`;
+                        html += `<div class="alt-barber-name">${esc(alt.barber_name)}</div>`;
+                        html += '<div class="alt-times">';
+                        for (const t of alt.sample_times) {
+                            html += `<span class="alt-time">${t}</span>`;
+                        }
+                        if (alt.slot_count > alt.sample_times.length) {
+                            html += `<span class="alt-time">+${alt.slot_count - alt.sample_times.length}</span>`;
+                        }
+                        html += '</div>';
+                        html += `<button class="alt-switch-btn" onclick="switchToBarber('${alt.barber_id}','${esc(alt.barber_name)}')">Réserver avec ${esc(alt.barber_name)}</button>`;
+                        html += '</div>';
+                    }
+                }
+
+                html += '</div>';
+                slotsSection.innerHTML = html;
                 return;
             }
 
@@ -3680,6 +3895,7 @@
                 state.calendarYear--;
             }
             renderCalendar();
+            loadMonthAvailability();
         });
 
         $('#calNext').addEventListener('click', () => {
@@ -3689,6 +3905,7 @@
                 state.calendarYear++;
             }
             renderCalendar();
+            loadMonthAvailability();
         });
 
         // ---- STEP 4: SUMMARY ----
@@ -4231,8 +4448,9 @@
                     renderCalendar();
                     $('#slotsSection').innerHTML = '<p class="slots-empty">Sélectionnez une date pour voir les créneaux disponibles</p>';
                     goToStep(3);
-                    // Load quick suggestions in background (non-blocking)
+                    // Load quick suggestions + month availability in background (non-blocking)
                     loadQuickSuggestions();
+                    loadMonthAvailability();
                 } else if (n === 3) {
                     renderSummary();
                     goToStep(4);
@@ -4293,6 +4511,7 @@
         window.loadServices = loadServices;
         window.loadSlots = loadSlots;
         window.joinWaitlist = joinWaitlist;
+        window.switchToBarber = switchToBarber;
 
         init();
     })();

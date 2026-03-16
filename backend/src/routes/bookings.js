@@ -158,6 +158,39 @@ router.get('/services', publicLimiter,
 });
 
 // ============================================
+// GET /api/availability/month — Month-level availability summary (batch)
+// ============================================
+router.get('/availability/month',
+  publicLimiter,
+  [
+    query('service_id').matches(uuidRegex).withMessage('Service ID invalide'),
+    query('year').isInt({ min: 2024, max: 2030 }).withMessage('Année invalide'),
+    query('month').isInt({ min: 0, max: 11 }).withMessage('Mois invalide (0-11)'),
+    query('barber_id').optional().custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide'),
+    query('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    query('include_alternatives').optional().isIn(['true', 'false']).withMessage('Valeur invalide'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { service_id, barber_id } = req.query;
+      const year = parseInt(req.query.year, 10);
+      const month = parseInt(req.query.month, 10);
+      const salonId = req.query.salon_id || 'meylan';
+      const includeAlternatives = req.query.include_alternatives === 'true';
+
+      const summary = await availabilityService.getMonthAvailabilitySummary(
+        service_id, year, month, barber_id || 'any', salonId, includeAlternatives
+      );
+
+      res.json(summary);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
 // GET /api/availability — Available time slots
 // ============================================
 router.get('/availability',
@@ -383,7 +416,7 @@ router.get('/bookings/:id/ics',
       const icsContent = generateICS(result.rows[0]);
 
       res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-      res.setHeader('Content-Disposition', 'attachment; filename="barberclub-rdv.ics"');
+      res.setHeader('Content-Disposition', 'inline; filename="barberclub-rdv.ics"');
       res.send(icsContent);
     } catch (error) {
       next(error);
