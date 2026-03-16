@@ -294,34 +294,18 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
     }
   }
 
-  // 1. Regular grid slots (every SLOT_INTERVAL for public, every 5min for admin)
-  // slotStep override: for time-restricted services, use service duration for tight packing
-  const step = options.slotStep || (options.adminMode ? SLOT_INTERVAL_ADMIN : SLOT_INTERVAL_PUBLIC);
+  // 1. Regular grid slots
+  // Public: use service duration as step → zero gaps (20min service = 9:00, 9:20, 9:40...)
+  // Admin: every 5min
+  const step = options.slotStep || (options.adminMode ? SLOT_INTERVAL_ADMIN : duration);
   for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
     tryAddSlot(slotStart);
   }
 
-  // 2. Gap-filling
+  // 2. Gap-filling: propose slots right after existing bookings/blocks end
   const allOccupied = [...existingBookings, ...blockedSlots].sort((a, b) => a.start - b.start);
-  if (options.adminMode) {
-    // Admin: always show gap-fill slots (5min granularity)
-    for (const occupied of allOccupied) {
-      tryAddSlot(occupied.end);
-    }
-  } else {
-    // Public: propose off-grid slots ONLY in small gaps where the service fits
-    // but a regular 30-min slot doesn't. E.g. 20-min gap → allow barbe/enfant (20min).
-    for (const occupied of allOccupied) {
-      const gapStart = occupied.end;
-      // Find the next occupied block after this gap
-      const nextOccupied = allOccupied.find(o => o.start > gapStart);
-      const gapEnd = nextOccupied ? nextOccupied.start : endMin;
-      const gapSize = gapEnd - gapStart;
-      // Only propose if: service fits in gap AND gap is too small for a regular 30-min grid slot
-      if (duration <= gapSize && gapSize < SLOT_INTERVAL_PUBLIC) {
-        tryAddSlot(gapStart);
-      }
-    }
+  for (const occupied of allOccupied) {
+    tryAddSlot(occupied.end);
   }
 
   // Sort by time
@@ -911,15 +895,27 @@ function countSlotsForBarber(barberId, dateStr, dayOfWeek, duration, minSlotStar
   const allBlocked = [...blockedSlots, ...blockedRanges];
 
   let count = 0;
-  const step = SLOT_INTERVAL_PUBLIC;
-  for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
-    if (slotStart < minSlotStart) continue;
-    if (restrictionWindow && (slotStart < restrictionWindow.start || slotStart + duration > restrictionWindow.end)) continue;
-    const slotEnd = slotStart + duration;
-    const overlapsBooking = existingBookings.some(b => slotStart < b.end && slotEnd > b.start);
-    const overlapsBlocked = allBlocked.some(b => slotStart < b.end && slotEnd > b.start);
-    if (!overlapsBooking && !overlapsBlocked) count++;
+  const slotSet = new Set();
+  const step = duration; // Use service duration as step (matches generateSlots)
+
+  function tryCount(s) {
+    if (s < minSlotStart || slotSet.has(s)) return;
+    if (restrictionWindow && (s < restrictionWindow.start || s + duration > restrictionWindow.end)) return;
+    const e = s + duration;
+    if (e > endMin) return;
+    const overlapsBooking = existingBookings.some(b => s < b.end && e > b.start);
+    const overlapsBlocked = allBlocked.some(b => s < b.end && e > b.start);
+    if (!overlapsBooking && !overlapsBlocked) { slotSet.add(s); count++; }
   }
+
+  // Grid slots
+  for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
+    tryCount(slotStart);
+  }
+  // Gap-fill: right after occupied blocks
+  const allOccupied = [...existingBookings, ...allBlocked].sort((a, b) => a.start - b.start);
+  for (const occ of allOccupied) { tryCount(occ.end); }
+
   return count;
 }
 
@@ -937,17 +933,25 @@ function getSampleTimesForBarber(barberId, dateStr, dayOfWeek, duration, minSlot
   const allBlocked = [...blockedSlots, ...blockedRanges];
 
   const samples = [];
-  const step = SLOT_INTERVAL_PUBLIC;
-  for (let slotStart = startMin; slotStart + duration <= endMin && samples.length < max; slotStart += step) {
-    if (slotStart < minSlotStart) continue;
-    if (restrictionWindow && (slotStart < restrictionWindow.start || slotStart + duration > restrictionWindow.end)) continue;
-    const slotEnd = slotStart + duration;
-    const overlapsBooking = existingBookings.some(b => slotStart < b.end && slotEnd > b.start);
-    const overlapsBlocked = allBlocked.some(b => slotStart < b.end && slotEnd > b.start);
-    if (!overlapsBooking && !overlapsBlocked) {
-      samples.push(minutesToTime(slotStart));
-    }
+  const slotSet = new Set();
+  const step = duration;
+
+  function trySample(s) {
+    if (samples.length >= max || s < minSlotStart || slotSet.has(s)) return;
+    if (restrictionWindow && (s < restrictionWindow.start || s + duration > restrictionWindow.end)) return;
+    const e = s + duration;
+    if (e > endMin) return;
+    const overlapsBooking = existingBookings.some(b => s < b.end && e > b.start);
+    const overlapsBlocked = allBlocked.some(b => s < b.end && e > b.start);
+    if (!overlapsBooking && !overlapsBlocked) { slotSet.add(s); samples.push(minutesToTime(s)); }
   }
+
+  for (let slotStart = startMin; slotStart + duration <= endMin && samples.length < max; slotStart += step) {
+    trySample(slotStart);
+  }
+  const allOccupied = [...existingBookings, ...allBlocked].sort((a, b) => a.start - b.start);
+  for (const occ of allOccupied) { trySample(occ.end); }
+  samples.sort();
   return samples;
 }
 
