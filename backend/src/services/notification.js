@@ -155,6 +155,9 @@ async function sendNotification(notification) {
     case 'cancellation_email':
       await sendCancellationEmail(notification);
       break;
+    case 'review_email':
+      await sendReviewEmail(notification);
+      break;
     case 'reschedule_email': {
       const meta = typeof notification.metadata === 'string'
         ? JSON.parse(notification.metadata)
@@ -1003,6 +1006,67 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
 /**
  * Send password reset email directly (not queued)
  */
+/**
+ * Send review request email (Google review) — triggered 60min post-completed
+ */
+async function sendReviewEmail(data) {
+  const salonId = data.salon_id || 'meylan';
+  const salon = config.getSalonConfig(salonId);
+
+  if (!data.email) {
+    logger.info('No client email, skipping review email', { bookingId: data.booking_id });
+    return;
+  }
+
+  const apiUrl = config.apiUrl || 'https://barberclub-grenoble.fr';
+  const reviewLink = apiUrl + '/r/avis?salon=' + salonId;
+  const barberName = escapeHtml(data.barber_name || '');
+  const firstName = escapeHtml(data.first_name || '');
+  const barberPhotoUrl = getBarberPhotoUrl(data.barber_name);
+  const bookingUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
+
+  const html = emailShell(`
+      <div style="text-align:center;margin-bottom:32px;">
+        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Merci pour votre visite !</h2>
+        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
+          ${firstName ? `${firstName}, nous` : 'Nous'} esp&eacute;rons que vous &ecirc;tes satisfait.
+        </p>
+      </div>
+
+      ${barberPhotoUrl ? `
+      <div style="text-align:center;margin-bottom:28px;">
+        <img src="${barberPhotoUrl}" alt="${barberName}" width="72" height="72" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid ${ACCENT_DIM};">
+        <p style="margin:10px 0 0;color:${TEXT_SECONDARY};font-size:13px;">Votre barbier : <strong style="color:${TEXT_PRIMARY};">${barberName}</strong></p>
+      </div>` : ''}
+
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
+        <tr><td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr>
+          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:28px 24px;text-align:center;">
+            <p style="margin:0 0 8px;font-size:28px;">&#11088;&#11088;&#11088;&#11088;&#11088;</p>
+            <p style="margin:0 0 20px;color:${TEXT_SECONDARY};font-size:14px;line-height:1.7;">
+              Votre avis compte &eacute;norm&eacute;ment pour nous.<br>
+              En 30 secondes, aidez d'autres clients &agrave; d&eacute;couvrir BarberClub.
+            </p>
+            <a href="${reviewLink}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+              Laisser un avis Google
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <div style="text-align:center;">
+        <a href="${bookingUrl}" style="color:${TEXT_SECONDARY};font-size:13px;text-decoration:underline;">
+          Reprendre rendez-vous
+        </a>
+      </div>`, { salonId });
+
+  await brevoEmail(data.email, `Votre avis compte — ${salon.name}`, html, salonId, {
+    bookingId: data.booking_id, type: 'review_email', recipientName: firstName,
+  });
+  logger.info('Review email sent', { bookingId: data.booking_id, email: data.email, salonId });
+}
+
 async function sendResetPasswordEmail({ email, first_name, resetUrl, salon_id }) {
   const salonId = salon_id || 'meylan';
   const brevo = getBrevoConfig(salonId);
@@ -1095,6 +1159,7 @@ module.exports = {
   sendReminderSMSDirect,
   sendCancellationEmail,
   sendRescheduleEmail,
+  sendReviewEmail,
   sendResetPasswordEmail,
   sendWaitlistSMS,
   formatDateFR,

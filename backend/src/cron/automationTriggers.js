@@ -47,67 +47,54 @@ async function processAutomationTriggers() {
 }
 
 /**
- * Review SMS: Send SMS X minutes after a booking is completed
- * Filtered by salon_id
+ * Review email: Send email X minutes after a booking is completed
+ * Filtered by salon_id — once per client lifetime (review_requested flag)
  */
 async function processReviewSms(triggerConfig, salonId) {
   const delayMinutes = triggerConfig.delay_minutes || 60;
-  const message = triggerConfig.message || '';
-  const googleReviewUrl = triggerConfig.google_review_url || '';
-
-  if (!message) return;
 
   // Find bookings completed more than delayMinutes ago (for this salon)
-  // Only for clients who have NEVER received a review SMS (once per lifetime)
+  // Only for clients who have NEVER received a review request (once per lifetime)
   const result = await db.query(
     `SELECT b.id, b.client_id, b.date, b.start_time,
-            c.first_name, c.last_name, c.phone
+            c.first_name, c.last_name, c.email
      FROM bookings b
      JOIN clients c ON b.client_id = c.id
      WHERE b.status = 'completed'
        AND b.deleted_at IS NULL
        AND b.review_email_sent = false
        AND b.salon_id = $2
-       AND c.phone IS NOT NULL
+       AND c.email IS NOT NULL
        AND c.review_requested = false
        AND b.date = (NOW() AT TIME ZONE 'Europe/Paris')::date
        AND (b.end_time::time + ($1 || ' minutes')::interval) <= (NOW() AT TIME ZONE 'Europe/Paris')::time
        AND NOT EXISTS (
          SELECT 1 FROM notification_queue nq
-         WHERE nq.booking_id = b.id AND nq.type = 'review_sms'
+         WHERE nq.booking_id = b.id AND nq.type IN ('review_sms', 'review_email')
        )
      LIMIT 20`,
     [delayMinutes, salonId]
   );
 
-  const apiUrl = config.apiUrl || 'https://barberclub-grenoble.fr';
-  const reviewLink = apiUrl + '/r/avis?salon=' + salonId;
-
   for (const booking of result.rows) {
-    const personalMessage = message
-      .replace(/\{prenom\}/gi, booking.first_name || '')
-      .replace(/\{nom\}/gi, booking.last_name || '')
-      .replace(/\{lien_avis\}/gi, reviewLink);
-
     try {
       // Mark BEFORE queuing to prevent duplicates on next cron run
       await db.query('UPDATE clients SET review_requested = true WHERE id = $1', [booking.client_id]);
       await db.query('UPDATE bookings SET review_email_sent = true WHERE id = $1', [booking.id]);
-      // Queue for sending — processQueue handles retries
-      await queueNotification(booking.id, 'review_sms', {
-        phone: booking.phone,
-        message: personalMessage,
+      // Queue review email — processQueue handles retries
+      await queueNotification(booking.id, 'review_email', {
+        email: booking.email,
         salonId,
         recipientName: booking.first_name || '',
       });
-      logger.info('Review SMS queued', { bookingId: booking.id, phone: booking.phone, salonId });
+      logger.info('Review email queued', { bookingId: booking.id, email: booking.email, salonId });
     } catch (err) {
-      logger.error('Review SMS queue failed', { bookingId: booking.id, error: err.message });
+      logger.error('Review email queue failed', { bookingId: booking.id, error: err.message });
     }
   }
 
   if (result.rows.length > 0) {
-    logger.info(`Review SMS (${salonId}): processed ${result.rows.length} bookings`);
+    logger.info(`Review email (${salonId}): processed ${result.rows.length} bookings`);
   }
 }
 
