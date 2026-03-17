@@ -75,6 +75,10 @@ const NAV_GROUPS = [
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
       },
       {
+        to: '/faux-plans', label: 'Faux Plans',
+        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg>,
+      },
+      {
         to: '/history', label: 'Historique',
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
       },
@@ -137,6 +141,7 @@ function useTheme() {
 const DRAWER_NAV = [
   { to: '/services', label: 'Prestations', icon: NAV.find(n => n.to === '/services').icon },
   { to: '/barbers', label: 'Barbers', icon: NAV.find(n => n.to === '/barbers').icon },
+  { to: '/faux-plans', label: 'Faux Plans', icon: NAV.find(n => n.to === '/faux-plans').icon },
   { to: '/history', label: 'Historique', icon: NAV.find(n => n.to === '/history').icon },
   { to: '/waitlist', label: 'Liste d\'attente', icon: NAV.find(n => n.to === '/waitlist').icon, badge: true },
   { to: '/messages', label: 'Messages', icon: NAV.find(n => n.to === '/messages').icon },

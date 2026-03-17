@@ -43,6 +43,7 @@ const Barbers = lazy(() => import('./pages/Barbers'));
 const Clients = lazy(() => import('./pages/Clients'));
 const ClientDetail = lazy(() => import('./pages/ClientDetail'));
 const History = lazy(() => import('./pages/History'));
+const FauxPlans = lazy(() => import('./pages/FauxPlans'));
 const Messages = lazy(() => import('./pages/Messages'));
 const Waitlist = lazy(() => import('./pages/Waitlist'));
 const System = lazy(() => import('./pages/System'));
@@ -85,6 +86,7 @@ function AppRoutes() {
         <Route path="barbers" element={<Suspense fallback={<PageLoader />}><Barbers /></Suspense>} />
         <Route path="clients" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
         <Route path="clients/:id" element={<Suspense fallback={<PageLoader />}><ClientDetail /></Suspense>} />
+        <Route path="faux-plans" element={<Suspense fallback={<PageLoader />}><FauxPlans /></Suspense>} />
         <Route path="history" element={<Suspense fallback={<PageLoader />}><History /></Suspense>} />
         <Route path="messages" element={<Suspense fallback={<PageLoader />}><Messages /></Suspense>} />
         <Route path="waitlist" element={<Suspense fallback={<PageLoader />}><Waitlist /></Suspense>} />
