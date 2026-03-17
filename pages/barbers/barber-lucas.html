@@ -464,163 +464,122 @@
             }
         }
 
-        /* DESKTOP LARGE - Split layout */
+        /* ═══ CINEMATIC DESKTOP 1024px+ ═══ */
+        @keyframes kenBurnsSlow {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.1) translate(-1%, -1%); }
+        }
         @media (min-width: 1024px) {
-            html {
-                background: #000;
-            }
+            html { background: #000; }
+            body { background: #000; min-height: 100vh; }
+            body::before, body::after { display: none; }
 
-            body {
-                background: url('../../assets/images/salons/meylan/salon-meylan.jpg') center center / cover no-repeat fixed;
-                min-height: 100vh;
-            }
+            .header { z-index: 100; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+            .header.scrolled { background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 
-            body::before {
-                content: '';
-                position: fixed;
-                top: 0; left: 0; right: 0; bottom: 0;
-                background: rgba(0, 0, 0, 0.85);
-                pointer-events: none;
-                z-index: 0;
-            }
-
-            body::after {
-                content: '';
-                position: fixed;
-                top: 0; left: 0; right: 0; bottom: 0;
-                background:
-                    radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
-                    radial-gradient(ellipse at 70% 80%, rgba(255, 255, 255, 0.03) 0%, transparent 40%);
-                pointer-events: none;
-                z-index: 0;
-            }
-
-            .header {
-                z-index: 100;
+            .page::before {
+                content: ''; position: fixed; left: 50%; top: 0;
+                width: 1px; height: 100%;
+                background: linear-gradient(to bottom, transparent 5%, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.08) 70%, transparent 95%);
+                box-shadow: 0 0 60px 15px rgba(255,255,255,0.015);
+                z-index: 5; pointer-events: none;
             }
 
             .hero {
-                position: fixed;
-                left: 0;
-                top: 0;
-                width: 45%;
-                height: 100vh;
-                padding-top: 120px;
-                display: flex;
-                align-items: flex-start;
-                justify-content: center;
-                background: transparent;
-                z-index: 1;
+                position: fixed; left: 0; top: 0;
+                width: 50%; height: 100vh;
+                padding: 0; overflow: hidden;
+                z-index: 1; display: block;
             }
-
-            .hero-video,
-            .hero-photo {
-                width: 80%;
-                max-width: 400px;
-                height: auto;
-                max-height: 75vh;
-                aspect-ratio: 9/16;
-                border-radius: 24px;
-                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
-                            0 0 0 1px rgba(255, 255, 255, 0.1);
+            .hero-video, .hero-photo {
+                width: 100%; height: 100vh; max-height: none;
+                aspect-ratio: unset; border-radius: 0;
+                object-fit: cover;
+                animation: kenBurnsSlow 25s ease-in-out infinite alternate;
             }
-
             .hero-gradient {
-                display: none;
+                display: block;
+                position: absolute; right: 0; top: 0; bottom: 0; left: auto;
+                width: 200px; height: 100%;
+                background: linear-gradient(to left, rgba(0,0,0,0.6) 0%, transparent 100%);
             }
 
             .profile {
-                position: relative;
-                z-index: 2;
-                margin-left: 45%;
-                margin-top: 0;
-                padding: 100px 60px 40px;
-                max-width: 600px;
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
-
-            .profile-header {
-                text-align: left;
-                margin-bottom: 32px;
-            }
-
-            .profile-name {
-                font-size: 56px;
-            }
-
-            .profile-role {
-                font-size: 16px;
-            }
-
-            .info-section {
+                position: relative; z-index: 2;
+                margin-left: 50%; margin-top: 0;
+                padding: 80px 80px 24px 80px;
+                max-width: 50vw; min-height: auto;
+                display: flex; flex-direction: column;
                 justify-content: flex-start;
-                gap: 16px;
-                margin-bottom: 32px;
             }
+            .profile-header { text-align: left; margin-bottom: 20px; }
+            .profile-name {
+                font-size: clamp(72px, 7vw, 100px);
+                line-height: 0.9; letter-spacing: 0.02em; margin-bottom: 16px;
+            }
+            .page.loaded .profile-name .letter { text-shadow: 0 0 40px rgba(255,255,255,0.08); }
+            .profile-role { font-size: 11px; letter-spacing: 0.4em; color: rgba(255,255,255,0.35); margin-bottom: 24px; }
+            .profile-salon { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); font-size: 11px; padding: 6px 14px; }
 
+            .info-section { flex-direction: row; gap: 0; margin-bottom: 36px; align-items: center; }
             .info-card {
-                flex: 0 0 auto;
-                min-width: 140px;
-                padding: 20px 24px;
+                background: none; border: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+                border-radius: 0; padding: 0 28px 0 0; text-align: left;
+                flex: none; min-width: auto; position: relative;
             }
-
-            .info-value {
-                font-size: 28px;
+            .info-card::after {
+                content: ''; position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+                width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.2);
             }
+            .info-card:last-child::after { display: none; }
+            .info-value { font-size: 20px; margin-bottom: 2px; }
+            .info-label { font-size: 9px; letter-spacing: 0.15em; color: rgba(255,255,255,0.3); }
 
             .bio-section {
-                padding: 24px;
-                margin-bottom: 32px;
+                background: none; border: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+                border-radius: 0; padding: 0 0 0 24px; margin-bottom: 40px;
+                border-left: 1px solid rgba(255,255,255,0.1);
             }
+            .bio-title { font-size: 10px; letter-spacing: 0.2em; color: rgba(255,255,255,0.25); margin-bottom: 14px; }
+            .bio-text { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.5); font-weight: 300; max-width: 420px; }
 
-            .bio-title {
-                font-size: 18px;
-            }
-
-            .bio-text {
-                font-size: 15px;
-                line-height: 1.7;
-            }
-
-            .cta-section {
-                margin-bottom: 0;
-            }
-
+            .cta-section { margin-bottom: 0; }
             .cta-btn {
-                width: auto;
-                display: inline-flex;
-                padding: 20px 40px;
-                font-size: 14px;
+                width: auto; display: inline-flex; padding: 20px 48px; font-size: 13px;
+                letter-spacing: 0.08em; background: #fff; color: #000; border: none;
+                box-shadow: 0 8px 32px rgba(255,255,255,0.15);
             }
+            .cta-btn:hover { transform: scale(1.02); box-shadow: 0 8px 40px rgba(255,255,255,0.25); }
 
             .gallery-section {
-                position: relative;
-                z-index: 2;
-                margin-left: 45%;
-                padding: 40px 60px 100px;
-                max-width: 700px;
+                position: relative; z-index: 2; margin-left: 50%;
+                padding: 16px 80px 100px; max-width: 50vw;
             }
-
             .section-title {
-                padding: 0;
-                font-size: 28px;
-                margin-bottom: 24px;
+                padding: 0; font-size: 10px; letter-spacing: 0.35em;
+                color: rgba(255,255,255,0.25); font-weight: 400; margin-bottom: 24px;
             }
-
+            .section-title::after { background: linear-gradient(to right, rgba(255,255,255,0.1), transparent); }
             .gallery {
-                columns: 2;
-                column-gap: 16px;
-                padding: 0;
-                max-width: none;
+                columns: unset; display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                grid-auto-rows: 180px; gap: 8px; padding: 0;
             }
-
+            .gallery-item:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+            .gallery-item:nth-child(5) { grid-column: span 2; }
             .gallery-item {
-                margin-bottom: 16px;
-                border-radius: 16px;
+                margin-bottom: 0; border-radius: 12px; break-inside: unset; overflow: hidden;
+                transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease;
             }
+            .gallery-item img, .gallery-item video {
+                height: 100%; object-fit: cover;
+                transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            .gallery-item:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+            }
+            .gallery-item:hover img, .gallery-item:hover video { transform: scale(1.05); }
         }
 
         /* REDUCED MOTION */
@@ -749,7 +708,7 @@
             <div class="bio-section stagger" style="--stagger:0.8s">
                 <h2 class="bio-title">À propos</h2>
                 <p class="bio-text">
-                    Lucas vit à Villard-Bonnot et est Co-fondateur de BarberClub Meylan en 2025.
+                    Lucas est originaire de Grenoble et est Co-fondateur de BarberClub Meylan en 2025.
                     Avec 2 ans d'expérience, il est passionné par son métier et met un point d'honneur à offrir un service personnalisé.
                     Spécialiste des coupes tendance et des finitions impeccables, il vous accueille au salon de Meylan.
                 </p>

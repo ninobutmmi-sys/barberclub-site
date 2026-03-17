@@ -352,6 +352,9 @@ html, body {
 }
 @media (min-width: 768px) { .salon-title { font-size: 60px; } }
 
+/* Address (desktop only) */
+.salon-address { display: none; }
+
 /* Location */
 .salon-location {
   font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
@@ -472,8 +475,9 @@ html, body {
 /* Desktop: vertical */
 @media (min-width: 768px) {
   .separator {
-    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 3px; height: 100%;
+    position: relative; top: auto; left: auto; transform: none;
+    width: 3px; height: auto; flex-shrink: 0;
+    align-self: stretch;
   }
   .separator-line {
     transform: scaleY(0); transform-origin: center;
@@ -537,6 +541,57 @@ html, body {
 @media (pointer: fine) { .touch-hint { display: none !important; } }
 
 /* ═══════════════════════════════════════
+   DESKTOP ENHANCEMENTS
+   ═══════════════════════════════════════ */
+@media (min-width: 768px) {
+  /* 1. Hover expand — panels flex from 50/50 to 56/44 */
+  .salon {
+    transition: flex 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .salons:hover .salon { flex: 1; }
+  .salons .salon:hover { flex: 1.24; }
+
+  /* 2. Larger title on desktop */
+  .salon-title { font-size: 72px; }
+
+  /* 3. Wider CTA */
+  .salon-cta { padding: 16px 48px; font-size: 13px; }
+
+  /* 4. Lighter overlay on hover — reveal more background photo */
+  .salon-overlay {
+    transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .salon:hover .salon-overlay {
+    background: linear-gradient(0deg,
+      rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.18) 35%,
+      rgba(0,0,0,0.02) 60%, rgba(0,0,0,0.08) 100%);
+  }
+
+  /* 5. Address sub-info — visible only on desktop */
+  .salon-address {
+    display: block;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.1em;
+    margin-top: 8px;
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+    font-weight: 400;
+    opacity: 0; transform: translateY(6px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .landing.visible .salon-grenoble .salon-address { opacity: 1; transform: translateY(0); transition-delay: 0.55s; }
+  .landing.visible .salon-meylan .salon-address { opacity: 1; transform: translateY(0); transition-delay: 0.75s; }
+}
+
+/* Reduced motion: disable hover expand transition */
+@media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+  .salon { transition: none !important; }
+  .salon-overlay { transition: none !important; }
+  .salon-address { opacity: 1; transform: none; }
+}
+
+/* ═══════════════════════════════════════
    MOBILE
    ═══════════════════════════════════════ */
 @media (max-width: 767px) {
@@ -553,7 +608,7 @@ html, body {
     animation-duration: 0.01ms !important; animation-delay: 0s !important; transition-duration: 0.01ms !important;
   }
   .salon-bg { animation: none !important; }
-  .salon-title .letter, .salon-location, .salon-cta, .salon-content { opacity: 1; transform: none; }
+  .salon-title .letter, .salon-location, .salon-cta, .salon-content, .salon-address { opacity: 1; transform: none; }
   .separator-line { opacity: 1; transform: none; }
   .cursor-dot, .cursor-ring { display: none; }
   body { cursor: auto; }
@@ -610,6 +665,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       <div class="particles" aria-hidden="true"></div>
       <div class="salon-content">
         <h2 class="salon-title" data-split>Grenoble</h2>
+        <span class="salon-address">5 Rue Clot Bey, Grenoble</span>
         <p class="salon-location">Centre-ville</p>
         <span class="salon-cta" data-magnetic>
           <span class="cta-text">Découvrir</span>
@@ -631,6 +687,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       <div class="particles" aria-hidden="true"></div>
       <div class="salon-content">
         <h2 class="salon-title" data-split>Meylan</h2>
+        <span class="salon-address">26 Av. du Grésivaudan, Corenc</span>
         <p class="salon-location">Près de Corenc</p>
         <span class="salon-cta" data-magnetic>
           <span class="cta-text">Découvrir</span>

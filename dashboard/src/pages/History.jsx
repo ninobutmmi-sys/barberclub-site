@@ -84,56 +84,203 @@ const ACTION_COLORS = {
   cancel: '#ef4444',
 };
 
+// Timify-style event labels
+function getEventLabel(action, entityType, details) {
+  if (entityType === 'booking') {
+    if (action === 'create') return 'Nouvelle réservation';
+    if (action === 'cancel') return 'Réservation annulée';
+    if (action === 'update') return 'Réservation modifiée';
+    if (action === 'status') {
+      const st = details?.status || details?.after?.status;
+      if (st === 'completed') return 'RDV terminé';
+      if (st === 'no_show') return 'Faux plan';
+      return 'Statut modifié';
+    }
+    if (action === 'delete') return 'Réservation supprimée';
+  }
+  if (entityType === 'client') {
+    if (action === 'create') return 'Client créé';
+    if (action === 'update') return 'Client modifié';
+    if (action === 'delete') return 'Client supprimé';
+  }
+  if (entityType === 'service') {
+    if (action === 'create') return 'Prestation créée';
+    if (action === 'update') return 'Prestation modifiée';
+    if (action === 'delete') return 'Prestation supprimée';
+  }
+  if (entityType === 'blocked_slot') {
+    if (action === 'create') return 'Créneau bloqué';
+    if (action === 'delete') return 'Créneau débloqué';
+  }
+  if (entityType === 'booking_group') {
+    if (action === 'delete') return 'Groupe RDV supprimé';
+  }
+  return `${ACTION_LABELS[action] || action} ${ENTITY_LABELS[entityType] || entityType}`;
+}
+
 function formatDatetime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ', ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
-function AuditDetails({ details }) {
-  if (!details || Object.keys(details).length === 0) return <span style={{ color: 'var(--text-muted)' }}>&mdash;</span>;
+function formatShortDate(dateStr) {
+  if (!dateStr) return '';
+  const days = ['di', 'lu', 'ma', 'me', 'je', 've', 'sa'];
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${days[d.getDay()]} ${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
-  // Rich display for booking updates with before/after
-  if (details.before && details.after) {
-    const changes = [];
-    const b = details.before;
-    const a = details.after;
+function AuditCard({ entry }) {
+  const { action, entity_type, actor_name, created_at, details } = entry;
+  const color = ACTION_COLORS[action] || '#666';
+  const label = getEventLabel(action, entity_type, details);
+
+  // Extract all possible info from details
+  const client = details?.client || '';
+  const barber = details?.barber || details?.after?.barber || details?.before?.barber || '';
+  const service = details?.service || details?.after?.service || '';
+  const date = details?.date || details?.after?.date || '';
+  const startTime = details?.start_time || details?.after?.start_time || '';
+  const endTime = details?.end_time || details?.after?.end_time || '';
+  const entityName = details?.name || '';
+
+  // Changes for updates
+  const changes = [];
+  if (details?.before && details?.after) {
+    const b = details.before, a = details.after;
     if (b.date !== a.date) changes.push({ label: 'Date', from: b.date, to: a.date });
     if (b.start_time !== a.start_time) changes.push({ label: 'Heure', from: b.start_time, to: a.start_time });
     if (b.barber !== a.barber) changes.push({ label: 'Barber', from: b.barber, to: a.barber });
     if (b.service !== a.service) changes.push({ label: 'Presta', from: b.service, to: a.service });
+  }
 
-    if (changes.length === 0) return <span style={{ color: 'var(--text-muted)' }}>Aucun changement visible</span>;
+  // Main display text for the body — always try to show something useful
+  let bodyTitle = '';
+  let bodySubtitle = '';
+  if (entity_type === 'booking') {
+    bodyTitle = barber ? `Avec ${barber}` : (service || client || 'RDV');
+    if (service && barber) bodyTitle = service;
+    bodySubtitle = barber && service ? `Avec ${barber}` : '';
+  } else if (entity_type === 'client') {
+    bodyTitle = client || entityName || '';
+  } else if (entity_type === 'service') {
+    bodyTitle = entityName || service || '';
+  } else {
+    bodyTitle = entityName || client || '';
+  }
 
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {details.client && <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 2 }}>{details.client}</div>}
-        {changes.map((c, i) => (
-          <div key={i} style={{ fontSize: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span style={{ color: 'var(--text-muted)', minWidth: 48 }}>{c.label}</span>
-            <span style={{ color: '#ef4444', textDecoration: 'line-through' }}>{c.from}</span>
-            <span style={{ color: 'var(--text-muted)' }}>&rarr;</span>
-            <span style={{ color: '#22c55e', fontWeight: 600 }}>{c.to}</span>
-          </div>
-        ))}
+  // Initials for avatar (barber for bookings, first letter for others)
+  const avatarName = barber || client || entityName || '';
+  const initials = avatarName ? avatarName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '';
+
+  return (
+    <div style={{
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-sm, 8px)',
+      overflow: 'hidden',
+    }}>
+      {/* Header: event type + actor */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 16px',
+        borderBottom: '1px solid var(--border)',
+        background: 'rgba(var(--overlay),0.03)',
+      }}>
+        <span style={{
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          color: color,
+        }}>
+          {label}
+        </span>
+        {(client || actor_name) && (
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+            par {client || actor_name}
+          </span>
+        )}
       </div>
-    );
-  }
 
-  // Booking creation/delete with client name
-  if (details.client) {
-    const parts = [details.client];
-    if (details.date) parts.push(details.date);
-    if (details.start_time) parts.push(details.start_time);
-    if (details.status) parts.push(STATUS_LABELS[details.status] || details.status);
-    if (details.count) parts.push(`${details.count} RDV`);
-    return <span style={{ fontSize: 12 }}>{parts.join(' · ')}</span>;
-  }
+      {/* Body */}
+      <div style={{ display: 'flex', alignItems: 'stretch', minHeight: 56 }}>
+        {/* Color bar */}
+        <div style={{ width: 4, background: color, flexShrink: 0 }} />
 
-  // Fallback: JSON
-  const str = JSON.stringify(details);
-  return <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{str.length > 120 ? str.substring(0, 120) + '...' : str}</span>;
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, padding: '12px 16px', gap: 16 }}>
+          {/* Date/time column (bookings only) */}
+          {date && (
+            <div style={{ minWidth: 70, flexShrink: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{formatShortDate(date)}</div>
+              {startTime && (
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                  {startTime.slice(0, 5)}{endTime ? ` - ${endTime.slice(0, 5)}` : ''}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Main content */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {bodyTitle && (
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {bodyTitle}
+              </div>
+            )}
+            {bodySubtitle && (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{bodySubtitle}</div>
+            )}
+
+            {/* Changes for updates */}
+            {changes.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
+                {changes.map((c, i) => (
+                  <div key={i} style={{ fontSize: 11, display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)', minWidth: 40 }}>{c.label}</span>
+                    <span style={{ color: '#ef4444', textDecoration: 'line-through' }}>{c.from}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>&rarr;</span>
+                    <span style={{ color: '#22c55e', fontWeight: 600 }}>{c.to}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Count info */}
+            {details?.count && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{details.count} RDV</div>}
+          </div>
+
+          {/* Avatar */}
+          {initials && (
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: `${color}22`,
+              border: `2px solid ${color}44`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, fontWeight: 700, color: color,
+              flexShrink: 0,
+            }}>
+              {initials}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer — timestamp */}
+      <div style={{
+        padding: '8px 16px',
+        borderTop: '1px solid var(--border)',
+        fontSize: 11,
+        color: 'var(--text-muted)',
+      }}>
+        {formatDatetime(created_at)}
+      </div>
+    </div>
+  );
 }
 
 function AuditTab({ isMobile }) {
@@ -172,55 +319,9 @@ function AuditTab({ isMobile }) {
         <div style={{ padding: '40px 20px', textAlign: 'center', color: '#a8a29e' }}>
           <p style={{ margin: 0, fontSize: 15 }}>Aucune entrée</p>
         </div>
-      ) : isMobile ? (
-        <div className="mob-card-list">
-          {entries.map(e => (
-            <div key={e.id} className="mob-card-item" style={{ cursor: 'default' }}>
-              <div className="mob-card-left" style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span className="badge" style={{ background: ACTION_COLORS[e.action] || '#666', color: '#fff', fontSize: 9 }}>
-                    {ACTION_LABELS[e.action] || e.action}
-                  </span>
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>{ENTITY_LABELS[e.entity_type] || e.entity_type}</span>
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                  {e.actor_name} · {formatDatetime(e.created_at)}
-                </div>
-                <AuditDetails details={e.details} />
-              </div>
-            </div>
-          ))}
-        </div>
       ) : (
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Utilisateur</th>
-                <th>Action</th>
-                <th>Type</th>
-                <th>Détails</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map(e => (
-                <tr key={e.id}>
-                  <td style={{ whiteSpace: 'nowrap', fontSize: 12 }}>{formatDatetime(e.created_at)}</td>
-                  <td style={{ fontSize: 13 }}>{e.actor_name}</td>
-                  <td>
-                    <span className="badge" style={{ background: ACTION_COLORS[e.action] || '#666', color: '#fff', fontSize: 11 }}>
-                      {ACTION_LABELS[e.action] || e.action}
-                    </span>
-                  </td>
-                  <td style={{ fontSize: 13 }}>{ENTITY_LABELS[e.entity_type] || e.entity_type}</td>
-                  <td style={{ maxWidth: 400 }}>
-                    <AuditDetails details={e.details} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 700 }}>
+          {entries.map(e => <AuditCard key={e.id} entry={e} />)}
         </div>
       )}
 

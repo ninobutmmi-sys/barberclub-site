@@ -237,6 +237,119 @@ html, body {
   .cursor-dot, .cursor-ring { display: none; } body { cursor: auto; }
 }
 a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px; border-radius: 4px; }
+
+/* ═══ LARGE DESKTOP — Cinematic Filmstrip ═══ */
+@media (min-width: 1024px) {
+  body { background: #000; }
+  body::before, body::after { display: none; }
+
+  .page {
+    display: flex; flex-direction: column;
+    height: 100vh; height: 100dvh;
+    overflow: hidden;
+  }
+
+  .header { z-index: 100; }
+
+  .page-header {
+    padding-top: 80px; padding-bottom: 6px;
+    position: relative; z-index: 5;
+  }
+  .page-title { font-size: clamp(36px, 4vw, 52px); }
+  .page-intro { max-width: 600px; font-size: 14px; line-height: 1.7; }
+
+  /* Meylan: 2 barbers — wider cards */
+  .barbers {
+    flex: 1;
+    display: flex !important;
+    grid-template-columns: unset;
+    gap: 28px;
+    max-width: 800px;
+    padding: 16px 40px 140px;
+    align-items: center;
+    justify-content: center;
+    position: relative; z-index: 5;
+  }
+
+  .barber-card {
+    flex: 1;
+    max-width: 360px;
+    min-height: 0;
+    height: 55vh;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .barber-card:hover {
+    transform: translateY(-12px) scale(1.03) !important;
+    border-color: rgba(255,255,255,0.2);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.1);
+    z-index: 10;
+  }
+
+  .barber-media { aspect-ratio: unset; height: 100%; }
+  .barber-name { font-size: 28px; }
+  .barber-role { font-size: 11px; letter-spacing: 0.15em; }
+  .barber-info { padding: 20px; }
+  .barber-cta { width: 36px; height: 36px; }
+  .barber-cta svg { width: 16px; height: 16px; }
+
+  /* Floating dock nav — same style as hub */
+  .bottom-nav {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    width: auto; z-index: 50;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 14px 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+  }
+  .nav-row { gap: 12px; }
+  .nav-item {
+    flex-direction: row; gap: 10px;
+    padding: 16px 24px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: #fff;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .nav-item.active { color: #fff; }
+  .nav-item svg { width: 18px; height: 18px; opacity: 0.6; }
+  .nav-item:hover {
+    transform: translateY(-4px);
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.25);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+  .nav-item:hover svg { opacity: 1; }
+  .nav-cta { margin-top: 0; flex-direction: row; gap: 10px; }
+  .nav-cta-btn {
+    width: auto; height: auto;
+    padding: 16px 32px;
+    border-radius: 16px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px; font-weight: 800;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    box-shadow: 0 8px 32px rgba(255,255,255,0.12);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-cta-btn svg { width: 18px; height: 18px; }
+  .nav-cta-label { display: none; }
+  .nav-cta-btn::after { content: 'Rendez-vous'; }
+  .nav-cta:hover .nav-cta-btn {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(255,255,255,0.15);
+  }
+
+  .grain { z-index: 9000; }
+  .page-transition { z-index: 9999; }
+  .cursor-dot, .cursor-ring { z-index: 10001; }
+}
 </style>
 </head>
 <body>

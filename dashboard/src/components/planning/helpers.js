@@ -71,6 +71,6 @@ export function hexToBlockStyle(hex) {
 }
 
 export const STATUS_OVERRIDES = {
-  no_show: { bg: 'var(--status-noshow-bg)', border: '#ef4444', text: 'var(--text)' },
+  no_show: { bg: 'var(--status-noshow-bg)', border: '#ef4444', text: '#111' },
   cancelled: { bg: 'var(--status-cancelled-bg)', border: 'var(--status-cancelled-border)', text: 'var(--text-muted)' },
 };

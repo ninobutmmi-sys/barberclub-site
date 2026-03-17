@@ -828,6 +828,8 @@
             color: #fff;
         }
 
+        .desktop-hero { display: none; }
+
         /* DESKTOP */
         @media (min-width: 768px) {
             .content {
@@ -1001,6 +1003,110 @@
             outline: 2px solid #fff;
             outline-offset: 2px;
         }
+
+        @keyframes kenBurnsSlow {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.1) translate(-1%, -1%); }
+        }
+        @media (min-width: 1024px) {
+            html, body { background: #000; }
+
+            .header { z-index: 100; background: rgba(0,0,0,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+            .header.scrolled { background: rgba(0,0,0,0.9); border-bottom-color: rgba(255,255,255,0.1); }
+
+            body::before {
+                content: ''; position: fixed; left: 50%; top: 0;
+                width: 1px; height: 100%;
+                background: linear-gradient(to bottom, transparent 5%, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.08) 70%, transparent 95%);
+                box-shadow: 0 0 60px 15px rgba(255,255,255,0.015);
+                z-index: 5; pointer-events: none;
+            }
+            body::after { display: none; }
+
+            .desktop-hero {
+                display: block; position: fixed; left: 0; top: 0;
+                width: 50%; height: 100vh; overflow: hidden; z-index: 1;
+            }
+            .desktop-hero-img { width: 100%; height: 100%; object-fit: cover; animation: kenBurnsSlow 25s ease-in-out infinite alternate; }
+            .desktop-hero-gradient {
+                position: absolute; right: 0; top: 0; bottom: 0; width: 200px;
+                background: linear-gradient(to left, rgba(0,0,0,0.6) 0%, transparent 100%);
+            }
+
+            .page-header {
+                position: relative; z-index: 2;
+                margin-left: 50%; padding: 100px 60px 16px; max-width: 50vw; text-align: left;
+            }
+            .page-title { font-size: clamp(48px, 5vw, 72px); line-height: 0.9; letter-spacing: 0.02em; }
+            .page-subtitle { font-size: 11px; letter-spacing: 0.35em; color: rgba(255,255,255,0.3); text-align: left; }
+            .page-intro { margin: 12px 0 0; text-align: left; max-width: 420px; font-size: 14px; color: rgba(255,255,255,0.45); }
+
+            .content {
+                position: relative; z-index: 2;
+                margin-left: 50%; max-width: 50vw;
+                padding: 10px 60px 120px;
+            }
+
+            .section-title { font-size: 10px; letter-spacing: 0.35em; color: rgba(255,255,255,0.25); font-weight: 400; }
+            .section-title::after { background: linear-gradient(to right, rgba(255,255,255,0.1), transparent); box-shadow: none; }
+
+            .tarif-cards { display: flex; flex-direction: column; gap: 10px; }
+
+            .tarif-card { padding: 16px 20px; border-radius: 14px; }
+            .tarif-card-name { font-size: 14px; }
+            .tarif-card-desc { font-size: 11px; }
+            .tarif-card-price { font-size: 24px; }
+            .tarif-card.highlight .tarif-card-price { font-size: 26px; }
+
+            .category-title { font-size: 12px; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); }
+
+            .barbers-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 400px; }
+
+            .reviews-section { margin-top: 32px; }
+            .reviews-track .review-card { flex: 0 0 280px; padding: 20px; }
+
+            .cta-section { margin-top: 32px; }
+            .cta-btn { padding: 18px 44px; font-size: 13px; }
+
+            /* Floating dock nav */
+            .bottom-nav {
+                position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+                width: auto; z-index: 50;
+                background: rgba(0,0,0,0.4); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+                border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
+                padding: 14px 20px; box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+            }
+            .nav-row { gap: 12px; }
+            .nav-item {
+                flex-direction: row; gap: 10px; padding: 16px 24px;
+                font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 600;
+                letter-spacing: 0.1em; text-transform: uppercase;
+                background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 14px; transition: all 0.3s ease;
+            }
+            .nav-item.active { color: #fff; }
+            .nav-item svg { width: 18px; height: 18px; opacity: 0.6; }
+            .nav-item:hover { transform: translateY(-4px); background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.25); }
+            .nav-item:hover svg { opacity: 1; }
+            .nav-cta {
+                margin-top: 0; flex-direction: row; gap: 10px; padding: 16px 32px;
+                font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 600;
+                letter-spacing: 0.1em; text-transform: uppercase;
+                background: #fff; color: #000; border: none; border-radius: 16px;
+                box-shadow: 0 8px 32px rgba(255,255,255,0.15); position: relative; overflow: hidden;
+            }
+            .nav-cta::before {
+                content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+                animation: ctaNavShimmer 3s ease-in-out infinite;
+            }
+            @keyframes ctaNavShimmer { 0%, 100% { left: -100%; } 50% { left: 100%; } }
+            .nav-cta-btn { width: auto; height: auto; background: none; border-radius: 0; box-shadow: none; color: #000; }
+            .nav-cta-btn svg { width: 18px; height: 18px; }
+            .nav-cta-label { font-size: 13px; color: #000; }
+            .nav-cta:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 12px 40px rgba(255,255,255,0.25); }
+            .nav-cta:hover .nav-cta-btn { transform: none; box-shadow: none; }
+        }
     </style>
 </head>
 
@@ -1023,6 +1129,8 @@
         <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
         <div class="header-spacer"></div>
     </header>
+
+    <div class="desktop-hero"><img src="../../assets/images/salons/meylan/salon-meylan.jpg" alt="" class="desktop-hero-img"><div class="desktop-hero-gradient"></div></div>
 
     <!-- PAGE HEADER -->
     <div class="page-header">
@@ -1144,7 +1252,7 @@
                             </span>
                         </div>
                         <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
+                            <span class="tarif-card-price">30<span class="euro">&euro;</span></span>
                         </div>
                     </div>
                 </div>

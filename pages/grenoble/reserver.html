@@ -1982,6 +1982,103 @@
             pointer-events: none;
         }
 
+        /* Policy modal */
+        .policy-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.4s ease;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
+        .policy-overlay.active { opacity: 1; pointer-events: auto; }
+        .policy-card {
+            max-width: 440px; width: 100%;
+            background: rgba(12,10,9,0.97);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.6);
+            border-radius: 24px;
+            padding: 28px 22px 24px;
+            text-align: center;
+            transform: translateY(30px) scale(0.95);
+            opacity: 0;
+            transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.5s ease;
+        }
+        .policy-overlay.active .policy-card { transform: translateY(0) scale(1); opacity: 1; }
+        .policy-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 13px; font-weight: 800;
+            color: #fff; text-transform: uppercase;
+            letter-spacing: 0.1em; margin-bottom: 4px;
+        }
+        .policy-subtitle {
+            font-size: 12px; color: rgba(255,255,255,0.4);
+            margin-bottom: 20px; line-height: 1.4;
+        }
+        .policy-rules { text-align: left; margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .policy-rule {
+            display: flex; gap: 12px; align-items: flex-start;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 14px;
+        }
+        .policy-rule-icon {
+            flex-shrink: 0; width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.06);
+            border-radius: 10px;
+        }
+        .policy-rule-icon svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.5); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+        .policy-rule-content { flex: 1; }
+        .policy-rule-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px; font-weight: 700;
+            color: #fff; text-transform: uppercase;
+            letter-spacing: 0.06em; margin-bottom: 4px;
+        }
+        .policy-rule-text {
+            font-size: 12px; line-height: 1.6;
+            color: rgba(255,255,255,0.6);
+        }
+        .policy-checkbox-row {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 16px; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .policy-checkbox {
+            flex-shrink: 0; width: 22px; height: 22px;
+            border: 1.5px solid rgba(255,255,255,0.15);
+            border-radius: 7px;
+            background: rgba(255,255,255,0.04);
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.25s ease;
+        }
+        .policy-checkbox svg { width: 13px; height: 13px; stroke: #fff; stroke-width: 2.5; fill: none; opacity: 0; transform: scale(0.5); transition: all 0.25s ease; }
+        .policy-checkbox.checked { background: #fff; border-color: #fff; }
+        .policy-checkbox.checked svg { opacity: 1; transform: scale(1); stroke: #000; }
+        .policy-checkbox-label { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.4; user-select: none; }
+        .policy-btn {
+            width: 100%; padding: 16px;
+            background: #fff; color: #000; border: none;
+            border-radius: 14px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            cursor: pointer; transition: all 0.3s ease;
+            position: relative; overflow: hidden;
+        }
+        .policy-btn.disabled { opacity: 0.3; pointer-events: none; }
+        .policy-btn:not(.disabled):active { transform: scale(0.97); }
+        .policy-btn:not(.disabled)::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: policyShimmer 2.5s ease-in-out infinite;
+        }
+        @keyframes policyShimmer { 0% { left: -100%; } 50%, 100% { left: 150%; } }
+
         .loading-spinner {
             width: 36px;
             height: 36px;
@@ -2640,6 +2737,42 @@
 
     <div class="desktop-hero"><img src="../../assets/images/salons/grenoble/salon-grenoble.jpg" alt="" class="desktop-hero-img"><div class="desktop-hero-gradient"></div></div>
 
+    <!-- POLICY MODAL -->
+    <div class="policy-overlay" id="policyOverlay" role="dialog" aria-modal="true" aria-label="Conditions de réservation">
+        <div class="policy-card">
+            <h2 class="policy-title">Nos engagements mutuels</h2>
+            <p class="policy-subtitle">Pour garantir la meilleure expérience à chacun</p>
+            <div class="policy-rules">
+                <div class="policy-rule">
+                    <span class="policy-rule-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+                    <div class="policy-rule-content">
+                        <div class="policy-rule-title">Ponctualité</div>
+                        <div class="policy-rule-text">Au-delà de 5 minutes de retard, nous nous réservons le droit de refuser votre rendez-vous afin de ne pas décaler les clients suivants.</div>
+                    </div>
+                </div>
+                <div class="policy-rule">
+                    <span class="policy-rule-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="15" x2="15" y2="15"/></svg></span>
+                    <div class="policy-rule-content">
+                        <div class="policy-rule-title">Annulation</div>
+                        <div class="policy-rule-text">Vous pouvez annuler jusqu'à 12h avant votre rendez-vous via le lien dans votre email de confirmation ou en nous envoyant un message.</div>
+                    </div>
+                </div>
+                <div class="policy-rule">
+                    <span class="policy-rule-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+                    <div class="policy-rule-content">
+                        <div class="policy-rule-title">Rendez-vous non honoré</div>
+                        <div class="policy-rule-text">En cas d'absence sans prévenir, la prestation sera facturée à 100% lors de votre prochain passage. Chaque créneau réservé est un créneau qu'un autre client aurait pu prendre.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="policy-checkbox-row" id="policyCheckboxRow">
+                <div class="policy-checkbox" id="policyCheckbox"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <span class="policy-checkbox-label">J'ai lu et j'accepte ces conditions</span>
+            </div>
+            <button class="policy-btn disabled" id="policyAccept">Réserver mon créneau</button>
+        </div>
+    </div>
+
     <!-- LOADING -->
     <div class="page-loading" id="pageLoading">
         <div class="loading-spinner"></div>
@@ -3099,7 +3232,7 @@
                                 </svg>
                                 <span>Bon &agrave; savoir</span>
                             </div>
-                            <p class="practical-card-text">Merci d'arriver 5 minutes en avance. En cas de retard de plus de 10 min, le RDV pourra &ecirc;tre annul&eacute;.</p>
+                            <p class="practical-card-text">Merci d'arriver à l'heure. Au-delà de 5 min de retard, le RDV pourra &ecirc;tre refus&eacute;.</p>
                         </div>
                     </div>
 
@@ -4476,6 +4609,26 @@
                 await loadBarbers();
                 if (state.barbers.length === 0) throw new Error('no barbers');
                 pageLoading.classList.add('hidden');
+
+                // Show policy modal (once per session)
+                if (true) {
+                    const overlay = $('#policyOverlay');
+                    const checkbox = $('#policyCheckbox');
+                    const checkboxRow = $('#policyCheckboxRow');
+                    const acceptBtn = $('#policyAccept');
+                    overlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                    checkboxRow.addEventListener('click', () => {
+                        checkbox.classList.toggle('checked');
+                        acceptBtn.classList.toggle('disabled', !checkbox.classList.contains('checked'));
+                    });
+                    acceptBtn.addEventListener('click', () => {
+                        if (acceptBtn.classList.contains('disabled')) return;
+                        overlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                        sessionStorage.setItem('bc_policy_seen', '1');
+                    });
+                }
 
                 // Auto-select barber from URL param (e.g. ?barber=Tom)
                 const urlBarber = new URLSearchParams(window.location.search).get('barber');
