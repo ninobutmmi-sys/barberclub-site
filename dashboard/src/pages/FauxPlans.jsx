@@ -38,8 +38,7 @@ export default function FauxPlans() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data: barbersData } = useBarbers();
-  const barbers = (barbersData || []).filter(b => b.is_active);
+  const { data: barbers = [] } = useBarbers();
 
   const params = useMemo(() => ({
     status: 'no_show',
@@ -160,8 +159,8 @@ export default function FauxPlans() {
           style={{ width: isMobile ? '100%' : 180 }}
         >
           <option value="">Tous les barbers</option>
-          {barbers.map(b => (
-            <option key={b.id} value={b.id}>{b.first_name}</option>
+          {barbers.filter(b => b.is_active).map(b => (
+            <option key={b.id} value={b.id}>{b.name}</option>
           ))}
         </select>
       </div>
