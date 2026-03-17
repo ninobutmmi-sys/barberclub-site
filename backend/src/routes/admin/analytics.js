@@ -603,8 +603,8 @@ router.get('/barbers',
       const salonId = req.user.salon_id;
       const result = await db.query(
         `SELECT br.name,
-                COUNT(b.id) as booking_count,
-                COALESCE(SUM(b.price), 0) as revenue,
+                COUNT(b.id) FILTER (WHERE b.status IN ('confirmed', 'completed')) as booking_count,
+                COALESCE(SUM(b.price) FILTER (WHERE b.status IN ('confirmed', 'completed')), 0) as revenue,
                 COUNT(DISTINCT b.client_id) as unique_clients,
                 COUNT(b.id) FILTER (WHERE b.status = 'no_show') as no_shows
          FROM barbers br
@@ -647,8 +647,8 @@ router.get('/barbers',
       if (hasMonthParam) {
         const prevResult = await db.query(
           `SELECT br.name,
-                  COUNT(b.id) as booking_count,
-                  COALESCE(SUM(b.price), 0) as revenue,
+                  COUNT(b.id) FILTER (WHERE b.status IN ('confirmed', 'completed')) as booking_count,
+                  COALESCE(SUM(b.price) FILTER (WHERE b.status IN ('confirmed', 'completed')), 0) as revenue,
                   COUNT(DISTINCT b.client_id) as unique_clients,
                   COUNT(b.id) FILTER (WHERE b.status = 'no_show') as no_shows
            FROM barbers br
