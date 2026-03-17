@@ -429,9 +429,34 @@ router.patch('/:id/status',
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const result = await bookingService.updateBookingStatus(req.params.id, req.body.status, salonId);
-      logAudit(req, 'status', 'booking', req.params.id, { status: req.body.status });
+      const bookingId = req.params.id;
+      const newStatus = req.body.status;
+      const result = await bookingService.updateBookingStatus(bookingId, newStatus, salonId);
+      logAudit(req, 'status', 'booking', bookingId, { status: newStatus });
       ws.emitBookingStatusChanged(salonId, result);
+
+      // SMS automatique sur no_show
+      if (newStatus === 'no_show') {
+        const detail = await db.query(
+          `SELECT b.date, c.phone, c.first_name
+           FROM bookings b
+           JOIN clients c ON b.client_id = c.id
+           WHERE b.id = $1`,
+          [bookingId]
+        );
+        const row = detail.rows[0];
+        if (row?.phone) {
+          const dateStr = new Date(row.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+          const smsContent = `BarberClub - Suite a votre RDV non honore du ${dateStr}, la prestation vous sera facturee a 100% lors de votre prochain passage.`;
+          await queueNotification(bookingId, 'no_show_sms', {
+            phone: row.phone,
+            message: smsContent,
+            salonId,
+            recipientName: row.first_name
+          });
+        }
+      }
+
       res.json(result);
     } catch (error) {
       next(error);
