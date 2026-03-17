@@ -3596,7 +3596,20 @@
             try {
                 const barberId = state.selectedBarber.id;
                 const query = barberId !== 'any' ? `?barber_id=${barberId}` : '';
-                state.services = await api('/services' + query);
+                let services = await api('/services' + query);
+                // Deduplicate when "peu importe": keep general service over restricted one
+                if (barberId === 'any') {
+                    const seen = new Map();
+                    for (const s of services) {
+                        const key = s.name + '|' + s.price;
+                        const existing = seen.get(key);
+                        if (!existing) { seen.set(key, s); }
+                        else if (s.time_restrictions && !existing.time_restrictions) { /* keep existing */ }
+                        else if (!s.time_restrictions && existing.time_restrictions) { seen.set(key, s); }
+                    }
+                    services = [...seen.values()];
+                }
+                state.services = services;
                 renderServices();
             } catch (e) {
                 $('#serviceList').innerHTML = `
