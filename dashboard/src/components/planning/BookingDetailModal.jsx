@@ -666,7 +666,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
             <button className="btn btn-secondary btn-sm" style={{ color: 'var(--warning, #f59e0b)' }} onClick={() => onStatusChange(booking.id, 'no_show')}>Faux plan</button>
           )}
           {booking.status === 'no_show' && (
-            <button className="btn btn-primary btn-sm" onClick={() => onStatusChange(booking.id, 'confirmed')}>Re-confirmer</button>
+            <button className="btn btn-primary btn-sm" onClick={() => onStatusChange(booking.id, 'completed')}>Faux plan payé</button>
           )}
           <button className="btn btn-danger btn-sm" onClick={() => { setNotifyClient(false); setSubView('delete'); }}>
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
