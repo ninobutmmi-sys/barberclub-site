@@ -2868,7 +2868,7 @@ select.input {
 }
 .planning-block-noshow-indicator.recidiviste {
   background: linear-gradient(135deg, #ef4444, #b91c1c);
-  /* no animation */
+  animation: noshow-pulse 2s ease-in-out infinite;
 }
 @keyframes noshow-pulse {
   0%, 100% { box-shadow: 0 1px 4px rgba(239,68,68,0.5); }

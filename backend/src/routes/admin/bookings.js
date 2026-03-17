@@ -244,7 +244,7 @@ router.post('/',
           { ...bookingData, source: 'manual', salon_id: salonId },
           recurrence
         );
-        logAudit(req, 'create', 'booking', result.groupId || result.bookings?.[0]?.id, { recurring: true, count: result.bookings?.length });
+        logAudit(req, 'create', 'booking', result.recurrence_group_id || result.created?.[0]?.id, { recurring: true, count: result.created?.length });
         ws.emitBookingCreated(salonId, result);
         res.status(201).json(result);
       } else {
