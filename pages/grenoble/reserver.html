@@ -900,22 +900,124 @@
             color: rgba(255,255,255,0.35);
             margin-bottom: 20px;
         }
-        .waitlist-btn {
-            display: inline-flex;
+        .waitlist-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            text-align: left;
+        }
+        .waitlist-section-title {
+            display: flex;
             align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 16px;
+        }
+        .waitlist-section-subtitle {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 12px;
+        }
+        .waitlist-presets {
+            display: flex;
             gap: 8px;
-            padding: 14px 28px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.12);
+            margin-bottom: 12px;
+        }
+        .waitlist-preset-btn {
+            flex: 1;
+            padding: 12px 8px;
+            background: rgba(255,255,255,0.03);
+            border: 1.5px solid rgba(255,255,255,0.07);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+            font-family: 'Inter', sans-serif;
+        }
+        .waitlist-preset-btn .preset-sub {
+            display: block;
+            font-size: 11px;
+            font-weight: 400;
+            color: rgba(255,255,255,0.35);
+            margin-top: 2px;
+        }
+        .waitlist-preset-btn:active { transform: scale(0.95); }
+        .waitlist-preset-btn.selected {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+            font-weight: 700;
+            box-shadow: 0 0 16px rgba(255,255,255,0.12);
+        }
+        .waitlist-preset-btn.selected .preset-sub {
+            color: rgba(0,0,0,0.5);
+        }
+        .waitlist-custom-toggle {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .waitlist-custom-range {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            animation: fadeSlideDown 0.2s ease;
+        }
+        .waitlist-custom-range.open { display: flex; }
+        .waitlist-time-select {
+            flex: 1;
+            padding: 11px 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+        .waitlist-time-select option {
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .waitlist-cta {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
             border-radius: 14px;
             color: #fff;
-            font-family: 'Inter', sans-serif;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        .waitlist-btn:active { transform: scale(0.96); }
+        .waitlist-cta:active { transform: scale(0.97); }
+        @keyframes fadeSlideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .alt-divider {
             display: flex;
             align-items: center;
@@ -2199,9 +2301,13 @@
                 background: rgba(255, 255, 255, 0.08);
             }
 
-            .waitlist-btn:hover {
-                background: rgba(255, 255, 255, 0.1);
-                border-color: rgba(255, 255, 255, 0.2);
+            .waitlist-cta:hover {
+                background: rgba(255, 255, 255, 0.12);
+                border-color: rgba(255, 255, 255, 0.25);
+            }
+            .waitlist-preset-btn:not(.selected):hover {
+                background: rgba(255, 255, 255, 0.06);
+                border-color: rgba(255, 255, 255, 0.15);
             }
 
             .alt-switch-btn:hover {
@@ -3281,6 +3387,8 @@
             selectedDate: null,     // 'YYYY-MM-DD'
             selectedSlot: null,     // { time, barber_id, barber_name }
             wantWaitlist: false,    // true when user wants waitlist notification
+            waitlistTimeStart: null, // 'HH:MM' or null (whole day)
+            waitlistTimeEnd: null,   // 'HH:MM' or null (whole day)
             calendarMonth: new Date().getMonth(),
             calendarYear: new Date().getFullYear(),
             booking: null,          // Response from POST /api/bookings
@@ -3896,6 +4004,57 @@
             goToStep(4);
         }
 
+        function buildTimeOptions(defaultVal) {
+            let opts = '';
+            for (let h = 9; h <= 19; h++) {
+                for (let m = 0; m < 60; m += 30) {
+                    if (h === 19 && m > 0) break;
+                    const t = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                    opts += `<option value="${t}"${t === defaultVal ? ' selected' : ''}>${t}</option>`;
+                }
+            }
+            return opts;
+        }
+
+        function selectWaitlistPreset(btn, start, end) {
+            document.querySelectorAll('.waitlist-preset-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            state.waitlistTimeStart = start;
+            state.waitlistTimeEnd = end;
+            const range = document.getElementById('waitlistCustomRange');
+            if (range) {
+                range.classList.remove('open');
+                const arrow = document.querySelector('.waitlist-custom-toggle .toggle-arrow');
+                if (arrow) arrow.textContent = '▸';
+            }
+        }
+
+        function toggleWaitlistCustom() {
+            const range = document.getElementById('waitlistCustomRange');
+            const arrow = document.querySelector('.waitlist-custom-toggle .toggle-arrow');
+            if (range.classList.contains('open')) {
+                range.classList.remove('open');
+                arrow.textContent = '▸';
+            } else {
+                range.classList.add('open');
+                arrow.textContent = '▾';
+                document.querySelectorAll('.waitlist-preset-btn').forEach(b => b.classList.remove('selected'));
+                updateWaitlistCustom();
+            }
+        }
+
+        function updateWaitlistCustom() {
+            const startEl = document.getElementById('waitlistStart');
+            const endEl = document.getElementById('waitlistEnd');
+            if (endEl.value <= startEl.value) {
+                const [h] = startEl.value.split(':').map(Number);
+                const endH = Math.min(h + 1, 19);
+                endEl.value = `${String(endH).padStart(2,'0')}:00`;
+            }
+            state.waitlistTimeStart = startEl.value;
+            state.waitlistTimeEnd = endEl.value;
+        }
+
         async function submitWaitlist() {
             const barberIds = state.selectedBarber.id === 'any'
                 ? state.barbers.map(b => b.id)
@@ -3921,6 +4080,8 @@
                     service_id: state.selectedService.id,
                     preferred_date: state.selectedDate,
                 };
+                if (state.waitlistTimeStart) body.preferred_time_start = state.waitlistTimeStart;
+                if (state.waitlistTimeEnd) body.preferred_time_end = state.waitlistTimeEnd;
                 if (!isConnected) {
                     body.client_name = clientName;
                     body.client_phone = clientPhone;
@@ -3970,8 +4131,23 @@
                     html += `<div class="full-card-title">Complet</div>`;
                     html += `<div class="full-card-date">${dateLabel}</div>`;
                 }
-                html += `<div class="full-card-msg">Aucun créneau disponible.</div>`;
-                html += `<button class="waitlist-btn" onclick="joinWaitlist()">Me prévenir si une place se libère</button>`;
+                html += `<div class="waitlist-section">`;
+                html += `<div class="waitlist-section-title">🔔 Être prévenu si une place se libère</div>`;
+                html += `<div class="waitlist-section-subtitle">Quand êtes-vous disponible ?</div>`;
+                html += `<div class="waitlist-presets">`;
+                html += `<button class="waitlist-preset-btn" onclick="selectWaitlistPreset(this,'09:00','12:00')">Matin<span class="preset-sub">9h - 12h</span></button>`;
+                html += `<button class="waitlist-preset-btn" onclick="selectWaitlistPreset(this,'14:00','19:00')">Après-midi<span class="preset-sub">14h - 19h</span></button>`;
+                html += `<button class="waitlist-preset-btn selected" onclick="selectWaitlistPreset(this,null,null)">Journée<span class="preset-sub">Toute la journée</span></button>`;
+                html += `</div>`;
+                html += `<div class="waitlist-custom-toggle" onclick="toggleWaitlistCustom()"><span class="toggle-arrow">▸</span> Choisir un horaire précis</div>`;
+                html += `<div class="waitlist-custom-range" id="waitlistCustomRange">`;
+                html += `<span style="color:rgba(255,255,255,0.5);font-size:13px;">De</span>`;
+                html += `<select class="waitlist-time-select" id="waitlistStart" onchange="updateWaitlistCustom()">${buildTimeOptions('09:00')}</select>`;
+                html += `<span style="color:rgba(255,255,255,0.5);font-size:13px;">à</span>`;
+                html += `<select class="waitlist-time-select" id="waitlistEnd" onchange="updateWaitlistCustom()">${buildTimeOptions('19:00')}</select>`;
+                html += `</div>`;
+                html += `<button class="waitlist-cta" onclick="joinWaitlist()">Me prévenir par SMS <span style="margin-left:4px;">→</span></button>`;
+                html += `</div>`;
 
                 if (alternatives.length > 0) {
                     html += '<div class="alt-divider">Disponible avec</div>';
@@ -4059,7 +4235,18 @@
             const barberName = state.selectedSlot
                 ? (state.selectedBarber.id === 'any' ? (state.selectedSlot.barber_name || 'Peu importe') : state.selectedBarber.name)
                 : (state.selectedBarber ? state.selectedBarber.name : 'Peu importe');
-            const slotTime = state.selectedSlot ? state.selectedSlot.time : "Liste d'attente";
+            let slotTime;
+            if (state.selectedSlot) {
+                slotTime = state.selectedSlot.time;
+            } else if (state.waitlistTimeStart === '09:00' && state.waitlistTimeEnd === '12:00') {
+                slotTime = "Liste d'attente — Matin (9h-12h)";
+            } else if (state.waitlistTimeStart === '14:00' && state.waitlistTimeEnd === '19:00') {
+                slotTime = "Liste d'attente — Après-midi (14h-19h)";
+            } else if (state.waitlistTimeStart && state.waitlistTimeEnd) {
+                slotTime = `Liste d'attente — ${state.waitlistTimeStart} - ${state.waitlistTimeEnd}`;
+            } else {
+                slotTime = "Liste d'attente — Toute la journée";
+            }
 
             $('#summaryCard').innerHTML = `
                 <div class="summary-row">
@@ -4678,6 +4865,9 @@
         window.loadSlots = loadSlots;
         window.joinWaitlist = joinWaitlist;
         window.switchToBarber = switchToBarber;
+        window.selectWaitlistPreset = selectWaitlistPreset;
+        window.toggleWaitlistCustom = toggleWaitlistCustom;
+        window.updateWaitlistCustom = updateWaitlistCustom;
 
         init();
     })();

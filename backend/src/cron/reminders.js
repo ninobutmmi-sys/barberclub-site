@@ -4,32 +4,29 @@ const { queueNotification, formatDateFR, formatTime } = require('../services/not
 const logger = require('../utils/logger');
 
 /**
- * Queue SMS reminders for tomorrow's bookings.
- * Runs every day at 18:00 — builds messages and inserts into notification_queue.
+ * Queue SMS reminders exactly 24h before each booking.
+ * Runs every 30 min — finds confirmed bookings starting in 23h30–24h30 window.
  * The queue processor (processQueue, every 1 min) handles actual sending + retries.
  */
 async function queueReminders() {
   try {
-    const nowParis = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-    const tomorrow = new Date(nowParis);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-
+    // Find bookings whose start datetime is 23.5h to 24.5h from now (Paris time)
+    // Using PostgreSQL timestamp arithmetic for precision
     const result = await db.query(
       `SELECT b.id, b.date, b.start_time, b.cancel_token, b.salon_id,
               c.phone
        FROM bookings b
        JOIN clients c ON b.client_id = c.id
-       WHERE b.date = $1
-         AND b.status = 'confirmed'
+       WHERE b.status = 'confirmed'
          AND (b.reminder_sent = false OR b.reminder_sent IS NULL)
          AND b.deleted_at IS NULL
-         AND c.phone IS NOT NULL`,
-      [tomorrowStr]
+         AND c.phone IS NOT NULL
+         AND (b.date::text || ' ' || b.start_time::text)::timestamp
+             BETWEEN (NOW() AT TIME ZONE 'Europe/Paris') + INTERVAL '23 hours 30 minutes'
+                 AND (NOW() AT TIME ZONE 'Europe/Paris') + INTERVAL '24 hours 30 minutes'`
     );
 
     if (result.rows.length === 0) {
-      logger.info('No reminders to send for tomorrow');
       return;
     }
 
@@ -60,7 +57,7 @@ async function queueReminders() {
       }
     }
 
-    logger.info(`SMS reminders for ${tomorrowStr}: ${queued} queued`);
+    logger.info(`SMS reminders (24h window): ${queued} queued`);
   } catch (error) {
     logger.error('Failed to queue reminders', { error: error.message });
   }
