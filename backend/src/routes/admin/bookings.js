@@ -447,7 +447,7 @@ router.patch('/:id/status',
         const row = detail.rows[0];
         if (row?.phone) {
           const dateStr = new Date(row.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-          const smsContent = `BarberClub - Suite a votre RDV non honoré du ${dateStr}, la prestation vous sera facturee a 100% lors de votre prochain passage.`;
+          const smsContent = `BarberClub - Suite à votre RDV non honoré du ${dateStr}, la prestation vous sera facturée à 100% lors de votre prochain passage.`;
           await queueNotification(bookingId, 'no_show_sms', {
             phone: row.phone,
             message: smsContent,
