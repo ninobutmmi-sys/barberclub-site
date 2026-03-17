@@ -996,7 +996,16 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
      PAGE TRANSITION (everywhere)
      ═══════════════════════════════════════ */
   const trans = document.querySelector('.page-transition');
-  window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
+  window.addEventListener('pageshow', e => {
+    if (e.persisted) {
+      trans.classList.remove('active');
+      // Reset all transition effects applied on salon click
+      document.querySelectorAll('.salon').forEach(s => { s.style.opacity = ''; s.style.transition = ''; });
+      document.querySelectorAll('.salon-bg').forEach(bg => { bg.style.transform = ''; bg.style.filter = ''; bg.style.transition = ''; });
+      const sep = document.querySelector('.separator-line');
+      if (sep) { sep.style.opacity = ''; sep.style.transition = ''; }
+    }
+  });
   document.querySelectorAll('.salon').forEach(link => {
     link.addEventListener('click', function(e) {
       e.preventDefault();
