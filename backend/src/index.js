@@ -353,6 +353,29 @@ if (config.nodeEnv !== 'test') {
         env: config.nodeEnv,
         cors: config.corsOrigins,
       });
+      // Run pending migrations on startup
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const migrationsDir = path.join(__dirname, '..', 'database', 'migrations');
+        if (fs.existsSync(migrationsDir)) {
+          const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+          for (const file of files) {
+            try {
+              const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+              await db.query(sql);
+            } catch (err) {
+              // Ignore "already exists" errors, log others
+              if (!err.message.includes('already exists') && !err.message.includes('duplicate')) {
+                logger.warn(`Migration ${file} warning: ${err.message}`);
+              }
+            }
+          }
+          logger.info(`Migrations checked (${files.length} files)`);
+        }
+      } catch (err) {
+        logger.error('Migration check failed', { error: err.message });
+      }
       // Check Brevo API keys on startup
       try {
         const { checkBrevoKeys } = require('./services/notification');
