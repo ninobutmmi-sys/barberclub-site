@@ -311,6 +311,23 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
   // Sort by time
   slots.sort((a, b) => a.time.localeCompare(b.time));
 
+  // 3. Remove grid slots that would create gaps after gap-fill slots (public only)
+  // E.g., 20min booking ends 11:20 → gap-fill 11:20, grid 11:30 → remove 11:30 (avoids 10min gap)
+  if (!options.adminMode) {
+    const gapFillTimes = [];
+    for (const occupied of allOccupied) {
+      if (slotSet.has(occupied.end) && (occupied.end - startMin) % step !== 0) {
+        gapFillTimes.push(occupied.end);
+      }
+    }
+    if (gapFillTimes.length > 0) {
+      return slots.filter(slot => {
+        const m = timeToMinutes(slot.time);
+        return !gapFillTimes.some(gf => gf < m && m - gf < step);
+      });
+    }
+  }
+
   return slots;
 }
 
@@ -916,6 +933,18 @@ function countSlotsForBarber(barberId, dateStr, dayOfWeek, duration, minSlotStar
   const allOccupied = [...existingBookings, ...allBlocked].sort((a, b) => a.start - b.start);
   for (const occ of allOccupied) { tryCount(occ.end); }
 
+  // Remove grid slots that would create gaps after gap-fill slots
+  for (const occ of allOccupied) {
+    if (slotSet.has(occ.end) && (occ.end - startMin) % step !== 0) {
+      for (const s of [...slotSet]) {
+        if (s !== occ.end && occ.end < s && s - occ.end < step) {
+          slotSet.delete(s);
+          count--;
+        }
+      }
+    }
+  }
+
   return count;
 }
 
@@ -951,6 +980,20 @@ function getSampleTimesForBarber(barberId, dateStr, dayOfWeek, duration, minSlot
   }
   const allOccupied = [...existingBookings, ...allBlocked].sort((a, b) => a.start - b.start);
   for (const occ of allOccupied) { trySample(occ.end); }
+
+  // Remove grid slots that would create gaps after gap-fill slots
+  const gfTimes = [];
+  for (const occ of allOccupied) {
+    if (slotSet.has(occ.end) && (occ.end - startMin) % step !== 0) {
+      gfTimes.push(occ.end);
+    }
+  }
+  if (gfTimes.length > 0) {
+    return samples.filter(s => {
+      const m = timeToMinutes(s);
+      return !gfTimes.some(gf => gf < m && m - gf < step);
+    }).sort();
+  }
   samples.sort();
   return samples;
 }
