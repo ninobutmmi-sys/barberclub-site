@@ -138,6 +138,7 @@ router.get('/services', publicLimiter,
         FROM services s
         JOIN barber_services bs ON s.id = bs.service_id
         WHERE bs.barber_id = $1 AND s.is_active = true AND s.deleted_at IS NULL AND s.salon_id = $2
+          AND (s.admin_only = false OR s.admin_only IS NULL)
         ORDER BY s.sort_order`;
       params = [barber_id, serviceSalonId];
     } else {
@@ -146,6 +147,7 @@ router.get('/services', publicLimiter,
         SELECT id, name, price, duration, duration_saturday, description, time_restrictions
         FROM services
         WHERE is_active = true AND deleted_at IS NULL AND salon_id = $1
+          AND (admin_only = false OR admin_only IS NULL)
         ORDER BY sort_order`;
       params = [salonId];
     }

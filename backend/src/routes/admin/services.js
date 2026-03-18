@@ -15,7 +15,7 @@ router.get('/', async (req, res, next) => {
   try {
     const salonId = req.user.salon_id;
     const result = await db.query(
-      `SELECT s.id, s.name, s.description, s.price, s.duration, s.duration_saturday, s.is_active, s.sort_order, s.color, s.time_restrictions,
+      `SELECT s.id, s.name, s.description, s.price, s.duration, s.duration_saturday, s.is_active, s.admin_only, s.sort_order, s.color, s.time_restrictions,
               COALESCE(
                 json_agg(json_build_object('id', b.id, 'name', b.name))
                 FILTER (WHERE b.id IS NOT NULL), '[]'
@@ -109,7 +109,7 @@ router.put('/:id',
     try {
       const salonId = req.user.salon_id;
       const { id } = req.params;
-      const { name, description, price, duration, duration_saturday, is_active, sort_order, color, barber_ids, time_restrictions } = req.body;
+      const { name, description, price, duration, duration_saturday, is_active, admin_only, sort_order, color, barber_ids, time_restrictions } = req.body;
 
       const fields = [];
       const values = [];
@@ -121,6 +121,7 @@ router.put('/:id',
       if (duration !== undefined) { fields.push(`duration = $${paramIndex++}`); values.push(duration); }
       if (duration_saturday !== undefined) { fields.push(`duration_saturday = $${paramIndex++}`); values.push(duration_saturday); }
       if (is_active !== undefined) { fields.push(`is_active = $${paramIndex++}`); values.push(is_active); }
+      if (admin_only !== undefined) { fields.push(`admin_only = $${paramIndex++}`); values.push(admin_only); }
       if (sort_order !== undefined) { fields.push(`sort_order = $${paramIndex++}`); values.push(sort_order); }
       if (color !== undefined) { fields.push(`color = $${paramIndex++}`); values.push(color); }
       if (time_restrictions !== undefined) { fields.push(`time_restrictions = $${paramIndex++}`); values.push(time_restrictions ? JSON.stringify(time_restrictions) : null); }

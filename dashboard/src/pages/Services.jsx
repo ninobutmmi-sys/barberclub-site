@@ -56,6 +56,7 @@ export default function Services() {
                   <span className={`badge badge-${s.is_active ? 'active' : 'inactive'}`} style={{ fontSize: 9 }}>
                     {s.is_active ? 'Actif' : 'Inactif'}
                   </span>
+                  {s.admin_only && <span className="badge" style={{ fontSize: 9, background: 'rgba(139,92,246,0.15)', color: '#a78bfa' }}>Admin</span>}
                   <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: 4 }} onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }}>
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                   </button>
@@ -99,6 +100,7 @@ export default function Services() {
                       <span className={`badge badge-${s.is_active ? 'active' : 'inactive'}`}>
                         {s.is_active ? 'Actif' : 'Inactif'}
                       </span>
+                      {s.admin_only && <span className="badge" style={{ background: 'rgba(139,92,246,0.15)', color: '#a78bfa' }}>Admin</span>}
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 4 }}>
@@ -140,6 +142,7 @@ function ServiceModal({ service, barbers, onClose }) {
   const [durationSaturday, setDurationSaturday] = useState(service?.duration_saturday || '');
   const [color, setColor] = useState(service?.color || '#22c55e');
   const [isActive, setIsActive] = useState(service?.is_active ?? true);
+  const [adminOnly, setAdminOnly] = useState(service?.admin_only ?? false);
   const [selectedBarbers, setSelectedBarbers] = useState(
     service?.barbers?.map((b) => b.id) || barbers.map((b) => b.id)
   );
@@ -164,6 +167,7 @@ function ServiceModal({ service, barbers, onClose }) {
       duration_saturday: durationSaturday ? parseInt(durationSaturday) : null,
       color,
       is_active: isActive,
+      admin_only: adminOnly,
       barber_ids: selectedBarbers,
     };
 
@@ -278,6 +282,17 @@ function ServiceModal({ service, barbers, onClose }) {
                 </span>
               </div>
             )}
+            <div className="form-group">
+              <label className="label">Admin seulement</label>
+              <button
+                type="button"
+                className={`toggle ${adminOnly ? 'active' : ''}`}
+                onClick={() => setAdminOnly(!adminOnly)}
+              />
+              <span style={{ marginLeft: 10, fontSize: 13, color: 'var(--text-secondary)' }}>
+                {adminOnly ? 'Masqué côté client' : 'Visible côté client'}
+              </span>
+            </div>
           </div>
 
           <div className="modal-footer">

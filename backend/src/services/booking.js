@@ -62,10 +62,11 @@ async function createBooking(data) {
     }
 
     // 1. Get service details (price, duration)
-    const serviceResult = await client.query(
-      'SELECT id, name, price, duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND is_active = true AND deleted_at IS NULL',
-      [data.service_id]
-    );
+    // Admin can book admin_only or inactive services
+    const serviceQuery = isAdmin
+      ? 'SELECT id, name, price, duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND deleted_at IS NULL'
+      : 'SELECT id, name, price, duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND is_active = true AND (admin_only = false OR admin_only IS NULL) AND deleted_at IS NULL';
+    const serviceResult = await client.query(serviceQuery, [data.service_id]);
     if (serviceResult.rows.length === 0) {
       throw ApiError.badRequest('Prestation introuvable ou inactive');
     }
