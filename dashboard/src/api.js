@@ -184,6 +184,8 @@ export const updateBooking = (id, body) =>
   request(`/admin/bookings/${id}`, { method: 'PUT', body: JSON.stringify(body) });
 export const updateBookingStatus = (id, status) =>
   request(`/admin/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+export const sendNoShowSms = (id) =>
+  request(`/admin/bookings/${id}/no-show-sms`, { method: 'POST' });
 export const deleteBooking = (id, { notify = false } = {}) =>
   request(`/admin/bookings/${id}?notify=${notify}`, { method: 'DELETE' });
 export const deleteBookingGroup = (groupId, { notify = false, futureOnly = false } = {}) =>

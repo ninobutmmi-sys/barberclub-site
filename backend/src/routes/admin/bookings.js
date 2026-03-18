@@ -435,29 +435,55 @@ router.patch('/:id/status',
       logAudit(req, 'status', 'booking', bookingId, { status: newStatus });
       ws.emitBookingStatusChanged(salonId, result);
 
-      // SMS automatique sur no_show
-      if (newStatus === 'no_show') {
-        const detail = await db.query(
-          `SELECT b.date, c.phone, c.first_name
-           FROM bookings b
-           JOIN clients c ON b.client_id = c.id
-           WHERE b.id = $1`,
-          [bookingId]
-        );
-        const row = detail.rows[0];
-        if (row?.phone) {
-          const dateStr = new Date(row.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-          const smsContent = `BarberClub - RDV non honore du ${dateStr}. Prestation facturee a 100% au prochain passage. Erreur? Contactez votre salon.`;
-          await queueNotification(bookingId, 'no_show_sms', {
-            phone: row.phone,
-            message: smsContent,
-            salonId,
-            recipientName: row.first_name
-          });
-        }
-      }
+      // No-show SMS is NOT sent automatically — barber must confirm via dedicated button
 
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// POST /api/admin/bookings/:id/no-show-sms — Send no-show SMS (manual confirmation)
+// ============================================
+router.post('/:id/no-show-sms',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const bookingId = req.params.id;
+
+      const detail = await db.query(
+        `SELECT b.status, b.date, c.phone, c.first_name
+         FROM bookings b
+         JOIN clients c ON b.client_id = c.id
+         WHERE b.id = $1 AND b.salon_id = $2`,
+        [bookingId, salonId]
+      );
+      if (!detail.rows[0]) throw ApiError.notFound('RDV introuvable');
+      const row = detail.rows[0];
+      if (row.status !== 'no_show') throw ApiError.badRequest('Le RDV doit etre en statut no_show');
+      if (!row.phone) throw ApiError.badRequest('Pas de telephone pour ce client');
+
+      // Check if already sent
+      const existing = await db.query(
+        `SELECT id FROM notification_queue WHERE booking_id = $1 AND type = 'no_show_sms' AND status = 'sent'`,
+        [bookingId]
+      );
+      if (existing.rows.length > 0) throw ApiError.badRequest('SMS faux plan deja envoye');
+
+      const dateStr = new Date(row.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+      const smsContent = `BarberClub - RDV non honore du ${dateStr}. Prestation facturee a 100% au prochain passage. Erreur? Contactez votre salon.`;
+      await queueNotification(bookingId, 'no_show_sms', {
+        phone: row.phone,
+        message: smsContent,
+        salonId,
+        recipientName: row.first_name
+      });
+
+      res.json({ ok: true, message: 'SMS faux plan envoye' });
     } catch (error) {
       next(error);
     }
