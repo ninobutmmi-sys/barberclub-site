@@ -93,15 +93,19 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
   // Hover indicator state
   const [hoverInfo, setHoverInfo] = useState(null); // { barberId, dayStr, top, time }
 
-  // Swipe to navigate days on mobile
+  // Swipe to navigate days — only on small mobile screens (not tablet)
   function handleTouchStart(e) {
-    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    if (window.innerWidth > 768) return;
+    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, scrolled: false };
+  }
+  function handleTouchMove() {
+    if (touchRef.current) touchRef.current.scrolled = true;
   }
   function handleTouchEnd(e) {
     if (!touchRef.current) return;
     const dx = e.changedTouches[0].clientX - touchRef.current.x;
     const dy = e.changedTouches[0].clientY - touchRef.current.y;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (!touchRef.current.scrolled && Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 2) {
       if (dx < 0) onSwipeLeft?.();
       else onSwipeRight?.();
     }
@@ -198,6 +202,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
         ref={compact ? measureRef : (node) => { gridBodyRef.current = node; }}
         style={{ flex: 1, overflowY: compact ? 'hidden' : 'auto', overflowX: 'hidden' }}
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onScroll={() => { if (minutePicker) setMinutePicker(null); }}
       >
