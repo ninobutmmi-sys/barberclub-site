@@ -221,22 +221,35 @@ export default function FauxPlans() {
                   <a href={`tel:${b.client_phone}`} className="fp-card-phone">{b.client_phone}</a>
                 )}
               </div>
-              <button
-                className="fp-pay-btn"
-                onClick={() => handleMarkPaid(b)}
-                disabled={loadingId === b.id}
-              >
-                {loadingId === b.id ? (
-                  <div className="fp-spinner-sm" />
-                ) : (
-                  <>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                    Faux plan payé
-                  </>
-                )}
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  className="fp-pay-btn"
+                  style={{ flex: 1 }}
+                  onClick={() => handleMarkPaid(b)}
+                  disabled={loadingId === b.id}
+                >
+                  {loadingId === b.id ? (
+                    <div className="fp-spinner-sm" />
+                  ) : (
+                    <>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Faux plan payé
+                    </>
+                  )}
+                </button>
+                <button
+                  className="fp-pay-btn"
+                  style={{ flex: 0, padding: '0 14px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}
+                  onClick={async () => {
+                    if (!confirm('Envoyer le SMS faux plan ?')) return;
+                    try { await api.sendNoShowSms(b.id); alert('SMS envoyé'); } catch (e) { alert(e.message); }
+                  }}
+                >
+                  SMS
+                </button>
+              </div>
             </div>
           ))}
         </div>
