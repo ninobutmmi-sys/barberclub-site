@@ -7,7 +7,7 @@ const logger = require('../../utils/logger');
 
 const router = Router();
 
-const VALID_TRIGGER_TYPES = ['review_sms', 'waitlist_notify'];
+const VALID_TRIGGER_TYPES = ['review_email', 'waitlist_notify'];
 
 // ============================================
 // GET /api/admin/automation — List all automation triggers

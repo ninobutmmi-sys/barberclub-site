@@ -34,15 +34,15 @@ DELETE FROM refresh_tokens;
 DELETE FROM audit_log;
 DELETE FROM push_subscriptions;
 
--- 6. Reset review_sms delay a 2 min (temporaire pour tests)
+-- 6. Reset review_email delay a 2 min (temporaire pour tests)
 UPDATE automation_triggers
 SET config = jsonb_set(config, '{delay_minutes}', '2')
-WHERE type = 'review_sms';
+WHERE type = 'review_email';
 
--- 7. Activer review_sms pour les 2 salons
+-- 7. Activer review_email pour les 2 salons
 UPDATE automation_triggers
 SET is_active = true
-WHERE type = 'review_sms';
+WHERE type = 'review_email';
 
 COMMIT;
 
@@ -55,7 +55,7 @@ UNION ALL SELECT 'services', COUNT(*) FROM services
 UNION ALL SELECT 'schedules', COUNT(*) FROM schedules
 UNION ALL SELECT 'automation_triggers', COUNT(*) FROM automation_triggers;
 
--- Verifier le delay review_sms
+-- Verifier le delay review_email
 SELECT type, salon_id, is_active, config->>'delay_minutes' AS delay_minutes
 FROM automation_triggers
-WHERE type = 'review_sms';
+WHERE type = 'review_email';

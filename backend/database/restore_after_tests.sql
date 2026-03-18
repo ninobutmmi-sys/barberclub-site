@@ -5,9 +5,9 @@
 
 UPDATE automation_triggers
 SET config = jsonb_set(config, '{delay_minutes}', '60')
-WHERE type = 'review_sms';
+WHERE type = 'review_email';
 
 -- Verification
 SELECT type, salon_id, is_active, config->>'delay_minutes' AS delay_minutes
 FROM automation_triggers
-WHERE type = 'review_sms';
+WHERE type = 'review_email';

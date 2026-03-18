@@ -528,10 +528,10 @@ export default function Sms({ embedded } = {}) {
                               <span style={{
                                 display: 'inline-block', padding: '2px 8px', borderRadius: 10,
                                 fontSize: 11, fontWeight: 600,
-                                background: log.type === 'review_sms' ? 'rgba(251,191,36,0.1)' : log.type === 'campaign_sms' ? 'rgba(168,85,247,0.1)' : 'rgba(59,130,246,0.1)',
-                                color: log.type === 'review_sms' ? '#fbbf24' : log.type === 'campaign_sms' ? '#a855f7' : '#3b82f6',
+                                background: log.type === 'review_email' ? 'rgba(251,191,36,0.1)' : log.type === 'campaign_sms' ? 'rgba(168,85,247,0.1)' : 'rgba(59,130,246,0.1)',
+                                color: log.type === 'review_email' ? '#fbbf24' : log.type === 'campaign_sms' ? '#a855f7' : '#3b82f6',
                               }}>
-                                {log.type === 'reminder_sms' ? 'Rappel' : log.type === 'review_sms' ? 'Avis Google' : log.type === 'campaign_sms' ? 'Campagne' : log.type}
+                                {log.type === 'reminder_sms' ? 'Rappel' : log.type === 'review_email' ? 'Avis Google' : log.type === 'campaign_sms' ? 'Campagne' : log.type}
                               </span>
                             </td>
                             <td style={{ padding: '10px 12px' }}>

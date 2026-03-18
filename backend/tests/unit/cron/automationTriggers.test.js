@@ -49,7 +49,7 @@ describe('processAutomationTriggers', () => {
     expect(autoCompleteCall).toBeTruthy();
   });
 
-  test('processes review_sms trigger', async () => {
+  test('processes review_email trigger', async () => {
     mockDb.query.mockImplementation(async (sql, params) => {
       // Auto-complete (no results)
       if (sql.includes("UPDATE bookings SET status = 'completed'")) {
@@ -59,7 +59,7 @@ describe('processAutomationTriggers', () => {
       if (sql.includes('FROM automation_triggers')) {
         return {
           rows: [{
-            type: 'review_sms',
+            type: 'review_email',
             salon_id: 'meylan',
             is_active: true,
             config: {
@@ -119,7 +119,7 @@ describe('processAutomationTriggers', () => {
       if (sql.includes('FROM automation_triggers')) {
         return {
           rows: [{
-            type: 'review_sms',
+            type: 'review_email',
             salon_id: 'meylan',
             is_active: true,
             config: {
@@ -254,7 +254,7 @@ describe('processAutomationTriggers', () => {
       if (sql.includes('FROM automation_triggers')) {
         return {
           rows: [
-            { type: 'review_sms', salon_id: 'meylan', is_active: true, config: { message: '' } },
+            { type: 'review_email', salon_id: 'meylan', is_active: true, config: { message: '' } },
             { type: 'waitlist_notify', salon_id: 'meylan', is_active: true, config: {} },
           ],
         };
@@ -266,7 +266,7 @@ describe('processAutomationTriggers', () => {
       return { rows: [], rowCount: 0 };
     });
 
-    // review_sms has empty message so it returns early
+    // review_email has empty message so it returns early
     // waitlist_notify should still run
     await processAutomationTriggers();
 
@@ -284,7 +284,7 @@ describe('processAutomationTriggers', () => {
       if (sql.includes('FROM automation_triggers')) {
         return {
           rows: [{
-            type: 'review_sms',
+            type: 'review_email',
             salon_id: 'grenoble',
             is_active: true,
             config: {

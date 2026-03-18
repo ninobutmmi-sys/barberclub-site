@@ -30,8 +30,8 @@ async function processAutomationTriggers() {
       try {
         const salonId = trigger.salon_id || 'meylan';
         switch (trigger.type) {
-          case 'review_sms':
-            await processReviewSms(trigger.config, salonId);
+          case 'review_email':
+            await processReviewEmail(trigger.config, salonId);
             break;
           case 'waitlist_notify':
             await processWaitlistNotify(trigger.config, salonId);
@@ -50,7 +50,7 @@ async function processAutomationTriggers() {
  * Review email: Send email X minutes after a booking is completed
  * Filtered by salon_id — once per client lifetime (review_requested flag)
  */
-async function processReviewSms(triggerConfig, salonId) {
+async function processReviewEmail(triggerConfig, salonId) {
   const delayMinutes = triggerConfig.delay_minutes || 60;
 
   // Find bookings completed more than delayMinutes ago (for this salon)
@@ -70,7 +70,7 @@ async function processReviewSms(triggerConfig, salonId) {
        AND (b.end_time::time + ($1 || ' minutes')::interval) <= (NOW() AT TIME ZONE 'Europe/Paris')::time
        AND NOT EXISTS (
          SELECT 1 FROM notification_queue nq
-         WHERE nq.booking_id = b.id AND nq.type IN ('review_sms', 'review_email')
+         WHERE nq.booking_id = b.id AND nq.type = 'review_email'
        )
      LIMIT 20`,
     [delayMinutes, salonId]

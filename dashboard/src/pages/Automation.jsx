@@ -5,9 +5,9 @@ import {
 } from '../hooks/useApi';
 
 const TRIGGER_LABELS = {
-  review_sms: {
+  review_email: {
     title: 'Avis Google automatique',
-    desc: 'SMS envoyé 1h après un RDV terminé pour demander un avis Google.',
+    desc: 'Email envoyé 1h après un RDV terminé pour demander un avis Google.',
     icon: '⭐',
   },
   waitlist_notify: {
@@ -249,7 +249,7 @@ function TriggerConfigModal({ trigger, onClose }) {
     e.preventDefault();
     setError('');
     const config = { ...trigger.config, message };
-    if (trigger.type === 'review_sms') {
+    if (trigger.type === 'review_email') {
       config.delay_minutes = parseInt(delayMinutes);
       config.google_review_url = googleReviewUrl;
     }
@@ -285,12 +285,12 @@ function TriggerConfigModal({ trigger, onClose }) {
               />
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
                 Variables : <code style={{ color: '#3b82f6' }}>{'{prenom}'}</code> <code style={{ color: '#3b82f6' }}>{'{nom}'}</code>
-                {trigger.type === 'review_sms' && <> <code style={{ color: '#3b82f6' }}>{'{lien_avis}'}</code></>}
+                {trigger.type === 'review_email' && <> <code style={{ color: '#3b82f6' }}>{'{lien_avis}'}</code></>}
                 {trigger.type === 'waitlist_notify' && <> <code style={{ color: '#3b82f6' }}>{'{date}'}</code> <code style={{ color: '#3b82f6' }}>{'{heure}'}</code> <code style={{ color: '#3b82f6' }}>{'{lien_reservation}'}</code></>}
               </div>
             </div>
 
-            {trigger.type === 'review_sms' && (
+            {trigger.type === 'review_email' && (
               <>
                 <div className="form-group">
                   <label className="label">Délai après RDV terminé (minutes)</label>
