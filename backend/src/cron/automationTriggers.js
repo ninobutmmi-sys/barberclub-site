@@ -56,7 +56,8 @@ async function processReviewEmail(triggerConfig, salonId) {
   // Find bookings completed more than delayMinutes ago (for this salon)
   // Only for clients who have NEVER received a review request (once per lifetime)
   const result = await db.query(
-    `SELECT b.id, b.client_id, b.date, b.start_time,
+    `SELECT DISTINCT ON (b.client_id)
+            b.id, b.client_id, b.date, b.start_time,
             c.first_name, c.last_name, c.email
      FROM bookings b
      JOIN clients c ON b.client_id = c.id
@@ -72,12 +73,20 @@ async function processReviewEmail(triggerConfig, salonId) {
          SELECT 1 FROM notification_queue nq
          WHERE nq.booking_id = b.id AND nq.type = 'review_email'
        )
+     ORDER BY b.client_id, b.end_time DESC
      LIMIT 20`,
     [delayMinutes, salonId]
   );
 
+  // Safety net: track processed clients to prevent duplicate emails within the same run
+  const processedClients = new Set();
+
   for (const booking of result.rows) {
     try {
+      // Skip if already processed in this run (safety net for duplicate client rows)
+      if (processedClients.has(booking.client_id)) continue;
+      processedClients.add(booking.client_id);
+
       // Mark BEFORE queuing to prevent duplicates on next cron run
       await db.query('UPDATE clients SET review_requested = true WHERE id = $1', [booking.client_id]);
       await db.query('UPDATE bookings SET review_email_sent = true WHERE id = $1', [booking.id]);

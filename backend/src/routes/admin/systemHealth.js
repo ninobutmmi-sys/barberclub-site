@@ -265,4 +265,54 @@ router.post('/requeue-failed', async (req, res, next) => {
   }
 });
 
+// GET /api/admin/system/backup — Download full database backup as JSON
+// Safe, read-only export of all critical tables
+router.get('/backup', async (req, res, next) => {
+  try {
+    const tables = [
+      'salons',
+      'barbers',
+      'services',
+      'barber_services',
+      'schedules',
+      'schedule_overrides',
+      'clients',
+      'client_salons',
+      'bookings',
+      'blocked_slots',
+      'guest_assignments',
+      'payments',
+      'register_closings',
+      'products',
+      'product_sales',
+      'gift_cards',
+      'waitlist',
+      'campaigns',
+      'automation_triggers',
+    ];
+
+    const backup = {
+      generated_at: new Date().toISOString(),
+      version: '1.0',
+      tables: {},
+    };
+
+    for (const table of tables) {
+      try {
+        const { rows } = await db.query(`SELECT * FROM ${table}`);
+        backup.tables[table] = { count: rows.length, rows };
+      } catch (err) {
+        backup.tables[table] = { count: 0, rows: [], error: err.message };
+      }
+    }
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="barberclub-backup-${dateStr}.json"`);
+    res.json(backup);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

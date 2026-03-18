@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import useMobile from '../hooks/useMobile';
 import { useSystemHealth, usePurgeFailedNotifications } from '../hooks/useApi';
+import { API_BASE } from '../api';
 
 function formatUptime(seconds) {
   const d = Math.floor(seconds / 86400);
@@ -36,6 +37,28 @@ export default function SystemHealth({ embedded } = {}) {
   const isMobile = useMobile();
   const { data, isLoading: loading, error, dataUpdatedAt, refetch } = useSystemHealth();
   const purgeMutation = usePurgeFailedNotifications();
+  const [backupLoading, setBackupLoading] = useState(false);
+
+  async function downloadBackup() {
+    setBackupLoading(true);
+    try {
+      const token = localStorage.getItem('bc_access_token');
+      const res = await fetch(`${API_BASE}/admin/system/backup`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `barberclub-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Erreur backup: ' + err.message);
+    } finally {
+      setBackupLoading(false);
+    }
+  }
 
   const lastUpdate = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
 
@@ -66,6 +89,9 @@ export default function SystemHealth({ embedded } = {}) {
                 MAJ {lastUpdate.toLocaleTimeString('fr-FR')}
               </span>
             )}
+            <button className="btn btn-secondary btn-sm" onClick={downloadBackup} disabled={backupLoading}>
+              {backupLoading ? 'Export...' : 'Backup BDD'}
+            </button>
             <button className="btn btn-secondary btn-sm" onClick={() => refetch()} disabled={loading}>
               {loading ? 'Chargement...' : 'Actualiser'}
             </button>
