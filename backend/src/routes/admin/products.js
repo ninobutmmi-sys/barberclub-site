@@ -42,7 +42,7 @@ router.get('/',
 
       const result = await db.query(
         `SELECT p.id, p.name, p.description, p.category, p.buy_price, p.sell_price,
-                p.stock_quantity, p.alert_threshold, p.sku, p.is_active, p.created_at
+                p.stock_quantity, p.alert_threshold, p.sku, p.is_active, p.sellable, p.created_at
          FROM products p
          ${whereClause}
          ORDER BY p.category, p.name`,
@@ -216,16 +216,17 @@ router.post('/',
     body('stock_quantity').isInt({ min: 0 }).withMessage('Quantite en stock requise'),
     body('alert_threshold').optional().isInt({ min: 0 }).withMessage('Seuil d\'alerte invalide'),
     body('sku').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
+    body('sellable').optional().isBoolean(),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const { name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku } = req.body;
+      const { name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, sellable } = req.body;
 
       const result = await db.query(
-        `INSERT INTO products (name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, salon_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO products (name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, sellable, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
         [
           name,
@@ -236,6 +237,7 @@ router.post('/',
           stock_quantity,
           alert_threshold != null ? alert_threshold : 5,
           sku || null,
+          sellable != null ? sellable : true,
           salonId,
         ]
       );
@@ -329,13 +331,14 @@ router.put('/:id',
     body('alert_threshold').optional().isInt({ min: 0 }),
     body('sku').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
     body('is_active').optional().isBoolean(),
+    body('sellable').optional().isBoolean(),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
       const { id } = req.params;
-      const { name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, is_active } = req.body;
+      const { name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, is_active, sellable } = req.body;
 
       const fields = [];
       const values = [];
@@ -350,6 +353,7 @@ router.put('/:id',
       if (alert_threshold !== undefined) { fields.push(`alert_threshold = $${paramIndex++}`); values.push(alert_threshold); }
       if (sku !== undefined) { fields.push(`sku = $${paramIndex++}`); values.push(sku || null); }
       if (is_active !== undefined) { fields.push(`is_active = $${paramIndex++}`); values.push(is_active); }
+      if (sellable !== undefined) { fields.push(`sellable = $${paramIndex++}`); values.push(sellable); }
 
       if (fields.length === 0) {
         throw ApiError.badRequest('Aucune donnee a mettre a jour');

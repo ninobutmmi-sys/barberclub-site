@@ -473,35 +473,55 @@ function ProductCard({ product, categoryColor, onEdit, onSell, isMobile }) {
         )}
       </div>
 
-      {/* Sell button */}
-      <button
-        onClick={onSell}
-        style={{
-          width: '100%', padding: '8px 0',
-          background: `${categoryColor}12`,
-          border: `1px solid ${categoryColor}20`,
-          borderRadius: 8, cursor: 'pointer',
-          color: categoryColor, fontSize: 12, fontWeight: 700,
-          fontFamily: 'var(--font)',
-          transition: 'all 0.15s',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.background = `${categoryColor}22`;
-          e.currentTarget.style.borderColor = `${categoryColor}35`;
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = `${categoryColor}12`;
-          e.currentTarget.style.borderColor = `${categoryColor}20`;
-        }}
-      >
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <path d="M16 10a4 4 0 01-8 0" />
-        </svg>
-        Vendre
-      </button>
+      {/* Sell button or internal badge */}
+      {product.sellable === false ? (
+        <div style={{
+          width: '100%', padding: '7px 0',
+          background: 'rgba(var(--overlay),0.04)',
+          border: '1px solid rgba(var(--overlay),0.06)',
+          borderRadius: 8,
+          color: 'var(--text-muted)', fontSize: 11, fontWeight: 600,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+          letterSpacing: '0.03em',
+        }}>
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0022 16z" />
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+            <line x1="12" y1="22.08" x2="12" y2="12" />
+          </svg>
+          Stock interne
+        </div>
+      ) : (
+        <button
+          onClick={onSell}
+          style={{
+            width: '100%', padding: '8px 0',
+            background: `${categoryColor}12`,
+            border: `1px solid ${categoryColor}20`,
+            borderRadius: 8, cursor: 'pointer',
+            color: categoryColor, fontSize: 12, fontWeight: 700,
+            fontFamily: 'var(--font)',
+            transition: 'all 0.15s',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = `${categoryColor}22`;
+            e.currentTarget.style.borderColor = `${categoryColor}35`;
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = `${categoryColor}12`;
+            e.currentTarget.style.borderColor = `${categoryColor}20`;
+          }}
+        >
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 01-8 0" />
+          </svg>
+          Vendre
+        </button>
+      )}
     </div>
   );
 }
@@ -674,6 +694,7 @@ function ProductModal({ product, onClose }) {
   const [stockQty, setStockQty] = useState(product?.stock_quantity ?? 0);
   const [alertThreshold, setAlertThreshold] = useState(product?.alert_threshold ?? 5);
   const [sku, setSku] = useState(product?.sku || '');
+  const [sellable, setSellable] = useState(product?.sellable ?? true);
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
   const [error, setError] = useState('');
   const saving = createMutation.isPending || updateMutation.isPending;
@@ -695,6 +716,7 @@ function ProductModal({ product, onClose }) {
       stock_quantity: parseInt(stockQty),
       alert_threshold: parseInt(alertThreshold),
       sku: sku || undefined,
+      sellable,
       is_active: isActive,
     };
 
@@ -743,6 +765,20 @@ function ProductModal({ product, onClose }) {
               <label className="label">Description (optionnel)</label>
               <input className="input" value={description} onChange={e => setDescription(e.target.value)}
                 placeholder="Ex: Fixation forte, fini brillant" />
+            </div>
+
+            <div className="form-group">
+              <label className="label">A vendre aux clients ?</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  className={`toggle ${sellable ? 'active' : ''}`}
+                  onClick={() => setSellable(!sellable)}
+                />
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                  {sellable ? 'Oui — visible en vente' : 'Non — stock interne uniquement'}
+                </span>
+              </div>
             </div>
 
             <div className="form-group">
