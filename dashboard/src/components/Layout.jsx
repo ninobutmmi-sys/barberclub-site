@@ -67,6 +67,10 @@ const NAV_GROUPS = [
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12L12 12"/><path d="M20 4L8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8L20 20"/></svg>,
       },
       {
+        to: '/boutique', label: 'Boutique',
+        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>,
+      },
+      {
         to: '/barbers', label: 'Barbers',
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
       },
@@ -140,6 +144,7 @@ function useTheme() {
 // Items shown in the "Plus" drawer on mobile
 const DRAWER_NAV = [
   { to: '/services', label: 'Prestations', icon: NAV.find(n => n.to === '/services').icon },
+  { to: '/boutique', label: 'Boutique', icon: NAV.find(n => n.to === '/boutique').icon },
   { to: '/barbers', label: 'Barbers', icon: NAV.find(n => n.to === '/barbers').icon },
   { to: '/faux-plans', label: 'Faux Plans', icon: NAV.find(n => n.to === '/faux-plans').icon },
   { to: '/history', label: 'Historique', icon: NAV.find(n => n.to === '/history').icon },

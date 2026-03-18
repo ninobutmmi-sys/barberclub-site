@@ -37,6 +37,7 @@ const { adminRouter: campaignRoutes, publicRouter: campaignTrackRoutes } = requi
 const systemHealthRoutes = require('./routes/admin/systemHealth');
 const auditLogRoutes = require('./routes/admin/auditLog');
 const pushRoutes = require('./routes/admin/push');
+const productRoutes = require('./routes/admin/products');
 
 // Cron job imports
 const { queueReminders } = require('./cron/reminders');
@@ -237,6 +238,7 @@ adminRouter.use('/campaigns', campaignRoutes);
 adminRouter.use('/system', systemHealthRoutes);
 adminRouter.use('/audit-log', auditLogRoutes);
 adminRouter.use('/push', pushRoutes);
+adminRouter.use('/products', productRoutes);
 app.use('/api/admin', adminRouter);
 
 // Public campaign tracking (no auth)

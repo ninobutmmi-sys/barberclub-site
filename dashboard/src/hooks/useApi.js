@@ -36,6 +36,10 @@ export const keys = {
   waitlistCount: ['waitlistCount'],
   automationTriggers: ['automationTriggers'],
   campaigns: ['campaigns'],
+  giftCards: ['giftCards'],
+  products: (params) => ['products', params],
+  productStats: ['productStats'],
+  productSales: (params) => ['productSales', params],
   auditLog: (params) => ['auditLog', params],
 };
 
@@ -528,6 +532,105 @@ export function useCampaignROI(id, options) {
     enabled: !!id,
     staleTime: 60_000,
     ...options,
+  });
+}
+
+// ---------- Products ----------
+export function useProducts(params, options) {
+  return useQuery({
+    queryKey: keys.products(params),
+    queryFn: () => api.getProducts(params),
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useProductStats(options) {
+  return useQuery({
+    queryKey: keys.productStats,
+    queryFn: api.getProductStats,
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useProductSales(params, options) {
+  return useQuery({
+    queryKey: keys.productSales(params),
+    queryFn: () => api.getProductSales(params),
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useCreateProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.createProduct,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: keys.productStats });
+    },
+  });
+}
+
+export function useUpdateProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => api.updateProduct(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: keys.productStats });
+    },
+  });
+}
+
+export function useDeleteProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteProduct,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: keys.productStats });
+    },
+  });
+}
+
+export function useRecordSale() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => api.recordProductSale(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: keys.productStats });
+      qc.invalidateQueries({ queryKey: ['productSales'] });
+    },
+  });
+}
+
+// ---------- Gift Cards ----------
+export function useGiftCards(options) {
+  return useQuery({
+    queryKey: keys.giftCards,
+    queryFn: api.getGiftCards,
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useCreateGiftCard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.createGiftCard,
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.giftCards }),
+  });
+}
+
+export function useUpdateGiftCard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => api.updateGiftCard(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.giftCards }),
   });
 }
 

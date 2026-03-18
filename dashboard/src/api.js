@@ -346,3 +346,29 @@ export const getAuditLog = (params) => {
 // ---- Admin: Campaign Tracking ----
 export const getCampaigns = () => request('/admin/campaigns');
 export const getCampaignROI = (id) => request(`/admin/campaigns/${id}/roi`);
+
+// ---- Admin: Products ----
+export const getProducts = (params) => {
+  const qs = params ? new URLSearchParams(params).toString() : '';
+  return request(`/admin/products${qs ? '?' + qs : ''}`);
+};
+export const getProductStats = () => request('/admin/products/stats');
+export const getProductSales = (params) => {
+  const qs = params ? new URLSearchParams(params).toString() : '';
+  return request(`/admin/products/sales${qs ? '?' + qs : ''}`);
+};
+export const createProduct = (body) =>
+  request('/admin/products', { method: 'POST', body: JSON.stringify(body) });
+export const updateProduct = (id, body) =>
+  request(`/admin/products/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+export const deleteProduct = (id) =>
+  request(`/admin/products/${id}`, { method: 'DELETE' });
+export const recordProductSale = (id, body) =>
+  request(`/admin/products/${id}/sale`, { method: 'POST', body: JSON.stringify(body) });
+
+// ---- Admin: Gift Cards ----
+export const getGiftCards = () => request('/admin/products/gift-cards');
+export const createGiftCard = (body) =>
+  request('/admin/products/gift-cards', { method: 'POST', body: JSON.stringify(body) });
+export const updateGiftCard = (id, body) =>
+  request(`/admin/products/gift-cards/${id}`, { method: 'PUT', body: JSON.stringify(body) });
