@@ -121,7 +121,7 @@ router.get('/health', async (req, res, next) => {
 router.post('/trigger-reminders', async (req, res, next) => {
   try {
     const { getSalonConfig } = require('../../config/env');
-    const { getBrevoConfig, queueNotification, formatDateFR, formatTime } = require('../../services/notification');
+    const { getBrevoConfig, queueNotification, formatDateFR, formatTime, toGSM } = require('../../services/notification');
     const brevoGre = getBrevoConfig('grenoble');
 
     const targetDate = req.body.date; // optional: '2026-03-18' to force-send for a specific date
@@ -147,11 +147,9 @@ router.post('/trigger-reminders', async (req, res, next) => {
       for (const booking of bookings.rows) {
         const salonId = booking.salon_id || 'meylan';
         const salon = getSalonConfig(salonId);
-        const apiUrl = config.apiUrl || 'https://barberclub-grenoble.fr';
-        const rdvUrl = `${apiUrl}/r/rdv/${booking.id}/${booking.cancel_token}`;
         const timeFormatted = formatTime(booking.start_time);
         const dateFR = formatDateFR(typeof booking.date === 'string' ? booking.date.slice(0, 10) : booking.date);
-        const message = `${salon.name} - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.\n\nGerer votre RDV : ${rdvUrl}`;
+        const message = toGSM(`BarberClub - Rappel\nRDV le ${dateFR} a ${timeFormatted}\n${salon.address}.\nA bientot!`);
 
         try {
           await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [booking.id]);

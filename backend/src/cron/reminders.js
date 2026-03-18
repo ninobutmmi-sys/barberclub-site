@@ -1,6 +1,6 @@
 const db = require('../config/database');
 const config = require('../config/env');
-const { queueNotification, formatDateFR, formatTime } = require('../services/notification');
+const { queueNotification, formatDateFR, formatTime, toGSM } = require('../services/notification');
 const logger = require('../utils/logger');
 
 /**
@@ -36,11 +36,9 @@ async function queueReminders() {
     for (const booking of result.rows) {
       const salonId = booking.salon_id || 'meylan';
       const salon = config.getSalonConfig(salonId);
-      const apiUrl = config.apiUrl || 'https://barberclub-grenoble.fr';
-      const rdvUrl = `${apiUrl}/r/rdv/${booking.id}/${booking.cancel_token}`;
       const timeFormatted = formatTime(booking.start_time);
       const dateFR = formatDateFR(typeof booking.date === 'string' ? booking.date.slice(0, 10) : booking.date);
-      const message = `${salon.name} - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.\n\nGerer votre RDV : ${rdvUrl}`;
+      const message = toGSM(`BarberClub - Rappel\nRDV le ${dateFR} a ${timeFormatted}\n${salon.address}.\nA bientot!`);
 
       try {
         // Mark BEFORE queuing to prevent duplicates on next cron run

@@ -11,6 +11,22 @@ const {
 const { alertCircuitOpen, alertCircuitClosed } = require('../utils/discord');
 
 /**
+ * Strip non-GSM characters to avoid Unicode encoding (70 chars/segment → 160 chars/segment).
+ * GSM 03.38 includes: é è ù ì ò Ç Ø ø Å å Ä Ö Ñ Ü ä ö ñ ü à § ¿ ¡ £ ¥ and basic ASCII.
+ * Characters like ô ê â î û ë ï ç (lowercase) are NOT in GSM → replace with ASCII equivalents.
+ */
+function toGSM(text) {
+  return text
+    .replace(/[ôö]/g, 'o').replace(/[êë]/g, 'e').replace(/[âä]/g, 'a')
+    .replace(/[îï]/g, 'i').replace(/[ûü]/g, 'u').replace(/ç/g, 'c')
+    .replace(/[ÔÖ]/g, 'O').replace(/[ÊË]/g, 'E').replace(/[ÂÄ]/g, 'A')
+    .replace(/[ÎÏ]/g, 'I').replace(/[ÛÜ]/g, 'U').replace(/Ç/g, 'C')
+    .replace(/[àá]/g, 'a').replace(/[éè]/g, 'e')
+    .replace(/['']/g, "'").replace(/[""]/g, '"')
+    .replace(/…/g, '...').replace(/—/g, '-').replace(/–/g, '-');
+}
+
+/**
  * Queue a notification for async sending (universal)
  * All notification types go through this single entry point.
  * The queue processor (processPendingNotifications) handles retries.
@@ -1121,7 +1137,7 @@ async function sendReminderSMSDirect(data) {
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `${salon.name} - Rappel RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.`;
+  const message = toGSM(`BarberClub - Rappel\nRDV le ${dateFR} a ${timeFormatted}\n${salon.address}.\nA bientot!`);
 
   await brevoSMS(data.phone, message, salonId);
 }
@@ -1137,7 +1153,7 @@ async function sendConfirmationSMS(data) {
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  const message = `${salon.name} - RDV confirme le ${dateFR} a ${timeFormatted} avec ${data.barber_name}. ${salon.address}`;
+  const message = toGSM(`BarberClub - RDV confirme\nLe ${dateFR} a ${timeFormatted} avec ${data.barber_name}.\n${salon.address}`);
 
   await brevoSMS(data.phone, message, salonId);
   logger.info('Confirmation SMS sent', { bookingId: data.booking_id, phone: data.phone, salonId });
@@ -1164,6 +1180,7 @@ module.exports = {
   sendWaitlistSMS,
   formatDateFR,
   formatTime,
+  toGSM,
   brevoSMS,
   brevoEmail,
   formatPhoneInternational,
