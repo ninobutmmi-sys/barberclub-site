@@ -28,6 +28,38 @@ const {
 const BARBER_ID = 'b0000000-0000-0000-0000-000000000001';
 const SERVICE_ID = 'a0000000-0000-0000-0000-000000000001';
 
+// Get a future Tuesday (day_of_week=1 in 0=Monday convention)
+function getNextTuesday() {
+  const d = new Date();
+  d.setDate(d.getDate() + 14); // 2 weeks ahead
+  const jsDay = d.getDay(); // 0=Sun
+  const daysUntilTue = (9 - jsDay) % 7 || 7;
+  d.setDate(d.getDate() + daysUntilTue);
+  return d.toISOString().slice(0, 10);
+}
+// Get a future Monday
+function getNextMonday() {
+  const d = new Date();
+  d.setDate(d.getDate() + 14);
+  const jsDay = d.getDay();
+  const daysUntilMon = (8 - jsDay) % 7 || 7;
+  d.setDate(d.getDate() + daysUntilMon);
+  return d.toISOString().slice(0, 10);
+}
+// Get a future Sunday
+function getNextSunday() {
+  const d = new Date();
+  d.setDate(d.getDate() + 14);
+  const jsDay = d.getDay();
+  const daysUntilSun = (7 - jsDay) % 7 || 7;
+  d.setDate(d.getDate() + daysUntilSun);
+  return d.toISOString().slice(0, 10);
+}
+
+const FUTURE_TUESDAY = getNextTuesday();
+const FUTURE_MONDAY = getNextMonday();
+const FUTURE_SUNDAY = getNextSunday();
+
 beforeEach(() => {
   mockDb.resetMocks();
 });
@@ -97,8 +129,8 @@ describe('getAvailableSlots', () => {
     let callIndex = 0;
     mockDb.query.mockImplementation(async (sql, params) => {
       // 1. Service duration query
-      if (sql.includes('SELECT duration FROM services')) {
-        return { rows: [{ duration }] };
+      if (sql.includes('FROM services WHERE id')) {
+        return { rows: [{ duration, duration_saturday: null, time_restrictions: null }] };
       }
       // 2. Barbers for 'any' mode (resident barbers)
       if (sql.includes('SELECT b.id FROM barbers b') && sql.includes('barber_services')) {
@@ -149,7 +181,7 @@ describe('getAvailableSlots', () => {
 
     // Use a future Tuesday (day_of_week=1 in 0=Monday convention)
     // 2026-03-10 is a Tuesday
-    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, '2026-03-10');
+    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, FUTURE_TUESDAY);
 
     expect(slots.length).toBeGreaterThan(0);
     expect(slots[0]).toEqual({
@@ -166,14 +198,14 @@ describe('getAvailableSlots', () => {
   test('returns empty for a day off (schedule override)', async () => {
     setupStandardMocks({ isDayOff: true });
 
-    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, '2026-03-10');
+    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, FUTURE_TUESDAY);
     expect(slots).toEqual([]);
   });
 
   test('returns empty when barber has no schedule', async () => {
     setupStandardMocks({ noSchedule: true });
 
-    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, '2026-03-10');
+    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, FUTURE_TUESDAY);
     expect(slots).toEqual([]);
   });
 
@@ -188,7 +220,7 @@ describe('getAvailableSlots', () => {
       ],
     });
 
-    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, '2026-03-10');
+    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, FUTURE_TUESDAY);
 
     const times = slots.map((s) => s.time);
     expect(times).toContain('09:00');
@@ -205,7 +237,7 @@ describe('getAvailableSlots', () => {
       blocked: [{ start_time: '09:00:00', end_time: '10:00:00' }],
     });
 
-    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, '2026-03-10');
+    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, FUTURE_TUESDAY);
 
     const times = slots.map((s) => s.time);
     expect(times).not.toContain('09:00');
@@ -217,7 +249,7 @@ describe('getAvailableSlots', () => {
   test('30min intervals for public mode', async () => {
     setupStandardMocks({ duration: 30, startTime: '09:00:00', endTime: '12:00:00' });
 
-    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, '2026-03-10');
+    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, FUTURE_TUESDAY);
 
     for (const slot of slots) {
       const minutes = parseInt(slot.time.split(':')[1], 10);
@@ -228,7 +260,7 @@ describe('getAvailableSlots', () => {
   test('5min intervals for admin mode', async () => {
     setupStandardMocks({ duration: 30, startTime: '09:00:00', endTime: '10:00:00' });
 
-    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, '2026-03-10', { adminMode: true });
+    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, FUTURE_TUESDAY, { adminMode: true });
 
     // From 09:00 to 09:30 in 5min steps: 09:00, 09:05, 09:10, 09:15, 09:20, 09:25, 09:30
     // That's slots where slotStart + 30 <= endMin (600)
@@ -244,7 +276,7 @@ describe('getAvailableSlots', () => {
   test('admin mode extends schedule to ADMIN_SCHEDULE_END (20:00)', async () => {
     setupStandardMocks({ duration: 30, startTime: '09:00:00', endTime: '17:00:00' });
 
-    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, '2026-03-10', { adminMode: true });
+    const slots = await getAvailableSlots(BARBER_ID, SERVICE_ID, FUTURE_TUESDAY, { adminMode: true });
 
     // Last slot should be at 19:30 (20:00 - 30min duration)
     const times = slots.map((s) => s.time);
@@ -253,13 +285,13 @@ describe('getAvailableSlots', () => {
 
   test('returns empty for invalid service', async () => {
     mockDb.query.mockImplementation(async (sql) => {
-      if (sql.includes('SELECT duration FROM services')) {
+      if (sql.includes('FROM services WHERE id')) {
         return { rows: [] };
       }
       return { rows: [] };
     });
 
-    const slots = await getAvailableSlots(BARBER_ID, 'invalid-id', '2026-03-10');
+    const slots = await getAvailableSlots(BARBER_ID, 'invalid-id', FUTURE_TUESDAY);
     expect(slots).toEqual([]);
   });
 
@@ -269,7 +301,7 @@ describe('getAvailableSlots', () => {
     setupStandardMocks({ duration: 30, startTime: '09:00:00', endTime: '19:00:00' });
 
     // We can verify the correct day_of_week is passed to the schedule query
-    await getAvailableSlots(BARBER_ID, SERVICE_ID, '2026-03-09');
+    await getAvailableSlots(BARBER_ID, SERVICE_ID, FUTURE_MONDAY);
 
     // Find the schedule query call
     const scheduleCalls = mockDb.query.mock.calls.filter(
@@ -294,7 +326,7 @@ describe('isSlotAvailable', () => {
       return { rows: [] };
     });
 
-    const available = await isSlotAvailable(BARBER_ID, '2026-03-10', '10:00', 30);
+    const available = await isSlotAvailable(BARBER_ID, FUTURE_TUESDAY, '10:00', 30);
     expect(available).toBe(true);
   });
 
@@ -306,7 +338,7 @@ describe('isSlotAvailable', () => {
       return { rows: [] };
     });
 
-    const available = await isSlotAvailable(BARBER_ID, '2026-03-10', '10:00', 30);
+    const available = await isSlotAvailable(BARBER_ID, FUTURE_TUESDAY, '10:00', 30);
     expect(available).toBe(false);
   });
 
@@ -322,16 +354,18 @@ describe('isSlotAvailable', () => {
       return { rows: [] };
     });
 
-    const available = await isSlotAvailable(BARBER_ID, '2026-03-10', '10:00', 30);
+    const available = await isSlotAvailable(BARBER_ID, FUTURE_TUESDAY, '10:00', 30);
     expect(available).toBe(false);
   });
 
   test('uses FOR UPDATE when client (transaction) is passed', async () => {
+    // db.query is still used for getBarberHomeSalon
+    mockDb.query.mockResolvedValue({ rows: [{ salon_id: 'meylan' }] });
     const mockClient = {
       query: jest.fn().mockResolvedValue({ rows: [] }),
     };
 
-    await isSlotAvailable(BARBER_ID, '2026-03-10', '10:00', 30, mockClient);
+    await isSlotAvailable(BARBER_ID, FUTURE_TUESDAY, '10:00', 30, mockClient);
 
     // The first query (bookings check) should contain FOR UPDATE
     const bookingsQuery = mockClient.query.mock.calls[0][0];
@@ -341,7 +375,7 @@ describe('isSlotAvailable', () => {
   test('does NOT use FOR UPDATE without client (no transaction)', async () => {
     mockDb.query.mockResolvedValue({ rows: [] });
 
-    await isSlotAvailable(BARBER_ID, '2026-03-10', '10:00', 30);
+    await isSlotAvailable(BARBER_ID, FUTURE_TUESDAY, '10:00', 30);
 
     const bookingsQuery = mockDb.query.mock.calls[0][0];
     expect(bookingsQuery).not.toContain('FOR UPDATE');
@@ -350,7 +384,7 @@ describe('isSlotAvailable', () => {
   test('correctly calculates end_time for overlap check', async () => {
     mockDb.query.mockResolvedValue({ rows: [] });
 
-    await isSlotAvailable(BARBER_ID, '2026-03-10', '10:00', 45);
+    await isSlotAvailable(BARBER_ID, FUTURE_TUESDAY, '10:00', 45);
 
     // end_time should be 10:45
     const params = mockDb.query.mock.calls[0][1];
@@ -415,7 +449,7 @@ describe('findBestBarber', () => {
 
     setupFindBestMocks(barbers, { 'barber-1': 5, 'barber-2': 2 });
 
-    const best = await findBestBarber(SERVICE_ID, '2026-03-10', '10:00', 30);
+    const best = await findBestBarber(SERVICE_ID, FUTURE_TUESDAY, '10:00', 30);
     expect(best).not.toBeNull();
     expect(best.id).toBe('barber-2');
     expect(best.name).toBe('Julien');
@@ -424,7 +458,7 @@ describe('findBestBarber', () => {
   test('returns null if no barber is available', async () => {
     setupFindBestMocks([]);
 
-    const best = await findBestBarber(SERVICE_ID, '2026-03-10', '10:00', 30);
+    const best = await findBestBarber(SERVICE_ID, FUTURE_TUESDAY, '10:00', 30);
     expect(best).toBeNull();
   });
 
@@ -471,7 +505,7 @@ describe('findBestBarber', () => {
     // barberWorksAtTime calls db.query for getGuestAssignment, getBarberHomeSalon, schedule_overrides, schedules
     mockDb.query.mockImplementation(defaultHandler);
 
-    const best = await findBestBarber(SERVICE_ID, '2026-03-10', '10:00', 30, 'meylan', mockClient);
+    const best = await findBestBarber(SERVICE_ID, FUTURE_TUESDAY, '10:00', 30, 'meylan', mockClient);
 
     expect(best).not.toBeNull();
     expect(best.id).toBe('barber-1');
@@ -514,7 +548,7 @@ describe('findBestBarber', () => {
       return { rows: [] };
     });
 
-    const best = await findBestBarber(SERVICE_ID, '2026-03-10', '10:00', 30);
+    const best = await findBestBarber(SERVICE_ID, FUTURE_TUESDAY, '10:00', 30);
     expect(best).not.toBeNull();
     expect(best.id).toBe('barber-2');
   });
@@ -530,6 +564,7 @@ describe('validateBarberSlot', () => {
       query: jest.fn().mockImplementation(async (sql) => {
         if (sql.includes('guest_assignments')) return { rows: [] };
         if (sql.includes('schedule_overrides')) return { rows: [] };
+        if (sql.includes('break_start IS NOT NULL')) return { rows: [] };
         if (sql.includes('FROM schedules')) {
           return { rows: [{ is_working: true, start_time: '09:00:00', end_time: '19:00:00' }] };
         }
@@ -542,7 +577,7 @@ describe('validateBarberSlot', () => {
     mockDb.query.mockResolvedValue({ rows: [{ salon_id: 'meylan' }] });
 
     await expect(
-      validateBarberSlot(mockClient, BARBER_ID, '2026-03-10', '10:00', '10:30', 'meylan')
+      validateBarberSlot(mockClient, BARBER_ID, FUTURE_TUESDAY, '10:00', '10:30', 'meylan')
     ).resolves.not.toThrow();
   });
 
@@ -561,7 +596,7 @@ describe('validateBarberSlot', () => {
     mockDb.query.mockResolvedValue({ rows: [{ salon_id: 'meylan' }] });
 
     await expect(
-      validateBarberSlot(mockClient, BARBER_ID, '2026-03-09', '10:00', '10:30', 'meylan')
+      validateBarberSlot(mockClient, BARBER_ID, FUTURE_MONDAY, '10:00', '10:30', 'meylan')
     ).rejects.toThrow(/travaille pas/i);
   });
 
@@ -580,7 +615,7 @@ describe('validateBarberSlot', () => {
     mockDb.query.mockResolvedValue({ rows: [{ salon_id: 'meylan' }] });
 
     await expect(
-      validateBarberSlot(mockClient, BARBER_ID, '2026-03-10', '07:00', '07:30', 'meylan')
+      validateBarberSlot(mockClient, BARBER_ID, FUTURE_TUESDAY, '07:00', '07:30', 'meylan')
     ).rejects.toThrow(/heures de travail/i);
   });
 
@@ -602,7 +637,7 @@ describe('validateBarberSlot', () => {
     mockDb.query.mockResolvedValue({ rows: [{ salon_id: 'meylan' }] });
 
     await expect(
-      validateBarberSlot(mockClient, BARBER_ID, '2026-03-10', '10:00', '10:30', 'meylan')
+      validateBarberSlot(mockClient, BARBER_ID, FUTURE_TUESDAY, '10:00', '10:30', 'meylan')
     ).rejects.toThrow(/bloqué/i);
   });
 
@@ -619,12 +654,12 @@ describe('validateBarberSlot', () => {
 
     // Slot within guest assignment hours
     await expect(
-      validateBarberSlot(mockClient, BARBER_ID, '2026-03-10', '10:00', '10:30', 'grenoble')
+      validateBarberSlot(mockClient, BARBER_ID, FUTURE_TUESDAY, '10:00', '10:30', 'grenoble')
     ).resolves.not.toThrow();
 
     // Slot outside guest assignment hours
     await expect(
-      validateBarberSlot(mockClient, BARBER_ID, '2026-03-10', '08:00', '08:30', 'grenoble')
+      validateBarberSlot(mockClient, BARBER_ID, FUTURE_TUESDAY, '08:00', '08:30', 'grenoble')
     ).rejects.toThrow(/heures de travail/i);
   });
 });

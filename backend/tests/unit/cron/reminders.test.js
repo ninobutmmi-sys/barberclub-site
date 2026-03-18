@@ -1,13 +1,17 @@
 /**
  * Unit tests for reminders cron job.
- * Tests: tomorrow calculation (Paris TZ), SMS sending, queue fallback, no bookings.
+ * Tests: 24h window query, queue-based sending, mark-before-queue, error handling.
+ * Updated to match current code: queueReminders() uses queueNotification (not sendReminderSMSDirect),
+ * queries a 24h rolling window (no tomorrowStr param), and marks reminder_sent before queuing.
  */
 
 const mockDb = require('../helpers/mockDb');
 const mockNotification = require('../helpers/mockNotification');
+const mockEnv = require('../helpers/mockEnv');
 
 jest.mock('../../../src/config/database', () => mockDb);
 jest.mock('../../../src/services/notification', () => mockNotification);
+jest.mock('../../../src/config/env', () => mockEnv);
 jest.mock('../../../src/utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
@@ -23,30 +27,20 @@ beforeEach(() => {
 });
 
 describe('queueReminders', () => {
-  test('calculates "tomorrow" in Paris timezone', async () => {
-    // The function should use toLocaleString with Europe/Paris
+  test('queries bookings in the next 24h window (no date param)', async () => {
+    // The function uses a SQL BETWEEN NOW() AND NOW()+24h with no bind params
     mockDb.query.mockResolvedValue({ rows: [] });
 
     await queueReminders();
 
-    // Should have been called with a date string for tomorrow
     expect(mockDb.query).toHaveBeenCalled();
     const call = mockDb.query.mock.calls[0];
-    const dateParam = call[1][0]; // First param is tomorrowStr
-
-    // Verify it's a valid YYYY-MM-DD date
-    expect(dateParam).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-
-    // It should be tomorrow in Paris TZ
-    const nowParis = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-    const tomorrow = new Date(nowParis);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const expectedDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
-
-    expect(dateParam).toBe(expectedDate);
+    // The query should use BETWEEN with NOW() — no bind parameters for date
+    expect(call[0]).toContain('BETWEEN');
+    expect(call[0]).toContain('24 hours');
   });
 
-  test('sends SMS for confirmed bookings', async () => {
+  test('queues SMS for confirmed bookings via queueNotification', async () => {
     const bookings = [
       {
         id: 'booking-1',
@@ -67,7 +61,7 @@ describe('queueReminders', () => {
     ];
 
     mockDb.query.mockImplementation(async (sql) => {
-      // Fetch bookings
+      // Fetch bookings (24h window query)
       if (sql.includes('SELECT b.id')) {
         return { rows: bookings };
       }
@@ -80,17 +74,59 @@ describe('queueReminders', () => {
 
     await queueReminders();
 
-    expect(mockNotification.sendReminderSMSDirect).toHaveBeenCalledTimes(2);
-    expect(mockNotification.sendReminderSMSDirect).toHaveBeenCalledWith(
+    // Should queue via queueNotification, not sendReminderSMSDirect
+    expect(mockNotification.queueNotification).toHaveBeenCalledTimes(2);
+    expect(mockNotification.queueNotification).toHaveBeenCalledWith(
+      'booking-1',
+      'reminder_sms',
       expect.objectContaining({
-        booking_id: 'booking-1',
         phone: '+33600000001',
-        salon_id: 'meylan',
+        salonId: 'meylan',
+      })
+    );
+    expect(mockNotification.queueNotification).toHaveBeenCalledWith(
+      'booking-2',
+      'reminder_sms',
+      expect.objectContaining({
+        phone: '+33600000002',
+        salonId: 'meylan',
       })
     );
   });
 
-  test('queues fallback on direct SMS failure', async () => {
+  test('marks reminder_sent BEFORE queuing (prevents duplicates)', async () => {
+    mockDb.query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT b.id')) {
+        return {
+          rows: [{
+            id: 'booking-1',
+            date: '2026-03-05',
+            start_time: '10:00:00',
+            cancel_token: 'tok-1',
+            salon_id: 'meylan',
+            phone: '+33600000001',
+          }],
+        };
+      }
+      if (sql.includes('UPDATE bookings SET reminder_sent = true')) {
+        return { rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+
+    await queueReminders();
+
+    // reminder_sent should be marked
+    const markCall = mockDb.query.mock.calls.find((c) =>
+      c[0].includes('UPDATE bookings SET reminder_sent = true')
+    );
+    expect(markCall).toBeTruthy();
+
+    // Then queued
+    expect(mockNotification.queueNotification).toHaveBeenCalledTimes(1);
+  });
+
+  test('reverts reminder_sent on queue failure', async () => {
     mockDb.query.mockImplementation(async (sql) => {
       if (sql.includes('SELECT b.id')) {
         return {
@@ -104,16 +140,25 @@ describe('queueReminders', () => {
           }],
         };
       }
+      if (sql.includes('UPDATE bookings SET reminder_sent = true')) {
+        return { rowCount: 1 };
+      }
+      if (sql.includes('UPDATE bookings SET reminder_sent = false')) {
+        return { rowCount: 1 };
+      }
       return { rows: [], rowCount: 0 };
     });
 
-    // Make direct SMS fail
-    mockNotification.sendReminderSMSDirect.mockRejectedValue(new Error('Brevo down'));
+    // Make queueNotification fail
+    mockNotification.queueNotification.mockRejectedValueOnce(new Error('Queue error'));
 
     await queueReminders();
 
-    // Should have tried the queue fallback
-    expect(mockNotification.queueNotification).toHaveBeenCalledWith('booking-fail', 'reminder_sms');
+    // Should have reverted reminder_sent
+    const revertCall = mockDb.query.mock.calls.find((c) =>
+      c[0].includes('UPDATE bookings SET reminder_sent = false')
+    );
+    expect(revertCall).toBeTruthy();
   });
 
   test('handles no bookings gracefully', async () => {
@@ -122,10 +167,10 @@ describe('queueReminders', () => {
     // Should not throw
     await queueReminders();
 
-    expect(mockNotification.sendReminderSMSDirect).not.toHaveBeenCalled();
+    expect(mockNotification.queueNotification).not.toHaveBeenCalled();
   });
 
-  test('continues processing after individual SMS failure', async () => {
+  test('continues processing after individual queue failure', async () => {
     const bookings = [
       { id: 'b1', date: '2026-03-05', start_time: '10:00:00', cancel_token: 'tok-1', salon_id: 'meylan', phone: '+33600000001' },
       { id: 'b2', date: '2026-03-05', start_time: '14:00:00', cancel_token: 'tok-2', salon_id: 'meylan', phone: '+33600000002' },
@@ -137,15 +182,15 @@ describe('queueReminders', () => {
       return { rows: [] };
     });
 
-    // First SMS fails, second succeeds
-    mockNotification.sendReminderSMSDirect
+    // First queue fails, second succeeds
+    mockNotification.queueNotification
       .mockRejectedValueOnce(new Error('fail'))
       .mockResolvedValueOnce(true);
 
     await queueReminders();
 
     // Both should have been attempted
-    expect(mockNotification.sendReminderSMSDirect).toHaveBeenCalledTimes(2);
+    expect(mockNotification.queueNotification).toHaveBeenCalledTimes(2);
   });
 
   test('uses correct salon_id from booking (multi-salon support)', async () => {
@@ -168,9 +213,11 @@ describe('queueReminders', () => {
 
     await queueReminders();
 
-    expect(mockNotification.sendReminderSMSDirect).toHaveBeenCalledWith(
+    expect(mockNotification.queueNotification).toHaveBeenCalledWith(
+      'b-gre',
+      'reminder_sms',
       expect.objectContaining({
-        salon_id: 'grenoble',
+        salonId: 'grenoble',
       })
     );
   });

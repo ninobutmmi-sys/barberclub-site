@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const db = require('../../config/database');
 const config = require('../../config/env');
+const { getErrorSummary } = require('../../utils/errorTracker');
 
 const router = Router();
 
@@ -313,6 +314,43 @@ router.get('/backup', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+// GET /api/admin/system/backups — List stored automatic backups
+router.get('/backups', async (req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      `SELECT id, date, tables_count, rows_count, size_bytes, created_at
+       FROM _backups ORDER BY date DESC LIMIT 10`
+    );
+    res.json(rows);
+  } catch (error) {
+    // Table might not exist yet (first run)
+    if (error.message.includes('does not exist')) return res.json([]);
+    next(error);
+  }
+});
+
+// GET /api/admin/system/backups/:date — Download a stored backup by date
+router.get('/backups/:date', async (req, res, next) => {
+  try {
+    const { rows } = await db.query('SELECT data FROM _backups WHERE date = $1', [req.params.date]);
+    if (!rows.length) return res.status(404).json({ error: 'Backup not found' });
+
+    const zlib = require('zlib');
+    const decompressed = zlib.gunzipSync(rows[0].data);
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="barberclub-backup-${req.params.date}.json"`);
+    res.send(decompressed);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/admin/system/errors — Structured error tracking summary
+router.get('/errors', (req, res) => {
+  res.json(getErrorSummary());
 });
 
 module.exports = router;

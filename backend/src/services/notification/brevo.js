@@ -1,0 +1,272 @@
+const db = require('../../config/database');
+const config = require('../../config/env');
+const logger = require('../../utils/logger');
+const {
+  BREVO_CIRCUIT_THRESHOLD,
+  BREVO_CIRCUIT_COOLDOWN_MS,
+  BREVO_REQUEST_TIMEOUT_MS,
+} = require('../../constants');
+const { alertCircuitOpen, alertCircuitClosed } = require('../../utils/discord');
+const { formatPhoneInternational, htmlToText } = require('./helpers');
+
+// ============================================
+// Circuit breaker for Brevo API (per salon)
+// After 3 consecutive failures, short-circuit for 60s
+// ============================================
+const brevoCircuits = {};
+
+function getCircuit(salonId) {
+  if (!brevoCircuits[salonId]) {
+    brevoCircuits[salonId] = {
+      failures: 0,
+      threshold: BREVO_CIRCUIT_THRESHOLD,
+      cooldownMs: BREVO_CIRCUIT_COOLDOWN_MS,
+      openedAt: null,
+      keyDisabled: false,      // true when Brevo returns 401 (key disabled/not found)
+      keyDisabledAt: null,
+    };
+  }
+  return brevoCircuits[salonId];
+}
+
+function isCircuitOpen(salonId = 'meylan') {
+  const circuit = getCircuit(salonId);
+  // If key is disabled (401), block ALL calls until manually resolved
+  if (circuit.keyDisabled) return true;
+  if (circuit.failures < circuit.threshold) return false;
+  if (!circuit.openedAt) return false;
+  if (Date.now() - circuit.openedAt > circuit.cooldownMs) {
+    circuit.failures = 0;
+    circuit.openedAt = null;
+    logger.info('Brevo circuit breaker reset (cooldown elapsed)', { salonId });
+    alertCircuitClosed(salonId);
+    return false;
+  }
+  return true;
+}
+
+function recordBrevoSuccess(salonId = 'meylan') {
+  const circuit = getCircuit(salonId);
+  if (circuit.failures > 0 || circuit.keyDisabled) {
+    circuit.failures = 0;
+    circuit.openedAt = null;
+    circuit.keyDisabled = false;
+    circuit.keyDisabledAt = null;
+  }
+}
+
+function recordBrevoFailure(salonId = 'meylan', statusCode) {
+  const circuit = getCircuit(salonId);
+  // 401 = key disabled/not found -- permanent block, no retry
+  if (statusCode === 401) {
+    circuit.keyDisabled = true;
+    circuit.keyDisabledAt = new Date().toISOString();
+    logger.error(`BREVO KEY DISABLED for ${salonId} — all emails/SMS blocked until key is reactivated`, { salonId });
+    alertCircuitOpen(salonId, 0, 'CLE API DESACTIVEE');
+    return;
+  }
+  circuit.failures++;
+  if (circuit.failures >= circuit.threshold && !circuit.openedAt) {
+    circuit.openedAt = Date.now();
+    logger.warn(`Brevo circuit breaker OPEN — skipping calls for ${BREVO_CIRCUIT_COOLDOWN_MS / 1000}s`, { salonId, failures: circuit.failures });
+    alertCircuitOpen(salonId, circuit.failures);
+  }
+}
+
+/**
+ * Get Brevo status for all salons (used by systemHealth + dashboard)
+ */
+function getBrevoStatus() {
+  const result = {};
+  for (const salonId of ['meylan', 'grenoble']) {
+    const circuit = getCircuit(salonId);
+    const brevo = getBrevoConfig(salonId);
+    result[salonId] = {
+      keyConfigured: !!brevo.apiKey,
+      keyDisabled: circuit.keyDisabled,
+      keyDisabledAt: circuit.keyDisabledAt,
+      circuitOpen: isCircuitOpen(salonId),
+      failures: circuit.failures,
+    };
+  }
+  return result;
+}
+
+/**
+ * Check Brevo API keys on startup -- logs warning if a key is dead
+ */
+async function checkBrevoKeys() {
+  for (const salonId of ['meylan', 'grenoble']) {
+    const brevo = getBrevoConfig(salonId);
+    if (!brevo.apiKey) {
+      logger.warn(`Brevo API key not configured for ${salonId}`);
+      continue;
+    }
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+      const response = await fetch('https://api.brevo.com/v3/account', {
+        headers: { 'api-key': brevo.apiKey },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (response.status === 401) {
+        const circuit = getCircuit(salonId);
+        circuit.keyDisabled = true;
+        circuit.keyDisabledAt = new Date().toISOString();
+        logger.error(`STARTUP CHECK: Brevo key DISABLED for ${salonId} — emails/SMS will NOT work`, { salonId });
+      } else if (response.ok) {
+        logger.info(`Brevo key OK for ${salonId}`);
+      } else {
+        logger.warn(`Brevo key check returned ${response.status} for ${salonId}`);
+      }
+    } catch (err) {
+      logger.warn(`Brevo key check failed for ${salonId}: ${err.message}`);
+    }
+  }
+}
+
+// ============================================
+// Salon-aware Brevo credentials helper
+// ============================================
+function getBrevoConfig(salonId) {
+  const salon = config.getSalonConfig(salonId);
+  // Fallback to global config.brevo for backward compat
+  return salon.brevo && salon.brevo.apiKey
+    ? salon.brevo
+    : config.brevo;
+}
+
+// ============================================
+// Brevo API helpers (salon-aware)
+// ============================================
+
+async function brevoEmail(to, subject, htmlContent, salonId = 'meylan', meta = {}) {
+  if (config.nodeEnv === 'test') {
+    logger.debug('Brevo email skipped (test mode)', { to, subject });
+    return;
+  }
+  if (isCircuitOpen(salonId)) {
+    throw new Error('Brevo circuit breaker open — skipping email');
+  }
+  const brevo = getBrevoConfig(salonId);
+  if (!brevo.apiKey) {
+    logger.error('Brevo API key not configured — email not sent', { salonId, to });
+    throw new Error(`Brevo API key not configured for salon ${salonId}`);
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), BREVO_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': brevo.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { email: brevo.senderEmail, name: brevo.senderName },
+        to: [{ email: to }],
+        subject,
+        htmlContent,
+        textContent: htmlToText(htmlContent),
+        headers: {
+          'X-Mailin-Tag': meta.type || 'transactional',
+        },
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      recordBrevoFailure(salonId, response.status);
+      // Log failed email (skip if already tracked by queue processor)
+      if (!meta.fromQueue) {
+        try {
+          await db.query(
+            `INSERT INTO notification_queue (id, booking_id, type, status, channel, email, recipient_name, subject, salon_id, created_at, last_error)
+             VALUES (gen_random_uuid(), $1, $2, 'failed', 'email', $3, $4, $5, $6, NOW(), $7)`,
+            [meta.bookingId || null, meta.type || 'email', to, meta.recipientName || null, subject, salonId, `${response.status}: ${errorBody.slice(0, 200)}`]
+          );
+        } catch (_) { /* silent */ }
+      }
+      throw new Error(`Brevo email API error ${response.status}: ${errorBody}`);
+    }
+    recordBrevoSuccess(salonId);
+    if (meta.fromQueue) {
+      // Update subject on the existing queue row (so Messages page shows it)
+      try {
+        if (meta.queueId) {
+          await db.query('UPDATE notification_queue SET subject = $1 WHERE id = $2', [subject, meta.queueId]);
+        }
+      } catch (_) { /* silent */ }
+    } else {
+      // Log successful email as a new row (direct send, not from queue)
+      try {
+        await db.query(
+          `INSERT INTO notification_queue (id, booking_id, type, status, channel, email, recipient_name, subject, salon_id, created_at, sent_at)
+           VALUES (gen_random_uuid(), $1, $2, 'sent', 'email', $3, $4, $5, $6, NOW(), NOW())`,
+          [meta.bookingId || null, meta.type || 'email', to, meta.recipientName || null, subject, salonId]
+        );
+      } catch (_) { /* silent */ }
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') recordBrevoFailure(salonId);
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function brevoSMS(phone, content, salonId = 'meylan') {
+  if (config.nodeEnv === 'test') {
+    logger.debug('Brevo SMS skipped (test mode)', { phone });
+    return;
+  }
+  if (isCircuitOpen(salonId)) {
+    throw new Error('Brevo circuit breaker open — skipping SMS');
+  }
+  const brevo = getBrevoConfig(salonId);
+  if (!brevo.apiKey) {
+    logger.error('Brevo API key not configured — SMS not sent', { salonId, phone });
+    throw new Error(`Brevo API key not configured for salon ${salonId}`);
+  }
+  const recipient = formatPhoneInternational(phone);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), BREVO_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
+      method: 'POST',
+      headers: {
+        'api-key': brevo.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: brevo.smsSender,
+        recipient,
+        content,
+        type: 'transactional',
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      recordBrevoFailure(salonId, response.status);
+      throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
+    }
+    recordBrevoSuccess(salonId);
+  } catch (err) {
+    if (err.name === 'AbortError') recordBrevoFailure(salonId);
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+module.exports = {
+  brevoEmail,
+  brevoSMS,
+  getBrevoConfig,
+  getBrevoStatus,
+  checkBrevoKeys,
+};

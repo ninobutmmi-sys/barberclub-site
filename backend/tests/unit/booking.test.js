@@ -12,6 +12,9 @@ const mockEnv = require('./helpers/mockEnv');
 jest.mock('../../src/config/database', () => mockDb);
 jest.mock('../../src/services/notification', () => mockNotification);
 jest.mock('../../src/config/env', () => mockEnv);
+jest.mock('../../src/services/push', () => ({
+  notifyNewBooking: jest.fn(),
+}));
 jest.mock('../../src/utils/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
@@ -40,8 +43,8 @@ describe('createBooking', () => {
     let queryCount = 0;
     mockClient.query.mockImplementation(async (sql, params) => {
       // Service lookup
-      if (sql.includes('SELECT id, name, price, duration FROM services')) {
-        return { rows: [{ id: SERVICE_ID, name: 'Coupe Homme', price: 2700, duration: 30 }] };
+      if (sql.includes('FROM services WHERE id')) {
+        return { rows: [{ id: SERVICE_ID, name: 'Coupe Homme', price: 2700, duration: 30, duration_saturday: null, time_restrictions: null }] };
       }
       // Barber+service check
       if (sql.includes('SELECT b.id, b.name FROM barbers') && sql.includes('barber_services')) {
@@ -177,7 +180,7 @@ describe('createBooking', () => {
     const mockClient = mockDb.setupTransaction();
     // Service lookup should still work
     mockClient.query.mockImplementation(async (sql) => {
-      if (sql.includes('SELECT id, name, price, duration FROM services')) {
+      if (sql.includes('FROM services WHERE id')) {
         return { rows: [{ id: SERVICE_ID, name: 'Coupe', price: 2700, duration: 30 }] };
       }
       return { rows: [] };
@@ -200,7 +203,7 @@ describe('createBooking', () => {
   test('rejects dates > 6 months ahead (client booking)', async () => {
     const mockClient = mockDb.setupTransaction();
     mockClient.query.mockImplementation(async (sql) => {
-      if (sql.includes('SELECT id, name, price, duration FROM services')) {
+      if (sql.includes('FROM services WHERE id')) {
         return { rows: [{ id: SERVICE_ID, name: 'Coupe', price: 2700, duration: 30 }] };
       }
       return { rows: [] };
@@ -544,9 +547,13 @@ describe('rescheduleBooking', () => {
       if (sql.includes('schedule_overrides')) {
         return { rows: [] };
       }
+      // Schedules break check (validateBarberSlot) — must be before general schedules
+      if (sql.includes('FROM schedules') && sql.includes('break_start IS NOT NULL')) {
+        return { rows: [] };
+      }
       // Schedules (validateBarberSlot)
       if (sql.includes('FROM schedules')) {
-        return { rows: [{ is_working: true, start_time: '09:00:00', end_time: '19:00:00' }] };
+        return { rows: [{ is_working: true, start_time: '09:00:00', end_time: '19:00:00', break_start: null, break_end: null }] };
       }
       // Blocked slots (validateBarberSlot)
       if (sql.includes('blocked_slots')) {
@@ -589,6 +596,7 @@ describe('rescheduleBooking', () => {
       start_time: '10:00:00',
       end_time: '10:30:00',
       service_duration: 30,
+      service_duration_saturday: null,
       service_name: 'Coupe Homme',
       service_price: 2700,
       barber_name: 'Lucas',

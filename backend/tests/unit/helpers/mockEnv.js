@@ -47,6 +47,7 @@ module.exports = {
     senderName: 'BarberClub Meylan',
     smsSender: 'BARBERCLUB',
   },
+  vapid: { publicKey: '', privateKey: '', subject: '' },
   siteUrl: 'https://barberclub-grenoble.fr',
   apiUrl: 'http://localhost:3000',
   salon: {

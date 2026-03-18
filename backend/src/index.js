@@ -12,6 +12,7 @@ const cookieParser = require('cookie-parser');
 const cron = require('node-cron');
 const logger = require('./utils/logger');
 const { ApiError } = require('./utils/errors');
+const { trackError } = require('./utils/errorTracker');
 const { publicLimiter, adminLimiter } = require('./middleware/rateLimiter');
 const { requireAuth, requireBarber } = require('./middleware/auth');
 const { GRACEFUL_SHUTDOWN_TIMEOUT_MS } = require('./constants');
@@ -284,8 +285,21 @@ app.use((req, res) => {
 // Global error handler
 // ============================================
 app.use((err, req, res, next) => {
+  const isDev = config.nodeEnv !== 'production';
+
   // Handle known API errors
   if (err instanceof ApiError) {
+    // Track 4xx/5xx API errors (skip 401s to avoid noise from expired tokens)
+    if (err.statusCode >= 400 && err.statusCode !== 401) {
+      trackError({
+        method: req.method,
+        path: req.originalUrl,
+        status: err.statusCode,
+        message: err.message,
+        type: 'ApiError',
+        user: req.user || null,
+      });
+    }
     return res.status(err.statusCode).json({
       error: err.message,
       details: err.details || undefined,
@@ -294,11 +308,25 @@ app.use((err, req, res, next) => {
 
   // Handle CORS errors
   if (err.message === 'Not allowed by CORS') {
+    trackError({
+      method: req.method,
+      path: req.originalUrl,
+      status: 403,
+      message: 'Not allowed by CORS',
+      type: 'CORSError',
+    });
     return res.status(403).json({ error: 'Origine non autorisée' });
   }
 
   // Handle JSON parse errors
   if (err.type === 'entity.parse.failed') {
+    trackError({
+      method: req.method,
+      path: req.originalUrl,
+      status: 400,
+      message: 'JSON invalide',
+      type: 'ParseError',
+    });
     return res.status(400).json({ error: 'JSON invalide' });
   }
 
@@ -308,6 +336,16 @@ app.use((err, req, res, next) => {
     stack: err.stack,
     path: req.originalUrl,
     method: req.method,
+  });
+
+  trackError({
+    method: req.method,
+    path: req.originalUrl,
+    status: 500,
+    message: err.message,
+    stack: isDev ? err.stack : undefined,
+    type: err.name || 'UnhandledError',
+    user: req.user || null,
   });
 
   res.status(500).json({
