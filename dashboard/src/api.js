@@ -239,6 +239,12 @@ export const updateClient = (id, body) =>
   request(`/admin/clients/${id}`, { method: 'PUT', body: JSON.stringify(body) });
 export const deleteClient = (id) =>
   request(`/admin/clients/${id}`, { method: 'DELETE' });
+export const getClientPhotos = (id) =>
+  request(`/admin/clients/${id}/photos`);
+export const uploadClientPhoto = (id, photoData) =>
+  request(`/admin/clients/${id}/photos`, { method: 'POST', body: JSON.stringify({ photo_data: photoData }) });
+export const deleteClientPhoto = (clientId, photoId) =>
+  request(`/admin/clients/${clientId}/photos/${photoId}`, { method: 'DELETE' });
 // ---- Admin: Blocked Slots ----
 export const getBlockedSlots = (params) => {
   const qs = new URLSearchParams(params).toString();

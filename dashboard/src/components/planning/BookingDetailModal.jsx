@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { updateClient } from '../../api';
+import { updateClient, getClientPhotos, uploadClientPhoto, deleteClientPhoto } from '../../api';
 import { formatPrice, formatPhone, FALLBACK_COLOR, STATUS_LABELS } from './helpers';
 import { CloseIcon } from './Icons';
 
@@ -108,6 +108,85 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
   const [notesSaving, setNotesSaving] = useState(false);
   const notesDirty = notes !== (booking?.client_notes || '');
 
+  // Photos state
+  const [photos, setPhotos] = useState([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const [fullscreenPhoto, setFullscreenPhoto] = useState(null);
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const photoInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!booking?.client_id) return;
+    setPhotosLoading(true);
+    getClientPhotos(booking.client_id)
+      .then(setPhotos)
+      .catch(() => {})
+      .finally(() => setPhotosLoading(false));
+  }, [booking?.client_id]);
+
+  async function compressPhoto(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = () => reject(new Error('Image illisible'));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function handlePhotoUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoError('');
+    setPhotoUploading(true);
+    try {
+      const compressed = await compressPhoto(file);
+      setPendingPhoto(compressed);
+    } catch (err) {
+      setPhotoError(err.message || 'Erreur image');
+    } finally {
+      setPhotoUploading(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  }
+
+  async function savePendingPhoto() {
+    if (!pendingPhoto) return;
+    setPhotoError('');
+    setPhotoUploading(true);
+    try {
+      await uploadClientPhoto(booking.client_id, pendingPhoto);
+      const updated = await getClientPhotos(booking.client_id);
+      setPhotos(updated);
+      setPendingPhoto(null);
+    } catch (err) {
+      setPhotoError(err.message || 'Erreur upload');
+    } finally {
+      setPhotoUploading(false);
+    }
+  }
+
+  async function handlePhotoDelete(photoId) {
+    try {
+      await deleteClientPhoto(booking.client_id, photoId);
+      setPhotos(prev => prev.filter(p => p.id !== photoId));
+      setFullscreenPhoto(null);
+    } catch { /* silent */ }
+  }
 
   async function saveNotes() {
     if (!booking?.client_id || !notesDirty) return;
@@ -448,6 +527,126 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
             )}
           </div>
 
+          {/* PHOTOS SECTION */}
+          {booking?.client_id && (
+            <div className="bk-section">
+              <div className="bk-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  Photos coupe
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>
+                  {photos.length + (pendingPhoto ? 1 : 0)}/2
+                </span>
+              </div>
+
+              {photosLoading ? (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 0' }}>Chargement...</div>
+              ) : (
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  {photos.map(photo => (
+                    <div key={photo.id} style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(var(--overlay),0.1)', cursor: 'pointer', flexShrink: 0 }}>
+                      <img
+                        src={photo.photo_data}
+                        alt="Coupe client"
+                        onClick={() => setFullscreenPhoto(photo)}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handlePhotoDelete(photo.id); }}
+                        style={{
+                          position: 'absolute', top: 3, right: 3, width: 20, height: 20,
+                          borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.6)',
+                          color: '#fff', fontSize: 12, cursor: 'pointer', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', lineHeight: 1, padding: 0,
+                        }}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+
+                  {pendingPhoto && (
+                    <div style={{ position: 'relative', width: 80, height: 80, borderRadius: 8, overflow: 'hidden', border: '2px solid rgba(59,130,246,0.5)', flexShrink: 0, opacity: 0.8 }}>
+                      <img src={pendingPhoto} alt="Nouvelle photo" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <button
+                        onClick={() => setPendingPhoto(null)}
+                        style={{
+                          position: 'absolute', top: 3, right: 3, width: 20, height: 20,
+                          borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.6)',
+                          color: '#fff', fontSize: 12, cursor: 'pointer', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', lineHeight: 1, padding: 0,
+                        }}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  )}
+
+                  {photos.length + (pendingPhoto ? 1 : 0) < 2 && !pendingPhoto && (
+                    <label style={{
+                      width: 80, height: 80, borderRadius: 8, cursor: 'pointer', flexShrink: 0,
+                      border: '2px dashed rgba(var(--overlay),0.15)', display: 'flex',
+                      flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      gap: 4, color: 'var(--text-muted)', fontSize: 11,
+                      background: photoUploading ? 'rgba(59,130,246,0.06)' : 'transparent',
+                      transition: 'all 0.2s',
+                    }}>
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        disabled={photoUploading}
+                        style={{ display: 'none' }}
+                      />
+                      {photoUploading ? (
+                        <span style={{ fontSize: 11 }}>Envoi...</span>
+                      ) : (
+                        <>
+                          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                          <span>Ajouter</span>
+                        </>
+                      )}
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {photoError && (
+                <div style={{ fontSize: 12, color: '#ef4444', marginTop: 6 }}>{photoError}</div>
+              )}
+            </div>
+          )}
+
+          {/* Fullscreen photo viewer */}
+          {fullscreenPhoto && (
+            <div
+              onClick={() => setFullscreenPhoto(null)}
+              style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999,
+                background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', cursor: 'zoom-out', padding: 20,
+              }}
+            >
+              <img
+                src={fullscreenPhoto.photo_data}
+                alt="Photo coupe"
+                style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 8, objectFit: 'contain' }}
+              />
+              <button
+                onClick={(e) => { e.stopPropagation(); handlePhotoDelete(fullscreenPhoto.id); }}
+                style={{
+                  position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)',
+                  padding: '8px 20px', borderRadius: 8, border: 'none',
+                  background: 'rgba(239,68,68,0.9)', color: '#fff', fontSize: 13,
+                  fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Supprimer la photo
+              </button>
+            </div>
+          )}
         </div>
 
         {/* FOOTER */}
@@ -455,6 +654,11 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
           {isDirty && (
             <button className="btn btn-primary btn-sm btn-save" onClick={() => { setNotifyClient(false); setSubView('confirm-edit'); }} style={{ marginLeft: 'auto' }}>
               Enregistrer
+            </button>
+          )}
+          {pendingPhoto && (
+            <button className="btn btn-primary btn-sm" onClick={savePendingPhoto} disabled={photoUploading}>
+              {photoUploading ? 'Envoi...' : 'Enregistrer la photo'}
             </button>
           )}
           {(booking.status === 'confirmed' || booking.status === 'completed') && (
