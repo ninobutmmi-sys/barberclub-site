@@ -4,14 +4,15 @@ const { queueNotification, formatDateFR, formatTime } = require('../services/not
 const logger = require('../utils/logger');
 
 /**
- * Queue SMS reminders exactly 24h before each booking.
- * Runs every 30 min — finds confirmed bookings starting in 23h30–24h30 window.
- * The queue processor (processQueue, every 1 min) handles actual sending + retries.
+ * Queue SMS reminders for bookings in the next 24h.
+ * Runs every 30 min — catches ALL confirmed bookings from now to +24h
+ * that haven't been reminded yet. Self-healing: if a run is missed
+ * (deploy, restart), the next run catches up automatically.
  */
 async function queueReminders() {
   try {
-    // Find bookings whose start datetime is 23.5h to 24.5h from now (Paris time)
-    // Using PostgreSQL timestamp arithmetic for precision
+    // Find all confirmed bookings in the next 24h that haven't been reminded
+    // Uses wide window (now → +24h) so missed runs are automatically recovered
     const result = await db.query(
       `SELECT b.id, b.date, b.start_time, b.cancel_token, b.salon_id,
               c.phone
@@ -22,8 +23,8 @@ async function queueReminders() {
          AND b.deleted_at IS NULL
          AND c.phone IS NOT NULL
          AND (b.date::text || ' ' || b.start_time::text)::timestamp
-             BETWEEN (NOW() AT TIME ZONE 'Europe/Paris') + INTERVAL '23 hours 30 minutes'
-                 AND (NOW() AT TIME ZONE 'Europe/Paris') + INTERVAL '24 hours 30 minutes'`
+             BETWEEN (NOW() AT TIME ZONE 'Europe/Paris')
+                 AND (NOW() AT TIME ZONE 'Europe/Paris') + INTERVAL '24 hours'`
     );
 
     if (result.rows.length === 0) {

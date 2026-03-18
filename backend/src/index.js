@@ -49,7 +49,7 @@ const { dailyBackupSnapshot } = require('./cron/backup');
 // ============================================
 const cronStatus = {
   processQueue:          { label: 'File notifications', schedule: '*/2 * * * *', lastRun: null, status: 'idle', error: null },
-  queueReminders:        { label: 'SMS rappels J-1',    schedule: '0 18 * * *',  lastRun: null, status: 'idle', error: null },
+  queueReminders:        { label: 'SMS rappels 24h',    schedule: '*/30 * * * *', lastRun: null, status: 'idle', error: null },
   cleanupNotifications:  { label: 'Cleanup notifs 30j', schedule: '0 3 * * *',   lastRun: null, status: 'idle', error: null },
   cleanupExpiredTokens:  { label: 'Cleanup tokens',     schedule: '30 3 * * *',  lastRun: null, status: 'idle', error: null },
   automationTriggers:    { label: 'Triggers auto',      schedule: '*/10 * * * *', lastRun: null, status: 'idle', error: null },

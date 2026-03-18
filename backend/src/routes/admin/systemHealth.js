@@ -116,29 +116,79 @@ router.get('/health', async (req, res, next) => {
 });
 
 // POST /api/admin/system/trigger-reminders
-// Manually re-trigger SMS reminders for tomorrow (only sends to reminder_sent=false)
+// Manually trigger SMS reminders. Accepts optional { date } body param.
+// Without date: runs normal cron (next 24h). With date: sends for that specific date.
 router.post('/trigger-reminders', async (req, res, next) => {
   try {
     const { getSalonConfig } = require('../../config/env');
-    const { getBrevoConfig } = require('../../services/notification');
-
-    // Debug: check config
-    const meylanConf = getSalonConfig('meylan');
-    const grenobleConf = getSalonConfig('grenoble');
+    const { getBrevoConfig, queueNotification, formatDateFR, formatTime } = require('../../services/notification');
     const brevoGre = getBrevoConfig('grenoble');
 
-    // Check bookings for tomorrow
-    const nowParis = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-    const tomorrow = new Date(nowParis);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+    const targetDate = req.body.date; // optional: '2026-03-18' to force-send for a specific date
 
+    if (targetDate) {
+      // Force-send reminders for a specific date (catches missed reminders)
+      const bookings = await db.query(
+        `SELECT b.id, b.date, b.start_time, b.cancel_token, b.salon_id,
+                c.phone
+         FROM bookings b
+         JOIN clients c ON b.client_id = c.id
+         WHERE b.date = $1
+           AND b.status = 'confirmed'
+           AND (b.reminder_sent = false OR b.reminder_sent IS NULL)
+           AND b.deleted_at IS NULL
+           AND c.phone IS NOT NULL
+           AND (b.date::text || ' ' || b.start_time::text)::timestamp
+               > (NOW() AT TIME ZONE 'Europe/Paris')`,
+        [targetDate]
+      );
+
+      let queued = 0;
+      for (const booking of bookings.rows) {
+        const salonId = booking.salon_id || 'meylan';
+        const salon = getSalonConfig(salonId);
+        const apiUrl = config.apiUrl || 'https://barberclub-grenoble.fr';
+        const rdvUrl = `${apiUrl}/r/rdv/${booking.id}/${booking.cancel_token}`;
+        const timeFormatted = formatTime(booking.start_time);
+        const dateFR = formatDateFR(typeof booking.date === 'string' ? booking.date.slice(0, 10) : booking.date);
+        const message = `${salon.name} - Rappel\n\nVotre RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.\n\nGerer votre RDV : ${rdvUrl}`;
+
+        try {
+          await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [booking.id]);
+          await queueNotification(booking.id, 'reminder_sms', {
+            phone: booking.phone,
+            message,
+            salonId,
+          });
+          queued++;
+        } catch (err) {
+          await db.query('UPDATE bookings SET reminder_sent = false WHERE id = $1', [booking.id]).catch(() => {});
+        }
+      }
+
+      return res.json({
+        ok: true,
+        mode: 'force-date',
+        targetDate,
+        found: bookings.rows.length,
+        queued,
+        bySalon: {
+          meylan: bookings.rows.filter(r => (r.salon_id || 'meylan') === 'meylan').length,
+          grenoble: bookings.rows.filter(r => r.salon_id === 'grenoble').length,
+        },
+      });
+    }
+
+    // Default: run normal cron (next 24h window)
     const check = await db.query(
       `SELECT b.id, b.salon_id, b.reminder_sent, c.phone
        FROM bookings b JOIN clients c ON b.client_id = c.id
-       WHERE b.date = $1 AND b.status = 'confirmed'
+       WHERE b.status = 'confirmed'
        AND (b.reminder_sent = false OR b.reminder_sent IS NULL)
-       AND b.deleted_at IS NULL AND c.phone IS NOT NULL`, [tomorrowStr]
+       AND b.deleted_at IS NULL AND c.phone IS NOT NULL
+       AND (b.date::text || ' ' || b.start_time::text)::timestamp
+           BETWEEN (NOW() AT TIME ZONE 'Europe/Paris')
+               AND (NOW() AT TIME ZONE 'Europe/Paris') + INTERVAL '24 hours'`
     );
 
     const { queueReminders } = require('../../cron/reminders');
@@ -146,7 +196,7 @@ router.post('/trigger-reminders', async (req, res, next) => {
 
     res.json({
       ok: true,
-      tomorrowDate: tomorrowStr,
+      mode: 'next-24h',
       pendingReminders: check.rows.length,
       bySalon: {
         meylan: check.rows.filter(r => (r.salon_id || 'meylan') === 'meylan').length,
