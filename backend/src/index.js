@@ -353,25 +353,47 @@ if (config.nodeEnv !== 'test') {
         env: config.nodeEnv,
         cors: config.corsOrigins,
       });
-      // Run pending migrations on startup
+      // Run pending migrations on startup (with tracking)
       try {
         const fs = require('fs');
         const path = require('path');
         const migrationsDir = path.join(__dirname, '..', 'database', 'migrations');
         if (fs.existsSync(migrationsDir)) {
+          // Create tracking table if needed
+          await db.query(`
+            CREATE TABLE IF NOT EXISTS _migrations (
+              id SERIAL PRIMARY KEY,
+              filename VARCHAR(255) NOT NULL UNIQUE,
+              applied_at TIMESTAMPTZ DEFAULT NOW()
+            )
+          `);
+
           const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
-          for (const file of files) {
-            try {
+
+          // First run with new system: mark all existing migrations as already applied
+          const { rows: existing } = await db.query('SELECT COUNT(*) FROM _migrations');
+          if (parseInt(existing[0].count) === 0 && files.length > 0) {
+            const values = files.map((f, i) => `($${i + 1})`).join(', ');
+            await db.query(
+              `INSERT INTO _migrations (filename) VALUES ${values} ON CONFLICT DO NOTHING`,
+              files
+            );
+            logger.info(`Migrations: marked ${files.length} existing migrations as applied (first run with tracking)`);
+          } else {
+            // Normal run: only execute new migrations
+            const { rows: applied } = await db.query('SELECT filename FROM _migrations');
+            const appliedSet = new Set(applied.map(r => r.filename));
+            const pending = files.filter(f => !appliedSet.has(f));
+
+            for (const file of pending) {
               const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
               await db.query(sql);
-            } catch (err) {
-              // Ignore "already exists" errors, log others
-              if (!err.message.includes('already exists') && !err.message.includes('duplicate')) {
-                logger.warn(`Migration ${file} warning: ${err.message}`);
-              }
+              await db.query('INSERT INTO _migrations (filename) VALUES ($1)', [file]);
+              logger.info(`Migration applied: ${file}`);
             }
+
+            logger.info(`Migrations checked (${files.length} files, ${pending.length} new applied)`);
           }
-          logger.info(`Migrations checked (${files.length} files)`);
         }
       } catch (err) {
         logger.error('Migration check failed', { error: err.message });
