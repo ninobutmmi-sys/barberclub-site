@@ -106,6 +106,8 @@ async function processPendingNotifications() {
 
   for (const notification of result.rows) {
     try {
+      notification.fromQueue = true;
+      notification.queueId = notification.id;
       await sendNotification(notification);
       await db.query(
         `UPDATE notification_queue SET status = 'sent', sent_at = NOW()
@@ -364,25 +366,36 @@ async function brevoEmail(to, subject, htmlContent, salonId = 'meylan', meta = {
     if (!response.ok) {
       const errorBody = await response.text();
       recordBrevoFailure(salonId, response.status);
-      // Log failed email
-      try {
-        await db.query(
-          `INSERT INTO notification_queue (id, booking_id, type, status, channel, email, recipient_name, subject, salon_id, created_at, last_error)
-           VALUES (gen_random_uuid(), $1, $2, 'failed', 'email', $3, $4, $5, $6, NOW(), $7)`,
-          [meta.bookingId || null, meta.type || 'email', to, meta.recipientName || null, subject, salonId, `${response.status}: ${errorBody.slice(0, 200)}`]
-        );
-      } catch (_) { /* silent */ }
+      // Log failed email (skip if already tracked by queue processor)
+      if (!meta.fromQueue) {
+        try {
+          await db.query(
+            `INSERT INTO notification_queue (id, booking_id, type, status, channel, email, recipient_name, subject, salon_id, created_at, last_error)
+             VALUES (gen_random_uuid(), $1, $2, 'failed', 'email', $3, $4, $5, $6, NOW(), $7)`,
+            [meta.bookingId || null, meta.type || 'email', to, meta.recipientName || null, subject, salonId, `${response.status}: ${errorBody.slice(0, 200)}`]
+          );
+        } catch (_) { /* silent */ }
+      }
       throw new Error(`Brevo email API error ${response.status}: ${errorBody}`);
     }
     recordBrevoSuccess(salonId);
-    // Log successful email
-    try {
-      await db.query(
-        `INSERT INTO notification_queue (id, booking_id, type, status, channel, email, recipient_name, subject, salon_id, created_at, sent_at)
-         VALUES (gen_random_uuid(), $1, $2, 'sent', 'email', $3, $4, $5, $6, NOW(), NOW())`,
-        [meta.bookingId || null, meta.type || 'email', to, meta.recipientName || null, subject, salonId]
-      );
-    } catch (_) { /* silent */ }
+    if (meta.fromQueue) {
+      // Update subject on the existing queue row (so Messages page shows it)
+      try {
+        if (meta.queueId) {
+          await db.query('UPDATE notification_queue SET subject = $1 WHERE id = $2', [subject, meta.queueId]);
+        }
+      } catch (_) { /* silent */ }
+    } else {
+      // Log successful email as a new row (direct send, not from queue)
+      try {
+        await db.query(
+          `INSERT INTO notification_queue (id, booking_id, type, status, channel, email, recipient_name, subject, salon_id, created_at, sent_at)
+           VALUES (gen_random_uuid(), $1, $2, 'sent', 'email', $3, $4, $5, $6, NOW(), NOW())`,
+          [meta.bookingId || null, meta.type || 'email', to, meta.recipientName || null, subject, salonId]
+        );
+      } catch (_) { /* silent */ }
+    }
   } catch (err) {
     if (err.name === 'AbortError') recordBrevoFailure(salonId);
     throw err;
@@ -470,7 +483,7 @@ async function sendConfirmationEmail(data) {
   });
 
   await brevoEmail(data.email, `Confirmation RDV - ${data.service_name} le ${dateFormatted}`, html, salonId, {
-    bookingId: data.booking_id, type: 'confirmation_email', recipientName: data.first_name,
+    bookingId: data.booking_id, type: 'confirmation_email', recipientName: data.first_name, fromQueue: data.fromQueue, queueId: data.queueId,
   });
 }
 
@@ -828,7 +841,7 @@ function getNextRetryTime(attempts) {
 /**
  * Send cancellation email directly (admin-triggered, not queued)
  */
-async function sendCancellationEmail({ email, first_name, service_name, barber_name, date, start_time, price, salon_id }) {
+async function sendCancellationEmail({ email, first_name, service_name, barber_name, date, start_time, price, salon_id, fromQueue, queueId }) {
   const salonId = salon_id || 'meylan';
   const salon = config.getSalonConfig(salonId);
 
@@ -892,7 +905,7 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
       </div>`, { showHero: false, salonId });
 
   await brevoEmail(email, `RDV annulé - ${service_name} le ${dateFormatted}`, html, salonId, {
-    type: 'cancellation_email', recipientName: first_name,
+    type: 'cancellation_email', recipientName: first_name, fromQueue, queueId,
   });
   logger.info('Cancellation email sent', { email, salonId });
 }
@@ -900,7 +913,7 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
 /**
  * Send reschedule email directly (admin-triggered, not queued)
  */
-async function sendRescheduleEmail({ email, first_name, service_name, barber_name, old_date, old_time, new_date, new_time, new_barber_name, price, cancel_token, booking_id, salon_id }) {
+async function sendRescheduleEmail({ email, first_name, service_name, barber_name, old_date, old_time, new_date, new_time, new_barber_name, price, cancel_token, booking_id, salon_id, fromQueue, queueId }) {
   const salonId = salon_id || 'meylan';
   const salon = config.getSalonConfig(salonId);
 
@@ -1014,7 +1027,7 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
       </table>` : ''}`, { showHero: false, salonId });
 
   await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html, salonId, {
-    bookingId: booking_id, type: 'reschedule_email', recipientName: first_name,
+    bookingId: booking_id, type: 'reschedule_email', recipientName: first_name, fromQueue, queueId,
   });
   logger.info('Reschedule email sent', { email, salonId });
 }
@@ -1078,7 +1091,7 @@ async function sendReviewEmail(data) {
       </div>`, { salonId });
 
   await brevoEmail(data.email, `Votre avis compte — ${salon.name}`, html, salonId, {
-    bookingId: data.booking_id, type: 'review_email', recipientName: firstName,
+    bookingId: data.booking_id, type: 'review_email', recipientName: firstName, fromQueue: data.fromQueue, queueId: data.queueId,
   });
   logger.info('Review email sent', { bookingId: data.booking_id, email: data.email, salonId });
 }
