@@ -172,6 +172,27 @@ router.get('/brevo-status', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/notifications/retry-failed
+ * Remet toutes les notifications échouées en file d'attente
+ */
+router.post('/retry-failed', async (req, res) => {
+  try {
+    const salonId = req.user.salon_id;
+    const result = await db.query(
+      `UPDATE notification_queue
+       SET status = 'pending', attempts = 0, next_retry_at = NOW(), last_error = NULL
+       WHERE status = 'failed' AND salon_id = $1`,
+      [salonId]
+    );
+    logger.info('Retry failed notifications', { salonId, count: result.rowCount });
+    res.json({ retried: result.rowCount });
+  } catch (err) {
+    logger.error('Failed to retry notifications', { error: err.message });
+    res.status(500).json({ error: 'Erreur lors du retry' });
+  }
+});
+
+/**
  * DELETE /api/admin/notifications/failed
  * Purge toutes les notifications échouées
  */
