@@ -4,6 +4,7 @@ const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
 const logger = require('../../utils/logger');
+const { queueNotification, toGSM } = require('../../services/notification');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -238,6 +239,70 @@ router.put('/:id',
       logger.info('Waitlist entry updated', { id, status });
 
       res.json(result.rows[0]);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// POST /api/admin/waitlist/:id/notify-sms — Send SMS to notify client
+// ============================================
+router.post('/:id/notify-sms',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const entry = await db.query(
+        `SELECT w.id, w.client_name, w.client_phone, w.status,
+                w.preferred_date, w.barber_id, w.service_id,
+                s.name AS service_name, br.name AS barber_name
+         FROM waitlist w
+         LEFT JOIN services s ON w.service_id = s.id
+         LEFT JOIN barbers br ON w.barber_id = br.id
+         WHERE w.id = $1 AND w.salon_id = $2`,
+        [req.params.id, salonId]
+      );
+      if (!entry.rows[0]) throw ApiError.notFound('Entrée liste d\'attente introuvable');
+      const row = entry.rows[0];
+
+      if (row.status !== 'waiting') throw ApiError.badRequest('L\'entrée doit être en statut "en attente"');
+      if (!row.client_phone) throw ApiError.badRequest('Pas de téléphone pour ce client');
+
+      const dateStr = new Date(row.preferred_date + 'T00:00:00')
+        .toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+      const firstName = (row.client_name || '').split(/\s+/)[0];
+
+      let smsContent = `BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateStr} avec ${row.barber_name} pour ${row.service_name}. Reservez vite au salon ou appelez-nous.`;
+
+      // Truncate service name if SMS > 155 chars to stay under 1 credit
+      if (smsContent.length > 155 && row.service_name) {
+        const maxServiceLen = row.service_name.length - (smsContent.length - 155);
+        if (maxServiceLen > 3) {
+          const truncated = row.service_name.slice(0, maxServiceLen - 3) + '...';
+          smsContent = `BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateStr} avec ${row.barber_name} pour ${truncated}. Reservez vite au salon ou appelez-nous.`;
+        }
+      }
+
+      smsContent = toGSM(smsContent);
+
+      await queueNotification(null, 'waitlist_sms', {
+        phone: row.client_phone,
+        message: smsContent,
+        salonId,
+        recipientName: firstName,
+      });
+
+      // Update status to notified
+      await db.query(
+        `UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1`,
+        [row.id]
+      );
+
+      logger.info('Waitlist SMS sent', { id: row.id, client: row.client_name });
+
+      res.json({ ok: true, message: 'SMS envoyé' });
     } catch (error) {
       next(error);
     }

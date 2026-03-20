@@ -2,13 +2,15 @@ import { useState } from 'react';
 import useMobile from '../hooks/useMobile';
 import {
   useWaitlist, useWaitlistCount, useAddToWaitlist, useUpdateWaitlistEntry, useDeleteWaitlistEntry,
-  useBarbers, useServices,
+  useNotifyWaitlistSms, useBarbers, useServices,
 } from '../hooks/useApi';
+import CreateBookingModal from '../components/planning/CreateBookingModal';
 
 export default function Waitlist() {
   const isMobile = useMobile();
   const [addModal, setAddModal] = useState(false);
   const [filter, setFilter] = useState('waiting'); // waiting | all
+  const [bookingEntry, setBookingEntry] = useState(null);
 
   const waitlistQuery = useWaitlist(filter === 'all' ? {} : { status: 'waiting' });
   const waitlistCountQuery = useWaitlistCount();
@@ -22,6 +24,7 @@ export default function Waitlist() {
 
   const deleteMutation = useDeleteWaitlistEntry();
   const updateMutation = useUpdateWaitlistEntry();
+  const notifySms = useNotifyWaitlistSms();
 
   async function handleDelete(id) {
     if (!confirm('Retirer de la liste d\'attente ?')) return;
@@ -29,11 +32,24 @@ export default function Waitlist() {
   }
 
   async function handleNotify(entry) {
-    try { await updateMutation.mutateAsync({ id: entry.id, data: { status: 'notified' } }); } catch (err) { alert(err.message); }
+    if (!confirm(`Envoyer un SMS à ${entry.client_name} pour l'informer qu'un créneau est disponible ?`)) return;
+    try {
+      await notifySms.mutateAsync(entry.id);
+      alert('SMS envoyé !');
+    } catch (err) { alert(err.message); }
   }
 
-  async function handleBooked(entry) {
-    try { await updateMutation.mutateAsync({ id: entry.id, data: { status: 'booked' } }); } catch (err) { alert(err.message); }
+  function handleBooked(entry) {
+    setBookingEntry(entry);
+  }
+
+  async function handleBookingCreated() {
+    if (bookingEntry) {
+      try {
+        await updateMutation.mutateAsync({ id: bookingEntry.id, data: { status: 'booked' } });
+      } catch {}
+    }
+    setBookingEntry(null);
   }
 
   const statusLabel = { waiting: 'En attente', notified: 'Notifié', booked: 'Réservé', expired: 'Expiré' };
@@ -91,29 +107,36 @@ export default function Waitlist() {
           /* ---- Mobile cards ---- */
           <div className="mob-card-list">
             {waitlist.map((w) => (
-              <div key={w.id} className="mob-card-item" style={{ flexWrap: 'wrap' }}>
-                <div className="mob-card-left">
-                  <div className="mob-card-title">{w.client_name}</div>
-                  <div className="mob-card-sub">
-                    {new Date(w.preferred_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    {w.preferred_time_start ? ` · ${w.preferred_time_start.slice(0, 5)}` : ''} — {w.service_name || '–'}
-                  </div>
-                  {w.barber_name && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{w.barber_name}</div>}
-                </div>
-                <div className="mob-card-right" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span className={`badge badge-${statusClass[w.status] || 'inactive'}`} style={{ fontSize: 9 }}>
+              <div key={w.id} className="mob-card-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="mob-card-title" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{w.client_name}</div>
+                  <span className={`badge badge-${statusClass[w.status] || 'inactive'}`} style={{ fontSize: 9, flexShrink: 0 }}>
                     {statusLabel[w.status] || w.status}
                   </span>
-                  {w.status === 'waiting' && (
-                    <>
-                      <button className="btn btn-primary btn-sm" style={{ fontSize: 10, padding: '3px 8px' }} onClick={(e) => { e.stopPropagation(); handleNotify(w); }}>Notifier</button>
-                      <button className="btn btn-ghost btn-sm" style={{ fontSize: 10, padding: '3px 8px' }} onClick={(e) => { e.stopPropagation(); handleBooked(w); }}>Réservé</button>
-                    </>
-                  )}
-                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: 4 }} onClick={(e) => { e.stopPropagation(); handleDelete(w.id); }}>
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
-                  </button>
                 </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', fontSize: 12, color: 'var(--text-secondary)' }}>
+                  <span>{new Date(w.preferred_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                  <span>{w.preferred_time_start ? `${w.preferred_time_start.slice(0, 5)} – ${w.preferred_time_end?.slice(0, 5) || '?'}` : 'Toute la journée'}</span>
+                  {w.service_name && <span>{w.service_name}</span>}
+                  {w.barber_name && <span style={{ color: 'var(--text-muted)' }}>{w.barber_name}</span>}
+                </div>
+                {w.status === 'waiting' && (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                    <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: '4px 10px' }} onClick={(e) => { e.stopPropagation(); handleNotify(w); }}>Notifier</button>
+                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '4px 10px' }} onClick={(e) => { e.stopPropagation(); handleBooked(w); }}>Réservé</button>
+                    <div style={{ flex: 1 }} />
+                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: 4 }} onClick={(e) => { e.stopPropagation(); handleDelete(w.id); }}>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
+                    </button>
+                  </div>
+                )}
+                {w.status !== 'waiting' && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: 4 }} onClick={(e) => { e.stopPropagation(); handleDelete(w.id); }}>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -181,6 +204,21 @@ export default function Waitlist() {
           barbers={barbers}
           services={services}
           onClose={() => setAddModal(false)}
+        />
+      )}
+
+      {bookingEntry && (
+        <CreateBookingModal
+          barbers={barbers}
+          services={services}
+          onClose={() => setBookingEntry(null)}
+          onCreated={handleBookingCreated}
+          initialDate={bookingEntry.preferred_date}
+          initialTime={bookingEntry.preferred_time_start?.slice(0, 5) || '09:00'}
+          initialBarberId={bookingEntry.barber_id}
+          initialServiceId={bookingEntry.service_id}
+          initialFirstName={bookingEntry.client_name}
+          initialPhone={bookingEntry.client_phone}
         />
       )}
     </>

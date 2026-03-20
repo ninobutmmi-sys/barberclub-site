@@ -304,6 +304,8 @@ export const updateWaitlistEntry = (id, body) =>
   request(`/admin/waitlist/${id}`, { method: 'PUT', body: JSON.stringify(body) });
 export const deleteWaitlistEntry = (id) =>
   request(`/admin/waitlist/${id}`, { method: 'DELETE' });
+export const notifyWaitlistSms = (id) =>
+  request(`/admin/waitlist/${id}/notify-sms`, { method: 'POST' });
 export const getWaitlistCount = () => request('/admin/waitlist/count');
 
 // ---- Admin: Automation Triggers ----

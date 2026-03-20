@@ -515,6 +515,17 @@ export function useDeleteWaitlistEntry() {
   });
 }
 
+export function useNotifyWaitlistSms() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.notifyWaitlistSms,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['waitlist'] });
+      qc.invalidateQueries({ queryKey: keys.waitlistCount });
+    },
+  });
+}
+
 // ---------- Campaigns ----------
 export function useCampaigns(options) {
   return useQuery({

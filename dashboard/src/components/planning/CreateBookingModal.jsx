@@ -8,7 +8,7 @@ import { getClients, createBooking } from '../../api';
 import { FALLBACK_COLOR } from './helpers';
 import { CloseIcon } from './Icons';
 
-export default function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate, initialTime, initialBarberId }) {
+export default function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate, initialTime, initialBarberId, initialServiceId, initialFirstName, initialPhone }) {
   const [barberId, setBarberId] = useState(initialBarberId || (barbers[0]?.id ?? ''));
 
   // Filter services by selected barber
@@ -17,15 +17,17 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
     return services.filter((s) => s.barbers && s.barbers.some((b) => b.id === barberId));
   }, [services, barberId]);
 
-  const [serviceId, setServiceId] = useState(filteredServices[0]?.id ?? '');
+  const initService = initialServiceId && filteredServices.some(s => s.id === initialServiceId)
+    ? initialServiceId : (filteredServices[0]?.id ?? '');
+  const [serviceId, setServiceId] = useState(initService);
   const [date, setDate] = useState(initialDate || format(new Date(), 'yyyy-MM-dd'));
   const [time, setTime] = useState(initialTime || '09:00');
   const selectedService = filteredServices.find((s) => s.id === serviceId) || filteredServices[0];
   const [duration, setDuration] = useState(selectedService?.duration || 30);
   const [bookingColor, setBookingColor] = useState('');
-  const [firstName, setFirstName] = useState('');
+  const [firstName, setFirstName] = useState(initialFirstName || '');
   const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(initialPhone || '');
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
