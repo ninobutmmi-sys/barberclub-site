@@ -424,9 +424,9 @@ GET    /api/admin/system/status         # Crons, DB health, circuit breaker, mem
 | Rappel J-1 | Cron 18h la veille, OU immediat si RDV <24h | `BarberClub - Rappel RDV le...` |
 | Review Google | Automation 60min post-coupe | `Merci ! Laisse un avis...` (1x par client a vie) |
 
-### SMS desactives (envoi manuel via section SMS si besoin)
+### SMS manuels (via dashboard)
 - **Reactivation clients inactifs** : supprime du code automatique. Liste visible dans Analytics (3+ visites, 3 mois). Envoi manuel via section SMS.
-- **Waitlist** : off (faible volume)
+- **Waitlist** : bouton "Notifier" dans la page Liste d'attente envoie un SMS individuel au client (pas automatique)
 
 ### Design tokens emails
 ```
@@ -571,7 +571,7 @@ Le client recoit un email avec un lien `cancel_token` pour gerer son RDV (voir/a
 | Annulation | Client ou admin annule | Email | Actif |
 | Reschedule | Admin deplace RDV | Email | Actif |
 | Reset password | Client forgot-password | Email | Actif |
-| Waitlist place liberee | Annulation libere un creneau (event-driven) | SMS | Off (toggle dashboard) |
+| Waitlist place liberee | Bouton "Notifier" dashboard (manuel) | SMS | Actif (manuel) |
 | Reactivation inactifs | — | — | **Supprime** (envoi manuel via SMS) |
 
 ---

@@ -287,18 +287,18 @@ router.post('/:id/notify-sms',
 
       smsContent = toGSM(smsContent);
 
+      // Update status BEFORE queuing SMS to prevent duplicate sends on retry
+      await db.query(
+        `UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1`,
+        [row.id]
+      );
+
       await queueNotification(null, 'waitlist_sms', {
         phone: row.client_phone,
         message: smsContent,
         salonId,
         recipientName: firstName,
       });
-
-      // Update status to notified
-      await db.query(
-        `UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1`,
-        [row.id]
-      );
 
       logger.info('Waitlist SMS sent', { id: row.id, client: row.client_name });
 

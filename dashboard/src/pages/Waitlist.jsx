@@ -217,7 +217,8 @@ export default function Waitlist() {
           initialTime={bookingEntry.preferred_time_start?.slice(0, 5) || '09:00'}
           initialBarberId={bookingEntry.barber_id}
           initialServiceId={bookingEntry.service_id}
-          initialFirstName={bookingEntry.client_name}
+          initialFirstName={bookingEntry.client_name?.split(/\s+/)[0] || ''}
+          initialLastName={bookingEntry.client_name?.split(/\s+/).slice(1).join(' ') || ''}
           initialPhone={bookingEntry.client_phone}
         />
       )}

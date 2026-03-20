@@ -8,7 +8,7 @@ import { getClients, createBooking } from '../../api';
 import { FALLBACK_COLOR } from './helpers';
 import { CloseIcon } from './Icons';
 
-export default function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate, initialTime, initialBarberId, initialServiceId, initialFirstName, initialPhone }) {
+export default function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate, initialTime, initialBarberId, initialServiceId, initialFirstName, initialLastName, initialPhone }) {
   const [barberId, setBarberId] = useState(initialBarberId || (barbers[0]?.id ?? ''));
 
   // Filter services by selected barber
@@ -26,7 +26,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
   const [duration, setDuration] = useState(selectedService?.duration || 30);
   const [bookingColor, setBookingColor] = useState('');
   const [firstName, setFirstName] = useState(initialFirstName || '');
-  const [lastName, setLastName] = useState('');
+  const [lastName, setLastName] = useState(initialLastName || '');
   const [phone, setPhone] = useState(initialPhone || '');
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
