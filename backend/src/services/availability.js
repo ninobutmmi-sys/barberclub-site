@@ -294,43 +294,48 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
     }
   }
 
-  // 1. Regular grid slots
-  // Public: use service duration as step → zero gaps (20min service = 9:00, 9:20, 9:40...)
-  // Admin: every 5min
-  const step = options.slotStep || (options.adminMode ? SLOT_INTERVAL_ADMIN : duration);
-  for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
-    tryAddSlot(slotStart);
-  }
-
-  // 2. Gap-filling: propose slots right after existing bookings/blocks end
-  //    AND continue generating from gap-fill points to fill gaps completely
-  //    e.g. gap 17:20→18:20 with 30min service → 17:20 AND 17:50 (not just 17:20)
   const allOccupied = [...existingBookings, ...blockedSlots].sort((a, b) => a.start - b.start);
-  for (const occupied of allOccupied) {
-    for (let gapSlot = occupied.end; gapSlot + duration <= endMin; gapSlot += step) {
-      tryAddSlot(gapSlot);
+  const step = options.slotStep || (options.adminMode ? SLOT_INTERVAL_ADMIN : duration);
+
+  if (options.adminMode) {
+    // Admin: 5-min grid from schedule start + gap-fill after each booking
+    for (let slotStart = startMin; slotStart + duration <= endMin; slotStart += step) {
+      tryAddSlot(slotStart);
+    }
+    for (const occupied of allOccupied) {
+      tryAddSlot(occupied.end);
+    }
+  } else {
+    // Public: gap-based generation — fill each gap from its start
+    // Adapts to any mix of service durations (20min, 30min, etc.)
+    // Guarantees back-to-back slots with zero small gaps
+
+    // Merge overlapping occupied ranges
+    const merged = [];
+    for (const range of allOccupied) {
+      if (merged.length > 0 && range.start <= merged[merged.length - 1].end) {
+        merged[merged.length - 1].end = Math.max(merged[merged.length - 1].end, range.end);
+      } else {
+        merged.push({ start: range.start, end: range.end });
+      }
+    }
+
+    // Fill each gap from its start with step = service duration
+    let gapStart = startMin;
+    for (const range of merged) {
+      for (let s = gapStart; s + duration <= range.start; s += step) {
+        tryAddSlot(s);
+      }
+      gapStart = Math.max(gapStart, range.end);
+    }
+    // Fill gap after last occupied range
+    for (let s = gapStart; s + duration <= endMin; s += step) {
+      tryAddSlot(s);
     }
   }
 
   // Sort by time
   slots.sort((a, b) => a.time.localeCompare(b.time));
-
-  // 3. Remove grid slots that would create gaps after gap-fill slots (public only)
-  // E.g., 20min booking ends 11:20 → gap-fill 11:20, grid 11:30 → remove 11:30 (avoids 10min gap)
-  if (!options.adminMode) {
-    const gapFillTimes = [];
-    for (const occupied of allOccupied) {
-      if (slotSet.has(occupied.end) && (occupied.end - startMin) % step !== 0) {
-        gapFillTimes.push(occupied.end);
-      }
-    }
-    if (gapFillTimes.length > 0) {
-      return slots.filter(slot => {
-        const m = timeToMinutes(slot.time);
-        return !gapFillTimes.some(gf => gf < m && m - gf < step);
-      });
-    }
-  }
 
   return slots;
 }
