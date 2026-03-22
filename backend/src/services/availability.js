@@ -303,9 +303,13 @@ async function generateSlots(barberId, date, startTime, endTime, duration, optio
   }
 
   // 2. Gap-filling: propose slots right after existing bookings/blocks end
+  //    AND continue generating from gap-fill points to fill gaps completely
+  //    e.g. gap 17:20→18:20 with 30min service → 17:20 AND 17:50 (not just 17:20)
   const allOccupied = [...existingBookings, ...blockedSlots].sort((a, b) => a.start - b.start);
   for (const occupied of allOccupied) {
-    tryAddSlot(occupied.end);
+    for (let gapSlot = occupied.end; gapSlot + duration <= endMin; gapSlot += step) {
+      tryAddSlot(gapSlot);
+    }
   }
 
   // Sort by time
