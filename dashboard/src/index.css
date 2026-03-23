@@ -2259,6 +2259,9 @@ select.input {
   border-top: 1px solid rgba(var(--overlay),0.06);
 }
 
+/* Safety: hide mobile nav on desktop viewports (JS/CSS breakpoint mismatch on tablets) */
+.mob-bottom-nav { display: none; }
+
 /* ---- RESPONSIVE ---- */
 @media (max-width: 1023px) {
   .sidebar { display: none; }
