@@ -13,6 +13,67 @@ function formatDateFR(dateStr) {
   return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+const PencilIcon = () => (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+);
+
+const XIcon = () => (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+);
+
+function EditableField({ label, value, fieldKey, onSave, type = 'text', needsConfirm, saving }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || '');
+
+  useEffect(() => { setDraft(value || ''); }, [value]);
+
+  function handleSave() {
+    if (draft.trim() === (value || '').trim()) { setEditing(false); return; }
+    onSave(fieldKey, draft.trim(), () => setEditing(false));
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') handleSave();
+    if (e.key === 'Escape') { setDraft(value || ''); setEditing(false); }
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 32 }}>
+      <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 70, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+      {editing ? (
+        <>
+          <input
+            className="input"
+            type={type}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            style={{ flex: 1, height: 32, fontSize: 13, padding: '4px 8px' }}
+          />
+          <button className="btn btn-ghost" onClick={handleSave} disabled={saving} style={{ padding: 4, color: 'var(--success)' }} title="Enregistrer"><CheckIcon /></button>
+          <button className="btn btn-ghost" onClick={() => { setDraft(value || ''); setEditing(false); }} disabled={saving} style={{ padding: 4, color: 'var(--text-muted)' }} title="Annuler"><XIcon /></button>
+        </>
+      ) : (
+        <>
+          <span style={{ fontSize: 13, color: value ? 'var(--text)' : 'var(--text-muted)', flex: 1 }}>{value || '–'}</span>
+          <button className="btn btn-ghost" onClick={() => setEditing(true)} style={{ padding: 4, opacity: 0.5 }} title={`Modifier ${label.toLowerCase()}`}><PencilIcon /></button>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function ClientDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -24,9 +85,9 @@ export default function ClientDetail() {
   const [editNotes, setEditNotes] = useState(false);
   const [notes, setNotes] = useState('');
   const [toast, setToast] = useState(null);
+  const [phoneConfirm, setPhoneConfirm] = useState(null); // { newPhone, onConfirm }
   const saving = updateMutation.isPending;
 
-  // Sync notes when client data loads
   useEffect(() => {
     if (client) setNotes(client.notes || '');
   }, [client]);
@@ -34,6 +95,34 @@ export default function ClientDetail() {
   function showToast(message, type = 'success') {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  }
+
+  async function handleFieldSave(fieldKey, value, onDone) {
+    // Pour le phone, on passe par la modale de confirmation
+    if (fieldKey === 'phone') {
+      setPhoneConfirm({ newPhone: value, onDone });
+      return;
+    }
+    try {
+      await updateMutation.mutateAsync({ id, data: { [fieldKey]: value } });
+      onDone();
+      showToast('Modifié avec succès');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  async function confirmPhoneChange() {
+    if (!phoneConfirm) return;
+    try {
+      await updateMutation.mutateAsync({ id, data: { phone: phoneConfirm.newPhone } });
+      phoneConfirm.onDone();
+      setPhoneConfirm(null);
+      showToast('Numéro modifié avec succès');
+    } catch (err) {
+      setPhoneConfirm(null);
+      showToast(err.message, 'error');
+    }
   }
 
   async function saveNotes() {
@@ -78,7 +167,6 @@ export default function ClientDetail() {
               {client.first_name} {client.last_name}
               {client.visit_count >= 10 && <span className="badge-vip" style={{ marginLeft: 10, verticalAlign: 'middle' }}>VIP</span>}
             </h2>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{client.phone}</p>
           </div>
         </div>
         {isMobile ? (
@@ -95,6 +183,15 @@ export default function ClientDetail() {
       </div>
 
       <div className="page-body">
+        {/* Infos client - éditable */}
+        <div className="card" style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <label className="label" style={{ margin: 0, marginBottom: 4 }}>Informations</label>
+          <EditableField label="Prénom" value={client.first_name} fieldKey="first_name" onSave={handleFieldSave} saving={saving} />
+          <EditableField label="Nom" value={client.last_name} fieldKey="last_name" onSave={handleFieldSave} saving={saving} />
+          <EditableField label="Tél" value={client.phone} fieldKey="phone" onSave={handleFieldSave} type="tel" needsConfirm saving={saving} />
+          <EditableField label="Email" value={client.email} fieldKey="email" onSave={handleFieldSave} type="email" saving={saving} />
+        </div>
+
         {/* Stats cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
           <StatCard label="Visites" value={client.visit_count} />
@@ -191,6 +288,34 @@ export default function ClientDetail() {
         )}
       </div>
       </>}
+
+      {/* Modale confirmation changement téléphone */}
+      {phoneConfirm && (
+        <div className="modal-overlay" onClick={() => setPhoneConfirm(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>Confirmer le changement de numéro</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 60 }}>Ancien</span>
+                <span style={{ fontSize: 14, color: 'var(--text-secondary)', textDecoration: 'line-through' }}>{client.phone}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 60 }}>Nouveau</span>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{phoneConfirm.newPhone}</span>
+              </div>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
+              Le numéro de téléphone est l'identifiant unique du client. Vérifie bien avant de confirmer.
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setPhoneConfirm(null)} disabled={saving}>Annuler</button>
+              <button className="btn btn-primary btn-sm" onClick={confirmPhoneChange} disabled={saving}>
+                {saving ? 'Modification...' : 'Confirmer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div className="toast-container">

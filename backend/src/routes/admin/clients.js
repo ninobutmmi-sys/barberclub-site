@@ -227,7 +227,7 @@ router.get('/:id',
 );
 
 // ============================================
-// PUT /api/admin/clients/:id — Update client notes
+// PUT /api/admin/clients/:id — Update client info
 // ============================================
 router.put('/:id',
   [
@@ -236,12 +236,13 @@ router.put('/:id',
     body('first_name').optional().trim().notEmpty().isLength({ max: 100 }),
     body('last_name').optional().trim().notEmpty().isLength({ max: 100 }),
     body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('phone').optional().trim().matches(/^(?:0|\+33)[1-9]\d{8}$/).withMessage('Numéro de téléphone invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { notes, first_name, last_name, email } = req.body;
+      const { notes, first_name, last_name, email, phone } = req.body;
 
       const fields = [];
       const values = [];
@@ -251,6 +252,21 @@ router.put('/:id',
       if (first_name) { fields.push(`first_name = $${paramIndex++}`); values.push(first_name); }
       if (last_name) { fields.push(`last_name = $${paramIndex++}`); values.push(last_name); }
       if (email !== undefined) { fields.push(`email = $${paramIndex++}`); values.push(email || null); }
+
+      if (phone) {
+        // Normaliser en +33
+        const normalized = phone.startsWith('0') ? '+33' + phone.slice(1) : phone;
+        // Vérifier unicité
+        const existing = await db.query(
+          'SELECT id FROM clients WHERE phone = $1 AND id != $2 AND deleted_at IS NULL',
+          [normalized, id]
+        );
+        if (existing.rows.length > 0) {
+          throw ApiError.conflict('Ce numéro de téléphone appartient déjà à un autre client');
+        }
+        fields.push(`phone = $${paramIndex++}`);
+        values.push(normalized);
+      }
 
       if (fields.length === 0) {
         throw ApiError.badRequest('Aucune donnée à mettre à jour');
