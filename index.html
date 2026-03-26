@@ -242,29 +242,6 @@ html, body {
   100% { transform: scale(1) translate(1%, -0.5%); }
 }
 
-/* ═══════════════════════════════════════
-   TOUCH LIGHT LAYER — brighter version revealed by touch
-   ═══════════════════════════════════════ */
-.salon-light {
-  position: absolute; top: -40px; left: -40px; right: -40px; bottom: -40px;
-  background-size: cover; background-position: center;
-  filter: brightness(0.75) saturate(1.3) contrast(1.05);
-  pointer-events: none; z-index: 1;
-  will-change: mask-image, -webkit-mask-image;
-  -webkit-mask-image: radial-gradient(circle 0px at -100px -100px, black 0%, transparent 100%);
-  mask-image: radial-gradient(circle 0px at -100px -100px, black 0%, transparent 100%);
-  transition: -webkit-mask-image 0.08s, mask-image 0.08s;
-}
-.salon-grenoble .salon-light {
-  background-image: url('assets/images/salons/grenoble/salon-grenoble.jpg');
-}
-.salon-meylan .salon-light {
-  background-image: url('assets/images/salons/meylan/salon-meylan-interieur.jpg');
-}
-/* Desktop: light follows mouse */
-@media (pointer: fine) {
-  .salon-light { filter: brightness(0.65) saturate(1.2); }
-}
 
 /* ═══════════════════════════════════════
    GRADIENT OVERLAY
@@ -654,7 +631,6 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
 
     <a href="pages/grenoble/" class="salon salon-grenoble" data-salon>
       <div class="salon-bg"></div>
-      <div class="salon-light"></div>
       <div class="salon-overlay"></div>
       <div class="particles" aria-hidden="true"></div>
       <div class="salon-content">
@@ -675,7 +651,6 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
 
     <a href="pages/meylan/" class="salon salon-meylan" data-salon>
       <div class="salon-bg"></div>
-      <div class="salon-light"></div>
       <div class="salon-overlay"></div>
       <div class="particles" aria-hidden="true"></div>
       <div class="salon-content">
@@ -765,93 +740,20 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
     });
   }
 
-  /* ═══════════════════════════════════════
-     TOUCH → LIGHT EFFECT (mobile)
-     The brighter layer is revealed in a circle around the finger
-     ═══════════════════════════════════════ */
-  if (isTouch && !prefersReduced) {
-    const touchHint = document.querySelector('.touch-hint');
-    document.querySelectorAll('.salon').forEach(salon => {
-      const light = salon.querySelector('.salon-light');
-      if (!light) return;
-
-      let lightActive = false;
-
-      salon.addEventListener('touchstart', e => {
-        lightActive = true;
-        if (touchHint) touchHint.classList.add('hidden');
-        updateLight(e.touches[0], salon, light);
-      }, { passive: true });
-
-      salon.addEventListener('touchmove', e => {
-        if (!lightActive) return;
-        updateLight(e.touches[0], salon, light);
-      }, { passive: true });
-
-      salon.addEventListener('touchend', () => {
-        lightActive = false;
-        // Fade out the light
-        light.style.webkitMaskImage = 'radial-gradient(circle 0px at -200px -200px, black 0%, transparent 100%)';
-        light.style.maskImage = 'radial-gradient(circle 0px at -200px -200px, black 0%, transparent 100%)';
-      }, { passive: true });
-    });
-
-    function updateLight(touch, salon, light) {
-      const rect = salon.getBoundingClientRect();
-      const x = touch.clientX - rect.left + 40; // offset for the -40px inset
-      const y = touch.clientY - rect.top + 40;
-      const grad = `radial-gradient(circle 120px at ${x}px ${y}px, black 0%, transparent 100%)`;
-      light.style.webkitMaskImage = grad;
-      light.style.maskImage = grad;
-    }
-
-    // Hide touch hint after 5s
-    setTimeout(() => { if (touchHint) touchHint.classList.add('hidden'); }, 7000);
-  }
-
-  /* ═══════════════════════════════════════
-     MOUSE → LIGHT EFFECT (desktop)
-     ═══════════════════════════════════════ */
-  if (!isTouch && !prefersReduced) {
-    document.querySelectorAll('.salon').forEach(salon => {
-      const light = salon.querySelector('.salon-light');
-      if (!light) return;
-
-      salon.addEventListener('mousemove', e => {
-        const rect = salon.getBoundingClientRect();
-        const x = e.clientX - rect.left + 40;
-        const y = e.clientY - rect.top + 40;
-        const grad = `radial-gradient(circle 150px at ${x}px ${y}px, black 0%, transparent 100%)`;
-        light.style.webkitMaskImage = grad;
-        light.style.maskImage = grad;
-      });
-
-      salon.addEventListener('mouseleave', () => {
-        light.style.webkitMaskImage = 'radial-gradient(circle 0px at -200px -200px, black 0%, transparent 100%)';
-        light.style.maskImage = 'radial-gradient(circle 0px at -200px -200px, black 0%, transparent 100%)';
-      });
-    });
-  }
 
   /* ═══════════════════════════════════════
      GYROSCOPE → PARALLAX (mobile)
      ═══════════════════════════════════════ */
   if (isTouch && !prefersReduced) {
     const bgs = document.querySelectorAll('.salon-bg');
-    const lights = document.querySelectorAll('.salon-light');
 
     function handleOrientation(e) {
       const beta = Math.max(-30, Math.min(30, e.beta || 0));
       const gamma = Math.max(-30, Math.min(30, e.gamma || 0));
       const tx = (gamma / 30) * -15;
       const ty = (beta / 60) * -10;
-      // Parallax on backgrounds
       bgs.forEach(bg => {
         bg.style.transform = `translate(${tx}px, ${ty}px) scale(1.1)`;
-      });
-      // Same parallax on light layers
-      lights.forEach(l => {
-        l.style.transform = `translate(${tx}px, ${ty}px) scale(1.1)`;
       });
     }
 
@@ -881,20 +783,14 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
         if (e.clientX < rect.left || e.clientX > rect.right) return;
         const lx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
         const ly = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-        // Background parallax
         const bg = salon.querySelector('.salon-bg');
         bg.style.transform = `translate(${lx * -12}px, ${ly * -10}px) scale(1.1)`;
-        // Light layer follows too
-        const light = salon.querySelector('.salon-light');
-        if (light) light.style.transform = `translate(${lx * -12}px, ${ly * -10}px) scale(1.1)`;
       });
     });
     document.querySelectorAll('.salon').forEach(salon => {
       salon.addEventListener('mouseleave', () => {
         const bg = salon.querySelector('.salon-bg');
-        const light = salon.querySelector('.salon-light');
         bg.style.transform = '';
-        if (light) light.style.transform = '';
       });
     });
   }
