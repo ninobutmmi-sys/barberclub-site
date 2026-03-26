@@ -97,26 +97,11 @@ html, body {
   100% { transform: scale(1.15) translate(-1.5%, -1%); }
 }
 
-.bg-light {
-  position: absolute; inset: -40px;
-  background: url('../../assets/images/salons/grenoble/salon-grenoble.jpg') center/cover no-repeat;
-  filter: brightness(0.7) saturate(1.2) contrast(1.05);
-  pointer-events: none; z-index: 1;
-  -webkit-mask-image: radial-gradient(circle 0px at -100px -100px, black 0%, transparent 100%);
-  mask-image: radial-gradient(circle 0px at -100px -100px, black 0%, transparent 100%);
-}
-
 .bg-overlay {
   position: absolute; inset: 0; z-index: 2;
   background: linear-gradient(180deg,
     rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 25%,
     rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.7) 80%, rgba(0,0,0,0.9) 100%);
-}
-
-.volumetric {
-  position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  background: radial-gradient(ellipse 60% 40% at var(--vl-x, 50%) var(--vl-y, 15%), rgba(255,255,255,0.04) 0%, transparent 70%);
-  mix-blend-mode: screen;
 }
 
 .particles { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: hidden; }
@@ -301,9 +286,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
 
 <div class="page" id="page">
   <div class="bg"></div>
-  <div class="bg-light"></div>
   <div class="bg-overlay"></div>
-  <div class="volumetric"></div>
   <div class="particles" aria-hidden="true"></div>
 
   <header class="header">
@@ -382,36 +365,13 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
     }
   }
 
-  /* Touch light */
-  if (isTouch && !prefersReduced) {
-    const light = document.querySelector('.bg-light');
-    let active = false;
-    document.addEventListener('touchstart', e => { active = true; updateLight(e.touches[0]); }, { passive: true });
-    document.addEventListener('touchmove', e => { if (active) updateLight(e.touches[0]); }, { passive: true });
-    document.addEventListener('touchend', () => { active = false; light.style.webkitMaskImage = light.style.maskImage = 'radial-gradient(circle 0px at -200px -200px, black 0%, transparent 100%)'; }, { passive: true });
-    function updateLight(t) {
-      const g = `radial-gradient(circle 130px at ${t.clientX+40}px ${t.clientY+40}px, black 0%, transparent 100%)`;
-      light.style.webkitMaskImage = light.style.maskImage = g;
-    }
-  }
-
-  /* Mouse light */
-  if (!isTouch && !prefersReduced) {
-    const light = document.querySelector('.bg-light');
-    document.addEventListener('mousemove', e => {
-      const g = `radial-gradient(circle 160px at ${e.clientX+40}px ${e.clientY+40}px, black 0%, transparent 100%)`;
-      light.style.webkitMaskImage = light.style.maskImage = g;
-    });
-  }
-
   /* Gyroscope */
   if (isTouch && !prefersReduced) {
-    const bg = document.querySelector('.bg'), bgL = document.querySelector('.bg-light'), vol = document.querySelector('.volumetric');
+    const bg = document.querySelector('.bg');
     function handleO(e) {
       const b = Math.max(-30, Math.min(30, e.beta||0)), g = Math.max(-30, Math.min(30, e.gamma||0));
       const tx = (g/30)*-12, ty = (b/60)*-8;
-      bg.style.transform = bgL.style.transform = `translate(${tx}px,${ty}px) scale(1.1)`;
-      vol.style.setProperty('--vl-x',(50+(g/30)*20)+'%'); vol.style.setProperty('--vl-y',(15+(b/60)*15)+'%');
+      bg.style.transform = `translate(${tx}px,${ty}px) scale(1.1)`;
     }
     if (typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function') {
       document.addEventListener('touchstart', function req() { DeviceOrientationEvent.requestPermission().then(s=>{if(s==='granted')window.addEventListener('deviceorientation',handleO,{passive:true})}).catch(()=>{}); document.removeEventListener('touchstart',req); }, {once:true});
@@ -420,11 +380,10 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
 
   /* Mouse parallax */
   if (!isTouch && !prefersReduced) {
-    const bg = document.querySelector('.bg'), bgL = document.querySelector('.bg-light'), vol = document.querySelector('.volumetric');
+    const bg = document.querySelector('.bg');
     document.addEventListener('mousemove', e => {
       const lx = (e.clientX/window.innerWidth-0.5)*2, ly = (e.clientY/window.innerHeight-0.5)*2;
-      bg.style.transform = bgL.style.transform = `translate(${lx*-10}px,${ly*-8}px) scale(1.1)`;
-      vol.style.setProperty('--vl-x',(50+lx*25)+'%'); vol.style.setProperty('--vl-y',(25+ly*15)+'%');
+      bg.style.transform = `translate(${lx*-10}px,${ly*-8}px) scale(1.1)`;
     });
   }
 

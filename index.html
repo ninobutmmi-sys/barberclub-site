@@ -277,19 +277,6 @@ html, body {
   pointer-events: none; z-index: 2;
 }
 
-/* ═══════════════════════════════════════
-   VOLUMETRIC LIGHT (gyro-reactive)
-   ═══════════════════════════════════════ */
-.volumetric-light {
-  position: absolute; inset: 0; z-index: 2;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse 60% 40% at var(--vl-x, 50%) var(--vl-y, 10%),
-    rgba(255,255,255,0.04) 0%, transparent 70%
-  );
-  mix-blend-mode: screen;
-  transition: background 0.3s;
-}
 
 /* ═══════════════════════════════════════
    PARTICLES
@@ -669,7 +656,6 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       <div class="salon-bg"></div>
       <div class="salon-light"></div>
       <div class="salon-overlay"></div>
-      <div class="volumetric-light"></div>
       <div class="particles" aria-hidden="true"></div>
       <div class="salon-content">
         <h2 class="salon-title" data-split>Grenoble</h2>
@@ -691,7 +677,6 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       <div class="salon-bg"></div>
       <div class="salon-light"></div>
       <div class="salon-overlay"></div>
-      <div class="volumetric-light"></div>
       <div class="particles" aria-hidden="true"></div>
       <div class="salon-content">
         <h2 class="salon-title" data-split>Meylan</h2>
@@ -849,12 +834,11 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
   }
 
   /* ═══════════════════════════════════════
-     GYROSCOPE → PARALLAX + VOLUMETRIC LIGHT (mobile)
+     GYROSCOPE → PARALLAX (mobile)
      ═══════════════════════════════════════ */
   if (isTouch && !prefersReduced) {
     const bgs = document.querySelectorAll('.salon-bg');
     const lights = document.querySelectorAll('.salon-light');
-    const vLights = document.querySelectorAll('.volumetric-light');
 
     function handleOrientation(e) {
       const beta = Math.max(-30, Math.min(30, e.beta || 0));
@@ -868,13 +852,6 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       // Same parallax on light layers
       lights.forEach(l => {
         l.style.transform = `translate(${tx}px, ${ty}px) scale(1.1)`;
-      });
-      // Volumetric light position shifts
-      const vlX = 50 + (gamma / 30) * 20;
-      const vlY = 10 + (beta / 60) * 15;
-      vLights.forEach(vl => {
-        vl.style.setProperty('--vl-x', vlX + '%');
-        vl.style.setProperty('--vl-y', vlY + '%');
       });
     }
 
@@ -898,7 +875,6 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
      MOUSE PARALLAX (desktop)
      ═══════════════════════════════════════ */
   if (!isTouch && !prefersReduced) {
-    const vLights = document.querySelectorAll('.volumetric-light');
     document.addEventListener('mousemove', e => {
       document.querySelectorAll('.salon').forEach(salon => {
         const rect = salon.getBoundingClientRect();
@@ -911,12 +887,6 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
         // Light layer follows too
         const light = salon.querySelector('.salon-light');
         if (light) light.style.transform = `translate(${lx * -12}px, ${ly * -10}px) scale(1.1)`;
-        // Volumetric light
-        const vl = salon.querySelector('.volumetric-light');
-        if (vl) {
-          vl.style.setProperty('--vl-x', (50 + lx * 25) + '%');
-          vl.style.setProperty('--vl-y', (30 + ly * 15) + '%');
-        }
       });
     });
     document.querySelectorAll('.salon').forEach(salon => {
