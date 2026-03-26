@@ -142,13 +142,18 @@ router.get('/services', publicLimiter,
         ORDER BY s.sort_order`;
       params = [barber_id, serviceSalonId];
     } else {
-      // All active services
+      // "Peu importe" mode: only return services offered by 2+ barbers
+      // so barber-specific services don't confuse clients
       queryText = `
-        SELECT id, name, price, duration, duration_saturday, description, time_restrictions
-        FROM services
-        WHERE is_active = true AND deleted_at IS NULL AND salon_id = $1
-          AND (admin_only = false OR admin_only IS NULL)
-        ORDER BY sort_order`;
+        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.time_restrictions
+        FROM services s
+        JOIN barber_services bs ON s.id = bs.service_id
+        JOIN barbers b ON bs.barber_id = b.id AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $1
+        WHERE s.is_active = true AND s.deleted_at IS NULL AND s.salon_id = $1
+          AND (s.admin_only = false OR s.admin_only IS NULL)
+        GROUP BY s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.time_restrictions, s.sort_order
+        HAVING COUNT(DISTINCT bs.barber_id) >= 2
+        ORDER BY s.sort_order`;
       params = [salonId];
     }
 

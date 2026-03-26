@@ -38,7 +38,7 @@ async function getBarberHomeSalon(barberId) {
 async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   // 1. Get service duration
   const serviceResult = await db.query(
-    'SELECT duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND deleted_at IS NULL',
+    'SELECT name, price, duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND deleted_at IS NULL',
     [serviceId]
   );
   if (serviceResult.rows.length === 0) {
@@ -70,26 +70,36 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   const salonId = options.salonId || 'meylan';
   let barberIds;
   if (barberId === 'any') {
-    // Resident barbers that offer this service
+    // Find all equivalent services (same name + price) to handle cases where
+    // different barbers have the same service under different IDs
+    const serviceName = serviceResult.rows[0].name;
+    const servicePrice = serviceResult.rows[0].price;
+    const equivResult = await db.query(
+      `SELECT id FROM services WHERE name = $1 AND price = $2 AND deleted_at IS NULL`,
+      [serviceName, servicePrice]
+    );
+    const equivalentServiceIds = equivResult.rows.map(r => r.id);
+
+    // Resident barbers that offer any equivalent service
     const barbersResult = await db.query(
-      `SELECT b.id FROM barbers b
+      `SELECT DISTINCT b.id FROM barbers b
        JOIN barber_services bs ON b.id = bs.barber_id
-       WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
-       ORDER BY b.sort_order`,
-      [serviceId, salonId]
+       WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
+       ORDER BY b.id`,
+      [equivalentServiceIds, salonId]
     );
     barberIds = barbersResult.rows.map((r) => r.id);
 
     // Also include guest barbers that have an assignment in this salon on this date
-    // and offer this service (in their home salon)
+    // and offer any equivalent service
     const guestResult = await db.query(
       `SELECT DISTINCT b.id FROM barbers b
        JOIN guest_assignments ga ON b.id = ga.barber_id
        JOIN barber_services bs ON b.id = bs.barber_id
-       WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL
+       WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL
          AND ga.host_salon_id = $2 AND ga.date = $3
          AND b.salon_id != $2`,
-      [serviceId, salonId, date]
+      [equivalentServiceIds, salonId, date]
     );
     const guestIds = guestResult.rows.map((r) => r.id);
     // Merge without duplicates
@@ -413,24 +423,39 @@ async function isSlotAvailable(barberId, date, startTime, duration, client = nul
 async function findBestBarber(serviceId, date, startTime, duration, salonId = 'meylan', dbClient = null) {
   const queryFn = dbClient ? dbClient.query.bind(dbClient) : db.query;
 
-  // Get resident barbers that offer this service in this salon
+  // Find all equivalent services (same name + price) to handle cases where
+  // different barbers have the same service under different IDs
+  const svcResult = await queryFn(
+    'SELECT name, price FROM services WHERE id = $1 AND deleted_at IS NULL',
+    [serviceId]
+  );
+  let equivalentServiceIds = [serviceId];
+  if (svcResult.rows.length > 0) {
+    const equivResult = await queryFn(
+      `SELECT id FROM services WHERE name = $1 AND price = $2 AND deleted_at IS NULL`,
+      [svcResult.rows[0].name, svcResult.rows[0].price]
+    );
+    equivalentServiceIds = equivResult.rows.map(r => r.id);
+  }
+
+  // Get resident barbers that offer any equivalent service in this salon
   const barbersResult = await queryFn(
-    `SELECT b.id, b.name FROM barbers b
+    `SELECT DISTINCT b.id, b.name FROM barbers b
      JOIN barber_services bs ON b.id = bs.barber_id
-     WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
-     ORDER BY b.sort_order`,
-    [serviceId, salonId]
+     WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
+     ORDER BY b.id`,
+    [equivalentServiceIds, salonId]
   );
 
-  // Get guest barbers for this date+salon that offer this service
+  // Get guest barbers for this date+salon that offer any equivalent service
   const guestResult = await queryFn(
-    `SELECT b.id, b.name FROM barbers b
+    `SELECT DISTINCT b.id, b.name FROM barbers b
      JOIN guest_assignments ga ON b.id = ga.barber_id
      JOIN barber_services bs ON b.id = bs.barber_id
-     WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL
+     WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL
        AND ga.host_salon_id = $2 AND ga.date = $3
        AND b.salon_id != $2`,
-    [serviceId, salonId, date]
+    [equivalentServiceIds, salonId, date]
   );
 
   const allBarbers = [...barbersResult.rows];
@@ -643,7 +668,7 @@ function addMinutesToTime(timeStr, minutesToAdd) {
 async function getMonthAvailabilitySummary(serviceId, year, month, barberId, salonId, includeAlternatives = false) {
   // 1. Get service duration
   const serviceResult = await db.query(
-    'SELECT duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND deleted_at IS NULL',
+    'SELECT name, price, duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND deleted_at IS NULL',
     [serviceId]
   );
   if (serviceResult.rows.length === 0) return {};
@@ -653,12 +678,20 @@ async function getMonthAvailabilitySummary(serviceId, year, month, barberId, sal
   let barberIds;
   let specificBarber = false;
   if (!barberId || barberId === 'any') {
+    // Find all equivalent services (same name + price) to handle cases where
+    // different barbers have the same service under different IDs
+    const equivResult = await db.query(
+      `SELECT id FROM services WHERE name = $1 AND price = $2 AND deleted_at IS NULL`,
+      [service.name, service.price]
+    );
+    const equivalentServiceIds = equivResult.rows.map(r => r.id);
+
     const barbersResult = await db.query(
-      `SELECT b.id, b.name, b.salon_id FROM barbers b
+      `SELECT DISTINCT b.id, b.name, b.salon_id FROM barbers b
        JOIN barber_services bs ON b.id = bs.barber_id
-       WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
-       ORDER BY b.sort_order`,
-      [serviceId, salonId]
+       WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
+       ORDER BY b.id`,
+      [equivalentServiceIds, salonId]
     );
     barberIds = barbersResult.rows.map(r => r.id);
   } else {
@@ -756,13 +789,20 @@ async function getMonthAvailabilitySummary(serviceId, year, month, barberId, sal
   // For alternatives: get all barbers in this salon (not just selected)
   let altBarbers = [];
   if (includeAlternatives && specificBarber) {
+    // Find equivalent services for alternative barber lookup
+    const altEquivResult = await db.query(
+      `SELECT id FROM services WHERE name = $1 AND price = $2 AND deleted_at IS NULL`,
+      [service.name, service.price]
+    );
+    const altEquivIds = altEquivResult.rows.map(r => r.id);
+
     const altResult = await db.query(
-      `SELECT b.id, b.name FROM barbers b
+      `SELECT DISTINCT b.id, b.name FROM barbers b
        JOIN barber_services bs ON b.id = bs.barber_id
-       WHERE bs.service_id = $1 AND b.is_active = true AND b.deleted_at IS NULL
+       WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL
          AND b.salon_id = $2 AND b.id != $3
-       ORDER BY b.sort_order`,
-      [serviceId, salonId, barberId]
+       ORDER BY b.id`,
+      [altEquivIds, salonId, barberId]
     );
     altBarbers = altResult.rows;
 

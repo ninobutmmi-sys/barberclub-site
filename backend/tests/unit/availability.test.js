@@ -399,12 +399,20 @@ describe('isSlotAvailable', () => {
 describe('findBestBarber', () => {
   function setupFindBestMocks(barbers, bookingCounts = {}) {
     mockDb.query.mockImplementation(async (sql, params) => {
+      // Service lookup (name + price for equivalent service matching)
+      if (sql.includes('SELECT name, price FROM services')) {
+        return { rows: [{ name: 'Coupe Test', price: 2500 }] };
+      }
+      // Equivalent services lookup
+      if (sql.includes('FROM services WHERE name =')) {
+        return { rows: [{ id: SERVICE_ID }] };
+      }
       // Resident barbers
-      if (sql.includes('barber_services') && sql.includes('SELECT b.id, b.name')) {
+      if (sql.includes('barber_services') && sql.includes('SELECT')) {
         return { rows: barbers };
       }
       // Guest barbers
-      if (sql.includes('guest_assignments') && sql.includes('SELECT b.id, b.name')) {
+      if (sql.includes('guest_assignments') && sql.includes('SELECT') && sql.includes('barber_services')) {
         return { rows: [] };
       }
       // Guest assignment check (for barberWorksAtTime)
@@ -467,10 +475,16 @@ describe('findBestBarber', () => {
     // but barberWorksAtTime internally calls getGuestAssignment and getBarberHomeSalon
     // which use db.query directly. So we need BOTH mockClient AND mockDb.query.
     const defaultHandler = async (sql, params) => {
-      if (sql.includes('barber_services') && sql.includes('SELECT b.id, b.name')) {
+      if (sql.includes('SELECT name, price FROM services')) {
+        return { rows: [{ name: 'Coupe Test', price: 2500 }] };
+      }
+      if (sql.includes('FROM services WHERE name =')) {
+        return { rows: [{ id: SERVICE_ID }] };
+      }
+      if (sql.includes('barber_services') && sql.includes('SELECT')) {
         return { rows: [{ id: 'barber-1', name: 'Lucas' }] };
       }
-      if (sql.includes('guest_assignments') && sql.includes('SELECT b.id, b.name')) {
+      if (sql.includes('guest_assignments') && sql.includes('barber_services')) {
         return { rows: [] };
       }
       if (sql.includes('SELECT host_salon_id') && sql.includes('guest_assignments')) {
@@ -520,8 +534,17 @@ describe('findBestBarber', () => {
     ];
 
     mockDb.query.mockImplementation(async (sql, params) => {
-      if (sql.includes('barber_services') && sql.includes('SELECT b.id, b.name')) {
+      if (sql.includes('SELECT name, price FROM services')) {
+        return { rows: [{ name: 'Coupe Test', price: 2500 }] };
+      }
+      if (sql.includes('FROM services WHERE name =')) {
+        return { rows: [{ id: SERVICE_ID }] };
+      }
+      if (sql.includes('barber_services') && sql.includes('SELECT')) {
         return { rows: barbers };
+      }
+      if (sql.includes('guest_assignments') && sql.includes('barber_services')) {
+        return { rows: [] };
       }
       if (sql.includes('guest_assignments')) {
         return { rows: [] };
