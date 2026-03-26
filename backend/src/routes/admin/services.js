@@ -103,6 +103,8 @@ router.put('/:id',
     body('color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide (format #RRGGBB)'),
     body('barber_ids').optional().isArray(),
     body('barber_ids.*').optional().matches(uuidRegex),
+    body('admin_only').optional().isBoolean(),
+    body('time_restrictions').optional({ values: 'null' }).isArray(),
   ],
   handleValidation,
   async (req, res, next) => {

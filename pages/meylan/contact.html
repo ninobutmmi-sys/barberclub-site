@@ -26,7 +26,7 @@
     <meta name="twitter:description" content="Contactez BarberClub Meylan : 26 Av. du Grésivaudan, 38700 Corenc. Horaires, téléphone, plan d'accès. Ouvert lun-sam 9h-19h. Votre barbier près de Meylan !">
     <meta name="twitter:image" content="https://barberclub-grenoble.fr/assets/images/salons/meylan/salon-meylan.jpg">
     <!-- Leaflet CSS pour la carte -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" /> <!-- TODO: add SRI integrity hash -->
     <style>
         /* ORBITRON EXTRA BOLD FONT */
         @font-face {
@@ -1240,7 +1240,7 @@
     </nav>
 
     <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script> <!-- TODO: add SRI integrity hash -->
     <script>
         /* --- LETTER SPLIT --- */
         document.querySelectorAll('[data-split]').forEach(el => {

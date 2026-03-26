@@ -466,8 +466,8 @@ TEXT_PRIMARY: #FAFAF9 | TEXT_SECONDARY: #A8A29E | TEXT_MUTED: #78716C
 | Storage dashboard | `bc_user`, `bc_access_token`, `bc_refresh_token`, `bc_salon` (localStorage) |
 
 ### Credentials barbers
-- **Meylan** : `barberclubmeylan@gmail.com` / `Barberclot1968!`
-- **Grenoble** : `barberclotbey@gmail.com` / `Barberclot1968@@`
+- **Meylan** : `barberclubmeylan@gmail.com` / [voir gestionnaire mdp]
+- **Grenoble** : `barberclotbey@gmail.com` / [voir gestionnaire mdp]
 
 ---
 

@@ -9,10 +9,16 @@
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="canonical" href="https://barberclub-grenoble.fr/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="BarberClub">
+<meta property="og:locale" content="fr_FR">
 <meta property="og:title" content="BarberClub - Barbier & Coiffeur Homme Grenoble & Meylan">
 <meta property="og:description" content="2 salons de barbier premium en Isère. Coupes tendance, dégradés, taille de barbe.">
 <meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/grenoble/salon-grenoble.jpg">
 <meta property="og:url" content="https://barberclub-grenoble.fr/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization","name":"BarberClub","url":"https://barberclub-grenoble.fr/","logo":"https://barberclub-grenoble.fr/assets/images/common/logo-blanc.png","description":"Barbier et coiffeur homme à Grenoble et Meylan. 2 salons premium en Isère.","subOrganization":[{"@type":"BarberShop","name":"BarberClub Grenoble","url":"https://barberclub-grenoble.fr/pages/grenoble/","telephone":"+33956309386","address":{"@type":"PostalAddress","streetAddress":"5 Rue Clôt Bey","addressLocality":"Grenoble","postalCode":"38000","addressCountry":"FR"},"priceRange":"€€","openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"09:00","closes":"19:00"}]},{"@type":"BarberShop","name":"BarberClub Meylan","url":"https://barberclub-grenoble.fr/pages/meylan/","telephone":"+33476180919","address":{"@type":"PostalAddress","streetAddress":"26 Avenue du Grésivaudan","addressLocality":"Corenc","postalCode":"38700","addressCountry":"FR"},"priceRange":"€€","openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"09:00","closes":"19:00"}]}]}
+</script>
 <link rel="manifest" href="config/manifest.json">
 <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
 <link rel="icon" type="image/png" href="assets/icons/favicon.png">
@@ -31,6 +37,7 @@
    RESET
    ═══════════════════════════════════════ */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 html, body {
   font-family: 'Inter', -apple-system, sans-serif;
   background: #000;
@@ -656,6 +663,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
 
 
   <main class="salons">
+    <h1 class="sr-only">BarberClub — Barbier & Coiffeur Homme à Grenoble et Meylan</h1>
 
     <a href="pages/grenoble/" class="salon salon-grenoble" data-salon>
       <div class="salon-bg"></div>

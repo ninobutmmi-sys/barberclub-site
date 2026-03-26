@@ -26,7 +26,7 @@ function init(httpServer) {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('Token manquant'));
     try {
-      const decoded = jwt.verify(token, config.jwt.secret);
+      const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] });
       if (decoded.type !== 'barber') return next(new Error('Accès réservé'));
       socket.user = decoded;
       next();

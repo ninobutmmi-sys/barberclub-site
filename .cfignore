@@ -1,0 +1,8 @@
+# Ne JAMAIS déployer ces fichiers sur Cloudflare Pages
+backend/
+.env
+.env.*
+.git/
+node_modules/
+CLAUDE.md
+.claude/

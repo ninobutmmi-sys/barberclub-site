@@ -217,9 +217,26 @@ app.use('/api/client', clientRoutes);
 const adminRouter = express.Router();
 adminRouter.use(requireAuth, requireBarber, adminLimiter);
 // Override salon_id from JWT with the one sent by the dashboard (query/body)
-adminRouter.use((req, _res, next) => {
+// Verify the barber belongs to the requested salon or is a guest there today
+adminRouter.use(async (req, res, next) => {
   const fromRequest = req.query.salon_id || req.body?.salon_id;
   if (fromRequest && ['meylan', 'grenoble'].includes(fromRequest)) {
+    if (fromRequest !== req.user.salon_id) {
+      // Check if barber is a guest in the requested salon today
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const guestCheck = await db.query(
+          'SELECT 1 FROM guest_assignments WHERE barber_id = $1 AND host_salon_id = $2 AND date = $3',
+          [req.user.id, fromRequest, today]
+        );
+        if (guestCheck.rows.length === 0) {
+          return res.status(403).json({ error: 'Accès non autorisé à ce salon' });
+        }
+      } catch (err) {
+        logger.error('Guest assignment check failed', { error: err.message });
+        return res.status(500).json({ error: 'Erreur serveur' });
+      }
+    }
     req.user.salon_id = fromRequest;
   }
   next();

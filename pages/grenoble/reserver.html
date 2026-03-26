@@ -4251,11 +4251,11 @@
             $('#summaryCard').innerHTML = `
                 <div class="summary-row">
                     <span class="summary-label">Barber</span>
-                    <span class="summary-value">${barberName}</span>
+                    <span class="summary-value">${esc(barberName)}</span>
                 </div>
                 <div class="summary-row">
                     <span class="summary-label">Prestation</span>
-                    <span class="summary-value">${state.selectedService.name}</span>
+                    <span class="summary-value">${esc(state.selectedService.name)}</span>
                 </div>
                 <div class="summary-row">
                     <span class="summary-label">Date</span>

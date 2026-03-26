@@ -106,12 +106,12 @@ function buildCampaignHTML(bodyText, salon) {
   // Extract short location name from full salon name (e.g. "BarberClub Meylan" -> "Meylan")
   const shortLocation = salonName.replace(/^BarberClub\s*/i, '') || 'Meylan';
 
-  // Convert line breaks to HTML paragraphs
+  // Convert line breaks to HTML paragraphs (escape each paragraph to prevent XSS)
   const paragraphs = bodyText
     .split('\n\n')
     .map((p) => p.trim())
     .filter(Boolean)
-    .map((p) => `<p style="margin:0 0 16px;line-height:1.6;">${p.replace(/\n/g, '<br>')}</p>`)
+    .map((p) => `<p style="margin:0 0 16px;line-height:1.6;">${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
     .join('');
 
   return `

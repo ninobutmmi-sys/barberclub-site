@@ -90,10 +90,10 @@ router.put('/:id',
         throw ApiError.badRequest('Aucune donnée à mettre à jour');
       }
 
-      values.push(id);
+      values.push(id, req.user.salon_id);
       const result = await db.query(
         `UPDATE barbers SET ${fields.join(', ')}
-         WHERE id = $${paramIndex} AND deleted_at IS NULL
+         WHERE id = $${paramIndex} AND salon_id = $${paramIndex + 1} AND deleted_at IS NULL
          RETURNING id, name, role, photo_url, email, is_active, sort_order`,
         values
       );
@@ -119,16 +119,18 @@ router.get('/:id/schedule',
     try {
       const { id } = req.params;
 
+      const salonId = req.user.salon_id;
+
       const schedules = await db.query(
-        'SELECT * FROM schedules WHERE barber_id = $1 ORDER BY day_of_week',
-        [id]
+        'SELECT * FROM schedules WHERE barber_id = $1 AND salon_id = $2 ORDER BY day_of_week',
+        [id, salonId]
       );
 
       const overrides = await db.query(
         `SELECT * FROM schedule_overrides
-         WHERE barber_id = $1 AND date >= CURRENT_DATE
+         WHERE barber_id = $1 AND salon_id = $2 AND date >= CURRENT_DATE
          ORDER BY date`,
-        [id]
+        [id, salonId]
       );
 
       res.json({
@@ -162,7 +164,7 @@ router.put('/:id/schedule',
       try {
         await client.query('BEGIN');
 
-        await client.query('DELETE FROM schedules WHERE barber_id = $1', [id]);
+        await client.query('DELETE FROM schedules WHERE barber_id = $1 AND salon_id = $2', [id, req.user.salon_id]);
 
         for (const schedule of schedules) {
           // Normalize times: strip seconds if present, default to 09:00/19:00 for rest days
@@ -205,8 +207,8 @@ router.post('/:id/overrides',
     param('id').matches(uuidRegex),
     body('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide'),
     body('is_day_off').isBoolean(),
-    body('start_time').optional().matches(/^\d{2}:\d{2}$/),
-    body('end_time').optional().matches(/^\d{2}:\d{2}$/),
+    body('start_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/),
+    body('end_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/),
     body('reason').optional().trim().isLength({ max: 500 }),
     body('end_time').custom((value, { req: r }) => {
       if (r.body.is_day_off === false || r.body.is_day_off === 'false') {
@@ -294,8 +296,8 @@ router.post('/:id/guest-days',
     param('id').matches(uuidRegex),
     body('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide'),
     body('host_salon_id').isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
-    body('start_time').optional().matches(/^\d{2}:\d{2}$/).withMessage('Heure debut invalide'),
-    body('end_time').optional().matches(/^\d{2}:\d{2}$/).withMessage('Heure fin invalide'),
+    body('start_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure debut invalide'),
+    body('end_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure fin invalide'),
   ],
   handleValidation,
   async (req, res, next) => {

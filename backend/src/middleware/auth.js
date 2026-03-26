@@ -14,7 +14,7 @@ function requireAuth(req, res, next) {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, config.jwt.secret);
+    const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] });
 
     req.user = {
       id: decoded.id,
@@ -72,7 +72,7 @@ function optionalAuth(req, res, next) {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, config.jwt.secret);
+    const decoded = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] });
     req.user = {
       id: decoded.id,
       type: decoded.type,
@@ -88,7 +88,7 @@ function optionalAuth(req, res, next) {
 
 /**
  * Generate JWT access token
- * Barbers: 7 days (dashboard PWA needs long sessions)
+ * Barbers: 1h (dashboard auto-refreshes on 401)
  * Clients: 15 min (public booking, short-lived)
  */
 function generateAccessToken(user) {

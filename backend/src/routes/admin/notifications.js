@@ -1,4 +1,6 @@
 const express = require('express');
+const { query } = require('express-validator');
+const { handleValidation } = require('../../middleware/validate');
 const db = require('../../config/database');
 const config = require('../../config/env');
 const logger = require('../../utils/logger');
@@ -9,7 +11,18 @@ const router = express.Router();
  * GET /api/admin/notifications/logs
  * Historique des notifications envoyées
  */
-router.get('/logs', async (req, res) => {
+router.get('/logs',
+  [
+    query('type').optional().isString().trim().isLength({ max: 50 }),
+    query('channel').optional().isIn(['sms', 'email']),
+    query('status').optional().isIn(['pending', 'sent', 'failed']),
+    query('from').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
+    query('to').optional().matches(/^\d{4}-\d{2}-\d{2}$/),
+    query('limit').optional().isInt({ min: 1, max: 200 }).toInt(),
+    query('offset').optional().isInt({ min: 0 }).toInt(),
+  ],
+  handleValidation,
+  async (req, res) => {
   try {
     const {
       type,

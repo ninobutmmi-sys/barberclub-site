@@ -218,7 +218,7 @@ router.post('/',
     body('barber_id').matches(uuidRegex).withMessage('Barber requis'),
     body('service_id').matches(uuidRegex).withMessage('Service requis'),
     body('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide'),
-    body('start_time').matches(/^\d{2}:\d{2}$/).withMessage('Heure invalide'),
+    body('start_time').matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure invalide'),
     body('first_name').trim().notEmpty().withMessage('Prénom requis').isLength({ max: 100 }),
     body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
     body('phone').optional({ values: 'falsy' }).trim()

@@ -1,3 +1,15 @@
+# Bloquer accès aux fichiers sensibles
+/backend/*    /pages/404.html    404
+/.env         /pages/404.html    404
+/.claude/*    /pages/404.html    404
+/CLAUDE.md    /pages/404.html    404
+/deploy-site.sh    /pages/404.html    404
+/tests/*           /pages/404.html    404
+/playwright.config.js /pages/404.html 404
+/.cfignore         /pages/404.html    404
+/package.json      /pages/404.html    404
+/package-lock.json /pages/404.html    404
+
 # Redirections 301 — anciennes URLs Framer → nouveau site
 # Preserve SEO juice lors de la migration
 

@@ -3,7 +3,7 @@
     <!-- Page d'accueil -->
     <url>
         <loc>https://barberclub-grenoble.fr/</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>1.0</priority>
     </url>
@@ -11,37 +11,37 @@
     <!-- Salon Grenoble -->
     <url>
         <loc>https://barberclub-grenoble.fr/pages/grenoble/</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/grenoble/prestations.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/grenoble/barbers.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/grenoble/salon.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/grenoble/contact.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/grenoble/reserver.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.9</priority>
     </url>
@@ -49,25 +49,25 @@
     <!-- Barbers Grenoble -->
     <url>
         <loc>https://barberclub-grenoble.fr/pages/barbers/barber-tom.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/barbers/barber-alan.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/barbers/barber-nathan.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/barbers/barber-clement.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
@@ -75,37 +75,37 @@
     <!-- Salon Meylan -->
     <url>
         <loc>https://barberclub-grenoble.fr/pages/meylan/</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/meylan/prestations.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/meylan/barbers.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/meylan/salon.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/meylan/contact.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/meylan/reserver.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.9</priority>
     </url>
@@ -113,34 +113,16 @@
     <!-- Barbers Meylan -->
     <url>
         <loc>https://barberclub-grenoble.fr/pages/barbers/barber-lucas.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
     <url>
         <loc>https://barberclub-grenoble.fr/pages/barbers/barber-julien.html</loc>
-        <lastmod>2026-02-22</lastmod>
+        <lastmod>2026-03-26</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
 
-    <!-- Pages legales -->
-    <url>
-        <loc>https://barberclub-grenoble.fr/pages/legal/mentions-legales.html</loc>
-        <lastmod>2026-02-22</lastmod>
-        <changefreq>yearly</changefreq>
-        <priority>0.3</priority>
-    </url>
-    <url>
-        <loc>https://barberclub-grenoble.fr/pages/legal/cgu.html</loc>
-        <lastmod>2026-02-22</lastmod>
-        <changefreq>yearly</changefreq>
-        <priority>0.3</priority>
-    </url>
-    <url>
-        <loc>https://barberclub-grenoble.fr/pages/legal/politique-confidentialite.html</loc>
-        <lastmod>2026-02-22</lastmod>
-        <changefreq>yearly</changefreq>
-        <priority>0.3</priority>
-    </url>
+    <!-- Pages legales (noindex, exclues du sitemap) -->
 </urlset>

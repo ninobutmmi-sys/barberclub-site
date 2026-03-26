@@ -176,7 +176,9 @@ router.post('/register',
     body('phone').trim().notEmpty().withMessage('Téléphone requis')
       .matches(/^(\+33|0)[1-9]\d{8}$/).withMessage('Numéro de téléphone français invalide'),
     body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
-    body('password').isLength({ min: 8 }).withMessage('Le mot de passe doit faire au moins 8 caractères'),
+    body('password')
+      .isLength({ min: 8 }).withMessage('Mot de passe : 8 caractères minimum')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Mot de passe : majuscule, minuscule et chiffre requis'),
   ],
   handleValidation,
   async (req, res, next) => {
@@ -274,7 +276,7 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
     // Verify the token
     let decoded;
     try {
-      decoded = require('jsonwebtoken').verify(refresh_token, config.jwt.refreshSecret);
+      decoded = require('jsonwebtoken').verify(refresh_token, config.jwt.refreshSecret, { algorithms: ['HS256'] });
     } catch {
       clearRefreshTokenCookie(res);
       throw ApiError.unauthorized('Refresh token invalide ou expiré');
@@ -439,7 +441,9 @@ router.post('/reset-password',
   authLimiter,
   [
     body('token').notEmpty().withMessage('Token requis'),
-    body('password').isLength({ min: 8 }).withMessage('Le mot de passe doit faire au moins 8 caractères'),
+    body('password')
+      .isLength({ min: 8 }).withMessage('Mot de passe : 8 caractères minimum')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Mot de passe : majuscule, minuscule et chiffre requis'),
   ],
   handleValidation,
   async (req, res, next) => {
@@ -512,7 +516,9 @@ router.post('/claim-account',
   [
     body('booking_id').notEmpty().matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i).withMessage('Réservation requise'),
     body('cancel_token').notEmpty().withMessage('Token requis'),
-    body('password').isLength({ min: 8 }).withMessage('Le mot de passe doit faire au moins 8 caractères'),
+    body('password')
+      .isLength({ min: 8 }).withMessage('Mot de passe : 8 caractères minimum')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Mot de passe : majuscule, minuscule et chiffre requis'),
   ],
   handleValidation,
   async (req, res, next) => {

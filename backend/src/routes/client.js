@@ -1,6 +1,6 @@
 const { Router } = require('express');
 const bcrypt = require('bcrypt');
-const { body } = require('express-validator');
+const { body, query } = require('express-validator');
 const { handleValidation } = require('../middleware/validate');
 const { requireAuth, requireClient } = require('../middleware/auth');
 const { ApiError } = require('../utils/errors');
@@ -75,7 +75,10 @@ router.put('/profile',
 // ============================================
 // GET /api/client/bookings
 // ============================================
-router.get('/bookings', async (req, res, next) => {
+router.get('/bookings',
+  [query('salon_id').optional().isIn(['meylan', 'grenoble'])],
+  handleValidation,
+  async (req, res, next) => {
   try {
     // Optional salon_id filter — if provided, only show bookings for that salon
     const salonId = req.query.salon_id;

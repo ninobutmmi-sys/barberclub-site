@@ -1,26 +1,9 @@
-# Robots.txt pour BarberClub
-# https://barberclub-grenoble.fr
-
 User-agent: *
 Allow: /
-
-# Sitemap
-Sitemap: https://barberclub-grenoble.fr/sitemap.xml
-
-# Pages à ne pas indexer
+Allow: /assets/
 Disallow: /generate-icons.html
 Disallow: /sw.js
 Disallow: /manifest.json
-
-# Autoriser les crawlers à accéder aux assets
-Allow: /assets/
-
-# Google et Bing spécifiques
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-# Délai entre les requêtes (en secondes)
 Crawl-delay: 1
+
+Sitemap: https://barberclub-grenoble.fr/sitemap.xml
