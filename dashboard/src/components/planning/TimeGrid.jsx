@@ -11,7 +11,7 @@ import BlockedSlotBlock from './BlockedSlotBlock';
 import BookingBlock from './BookingBlock';
 import MinutePickerPopup from './MinutePickerPopup';
 
-export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, barberSchedules, guestAssignments, onBookingClick, onBlockClick, onSlotClick, view, onSwipeLeft, onSwipeRight, compact, highlightedBookingId }) {
+export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, barberSchedules, guestAssignments, onBookingClick, onBlockClick, onOverrideClick, onSlotClick, view, onSwipeLeft, onSwipeRight, compact, highlightedBookingId }) {
   const scrollRef = useRef(null);
   const gridBodyRef = useRef(null);
   const touchRef = useRef(null);
@@ -328,7 +328,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                           </div>
                         )}
                         {dayBlocked.map((bs) => (
-                          <BlockedSlotBlock key={bs.id} block={bs} onClick={onBlockClick} pxPerMin={px} />
+                          <BlockedSlotBlock key={bs.id} block={bs} onClick={onBlockClick} onOverrideClick={onOverrideClick} pxPerMin={px} />
                         ))}
                         {dayBookings.map((bk) => (
                           <BookingBlock key={bk.id} booking={bk} onClick={onBookingClick} pxPerMin={px} highlighted={bk.id === highlightedBookingId} />

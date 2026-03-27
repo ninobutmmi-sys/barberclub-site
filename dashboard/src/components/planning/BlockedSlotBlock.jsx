@@ -6,7 +6,7 @@ import { timeToMinutes, HOUR_START, PX_PER_MIN } from './helpers';
 
 export const BLOCK_TYPE_LABELS = { break: 'Pause', personal: 'Perso', closed: 'Fermé' };
 
-export default function BlockedSlotBlock({ block, onClick, pxPerMin }) {
+export default function BlockedSlotBlock({ block, onClick, onOverrideClick, pxPerMin }) {
   const px = pxPerMin || PX_PER_MIN;
   const startMin = timeToMinutes(block.start_time) - HOUR_START * 60;
   const endMin = timeToMinutes(block.end_time) - HOUR_START * 60;
@@ -33,7 +33,7 @@ export default function BlockedSlotBlock({ block, onClick, pxPerMin }) {
         zIndex: 1,
         boxSizing: 'border-box',
       }}
-      onClick={(e) => { e.stopPropagation(); if (!block._isRecurring) onClick(block); }}
+      onClick={(e) => { e.stopPropagation(); if (block._isRecurring) { if (onOverrideClick) onOverrideClick(block); } else { onClick(block); } }}
       onMouseMove={(e) => e.stopPropagation()}
       title={`${block.start_time?.slice(0, 5)} - ${block.end_time?.slice(0, 5)} | ${BLOCK_TYPE_LABELS[block.type] || block.type}${block.reason ? ' \u2014 ' + block.reason : ''}`}
     >

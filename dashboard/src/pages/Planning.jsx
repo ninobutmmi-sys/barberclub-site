@@ -12,6 +12,7 @@ import {
   deleteBookingGroup as apiDeleteBookingGroup,
   deleteBlockedSlot as apiDeleteBlockedSlot,
   getBarberSchedule,
+  addBarberOverride,
 } from '../api';
 import {
   useBookings,
@@ -43,6 +44,7 @@ import BookingDetailModal from '../components/planning/BookingDetailModal';
 import CreateBookingModal from '../components/planning/CreateBookingModal';
 import BlockSlotModal from '../components/planning/BlockSlotModal';
 import BlockDetailModal from '../components/planning/BlockDetailModal';
+import OverrideModal from '../components/planning/OverrideModal';
 import TimeGrid from '../components/planning/TimeGrid';
 import MobileWeekStrip from '../components/planning/MobileWeekStrip';
 import MiniCalendar from '../components/planning/MiniCalendar';
@@ -59,6 +61,7 @@ export default function Planning() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockDefaults, setBlockDefaults] = useState({});
   const [selectedBlock, setSelectedBlock] = useState(null);
+  const [overrideBlock, setOverrideBlock] = useState(null);
   const [quickAction, setQuickAction] = useState(null);
   const [mobileFullDay, setMobileFullDay] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -74,6 +77,7 @@ export default function Planning() {
   const [barberOffDays, setBarberOffDays] = useState({});
   const [barberBreaks, setBarberBreaks] = useState({});
   const [barberSchedules, setBarberSchedules] = useState({});
+  const [barberOverrides, setBarberOverrides] = useState({});
 
   useEffect(() => {
     if (isMobile) setView('day');
@@ -132,6 +136,7 @@ export default function Planning() {
     const offMap = {};
     const breakMap = {};
     const schedMap = {};
+    const overrideMap = {};
     Promise.all(barbers.map(async (br) => {
       try {
         const cached = queryClient.getQueryData(keys.barberSchedule(br.id));
@@ -155,11 +160,19 @@ export default function Planning() {
         offMap[br.id] = offSet;
         breakMap[br.id] = breaks;
         schedMap[br.id] = hours;
-      } catch { offMap[br.id] = new Set(); breakMap[br.id] = {}; schedMap[br.id] = {}; }
+        // Index overrides by date for quick lookup
+        const ov = {};
+        (sched.overrides || []).forEach((o) => {
+          const d = typeof o.date === 'string' ? o.date.slice(0, 10) : o.date;
+          ov[d] = o;
+        });
+        overrideMap[br.id] = ov;
+      } catch { offMap[br.id] = new Set(); breakMap[br.id] = {}; schedMap[br.id] = {}; overrideMap[br.id] = {}; }
     })).then(() => {
       setBarberOffDays(offMap);
       setBarberBreaks(breakMap);
       setBarberSchedules(schedMap);
+      setBarberOverrides(overrideMap);
     });
   }, [barbers, queryClient]);
 
@@ -214,12 +227,14 @@ export default function Planning() {
       if (!map[key]) map[key] = [];
       map[key].push(bs);
     }
-    // Inject recurring breaks as virtual blocked slots
+    // Inject recurring breaks as virtual blocked slots (skip if override exists for that day)
     for (const day of days) {
       const dateStr = format(day, 'yyyy-MM-dd');
       const jsDay = day.getDay();
       const dow = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
       for (const barber of barbers) {
+        // Skip recurring break if an override exists for this day
+        if (barberOverrides[barber.id]?.[dateStr]) continue;
         const brk = barberBreaks[barber.id]?.[dow];
         if (!brk) continue;
         const key = `${dateStr}_${barber.id}`;
@@ -237,7 +252,7 @@ export default function Planning() {
       }
     }
     return map;
-  }, [blockedSlots, days, barbers, barberBreaks]);
+  }, [blockedSlots, days, barbers, barberBreaks, barberOverrides]);
 
   const stats = useMemo(() => {
     const active = bookings.filter((b) => b.status !== 'cancelled');
@@ -367,6 +382,42 @@ export default function Planning() {
     try { await apiDeleteBlockedSlot(id); setSelectedBlock(null); invalidatePlanning(); } catch (err) { alert(err.message); }
   }
 
+  function handleOverrideClick(block) {
+    setOverrideBlock(block);
+  }
+
+  async function handleSaveOverride(data) {
+    const barberId = overrideBlock?.barber_id;
+    if (!barberId) return;
+    await addBarberOverride(barberId, data);
+    // Invalidate barber schedule cache so the pause updates
+    queryClient.invalidateQueries({ queryKey: keys.barberSchedule(barberId) });
+    // Re-fetch schedules
+    const sched = await getBarberSchedule(barberId);
+    const offSet = new Set();
+    const breaks = {};
+    const hours = {};
+    (sched.weekly || []).forEach((w) => {
+      if (!w.is_working) offSet.add(w.day_of_week);
+      else if (w.start_time && w.end_time) {
+        hours[w.day_of_week] = { start: w.start_time.slice(0, 5), end: w.end_time.slice(0, 5) };
+      }
+      if (w.break_start && w.break_end) {
+        breaks[w.day_of_week] = { start: w.break_start.slice(0, 5), end: w.break_end.slice(0, 5) };
+      }
+    });
+    const ov = {};
+    (sched.overrides || []).forEach((o) => {
+      const d = typeof o.date === 'string' ? o.date.slice(0, 10) : o.date;
+      ov[d] = o;
+    });
+    setBarberOffDays((prev) => ({ ...prev, [barberId]: offSet }));
+    setBarberBreaks((prev) => ({ ...prev, [barberId]: breaks }));
+    setBarberSchedules((prev) => ({ ...prev, [barberId]: hours }));
+    setBarberOverrides((prev) => ({ ...prev, [barberId]: ov }));
+    invalidatePlanning();
+  }
+
   // Keyboard shortcuts: <-/-> = prev/next, T = today, Escape = clear search
   useEffect(() => {
     function handleKeyDown(e) {
@@ -377,14 +428,14 @@ export default function Planning() {
       }
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      if (selectedBooking || showCreateModal || showBlockModal || selectedBlock || quickAction) return;
+      if (selectedBooking || showCreateModal || showBlockModal || selectedBlock || overrideBlock || quickAction) return;
       if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
       else if (e.key === 't' || e.key === 'T') { e.preventDefault(); goToday(); }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBooking, showCreateModal, showBlockModal, selectedBlock, quickAction, searchTerm, highlightedBookingId]);
+  }, [selectedBooking, showCreateModal, showBlockModal, selectedBlock, overrideBlock, quickAction, searchTerm, highlightedBookingId]);
 
   // Pull to refresh (mobile)
   const showPullRef = useRef(false);
@@ -607,6 +658,7 @@ export default function Planning() {
               barberSchedules={barberSchedules}
               onBookingClick={handleBookingBlockClick}
               onBlockClick={setSelectedBlock}
+              onOverrideClick={handleOverrideClick}
               onSlotClick={handleSlotClick}
               view={view}
               onSwipeLeft={goNext}
@@ -700,6 +752,16 @@ export default function Planning() {
           block={selectedBlock}
           onClose={() => setSelectedBlock(null)}
           onDelete={handleDeleteBlock}
+        />
+      )}
+
+      {overrideBlock && (
+        <OverrideModal
+          block={overrideBlock}
+          barberName={barbers.find((b) => b.id === overrideBlock.barber_id)?.name || ''}
+          barberScheduleEnd={barberSchedules[overrideBlock.barber_id]?.[(() => { const js = new Date(overrideBlock.date).getDay(); return js === 0 ? 6 : js - 1; })()]?.end || '19:00'}
+          onSave={handleSaveOverride}
+          onClose={() => setOverrideBlock(null)}
         />
       )}
 
