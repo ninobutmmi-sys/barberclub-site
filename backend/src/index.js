@@ -39,6 +39,7 @@ const systemHealthRoutes = require('./routes/admin/systemHealth');
 const auditLogRoutes = require('./routes/admin/auditLog');
 const pushRoutes = require('./routes/admin/push');
 const productRoutes = require('./routes/admin/products');
+const { publicRouter: eventAlertPublicRoutes, adminRouter: eventAlertAdminRoutes } = require('./routes/eventAlerts');
 
 // Cron job imports
 const { queueReminders } = require('./cron/reminders');
@@ -257,7 +258,11 @@ adminRouter.use('/system', systemHealthRoutes);
 adminRouter.use('/audit-log', auditLogRoutes);
 adminRouter.use('/push', pushRoutes);
 adminRouter.use('/products', productRoutes);
+adminRouter.use('/event-alerts', eventAlertAdminRoutes);
 app.use('/api/admin', adminRouter);
+
+// Public event alerts (subscribe)
+app.use('/api/event-alerts', eventAlertPublicRoutes);
 
 // Public campaign tracking (no auth)
 app.use('/api/track', campaignTrackRoutes);
