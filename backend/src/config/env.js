@@ -75,7 +75,7 @@ module.exports = {
     secret: process.env.JWT_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
     accessExpiresIn: '15m',         // clients
-    barberAccessExpiresIn: '8h',    // barbers — covers a full work day (dashboard auto-refreshes on 401)
+    barberAccessExpiresIn: '7d',    // barbers — reconnexion 1x/semaine (dashboard auto-refreshes on 401)
     refreshExpiresIn: '90d',
     refreshExpiresMs: 90 * 24 * 60 * 60 * 1000, // 90 days in ms
   },
