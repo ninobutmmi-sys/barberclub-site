@@ -31,14 +31,22 @@ function formatTime(timeStr) {
   return str.substring(0, 5); // HH:MM
 }
 
+/**
+ * Check if a phone number is French (+33 or 0X format)
+ */
+function isFrenchPhone(phone) {
+  if (!phone) return false;
+  const cleaned = phone.replace(/[\s.-]/g, '');
+  return /^(\+33|0033|0)[1-9]\d{8}$/.test(cleaned);
+}
+
 function formatPhoneInternational(phone) {
-  // Convert French phone to international format
   let cleaned = phone.replace(/[\s.-]/g, '');
-  if (cleaned.startsWith('0')) {
+  if (cleaned.startsWith('0') && cleaned.length === 10) {
     cleaned = '+33' + cleaned.substring(1);
   }
   if (!cleaned.startsWith('+')) {
-    cleaned = '+33' + cleaned;
+    cleaned = '+' + cleaned;
   }
   return cleaned;
 }
@@ -236,6 +244,7 @@ module.exports = {
   toGSM,
   formatDateFR,
   formatTime,
+  isFrenchPhone,
   formatPhoneInternational,
   escapeHtml,
   htmlToText,

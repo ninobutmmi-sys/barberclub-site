@@ -324,7 +324,7 @@ async function createBooking(data) {
     const smsBookingDateTime = new Date(smsY, smsM - 1, smsD, smsH, smsMn, 0);
     const hoursUntilBooking = (smsBookingDateTime - smsNow) / (1000 * 60 * 60);
 
-    if (hoursUntilBooking > 0 && hoursUntilBooking <= SMS_CONFIRMATION_THRESHOLD_HOURS && bookingDetails.client_phone) {
+    if (hoursUntilBooking > 0 && hoursUntilBooking <= SMS_CONFIRMATION_THRESHOLD_HOURS && bookingDetails.client_phone && notification.isFrenchPhone(bookingDetails.client_phone)) {
       try {
         await notification.sendConfirmationSMS({
           booking_id: result.id,

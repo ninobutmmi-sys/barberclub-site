@@ -11,6 +11,7 @@ const {
   sendReviewEmail,
   sendRescheduleEmail,
   sendReminderSMS,
+  sendReminderEmail,
 } = require('./templates');
 
 /**
@@ -162,6 +163,12 @@ async function sendNotification(notification) {
       break;
     case 'review_email':
       await sendReviewEmail(notification);
+      break;
+    case 'reminder_email':
+      await sendReminderEmail(notification);
+      if (notification.booking_id) {
+        await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [notification.booking_id]);
+      }
       break;
     case 'reschedule_email': {
       const meta = typeof notification.metadata === 'string'

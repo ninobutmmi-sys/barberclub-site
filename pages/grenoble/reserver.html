@@ -3132,7 +3132,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="signupPhone">Téléphone</label>
-                            <input class="form-input" type="tel" id="signupPhone" placeholder="06 12 34 56 78" autocomplete="tel">
+                            <input class="form-input" type="tel" id="signupPhone" placeholder="06 12 34 56 78 ou +41..." autocomplete="tel">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="signupEmail">Email</label>
@@ -3224,8 +3224,8 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="phone">Téléphone</label>
-                            <input class="form-input" type="tel" id="phone" placeholder="06 12 34 56 78" autocomplete="tel" required>
-                            <p class="form-error" id="phoneError">Numéro français invalide</p>
+                            <input class="form-input" type="tel" id="phone" placeholder="06 12 34 56 78 ou +41..." autocomplete="tel" required>
+                            <p class="form-error" id="phoneError">Numéro de téléphone invalide</p>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="email">Email</label>
@@ -4305,9 +4305,9 @@
                 $('#lastNameError').classList.remove('visible');
             }
 
-            // Phone — French format
+            // Phone — French or international format
             const phoneClean = phone.replace(/[\s.-]/g, '');
-            const phoneRegex = /^(\+33|0)[1-9]\d{8}$/;
+            const phoneRegex = /^(\+\d{7,15}|0[1-9]\d{8})$/;
             if (!phoneClean || !phoneRegex.test(phoneClean)) {
                 $('#phone').classList.add('error');
                 $('#phoneError').classList.add('visible');
@@ -4709,7 +4709,7 @@
 
             // Validation
             if (!firstName || !lastName) { toast('Prénom et nom requis'); return; }
-            if (!/^(\+33|0)[1-9]\d{8}$/.test(phone)) { toast('Numéro de téléphone français invalide'); return; }
+            if (!/^(\+\d{7,15}|0[1-9]\d{8})$/.test(phone)) { toast('Numéro de téléphone invalide'); return; }
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Email invalide'); return; }
             if (password.length < 8) { toast('Mot de passe : 8 caractères minimum'); return; }
 

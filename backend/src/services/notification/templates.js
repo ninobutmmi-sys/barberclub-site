@@ -416,6 +416,95 @@ async function sendConfirmationSMS(data) {
   logger.info('Confirmation SMS sent', { bookingId: data.booking_id, phone: data.phone, salonId });
 }
 
+/**
+ * Send reminder email (for international phone numbers that don't receive SMS)
+ */
+async function sendReminderEmail(data) {
+  const salonId = data.salon_id || 'meylan';
+  const salon = config.getSalonConfig(salonId);
+
+  if (!data.email) {
+    logger.info('No client email, skipping reminder email', { bookingId: data.booking_id });
+    return;
+  }
+
+  const dateFormatted = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
+  const timeFormatted = formatTime(data.start_time);
+  const firstName = escapeHtml(data.first_name || '');
+  const barberName = escapeHtml(data.barber_name || '');
+  const barberPhotoUrl = getBarberPhotoUrl(data.barber_name);
+  const cancelUrl = data.cancel_token
+    ? `${config.siteUrl}${salon.bookingPath}/mon-rdv.html?id=${data.booking_id}&token=${data.cancel_token}`
+    : null;
+
+  const html = emailShell(`
+      <div style="text-align:center;margin-bottom:32px;">
+        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rappel rendez-vous</h2>
+        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
+          ${firstName ? `${firstName}, c` : 'C'}'est demain !
+        </p>
+      </div>
+
+      <!-- Time highlight -->
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
+        <tr><td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr>
+          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};text-align:center;padding:24px 20px;border-radius:16px;">
+            <p style="margin:0 0 4px;color:${ACCENT};font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:600;">Votre rendez-vous</p>
+            <p style="margin:0;color:${ACCENT};font-size:36px;font-weight:800;letter-spacing:1px;">${escapeHtml(timeFormatted)}</p>
+            <p style="margin:6px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${escapeHtml(dateFormatted)}</p>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Details -->
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
+        <tr>
+          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:20px 24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Barbier</td>
+                <td style="padding:10px 0;text-align:right;">
+                  ${barberPhotoUrl ? `<img src="${barberPhotoUrl}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px;object-fit:cover;border:1.5px solid ${ACCENT_DIM};">` : ''}
+                  <span style="color:${TEXT_SECONDARY};font-size:14px;vertical-align:middle;">${barberName}</span>
+                </td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
+                <td style="padding:10px 0;text-align:right;">
+                  <a href="${salon.mapsUrl}" style="color:${TEXT_SECONDARY};font-size:13px;text-decoration:none;">
+                    &#128205; <span style="text-decoration:underline;">${escapeHtml(salon.address)}</span>
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      ${cancelUrl ? `<div style="text-align:center;margin-bottom:20px;">
+        <a href="${cancelUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+          G&eacute;rer mon rendez-vous
+        </a>
+      </div>` : ''}
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;">
+        <tr>
+          <td style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 18px;text-align:center;">
+            <p style="margin:0;color:${TEXT_SECONDARY};font-size:12px;line-height:1.5;">
+              &#9432; Modification ou annulation <strong style="color:${TEXT_PRIMARY};">gratuite jusqu'&agrave; 12h</strong> avant le rendez-vous
+            </p>
+          </td>
+        </tr>
+      </table>`, { salonId });
+
+  await brevoEmail(data.email, `Rappel RDV demain à ${timeFormatted} — ${salon.name}`, html, salonId, {
+    bookingId: data.booking_id, type: 'reminder_email', recipientName: firstName, fromQueue: data.fromQueue, queueId: data.queueId,
+  });
+  logger.info('Reminder email sent', { bookingId: data.booking_id, email: data.email, salonId });
+}
+
 async function sendWaitlistSMS(data) {
   const salonId = data.salon_id || 'meylan';
   if (!data.phone) return;
@@ -522,6 +611,7 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
 module.exports = {
   sendConfirmationEmail,
   sendReminderSMS,
+  sendReminderEmail,
   sendCancellationEmail,
   sendRescheduleEmail,
   sendReviewEmail,
