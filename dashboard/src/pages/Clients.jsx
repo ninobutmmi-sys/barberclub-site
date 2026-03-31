@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getClients } from '../api';
 import { exportToCSV } from '../utils/csv';
 import useMobile from '../hooks/useMobile';
+import { formatPhoneWithFlag } from '../utils/phone';
 import { useClients } from '../hooks/useApi';
 
 function formatPrice(cents) {
@@ -157,7 +158,7 @@ export default function Clients() {
                         )}
                         {c.visit_count >= 10 && <span className="badge-vip">VIP</span>}
                       </div>
-                      <div className="mob-card-sub">{c.phone}{c.email ? ` · ${c.email}` : ''}</div>
+                      <div className="mob-card-sub">{formatPhoneWithFlag(c.phone)}{c.email ? ` · ${c.email}` : ''}</div>
                     </div>
                     <div className="mob-card-right">
                       <div className="mob-card-value">{formatPrice(c.total_spent)}</div>
@@ -201,7 +202,7 @@ export default function Clients() {
                           </div>
                           {c.email && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{c.email}</div>}
                         </td>
-                        <td style={{ fontSize: 13 }}>{c.phone}</td>
+                        <td style={{ fontSize: 13 }}>{formatPhoneWithFlag(c.phone)}</td>
                         <td>
                           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>
                             {c.visit_count}

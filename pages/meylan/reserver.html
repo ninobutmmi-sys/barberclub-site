@@ -1581,44 +1581,78 @@
             display: flex;
             position: relative;
         }
-
-        .phone-country-select {
-            flex-shrink: 0;
-            width: 90px;
-            padding: 14px 8px 14px 12px;
-            font-size: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1.5px solid rgba(255, 255, 255, 0.08);
-            border-right: none;
-            border-radius: 12px 0 0 12px;
-            color: #fff;
-            font-family: 'Inter', sans-serif;
-            outline: none;
-            cursor: pointer;
-            -webkit-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 8px center;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .phone-country-select:focus {
-            border-color: rgba(255, 255, 255, 0.5);
-            background-color: rgba(255, 255, 255, 0.07);
-        }
-
-        .phone-country-select option {
-            background: #1a1a1a;
-            color: #fff;
-            padding: 8px;
-        }
-
         .phone-input-wrapper .form-input {
             border-radius: 0 12px 12px 0;
             flex: 1;
             min-width: 0;
         }
+        .pcs-btn {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1.5px solid rgba(255,255,255,0.08);
+            border-right: none;
+            border-radius: 12px 0 0 12px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pcs-btn:hover, .pcs-btn:focus { background: rgba(255,255,255,0.08); }
+        .pcs-flag { font-size: 18px; line-height: 1; }
+        .pcs-dial { font-size: 13px; color: rgba(255,255,255,0.7); }
+        .pcs-arrow { font-size: 10px; color: rgba(255,255,255,0.3); margin-left: 2px; }
+        .pcs-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 280px;
+            max-height: 320px;
+            margin-top: 4px;
+            background: #1a1a1a;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .pcs-search {
+            width: 100%;
+            padding: 12px 14px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+        }
+        .pcs-search::placeholder { color: rgba(255,255,255,0.25); }
+        .pcs-list {
+            overflow-y: auto;
+            flex: 1;
+            overscroll-behavior: contain;
+        }
+        .pcs-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .pcs-item:hover { background: rgba(255,255,255,0.06); }
+        .pcs-item-active { background: rgba(255,255,255,0.04); }
+        .pcs-item .pcs-name { flex: 1; font-size: 13px; color: rgba(255,255,255,0.8); }
+        .pcs-item .pcs-dial { font-size: 12px; color: rgba(255,255,255,0.4); }
+        .pcs-separator { height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0; }
+        .pcs-empty { padding: 16px; text-align: center; color: rgba(255,255,255,0.3); font-size: 13px; }
 
         .form-hint {
             font-size: 11px;
@@ -3168,7 +3202,7 @@
                         <div class="form-group">
                             <label class="form-label" for="signupPhone">Téléphone</label>
                             <div class="phone-input-wrapper">
-                                <select class="phone-country-select" id="signupPhoneCountry"></select>
+                                <div id="signupPhoneCountry"></div>
                                 <input class="form-input" type="tel" id="signupPhone" placeholder="6 12 34 56 78" autocomplete="tel">
                             </div>
                         </div>
@@ -3263,7 +3297,7 @@
                         <div class="form-group">
                             <label class="form-label" for="phone">Téléphone</label>
                             <div class="phone-input-wrapper">
-                                <select class="phone-country-select" id="phoneCountry"></select>
+                                <div id="phoneCountry"></div>
                                 <input class="form-input" type="tel" id="phone" placeholder="6 12 34 56 78" autocomplete="tel" required>
                             </div>
                             <p class="form-error" id="phoneError">Numéro de téléphone invalide</p>
@@ -3399,6 +3433,7 @@
     </div>
 
     <script src="../../assets/js/api-config.js"></script>
+    <script src="../../assets/js/phone-country.js"></script>
     <script>
     // ============================================
     // BarberClub Booking — Vanilla JS
@@ -3409,47 +3444,6 @@
         // ---- CONFIG ----
         const API = window.BARBERCLUB_API;
         const MAX_RETRIES = 2;
-
-        // ---- COUNTRY CODES ----
-        const COUNTRIES = [
-            ['FR','🇫🇷','+33'],['CH','🇨🇭','+41'],['BE','🇧🇪','+32'],['IT','🇮🇹','+39'],['DE','🇩🇪','+49'],['ES','🇪🇸','+34'],['GB','🇬🇧','+44'],['PT','🇵🇹','+351'],['NL','🇳🇱','+31'],['LU','🇱🇺','+352'],
-            ['AD','🇦🇩','+376'],['AE','🇦🇪','+971'],['AF','🇦🇫','+93'],['AG','🇦🇬','+1268'],['AL','🇦🇱','+355'],['AM','🇦🇲','+374'],['AO','🇦🇴','+244'],['AR','🇦🇷','+54'],['AT','🇦🇹','+43'],['AU','🇦🇺','+61'],
-            ['AZ','🇦🇿','+994'],['BA','🇧🇦','+387'],['BB','🇧🇧','+1246'],['BD','🇧🇩','+880'],['BF','🇧🇫','+226'],['BG','🇧🇬','+359'],['BH','🇧🇭','+973'],['BI','🇧🇮','+257'],['BJ','🇧🇯','+229'],['BN','🇧🇳','+673'],
-            ['BO','🇧🇴','+591'],['BR','🇧🇷','+55'],['BS','🇧🇸','+1242'],['BT','🇧🇹','+975'],['BW','🇧🇼','+267'],['BY','🇧🇾','+375'],['BZ','🇧🇿','+501'],['CA','🇨🇦','+1'],['CD','🇨🇩','+243'],['CF','🇨🇫','+236'],
-            ['CG','🇨🇬','+242'],['CI','🇨🇮','+225'],['CL','🇨🇱','+56'],['CM','🇨🇲','+237'],['CN','🇨🇳','+86'],['CO','🇨🇴','+57'],['CR','🇨🇷','+506'],['CU','🇨🇺','+53'],['CV','🇨🇻','+238'],['CY','🇨🇾','+357'],
-            ['CZ','🇨🇿','+420'],['DJ','🇩🇯','+253'],['DK','🇩🇰','+45'],['DM','🇩🇲','+1767'],['DO','🇩🇴','+1809'],['DZ','🇩🇿','+213'],['EC','🇪🇨','+593'],['EE','🇪🇪','+372'],['EG','🇪🇬','+20'],['ER','🇪🇷','+291'],
-            ['ET','🇪🇹','+251'],['FI','🇫🇮','+358'],['FJ','🇫🇯','+679'],['GA','🇬🇦','+241'],['GD','🇬🇩','+1473'],['GE','🇬🇪','+995'],['GH','🇬🇭','+233'],['GM','🇬🇲','+220'],['GN','🇬🇳','+224'],['GQ','🇬🇶','+240'],
-            ['GR','🇬🇷','+30'],['GT','🇬🇹','+502'],['GW','🇬🇼','+245'],['GY','🇬🇾','+592'],['HN','🇭🇳','+504'],['HR','🇭🇷','+385'],['HT','🇭🇹','+509'],['HU','🇭🇺','+36'],['ID','🇮🇩','+62'],['IE','🇮🇪','+353'],
-            ['IL','🇮🇱','+972'],['IN','🇮🇳','+91'],['IQ','🇮🇶','+964'],['IR','🇮🇷','+98'],['IS','🇮🇸','+354'],['JM','🇯🇲','+1876'],['JO','🇯🇴','+962'],['JP','🇯🇵','+81'],['KE','🇰🇪','+254'],['KG','🇰🇬','+996'],
-            ['KH','🇰🇭','+855'],['KM','🇰🇲','+269'],['KN','🇰🇳','+1869'],['KP','🇰🇵','+850'],['KR','🇰🇷','+82'],['KW','🇰🇼','+965'],['KZ','🇰🇿','+7'],['LA','🇱🇦','+856'],['LB','🇱🇧','+961'],['LC','🇱🇨','+1758'],
-            ['LI','🇱🇮','+423'],['LK','🇱🇰','+94'],['LR','🇱🇷','+231'],['LS','🇱🇸','+266'],['LT','🇱🇹','+370'],['LV','🇱🇻','+371'],['LY','🇱🇾','+218'],['MA','🇲🇦','+212'],['MC','🇲🇨','+377'],['MD','🇲🇩','+373'],
-            ['ME','🇲🇪','+382'],['MG','🇲🇬','+261'],['MK','🇲🇰','+389'],['ML','🇲🇱','+223'],['MM','🇲🇲','+95'],['MN','🇲🇳','+976'],['MR','🇲🇷','+222'],['MT','🇲🇹','+356'],['MU','🇲🇺','+230'],['MV','🇲🇻','+960'],
-            ['MW','🇲🇼','+265'],['MX','🇲🇽','+52'],['MY','🇲🇾','+60'],['MZ','🇲🇿','+258'],['NA','🇳🇦','+264'],['NE','🇳🇪','+227'],['NG','🇳🇬','+234'],['NI','🇳🇮','+505'],['NO','🇳🇴','+47'],['NP','🇳🇵','+977'],
-            ['NZ','🇳🇿','+64'],['OM','🇴🇲','+968'],['PA','🇵🇦','+507'],['PE','🇵🇪','+51'],['PG','🇵🇬','+675'],['PH','🇵🇭','+63'],['PK','🇵🇰','+92'],['PL','🇵🇱','+48'],['QA','🇶🇦','+974'],['RO','🇷🇴','+40'],
-            ['RS','🇷🇸','+381'],['RU','🇷🇺','+7'],['RW','🇷🇼','+250'],['SA','🇸🇦','+966'],['SB','🇸🇧','+677'],['SC','🇸🇨','+248'],['SD','🇸🇩','+249'],['SE','🇸🇪','+46'],['SG','🇸🇬','+65'],['SI','🇸🇮','+386'],
-            ['SK','🇸🇰','+421'],['SL','🇸🇱','+232'],['SM','🇸🇲','+378'],['SN','🇸🇳','+221'],['SO','🇸🇴','+252'],['SR','🇸🇷','+597'],['SS','🇸🇸','+211'],['SV','🇸🇻','+503'],['SY','🇸🇾','+963'],['SZ','🇸🇿','+268'],
-            ['TD','🇹🇩','+235'],['TG','🇹🇬','+228'],['TH','🇹🇭','+66'],['TJ','🇹🇯','+992'],['TL','🇹🇱','+670'],['TM','🇹🇲','+993'],['TN','🇹🇳','+216'],['TO','🇹🇴','+676'],['TR','🇹🇷','+90'],['TT','🇹🇹','+1868'],
-            ['TV','🇹🇻','+688'],['TZ','🇹🇿','+255'],['UA','🇺🇦','+380'],['UG','🇺🇬','+256'],['US','🇺🇸','+1'],['UY','🇺🇾','+598'],['UZ','🇺🇿','+998'],['VA','🇻🇦','+379'],['VC','🇻🇨','+1784'],['VE','🇻🇪','+58'],
-            ['VN','🇻🇳','+84'],['VU','🇻🇺','+678'],['WS','🇼🇸','+685'],['XK','🇽🇰','+383'],['YE','🇾🇪','+967'],['ZA','🇿🇦','+27'],['ZM','🇿🇲','+260'],['ZW','🇿🇼','+263'],
-        ];
-        function populateCountrySelect(selectEl) {
-            COUNTRIES.forEach(([code, flag, dial]) => {
-                const opt = document.createElement('option');
-                opt.value = dial;
-                opt.textContent = `${flag} ${dial}`;
-                opt.setAttribute('data-country', code);
-                if (code === 'FR') opt.selected = true;
-                selectEl.appendChild(opt);
-            });
-        }
-        function getFullPhone(selectId, inputId) {
-            const dial = $(selectId).value;
-            let num = $(inputId).value.trim().replace(/[\s.-]/g, '');
-            if (!num) return '';
-            // Strip leading 0 (local format) when a country code is selected
-            if (num.startsWith('0')) num = num.substring(1);
-            return dial + num;
-        }
 
         // ---- XSS PROTECTION ----
         function esc(str) {
@@ -4865,8 +4859,8 @@
         // ---- INIT ----
         async function init() {
             try {
-                populateCountrySelect($('#phoneCountry'));
-                populateCountrySelect($('#signupPhoneCountry'));
+                initPhoneCountry('#phoneCountry', '#phone');
+                initPhoneCountry('#signupPhoneCountry', '#signupPhone');
                 await tryRestoreSession();
                 await loadBarbers();
                 if (state.barbers.length === 0) throw new Error('no barbers');

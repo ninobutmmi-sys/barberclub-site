@@ -5,6 +5,7 @@ import {
   useNotifyWaitlistSms, useBarbers, useServices,
 } from '../hooks/useApi';
 import CreateBookingModal from '../components/planning/CreateBookingModal';
+import { formatPhoneWithFlag } from '../utils/phone';
 
 // ---- Icons ----
 const IconPlus = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
@@ -25,11 +26,19 @@ function formatSlot(start, end) {
   return `${start.slice(0, 5)} – ${end?.slice(0, 5) || '?'}`;
 }
 
+function buildSmsPreview(entry) {
+  const dateStr = new Date(entry.preferred_date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+  const firstName = (entry.client_name || '').split(/\s+/)[0];
+  return `BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateStr} avec ${entry.barber_name} pour ${entry.service_name}. Reservez vite au salon ou appelez-nous.`;
+}
+
 export default function Waitlist() {
   const isMobile = useMobile();
   const [addModal, setAddModal] = useState(false);
   const [filter, setFilter] = useState('waiting');
   const [bookingEntry, setBookingEntry] = useState(null);
+  const [smsPreview, setSmsPreview] = useState(null); // entry to preview SMS for
+  const [toast, setToast] = useState(null);
 
   const waitlistQuery = useWaitlist(filter === 'all' ? {} : { status: 'waiting' });
   const waitlistCountQuery = useWaitlistCount();
@@ -45,17 +54,30 @@ export default function Waitlist() {
   const updateMutation = useUpdateWaitlistEntry();
   const notifySms = useNotifyWaitlistSms();
 
-  async function handleDelete(id) {
-    if (!confirm('Retirer de la liste d\'attente ?')) return;
-    try { await deleteMutation.mutateAsync(id); } catch (err) { alert(err.message); }
+  function showToast(message, type = 'success') {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
   }
 
-  async function handleNotify(entry) {
-    if (!confirm(`Envoyer un SMS à ${entry.client_name} pour l'informer qu'un créneau est disponible ?`)) return;
+  async function handleDelete(id) {
+    if (!confirm('Retirer de la liste d\'attente ?')) return;
     try {
-      await notifySms.mutateAsync(entry.id);
-      alert('SMS envoyé !');
-    } catch (err) { alert(err.message); }
+      await deleteMutation.mutateAsync(id);
+      showToast('Retiré de la liste');
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  function handleNotify(entry) {
+    setSmsPreview(entry);
+  }
+
+  async function confirmSendSms() {
+    if (!smsPreview) return;
+    try {
+      await notifySms.mutateAsync(smsPreview.id);
+      showToast(`SMS envoyé à ${smsPreview.client_name}`);
+    } catch (err) { showToast(err.message, 'error'); }
+    setSmsPreview(null);
   }
 
   function handleBooked(entry) {
@@ -147,7 +169,7 @@ export default function Waitlist() {
                     fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'none',
                     marginBottom: 10,
                   }}>
-                    <IconPhone /> {w.client_phone}
+                    <IconPhone /> {formatPhoneWithFlag(w.client_phone)}
                   </a>
                 )}
 
@@ -229,7 +251,7 @@ export default function Waitlist() {
                       fontSize: 12, color: 'var(--text-secondary)', textDecoration: 'none',
                       display: 'inline-flex', alignItems: 'center', gap: 4,
                     }}>
-                      <IconPhone /> {w.client_phone}
+                      <IconPhone /> {formatPhoneWithFlag(w.client_phone)}
                     </a>
                   )}
                 </div>
@@ -338,6 +360,53 @@ export default function Waitlist() {
           initialLastName={bookingEntry.client_name?.split(/\s+/).slice(1).join(' ') || ''}
           initialPhone={bookingEntry.client_phone}
         />
+      )}
+
+      {/* SMS Preview Modal */}
+      {smsPreview && (
+        <div className="modal-backdrop" onClick={() => setSmsPreview(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Aperçu SMS</h3>
+              <button className="btn-ghost" onClick={() => setSmsPreview(null)}>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+                Destinataire : <strong style={{ color: 'var(--text)' }}>{smsPreview.client_name}</strong> — {smsPreview.client_phone}
+              </div>
+              <div style={{
+                background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12,
+                padding: 16, fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)',
+                fontFamily: 'monospace', whiteSpace: 'pre-wrap',
+              }}>
+                {buildSmsPreview(smsPreview)}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, textAlign: 'right' }}>
+                {buildSmsPreview(smsPreview).length} caractères — {buildSmsPreview(smsPreview).length <= 160 ? '1 SMS' : '2 SMS'}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary btn-sm" onClick={() => setSmsPreview(null)}>Annuler</button>
+              <button
+                className="btn btn-sm"
+                style={{ background: '#3b82f6', color: '#fff', border: 'none' }}
+                onClick={confirmSendSms}
+                disabled={notifySms.isPending}
+              >
+                {notifySms.isPending ? 'Envoi...' : 'Envoyer le SMS'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="toast-container">
+          <div className={`toast toast-${toast.type}`}>{toast.message}</div>
+        </div>
       )}
     </>
   );

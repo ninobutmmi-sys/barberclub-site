@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useMobile from '../hooks/useMobile';
 import { useClient, useUpdateClient, useDeleteClient } from '../hooks/useApi';
+import { getPhoneFlag } from '../utils/phone';
 
 function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
@@ -188,7 +189,7 @@ export default function ClientDetail() {
           <label className="label" style={{ margin: 0, marginBottom: 4 }}>Informations</label>
           <EditableField label="Prénom" value={client.first_name} fieldKey="first_name" onSave={handleFieldSave} saving={saving} />
           <EditableField label="Nom" value={client.last_name} fieldKey="last_name" onSave={handleFieldSave} saving={saving} />
-          <EditableField label="Tél" value={client.phone} fieldKey="phone" onSave={handleFieldSave} type="tel" needsConfirm saving={saving} />
+          <EditableField label={`Tél${getPhoneFlag(client.phone) ? ' ' + getPhoneFlag(client.phone) : ''}`} value={client.phone} fieldKey="phone" onSave={handleFieldSave} type="tel" needsConfirm saving={saving} />
           <EditableField label="Email" value={client.email} fieldKey="email" onSave={handleFieldSave} type="email" saving={saving} />
         </div>
 
