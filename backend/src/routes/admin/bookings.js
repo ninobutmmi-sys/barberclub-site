@@ -2,7 +2,7 @@ const { Router } = require('express');
 const { body, param, query } = require('express-validator');
 const { handleValidation } = require('../../middleware/validate');
 const bookingService = require('../../services/booking');
-const { sendCancellationEmail, sendRescheduleEmail, sendWaitlistSMS, queueNotification } = require('../../services/notification');
+const { sendCancellationEmail, sendRescheduleEmail, sendWaitlistSMS, queueNotification, toGSM } = require('../../services/notification');
 const config = require('../../config/env');
 const { ApiError } = require('../../utils/errors');
 const logger = require('../../utils/logger');
@@ -652,10 +652,14 @@ router.delete('/:id',
           );
 
           for (const entry of waitlistEntries.rows) {
-            const smsText = `${salon.name} - Bonne nouvelle ${entry.client_name || ''} ! `
-              + `Un creneau s'est libere le ${dateFormatted} a ${startTime} `
-              + `avec ${entry.barber_name} pour ${entry.service_name}. `
-              + `Reserve vite : ${bookingUrl}`;
+            const firstName = (entry.client_name || '').split(/\s+/)[0];
+            let smsText = toGSM(`BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateFormatted} a ${startTime} avec ${entry.barber_name} pour ${entry.service_name}. Reservez vite au salon ou appelez-nous.`);
+            if (smsText.length > 155 && entry.service_name) {
+              const maxLen = entry.service_name.length - (smsText.length - 155);
+              if (maxLen > 3) {
+                smsText = toGSM(`BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateFormatted} a ${startTime} avec ${entry.barber_name} pour ${entry.service_name.slice(0, maxLen - 3)}.... Reservez vite au salon ou appelez-nous.`);
+              }
+            }
             sendWaitlistSMS({ phone: entry.client_phone, message: smsText, salon_id: salonId })
               .then(() => db.query("UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1", [entry.id]))
               .catch((err) => {
