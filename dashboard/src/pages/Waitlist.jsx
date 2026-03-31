@@ -6,10 +6,29 @@ import {
 } from '../hooks/useApi';
 import CreateBookingModal from '../components/planning/CreateBookingModal';
 
+// ---- Icons ----
+const IconPlus = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
+const IconSms = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 15, height: 15 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
+const IconPhone = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 15, height: 15 }}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg>;
+const IconTrash = () => <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>;
+const IconCalendar = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 13, height: 13 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
+const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 13, height: 13 }}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
+const IconClipboard = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 48, height: 48, color: 'var(--text-muted)', marginBottom: 12 }}><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>;
+const IconBooking = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 15, height: 15 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>;
+
+function formatDate(dateStr) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function formatSlot(start, end) {
+  if (!start) return 'Toute la journée';
+  return `${start.slice(0, 5)} – ${end?.slice(0, 5) || '?'}`;
+}
+
 export default function Waitlist() {
   const isMobile = useMobile();
   const [addModal, setAddModal] = useState(false);
-  const [filter, setFilter] = useState('waiting'); // waiting | all
+  const [filter, setFilter] = useState('waiting');
   const [bookingEntry, setBookingEntry] = useState(null);
 
   const waitlistQuery = useWaitlist(filter === 'all' ? {} : { status: 'waiting' });
@@ -53,7 +72,7 @@ export default function Waitlist() {
   }
 
   const statusLabel = { waiting: 'En attente', notified: 'Notifié', booked: 'Réservé', expired: 'Expiré' };
-  const statusClass = { waiting: 'active', notified: 'inactive', booked: 'active', expired: 'inactive' };
+  const statusColor = { waiting: '#3b82f6', notified: '#f59e0b', booked: '#22c55e', expired: 'var(--text-muted)' };
 
   return (
     <>
@@ -65,8 +84,7 @@ export default function Waitlist() {
           </p>
         </div>
         <button className="btn btn-primary btn-sm" onClick={() => setAddModal(true)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Ajouter
+          <IconPlus /> Ajouter
         </button>
       </div>
 
@@ -97,104 +115,203 @@ export default function Waitlist() {
           <div className="empty-state">Chargement...</div>
         ) : waitlist.length === 0 ? (
           <div className="empty-state" style={{ padding: 60 }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 48, height: 48, color: 'var(--text-muted)', marginBottom: 12 }}>
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
+            <IconClipboard />
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Aucun client en attente</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Ajoutez un client quand un créneau est complet</div>
           </div>
         ) : isMobile ? (
-          /* ---- Mobile cards ---- */
-          <div className="mob-card-list">
+          /* ======== MOBILE ======== */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {waitlist.map((w) => (
-              <div key={w.id} className="mob-card-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div className="mob-card-title" style={{ overflow: 'visible', whiteSpace: 'normal' }}>{w.client_name}</div>
-                  <span className={`badge badge-${statusClass[w.status] || 'inactive'}`} style={{ fontSize: 9, flexShrink: 0 }}>
+              <div key={w.id} style={{
+                background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
+                padding: '14px 16px', transition: 'background 0.2s',
+              }}>
+                {/* Header: name + status */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15 }}>{w.client_name}</div>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
+                    background: `${statusColor[w.status] || 'var(--text-muted)'}20`,
+                    color: statusColor[w.status] || 'var(--text-muted)',
+                    textTransform: 'uppercase', letterSpacing: 0.5,
+                  }}>
                     {statusLabel[w.status] || w.status}
                   </span>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px', fontSize: 12, color: 'var(--text-secondary)' }}>
-                  <span>{new Date(w.preferred_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                  <span>{w.preferred_time_start ? `${w.preferred_time_start.slice(0, 5)} – ${w.preferred_time_end?.slice(0, 5) || '?'}` : 'Toute la journée'}</span>
+
+                {/* Phone */}
+                {w.client_phone && (
+                  <a href={`tel:${w.client_phone}`} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'none',
+                    marginBottom: 10,
+                  }}>
+                    <IconPhone /> {w.client_phone}
+                  </a>
+                )}
+
+                {/* Details */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <IconCalendar /> {formatDate(w.preferred_date)}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <IconClock /> {formatSlot(w.preferred_time_start, w.preferred_time_end)}
+                  </span>
                   {w.service_name && <span>{w.service_name}</span>}
-                  {w.barber_name && <span style={{ color: 'var(--text-muted)' }}>{w.barber_name}</span>}
+                  {w.barber_name && <span>{w.barber_name}</span>}
                 </div>
-                {w.status === 'waiting' && (
-                  <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
-                    <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: '4px 10px' }} onClick={(e) => { e.stopPropagation(); handleNotify(w); }}>Notifier</button>
-                    <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '4px 10px' }} onClick={(e) => { e.stopPropagation(); handleBooked(w); }}>Réservé</button>
-                    <div style={{ flex: 1 }} />
-                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: 4 }} onClick={(e) => { e.stopPropagation(); handleDelete(w.id); }}>
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
-                    </button>
-                  </div>
-                )}
-                {w.status !== 'waiting' && (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: 4 }} onClick={(e) => { e.stopPropagation(); handleDelete(w.id); }}>
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
-                    </button>
-                  </div>
-                )}
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {w.status === 'waiting' && (
+                    <>
+                      <button
+                        onClick={() => handleNotify(w)}
+                        style={{
+                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          padding: '9px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
+                          background: '#3b82f6', color: '#fff', fontSize: 13, fontWeight: 600,
+                          fontFamily: 'var(--font)',
+                        }}
+                      >
+                        <IconSms /> SMS
+                      </button>
+                      <a
+                        href={`tel:${w.client_phone}`}
+                        style={{
+                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          padding: '9px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
+                          background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontSize: 13, fontWeight: 600,
+                          textDecoration: 'none', fontFamily: 'var(--font)',
+                        }}
+                      >
+                        <IconPhone /> Appeler
+                      </a>
+                    </>
+                  )}
+                  <button
+                    onClick={() => handleDelete(w.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 40, padding: '9px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
+                      background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <IconTrash />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         ) : (
-          /* ---- Desktop table ---- */
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Client</th>
-                  <th>Téléphone</th>
-                  <th>Barber souhaité</th>
-                  <th>Prestation</th>
-                  <th>Date souhaitée</th>
-                  <th>Créneau</th>
-                  <th>Statut</th>
-                  <th style={{ width: 160 }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {waitlist.map((w) => (
-                  <tr key={w.id}>
-                    <td style={{ fontWeight: 600 }}>{w.client_name}</td>
-                    <td style={{ fontSize: 12 }}>{w.client_phone}</td>
-                    <td style={{ fontSize: 12 }}>{w.barber_name || '–'}</td>
-                    <td style={{ fontSize: 12 }}>{w.service_name || '–'}</td>
-                    <td style={{ fontSize: 12 }}>
-                      {new Date(w.preferred_date + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    </td>
-                    <td style={{ fontSize: 12 }}>
-                      {w.preferred_time_start ? `${w.preferred_time_start.slice(0, 5)} – ${w.preferred_time_end?.slice(0, 5) || '?'}` : 'Toute la journée'}
-                    </td>
-                    <td>
-                      <span className={`badge badge-${statusClass[w.status] || 'inactive'}`}>
-                        {statusLabel[w.status] || w.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        {w.status === 'waiting' && (
-                          <>
-                            <button className="btn btn-primary btn-sm" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => handleNotify(w)}>
-                              Notifier
-                            </button>
-                            <button className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '4px 8px' }} onClick={() => handleBooked(w)}>
-                              Réservé
-                            </button>
-                          </>
-                        )}
-                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(w.id)}>
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /></svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          /* ======== DESKTOP ======== */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {waitlist.map((w) => (
+              <div key={w.id} style={{
+                background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12,
+                padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16,
+                transition: 'background 0.2s',
+              }}>
+                {/* Status dot */}
+                <div style={{
+                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                  background: statusColor[w.status] || 'var(--text-muted)',
+                }} />
+
+                {/* Client info */}
+                <div style={{ minWidth: 160, flexShrink: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{w.client_name}</div>
+                  {w.client_phone && (
+                    <a href={`tel:${w.client_phone}`} style={{
+                      fontSize: 12, color: 'var(--text-secondary)', textDecoration: 'none',
+                      display: 'inline-flex', alignItems: 'center', gap: 4,
+                    }}>
+                      <IconPhone /> {w.client_phone}
+                    </a>
+                  )}
+                </div>
+
+                {/* Details */}
+                <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: '4px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <IconCalendar /> {formatDate(w.preferred_date)}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <IconClock /> {formatSlot(w.preferred_time_start, w.preferred_time_end)}
+                  </span>
+                  {w.service_name && <span style={{ color: 'var(--text-muted)' }}>{w.service_name}</span>}
+                  {w.barber_name && <span style={{ color: 'var(--text-muted)' }}>{w.barber_name}</span>}
+                </div>
+
+                {/* Status badge */}
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6, flexShrink: 0,
+                  background: `${statusColor[w.status] || 'var(--text-muted)'}15`,
+                  color: statusColor[w.status] || 'var(--text-muted)',
+                  textTransform: 'uppercase', letterSpacing: 0.5,
+                }}>
+                  {statusLabel[w.status] || w.status}
+                </span>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  {w.status === 'waiting' && (
+                    <>
+                      <button
+                        className="btn btn-sm"
+                        onClick={() => handleNotify(w)}
+                        title="Envoyer SMS"
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 5,
+                          padding: '6px 12px', fontSize: 12, fontWeight: 600,
+                          background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <IconSms /> SMS
+                      </button>
+                      <a
+                        href={`tel:${w.client_phone}`}
+                        title="Appeler"
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 34, height: 34, borderRadius: 8, textDecoration: 'none',
+                          background: 'rgba(34,197,94,0.12)', color: '#22c55e',
+                        }}
+                      >
+                        <IconPhone />
+                      </a>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => handleBooked(w)}
+                        title="Créer réservation"
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 34, height: 34, borderRadius: 8, padding: 0,
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        <IconBooking />
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => handleDelete(w.id)}
+                    title="Supprimer"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 34, height: 34, borderRadius: 8, border: 'none', cursor: 'pointer',
+                      background: 'rgba(239,68,68,0.08)', color: '#ef4444',
+                    }}
+                  >
+                    <IconTrash />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
