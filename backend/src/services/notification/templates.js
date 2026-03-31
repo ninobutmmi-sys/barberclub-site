@@ -18,6 +18,24 @@ const {
   TEXT_SECONDARY,
   TEXT_MUTED,
 } = require('./helpers');
+const { loadTemplate } = require('./loadTemplate');
+
+// Shared design tokens object for template injection
+const DESIGN_TOKENS = {
+  ACCENT, ACCENT_DIM, DARK_BG, CARD_BG, CARD_BORDER,
+  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED,
+};
+
+/**
+ * Build barber photo <img> tag or empty string
+ */
+function barberPhotoImg(barberName, opts = {}) {
+  const url = getBarberPhotoUrl(barberName);
+  if (!url) return '';
+  const size = opts.size || 28;
+  const border = opts.border || `1.5px solid ${ACCENT_DIM}`;
+  return `<img src="${url}" alt="" width="${size}" height="${size}" style="width:${size}px;height:${size}px;border-radius:50%;vertical-align:middle;margin-right:8px;object-fit:cover;border:${border};">`;
+}
 
 /**
  * Send confirmation email via Brevo
@@ -102,51 +120,17 @@ async function sendCancellationEmail({ email, first_name, service_name, barber_n
 
   const bookAgainUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
 
-  const html = emailShell(`
-      <div style="text-align:center;margin-bottom:32px;">
-        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous annul&eacute;</h2>
-        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
-          Votre r&eacute;servation a bien &eacute;t&eacute; annul&eacute;e.
-        </p>
-      </div>
+  const content = loadTemplate('cancellation', {
+    ...DESIGN_TOKENS,
+    service_name,
+    barber_name,
+    dateFormatted,
+    timeFormatted,
+    priceFormatted,
+    bookAgainUrl,
+  });
 
-      <!-- Cancelled details -->
-      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
-        <tr><td style="height:3px;background:linear-gradient(90deg, rgba(239,68,68,0.3), rgba(239,68,68,0.6), rgba(239,68,68,0.3));font-size:0;line-height:0;">&nbsp;</td></tr>
-        <tr>
-          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:24px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:15px;text-align:right;text-decoration:line-through;">${service_name}</td>
-              </tr>
-              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">${barber_name}</td>
-              </tr>
-              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Date</td>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">${dateFormatted} &agrave; ${timeFormatted}</td>
-              </tr>
-              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
-              <tr>
-                <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
-                <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:18px;font-weight:700;text-align:right;text-decoration:line-through;">${priceFormatted}<span style="font-size:13px;font-weight:400;"> &euro;</span></td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-
-      <!-- CTA -->
-      <div style="text-align:center;margin-bottom:20px;">
-        <p style="color:${TEXT_SECONDARY};font-size:13px;margin:0 0 20px;">N'h&eacute;sitez pas &agrave; reprendre rendez-vous en ligne.</p>
-        <a href="${bookAgainUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
-          Reprendre rendez-vous
-        </a>
-      </div>`, { showHero: false, salonId });
+  const html = emailShell(content, { showHero: false, salonId });
 
   await brevoEmail(email, `RDV annulé - ${service_name} le ${dateFormatted}`, html, salonId, {
     type: 'cancellation_email', recipientName: first_name, fromQueue, queueId,
@@ -180,81 +164,16 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
     : null;
 
   const effectiveBarber = new_barber_name || barber_name;
-  const barberPhotoUrl = getBarberPhotoUrl(effectiveBarber);
 
-  const html = emailShell(`
-      <div style="text-align:center;margin-bottom:32px;">
-        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous d&eacute;plac&eacute;</h2>
-        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
-          Votre cr&eacute;neau a &eacute;t&eacute; modifi&eacute; avec succ&egrave;s.
-        </p>
-      </div>
+  // Build the old barber suffix exactly as before
+  const oldBarberSuffix = (old_date !== new_date || barber_name !== new_barber_name)
+    ? ` &mdash; ${barber_name}`
+    : '';
 
-      <!-- Ancien cr&eacute;neau -->
-      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:16px;opacity:0.6;">
-        <tr>
-          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:16px 20px;border-radius:16px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-              <tr>
-                <td style="padding:4px 0;color:${TEXT_MUTED};font-size:11px;text-transform:uppercase;letter-spacing:1.5px;">Ancien cr&eacute;neau</td>
-                <td style="padding:4px 0;color:${TEXT_MUTED};font-size:14px;text-align:right;text-decoration:line-through;">
-                  ${oldDateFormatted} &agrave; ${oldTimeFormatted}${old_date !== new_date || barber_name !== new_barber_name ? ` &mdash; ${barber_name}` : ''}
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-
-      <!-- Nouveau cr&eacute;neau -->
-      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
-        <tr><td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td></tr>
-        <tr>
-          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:24px;">
-            <p style="margin:0 0 16px;color:${ACCENT};font-size:11px;text-transform:uppercase;letter-spacing:2px;font-weight:600;">Nouveau cr&eacute;neau</p>
-
-            <table role="presentation" class="dark-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${DARK_BG}" style="background-color:${DARK_BG};border:1px solid ${CARD_BORDER};border-radius:12px;margin-bottom:20px;">
-              <tr>
-                <td bgcolor="${DARK_BG}" style="background-color:${DARK_BG};text-align:center;padding:16px;border-radius:12px;">
-                  <p style="margin:0;color:${ACCENT};font-size:32px;font-weight:800;letter-spacing:1px;">${newTimeFormatted}</p>
-                  <p style="margin:4px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${newDateFormatted}</p>
-                </td>
-              </tr>
-            </table>
-
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
-                <td style="padding:10px 0;color:${TEXT_PRIMARY};font-size:15px;font-weight:600;text-align:right;">${service_name}</td>
-              </tr>
-              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
-                <td style="padding:10px 0;text-align:right;">
-                  ${barberPhotoUrl ? `<img src="${barberPhotoUrl}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px;object-fit:cover;border:1.5px solid ${ACCENT_DIM};">` : ''}
-                  <span style="color:${TEXT_SECONDARY};font-size:14px;vertical-align:middle;">${effectiveBarber}</span>
-                </td>
-              </tr>
-              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
-                <td style="padding:10px 0;text-align:right;">
-                  <a href="${salon.mapsUrl}" style="color:${TEXT_SECONDARY};font-size:13px;text-decoration:none;">
-                    &#128205; <span style="text-decoration:underline;">${escapeHtml(salon.address)}</span>
-                  </a>
-                </td>
-              </tr>
-              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
-              <tr>
-                <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
-                <td style="padding:12px 0 4px;color:${ACCENT};font-size:22px;font-weight:800;text-align:right;">${priceFormatted}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-
-      ${manageUrl ? `<div style="text-align:center;margin-bottom:20px;">
+  // Build the manage block (CTA + cancellation policy) or empty string
+  let manageBlock = '';
+  if (manageUrl) {
+    manageBlock = `<div style="text-align:center;margin-bottom:20px;">
         <a href="${manageUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
           G&eacute;rer mon rendez-vous
         </a>
@@ -268,7 +187,26 @@ async function sendRescheduleEmail({ email, first_name, service_name, barber_nam
             </p>
           </td>
         </tr>
-      </table>` : ''}`, { showHero: false, salonId });
+      </table>`;
+  }
+
+  const content = loadTemplate('reschedule', {
+    ...DESIGN_TOKENS,
+    oldDateFormatted,
+    oldTimeFormatted,
+    oldBarberSuffix,
+    newDateFormatted,
+    newTimeFormatted,
+    service_name,
+    effectiveBarber,
+    barberPhotoHtml: barberPhotoImg(effectiveBarber),
+    salonAddress: escapeHtml(salon.address),
+    mapsUrl: salon.mapsUrl,
+    priceFormatted,
+    manageBlock,
+  });
+
+  const html = emailShell(content, { showHero: false, salonId });
 
   await brevoEmail(email, `RDV déplacé - ${service_name} le ${newDateFormatted} à ${newTimeFormatted}`, html, salonId, {
     bookingId: booking_id, type: 'reschedule_email', recipientName: first_name, fromQueue, queueId,
@@ -295,41 +233,25 @@ async function sendReviewEmail(data) {
   const barberPhotoUrl = getBarberPhotoUrl(data.barber_name);
   const bookingUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
 
-  const html = emailShell(`
-      <div style="text-align:center;margin-bottom:32px;">
-        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Merci pour votre visite !</h2>
-        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
-          ${firstName ? `${firstName}, nous` : 'Nous'} esp&eacute;rons que vous &ecirc;tes satisfait.
-        </p>
-      </div>
-
-      ${barberPhotoUrl ? `
+  // Build the barber photo block or empty string
+  let barberPhotoBlock = '';
+  if (barberPhotoUrl) {
+    barberPhotoBlock = `
       <div style="text-align:center;margin-bottom:28px;">
         <img src="${barberPhotoUrl}" alt="${barberName}" width="72" height="72" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid ${ACCENT_DIM};">
         <p style="margin:10px 0 0;color:${TEXT_SECONDARY};font-size:13px;">Votre barbier : <strong style="color:${TEXT_PRIMARY};">${barberName}</strong></p>
-      </div>` : ''}
+      </div>`;
+  }
 
-      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
-        <tr><td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td></tr>
-        <tr>
-          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:28px 24px;text-align:center;">
-            <p style="margin:0 0 8px;font-size:28px;">&#11088;&#11088;&#11088;&#11088;&#11088;</p>
-            <p style="margin:0 0 20px;color:${TEXT_SECONDARY};font-size:14px;line-height:1.7;">
-              Votre avis compte &eacute;norm&eacute;ment pour nous.<br>
-              En 30 secondes, aidez d'autres clients &agrave; d&eacute;couvrir BarberClub.
-            </p>
-            <a href="${reviewLink}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
-              Laisser un avis Google
-            </a>
-          </td>
-        </tr>
-      </table>
+  const content = loadTemplate('review', {
+    ...DESIGN_TOKENS,
+    firstNameIntro: firstName ? `${firstName}, nous` : 'Nous',
+    barberPhotoBlock,
+    reviewLink,
+    bookingUrl,
+  });
 
-      <div style="text-align:center;">
-        <a href="${bookingUrl}" style="color:${TEXT_SECONDARY};font-size:13px;text-decoration:underline;">
-          Reprendre rendez-vous
-        </a>
-      </div>`, { salonId });
+  const html = emailShell(content, { salonId });
 
   await brevoEmail(data.email, `Votre avis compte — ${salon.name}`, html, salonId, {
     bookingId: data.booking_id, type: 'review_email', recipientName: firstName, fromQueue: data.fromQueue, queueId: data.queueId,
@@ -351,32 +273,13 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl, salon_id })
 
   first_name = escapeHtml(first_name);
 
-  const html = emailShell(`
-      <div style="text-align:center;margin-bottom:32px;">
-        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">R&eacute;initialiser votre mot de passe</h2>
-      </div>
+  const content = loadTemplate('reset-password', {
+    ...DESIGN_TOKENS,
+    firstNameGreeting: first_name ? ` ${first_name}` : '',
+    resetUrl,
+  });
 
-      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
-        <tr><td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td></tr>
-        <tr>
-          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:28px 24px;">
-            <p style="margin:0 0 24px;color:${TEXT_SECONDARY};font-size:14px;line-height:1.7;">
-              Bonjour${first_name ? ` ${first_name}` : ''},<br><br>
-              Vous avez demand&eacute; la r&eacute;initialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.
-            </p>
-            <div style="text-align:center;">
-              <a href="${resetUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
-                Nouveau mot de passe
-              </a>
-            </div>
-          </td>
-        </tr>
-      </table>
-
-      <div style="text-align:center;color:${TEXT_MUTED};font-size:11px;line-height:1.6;">
-        <p style="margin:0 0 4px;">Ce lien expire dans 1 heure.</p>
-        <p style="margin:0;">Si vous n'avez pas fait cette demande, ignorez cet email.</p>
-      </div>`, { showHero: false, salonId });
+  const html = emailShell(content, { showHero: false, salonId });
 
   await brevoEmail(email, 'Réinitialisation de votre mot de passe BarberClub', html, salonId, {
     type: 'reset_password_email',
@@ -432,72 +335,33 @@ async function sendReminderEmail(data) {
   const timeFormatted = formatTime(data.start_time);
   const firstName = escapeHtml(data.first_name || '');
   const barberName = escapeHtml(data.barber_name || '');
-  const barberPhotoUrl = getBarberPhotoUrl(data.barber_name);
   const cancelUrl = data.cancel_token
     ? `${config.siteUrl}${salon.bookingPath}/mon-rdv.html?id=${data.booking_id}&token=${data.cancel_token}`
     : null;
 
-  const html = emailShell(`
-      <div style="text-align:center;margin-bottom:32px;">
-        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rappel rendez-vous</h2>
-        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
-          ${firstName ? `${firstName}, c` : 'C'}'est demain !
-        </p>
-      </div>
-
-      <!-- Time highlight -->
-      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
-        <tr><td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td></tr>
-        <tr>
-          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};text-align:center;padding:24px 20px;border-radius:16px;">
-            <p style="margin:0 0 4px;color:${ACCENT};font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:600;">Votre rendez-vous</p>
-            <p style="margin:0;color:${ACCENT};font-size:36px;font-weight:800;letter-spacing:1px;">${escapeHtml(timeFormatted)}</p>
-            <p style="margin:6px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${escapeHtml(dateFormatted)}</p>
-          </td>
-        </tr>
-      </table>
-
-      <!-- Details -->
-      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
-        <tr>
-          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:20px 24px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Barbier</td>
-                <td style="padding:10px 0;text-align:right;">
-                  ${barberPhotoUrl ? `<img src="${barberPhotoUrl}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px;object-fit:cover;border:1.5px solid ${ACCENT_DIM};">` : ''}
-                  <span style="color:${TEXT_SECONDARY};font-size:14px;vertical-align:middle;">${barberName}</span>
-                </td>
-              </tr>
-              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
-                <td style="padding:10px 0;text-align:right;">
-                  <a href="${salon.mapsUrl}" style="color:${TEXT_SECONDARY};font-size:13px;text-decoration:none;">
-                    &#128205; <span style="text-decoration:underline;">${escapeHtml(salon.address)}</span>
-                  </a>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-
-      ${cancelUrl ? `<div style="text-align:center;margin-bottom:20px;">
+  // Build cancel CTA block or empty string
+  let cancelBlock = '';
+  if (cancelUrl) {
+    cancelBlock = `<div style="text-align:center;margin-bottom:20px;">
         <a href="${cancelUrl}" style="display:inline-block;background:${ACCENT};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
           G&eacute;rer mon rendez-vous
         </a>
-      </div>` : ''}
+      </div>`;
+  }
 
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;">
-        <tr>
-          <td style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 18px;text-align:center;">
-            <p style="margin:0;color:${TEXT_SECONDARY};font-size:12px;line-height:1.5;">
-              &#9432; Modification ou annulation <strong style="color:${TEXT_PRIMARY};">gratuite jusqu'&agrave; 12h</strong> avant le rendez-vous
-            </p>
-          </td>
-        </tr>
-      </table>`, { salonId });
+  const content = loadTemplate('reminder', {
+    ...DESIGN_TOKENS,
+    firstNameIntro: firstName ? `${firstName}, c` : 'C',
+    timeFormatted: escapeHtml(timeFormatted),
+    dateFormatted: escapeHtml(dateFormatted),
+    barberName,
+    barberPhotoHtml: barberPhotoImg(data.barber_name),
+    salonAddress: escapeHtml(salon.address),
+    mapsUrl: salon.mapsUrl,
+    cancelBlock,
+  });
+
+  const html = emailShell(content, { salonId });
 
   await brevoEmail(data.email, `Rappel RDV demain à ${timeFormatted} — ${salon.name}`, html, salonId, {
     bookingId: data.booking_id, type: 'reminder_email', recipientName: firstName, fromQueue: data.fromQueue, queueId: data.queueId,
@@ -526,84 +390,19 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
   address = escapeHtml(address);
   mapsUrl = mapsUrl || '#';
 
-  // Build barber photo URL from name
-  const barberPhotoUrl = getBarberPhotoUrl(barberName);
-
-  const content = `
-      <div style="text-align:center;margin-bottom:32px;">
-        <h2 style="font-size:24px;font-weight:700;margin:0;color:${TEXT_PRIMARY};letter-spacing:-0.3px;">Rendez-vous confirm&eacute;</h2>
-        <p style="color:${TEXT_SECONDARY};font-size:14px;margin:8px 0 0;">
-          ${firstName ? `${firstName}, votre` : 'Votre'} r&eacute;servation est enregistr&eacute;e.
-        </p>
-      </div>
-
-      <!-- Time highlight -->
-      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
-        <tr>
-          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};text-align:center;padding:24px 20px;border-radius:16px;">
-            <p style="margin:0 0 4px;color:${ACCENT};font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:600;">Votre rendez-vous</p>
-            <p style="margin:0;color:${ACCENT};font-size:36px;font-weight:800;letter-spacing:1px;">${time}</p>
-            <p style="margin:6px 0 0;color:${TEXT_SECONDARY};font-size:14px;">${date}</p>
-          </td>
-        </tr>
-      </table>
-
-      <!-- Detail card -->
-      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${CARD_BG}" style="background-color:${CARD_BG};border:1px solid ${CARD_BORDER};border-radius:16px;margin-bottom:28px;">
-        <tr>
-          <td style="height:3px;background:linear-gradient(90deg, ${ACCENT_DIM}, ${ACCENT}, ${ACCENT_DIM});font-size:0;line-height:0;">&nbsp;</td>
-        </tr>
-        <tr>
-          <td bgcolor="${CARD_BG}" style="background-color:${CARD_BG};padding:24px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
-                <td style="padding:10px 0;color:${TEXT_PRIMARY};font-size:15px;font-weight:600;text-align:right;">${serviceName}</td>
-              </tr>
-              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
-                <td style="padding:10px 0;text-align:right;">
-                  ${barberPhotoUrl ? `<img src="${barberPhotoUrl}" alt="" width="28" height="28" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px;object-fit:cover;border:1.5px solid ${ACCENT_DIM};">` : ''}
-                  <span style="color:${TEXT_SECONDARY};font-size:14px;vertical-align:middle;">${barberName}</span>
-                </td>
-              </tr>
-              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
-              <tr>
-                <td style="padding:10px 0;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
-                <td style="padding:10px 0;text-align:right;">
-                  <a href="${mapsUrl}" style="color:${TEXT_SECONDARY};font-size:13px;text-decoration:none;">
-                    &#128205; <span style="text-decoration:underline;">${address}</span>
-                  </a>
-                </td>
-              </tr>
-              <tr><td colspan="2" style="padding:0;border-top:1px solid ${CARD_BORDER};"></td></tr>
-              <tr>
-                <td style="padding:12px 0 4px;color:${TEXT_MUTED};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
-                <td style="padding:12px 0 4px;color:${ACCENT};font-size:22px;font-weight:800;text-align:right;">${price}<span style="font-size:14px;font-weight:400;color:${TEXT_MUTED};"> &euro;</span></td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-
-      <!-- CTA -->
-      <div style="text-align:center;margin-bottom:20px;">
-        <a href="${cancelUrl}" style="display:inline-block;background-color:${ACCENT};color:#000000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
-          G&eacute;rer mon rendez-vous
-        </a>
-      </div>
-
-      <!-- Cancellation policy -->
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
-        <tr>
-          <td style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 18px;text-align:center;">
-            <p style="margin:0;color:${TEXT_SECONDARY};font-size:12px;line-height:1.5;">
-              &#9432; Modification ou annulation <strong style="color:${TEXT_PRIMARY};">gratuite jusqu'&agrave; 12h</strong> avant le rendez-vous
-            </p>
-          </td>
-        </tr>
-      </table>`;
+  const content = loadTemplate('confirmation', {
+    ...DESIGN_TOKENS,
+    firstNameIntro: firstName ? `${firstName}, votre` : 'Votre',
+    time,
+    date,
+    serviceName,
+    barberName,
+    barberPhotoHtml: barberPhotoImg(barberName),
+    address,
+    mapsUrl,
+    price,
+    cancelUrl,
+  });
 
   return emailShell(content, { salonId });
 }

@@ -1,0 +1,74 @@
+      <div style="text-align:center;margin-bottom:32px;">
+        <h2 style="font-size:24px;font-weight:700;margin:0;color:{{TEXT_PRIMARY}};letter-spacing:-0.3px;">Rendez-vous confirm&eacute;</h2>
+        <p style="color:{{TEXT_SECONDARY}};font-size:14px;margin:8px 0 0;">
+          {{firstNameIntro}} r&eacute;servation est enregistr&eacute;e.
+        </p>
+      </div>
+
+      <!-- Time highlight -->
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{{CARD_BG}}" style="background-color:{{CARD_BG}};border:1px solid {{CARD_BORDER}};border-radius:16px;margin-bottom:28px;">
+        <tr>
+          <td bgcolor="{{CARD_BG}}" style="background-color:{{CARD_BG}};text-align:center;padding:24px 20px;border-radius:16px;">
+            <p style="margin:0 0 4px;color:{{ACCENT}};font-size:11px;text-transform:uppercase;letter-spacing:3px;font-weight:600;">Votre rendez-vous</p>
+            <p style="margin:0;color:{{ACCENT}};font-size:36px;font-weight:800;letter-spacing:1px;">{{time}}</p>
+            <p style="margin:6px 0 0;color:{{TEXT_SECONDARY}};font-size:14px;">{{date}}</p>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Detail card -->
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{{CARD_BG}}" style="background-color:{{CARD_BG}};border:1px solid {{CARD_BORDER}};border-radius:16px;margin-bottom:28px;">
+        <tr>
+          <td style="height:3px;background:linear-gradient(90deg, {{ACCENT_DIM}}, {{ACCENT}}, {{ACCENT_DIM}});font-size:0;line-height:0;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td bgcolor="{{CARD_BG}}" style="background-color:{{CARD_BG}};padding:24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td style="padding:10px 0;color:{{TEXT_MUTED}};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
+                <td style="padding:10px 0;color:{{TEXT_PRIMARY}};font-size:15px;font-weight:600;text-align:right;">{{serviceName}}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid {{CARD_BORDER}};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:{{TEXT_MUTED}};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
+                <td style="padding:10px 0;text-align:right;">
+                  {{barberPhotoHtml}}
+                  <span style="color:{{TEXT_SECONDARY}};font-size:14px;vertical-align:middle;">{{barberName}}</span>
+                </td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid {{CARD_BORDER}};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:{{TEXT_MUTED}};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Adresse</td>
+                <td style="padding:10px 0;text-align:right;">
+                  <a href="{{mapsUrl}}" style="color:{{TEXT_SECONDARY}};font-size:13px;text-decoration:none;">
+                    &#128205; <span style="text-decoration:underline;">{{address}}</span>
+                  </a>
+                </td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid {{CARD_BORDER}};"></td></tr>
+              <tr>
+                <td style="padding:12px 0 4px;color:{{TEXT_MUTED}};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
+                <td style="padding:12px 0 4px;color:{{ACCENT}};font-size:22px;font-weight:800;text-align:right;">{{price}}<span style="font-size:14px;font-weight:400;color:{{TEXT_MUTED}};"> &euro;</span></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <!-- CTA -->
+      <div style="text-align:center;margin-bottom:20px;">
+        <a href="{{cancelUrl}}" style="display:inline-block;background-color:{{ACCENT}};color:#000000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+          G&eacute;rer mon rendez-vous
+        </a>
+      </div>
+
+      <!-- Cancellation policy -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;">
+        <tr>
+          <td style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 18px;text-align:center;">
+            <p style="margin:0;color:{{TEXT_SECONDARY}};font-size:12px;line-height:1.5;">
+              &#9432; Modification ou annulation <strong style="color:{{TEXT_PRIMARY}};">gratuite jusqu'&agrave; 12h</strong> avant le rendez-vous
+            </p>
+          </td>
+        </tr>
+      </table>

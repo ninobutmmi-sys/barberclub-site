@@ -1,0 +1,44 @@
+      <div style="text-align:center;margin-bottom:32px;">
+        <h2 style="font-size:24px;font-weight:700;margin:0;color:{{TEXT_PRIMARY}};letter-spacing:-0.3px;">Rendez-vous annul&eacute;</h2>
+        <p style="color:{{TEXT_SECONDARY}};font-size:14px;margin:8px 0 0;">
+          Votre r&eacute;servation a bien &eacute;t&eacute; annul&eacute;e.
+        </p>
+      </div>
+
+      <!-- Cancelled details -->
+      <table role="presentation" class="card-bg" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{{CARD_BG}}" style="background-color:{{CARD_BG}};border:1px solid {{CARD_BORDER}};border-radius:16px;margin-bottom:28px;">
+        <tr><td style="height:3px;background:linear-gradient(90deg, rgba(239,68,68,0.3), rgba(239,68,68,0.6), rgba(239,68,68,0.3));font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr>
+          <td bgcolor="{{CARD_BG}}" style="background-color:{{CARD_BG}};padding:24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td style="padding:10px 0;color:{{TEXT_MUTED}};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;width:100px;">Prestation</td>
+                <td style="padding:10px 0;color:{{TEXT_MUTED}};font-size:15px;text-align:right;text-decoration:line-through;">{{service_name}}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid {{CARD_BORDER}};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:{{TEXT_MUTED}};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Barbier</td>
+                <td style="padding:10px 0;color:{{TEXT_MUTED}};font-size:14px;text-align:right;text-decoration:line-through;">{{barber_name}}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid {{CARD_BORDER}};"></td></tr>
+              <tr>
+                <td style="padding:10px 0;color:{{TEXT_MUTED}};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Date</td>
+                <td style="padding:10px 0;color:{{TEXT_MUTED}};font-size:14px;text-align:right;text-decoration:line-through;">{{dateFormatted}} &agrave; {{timeFormatted}}</td>
+              </tr>
+              <tr><td colspan="2" style="padding:0;border-top:1px solid {{CARD_BORDER}};"></td></tr>
+              <tr>
+                <td style="padding:12px 0 4px;color:{{TEXT_MUTED}};font-size:12px;text-transform:uppercase;letter-spacing:1px;vertical-align:middle;">Prix</td>
+                <td style="padding:12px 0 4px;color:{{TEXT_MUTED}};font-size:18px;font-weight:700;text-align:right;text-decoration:line-through;">{{priceFormatted}}<span style="font-size:13px;font-weight:400;"> &euro;</span></td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <!-- CTA -->
+      <div style="text-align:center;margin-bottom:20px;">
+        <p style="color:{{TEXT_SECONDARY}};font-size:13px;margin:0 0 20px;">N'h&eacute;sitez pas &agrave; reprendre rendez-vous en ligne.</p>
+        <a href="{{bookAgainUrl}}" style="display:inline-block;background:{{ACCENT}};color:#000;padding:16px 40px;border-radius:12px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+          Reprendre rendez-vous
+        </a>
+      </div>

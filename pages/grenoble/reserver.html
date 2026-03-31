@@ -1123,6 +1123,18 @@
             box-shadow: 0 0 16px rgba(255, 255, 255, 0.12);
         }
 
+        .slot-barber {
+            display: block;
+            font-size: 10px;
+            font-weight: 400;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
+        .slot-btn.selected .slot-barber {
+            opacity: 0.8;
+        }
+
         .slots-empty {
             text-align: center;
             padding: 30px 16px;
@@ -3771,6 +3783,7 @@
                     });
                     card.classList.add('selected');
                     card.setAttribute('aria-checked', 'true');
+                    if (navigator.vibrate) navigator.vibrate(10);
 
                     if (id === 'any') {
                         state.selectedBarber = { id: 'any', name: 'Peu importe' };
@@ -3902,6 +3915,7 @@
                     });
                     card.classList.add('selected');
                     card.setAttribute('aria-checked', 'true');
+                    if (navigator.vibrate) navigator.vibrate(10);
                     state.selectedService = state.services.find(s => s.id === id);
 
                     // Reset downstream
@@ -4271,7 +4285,8 @@
 
             for (const slot of uniqueSlots) {
                 const isSelected = state.selectedSlot && state.selectedSlot.time === slot.time;
-                html += `<button class="slot-btn${isSelected ? ' selected' : ''}" data-time="${slot.time}" data-barber-id="${slot.barber_id}" data-barber-name="${slot.barber_name}" role="radio" aria-checked="${isSelected ? 'true' : 'false'}" aria-label="Créneau ${slot.time}">${slot.time}</button>`;
+                const showBarber = state.selectedBarber && state.selectedBarber.id === 'any' && slot.barber_name;
+                html += `<button class="slot-btn${isSelected ? ' selected' : ''}" data-time="${slot.time}" data-barber-id="${slot.barber_id}" data-barber-name="${slot.barber_name}" role="radio" aria-checked="${isSelected ? 'true' : 'false'}" aria-label="Créneau ${slot.time}${showBarber ? ' avec ' + slot.barber_name : ''}">${slot.time}${showBarber ? `<span class="slot-barber">${esc(slot.barber_name)}</span>` : ''}</button>`;
             }
 
             html += '</div>';
@@ -4281,6 +4296,10 @@
                 btn.addEventListener('click', () => {
                     slotsSection.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
                     btn.classList.add('selected');
+
+                    if (navigator.vibrate) navigator.vibrate(10);
+                    btn.style.transform = 'scale(1.1)';
+                    setTimeout(() => { btn.style.transform = ''; }, 150);
 
                     state.selectedSlot = {
                         time: btn.dataset.time,
@@ -4316,8 +4335,10 @@
 
         // ---- STEP 4: SUMMARY ----
         function renderSummary() {
-            const barberName = state.selectedSlot
-                ? (state.selectedBarber.id === 'any' ? (state.selectedSlot.barber_name || 'Peu importe') : state.selectedBarber.name)
+            const isAny = state.selectedBarber && state.selectedBarber.id === 'any';
+            const assignedBarber = state.selectedSlot ? state.selectedSlot.barber_name : null;
+            const barberName = isAny
+                ? (assignedBarber ? `${assignedBarber} (attribué)` : 'Peu importe')
                 : (state.selectedBarber ? state.selectedBarber.name : 'Peu importe');
             let slotTime;
             if (state.selectedSlot) {
