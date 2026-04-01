@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, addMonths, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -31,6 +31,19 @@ function formatTime(timeStr) {
 }
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+/** Hook: returns [ref, hasBeenVisible] — once visible, stays true (lazy loading) */
+function useInView() {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!ref.current || visible) return;
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { rootMargin: '200px' });
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [visible]);
+  return [ref, visible];
+}
 
 // ============================================
 // Accent colors for KPIs
@@ -1549,19 +1562,28 @@ export default function Analytics() {
     return { month: monthStr };
   }, [barberPeriod, monthStr]);
 
+  // Lazy loading: secondary sections load only when scrolled into view
+  const [servicesRef, servicesVisible] = useInView();
+  const [barbersRef, barbersVisible] = useInView();
+  const [inactiveRef, inactiveVisible] = useInView();
+  const [noShowRef, noShowVisible] = useInView();
+
+  // Primary: always load (visible above the fold)
   const dashboardQuery = useDashboard(monthParams);
   const revenueQuery = useRevenue({ period: 'day', month: monthStr });
   const prevMonthStr = useMemo(() => format(subMonths(selectedMonth, 1), 'yyyy-MM'), [selectedMonth]);
   const prevRevenueQuery = useRevenue({ period: 'day', month: prevMonthStr });
-  const serviceStatsQuery = useServiceStats(monthParams);
-  const barberStatsQuery = useBarberStats(barberStatsParams);
-  const peakHoursQuery = usePeakHours(monthParams);
-  const occupancyQuery = useOccupancy(monthParams);
-  const inactiveQuery = useInactiveClients();
-  const memberStatsQuery = useMemberStats();
   const trendsQuery = useTrends({ enabled: isCurrentMonth });
-  const revenueHourlyQuery = useRevenueHourly(monthParams);
-  const noShowQuery = useNoShowStats(monthParams);
+
+  // Secondary: load when section is in view
+  const serviceStatsQuery = useServiceStats(monthParams, { enabled: servicesVisible });
+  const barberStatsQuery = useBarberStats(barberStatsParams, { enabled: barbersVisible });
+  const peakHoursQuery = usePeakHours(monthParams, { enabled: servicesVisible });
+  const occupancyQuery = useOccupancy(monthParams, { enabled: barbersVisible });
+  const revenueHourlyQuery = useRevenueHourly(monthParams, { enabled: servicesVisible });
+  const inactiveQuery = useInactiveClients({ enabled: inactiveVisible });
+  const memberStatsQuery = useMemberStats({ enabled: inactiveVisible });
+  const noShowQuery = useNoShowStats(monthParams, { enabled: noShowVisible });
 
   const loading = dashboardQuery.isLoading;
   const error = dashboardQuery.error?.message || '';
@@ -1732,13 +1754,19 @@ export default function Analytics() {
             )}
           </div>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={loadAll} disabled={loading} style={{ gap: 6 }}>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={loading ? { animation: 'spin 1s linear infinite' } : {}}>
-            <polyline points="23 4 23 10 17 10" />
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-          </svg>
-          Actualiser
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-secondary btn-sm print-hide" onClick={() => window.print()} style={{ gap: 6 }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            PDF
+          </button>
+          <button className="btn btn-secondary btn-sm print-hide" onClick={loadAll} disabled={loading} style={{ gap: 6 }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={loading ? { animation: 'spin 1s linear infinite' } : {}}>
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Actualiser
+          </button>
+        </div>
       </div>
 
       <div className="page-body">
@@ -1897,7 +1925,8 @@ export default function Analytics() {
               )}
             </div>
 
-            {/* ======== BLOC 3 : BARBERS (inchange) ======== */}
+            {/* ======== BLOC 3 : BARBERS ======== */}
+            <div ref={barbersRef} />
             <SectionTitle
               className="a-stagger a-d6"
               icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5 }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
@@ -1926,9 +1955,11 @@ export default function Analytics() {
             </div>
 
             {/* ======== BLOC : FAUX PLANS ======== */}
+            <div ref={noShowRef} />
             <NoShowSection data={noShowStats} isMobile={isMobile} navigate={navigate} />
 
             {/* ======== BLOC 4 : ACTIVITE (onglets) ======== */}
+            <div ref={servicesRef} />
             <ActivitySection
               serviceStats={serviceStats}
               peakHours={peakHours}
@@ -1938,6 +1969,7 @@ export default function Analytics() {
             />
 
             {/* ======== BLOC 5 : CLIENTS (fusion membres + inactifs) ======== */}
+            <div ref={inactiveRef} />
             <SectionTitle
               className="a-stagger a-d9"
               icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}

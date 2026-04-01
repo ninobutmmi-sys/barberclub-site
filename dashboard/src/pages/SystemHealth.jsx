@@ -169,6 +169,43 @@ export default function SystemHealth({ embedded } = {}) {
           </div>
         </div>
 
+        {/* ====== NOTIFICATION HEALTH (30 days) ====== */}
+        <div className="a-card" style={{ marginBottom: 24 }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(var(--overlay), 0.06)' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>Santé Notifications (30j)</h3>
+          </div>
+          <div style={{ padding: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
+              {/* SMS column */}
+              <div style={{ padding: 16, borderRadius: 10, background: 'rgba(var(--overlay), 0.02)', border: '1px solid rgba(var(--overlay), 0.06)' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, color: '#8b5cf6' }}>SMS</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                  <MiniStat label="Envoyés" value={notifs.sms_sent_30d ?? '–'} />
+                  <MiniStat label="Échoués" value={notifs.sms_failed_30d ?? '–'} alert={(notifs.sms_failed_30d || 0) > 0} />
+                  <MiniStat label="En attente" value={notifs.sms_pending ?? '–'} alert={(notifs.sms_pending || 0) > 5} />
+                  <DeliveryRateStat rate={notifs.sms_delivery_rate} />
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  Dernier envoi : {notifs.last_sms_sent ? timeAgo(notifs.last_sms_sent) : 'Aucun'}
+                </div>
+              </div>
+              {/* Email column */}
+              <div style={{ padding: 16, borderRadius: 10, background: 'rgba(var(--overlay), 0.02)', border: '1px solid rgba(var(--overlay), 0.06)' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, color: '#3b82f6' }}>Email</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                  <MiniStat label="Envoyés" value={notifs.email_sent_30d ?? '–'} />
+                  <MiniStat label="Échoués" value={notifs.email_failed_30d ?? '–'} alert={(notifs.email_failed_30d || 0) > 0} />
+                  <MiniStat label="En attente" value={notifs.email_pending ?? '–'} alert={(notifs.email_pending || 0) > 5} />
+                  <DeliveryRateStat rate={notifs.email_delivery_rate} />
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  Dernier envoi : {notifs.last_email_sent ? timeAgo(notifs.last_email_sent) : 'Aucun'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* ====== CRON JOBS ====== */}
         <div className="a-card" style={{ marginBottom: 24 }}>
           <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(var(--overlay), 0.06)' }}>
@@ -357,6 +394,35 @@ function MiniStat({ label, value, alert }) {
     }}>
       <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.3 }}>{label}</div>
       <div style={{ fontSize: 18, fontWeight: 800, fontFamily: 'var(--font-display)', color: alert ? '#ef4444' : 'var(--text)' }}>{value}</div>
+    </div>
+  );
+}
+
+function DeliveryRateStat({ rate }) {
+  let color = 'var(--text-muted)';
+  let bg = 'rgba(var(--overlay), 0.02)';
+  let border = 'rgba(var(--overlay), 0.04)';
+  if (rate !== null && rate !== undefined) {
+    if (rate >= 95) {
+      color = '#22c55e';
+      bg = 'rgba(34,197,94,0.06)';
+      border = 'rgba(34,197,94,0.2)';
+    } else if (rate >= 90) {
+      color = '#f59e0b';
+      bg = 'rgba(245,158,11,0.06)';
+      border = 'rgba(245,158,11,0.2)';
+    } else {
+      color = '#ef4444';
+      bg = 'rgba(239,68,68,0.06)';
+      border = 'rgba(239,68,68,0.2)';
+    }
+  }
+  return (
+    <div style={{ padding: '12px 16px', borderRadius: 8, background: bg, border: `1px solid ${border}` }}>
+      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.3 }}>Taux livraison</div>
+      <div style={{ fontSize: 18, fontWeight: 800, fontFamily: 'var(--font-display)', color }}>
+        {rate !== null && rate !== undefined ? `${rate}%` : '–'}
+      </div>
     </div>
   );
 }

@@ -3362,3 +3362,17 @@ select.input {
     flex-direction: column;
   }
 }
+
+/* ---- PRINT (PDF export) ---- */
+@media print {
+  body, html, #root { background: #fff !important; color: #000 !important; }
+  .sidebar, .bottom-nav, .print-hide, .page-header button { display: none !important; }
+  .main-content { margin-left: 0 !important; padding: 0 !important; }
+  .page-header { padding: 16px 0 !important; border-bottom: 2px solid #000; margin-bottom: 16px; }
+  .page-title { color: #000 !important; }
+  .a-kpi { border: 1px solid #ddd !important; background: #fff !important; break-inside: avoid; }
+  .a-kpi * { color: #000 !important; }
+  .card, .a-section { border: 1px solid #ddd !important; background: #fff !important; break-inside: avoid; }
+  * { color: #000 !important; --text: #000; --text-secondary: #333; --text-muted: #666; --bg-card: #fff; --border: #ddd; }
+  svg { stroke: #333 !important; }
+}

@@ -40,6 +40,32 @@ router.get('/health', async (req, res, next) => {
     const stats = notifStats.rows[0] || {};
     const smsCost = (parseInt(stats.sms_sent || 0)) * 0.045;
 
+    // 4b. Extended notification stats (last 30 days) — delivery rate + last sent
+    const notifStats30d = await db.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE nq.type LIKE '%sms' AND nq.status = 'sent')     AS sms_sent_30d,
+        COUNT(*) FILTER (WHERE nq.type LIKE '%sms' AND nq.status = 'failed')   AS sms_failed_30d,
+        COUNT(*) FILTER (WHERE nq.type LIKE '%sms' AND nq.status IN ('pending', 'processing')) AS sms_pending,
+        COUNT(*) FILTER (WHERE nq.type LIKE '%email' AND nq.status = 'sent')   AS email_sent_30d,
+        COUNT(*) FILTER (WHERE nq.type LIKE '%email' AND nq.status = 'failed') AS email_failed_30d,
+        COUNT(*) FILTER (WHERE nq.type LIKE '%email' AND nq.status IN ('pending', 'processing')) AS email_pending,
+        MAX(nq.sent_at) FILTER (WHERE nq.type LIKE '%sms' AND nq.status = 'sent')   AS last_sms_sent,
+        MAX(nq.sent_at) FILTER (WHERE nq.type LIKE '%email' AND nq.status = 'sent') AS last_email_sent
+      FROM notification_queue nq
+      LEFT JOIN bookings b ON b.id = nq.booking_id
+      WHERE nq.created_at >= NOW() - INTERVAL '30 days' AND (b.salon_id = $1 OR b.salon_id IS NULL)
+    `, [salonId]);
+
+    const stats30d = notifStats30d.rows[0] || {};
+    const smsSent30d = parseInt(stats30d.sms_sent_30d || 0);
+    const smsFailed30d = parseInt(stats30d.sms_failed_30d || 0);
+    const smsTotal30d = smsSent30d + smsFailed30d;
+    const smsDeliveryRate = smsTotal30d > 0 ? Math.round((smsSent30d / smsTotal30d) * 10000) / 100 : null;
+    const emailSent30d = parseInt(stats30d.email_sent_30d || 0);
+    const emailFailed30d = parseInt(stats30d.email_failed_30d || 0);
+    const emailTotal30d = emailSent30d + emailFailed30d;
+    const emailDeliveryRate = emailTotal30d > 0 ? Math.round((emailSent30d / emailTotal30d) * 10000) / 100 : null;
+
     // 5. Recent failed notifications (last 10)
     const recentErrors = await db.query(`
       SELECT nq.id, nq.type, nq.status, nq.attempts, nq.last_error,
@@ -108,6 +134,17 @@ router.get('/health', async (req, res, next) => {
         brevo_sender: config.brevo?.senderEmail || null,
         brevo_sms_sender: config.brevo?.smsSender || null,
         brevo_status: (() => { try { return require('../../services/notification').getBrevoStatus(); } catch { return null; } })(),
+        // 30-day health stats
+        sms_sent_30d: smsSent30d,
+        sms_failed_30d: smsFailed30d,
+        sms_pending: parseInt(stats30d.sms_pending || 0),
+        sms_delivery_rate: smsDeliveryRate,
+        last_sms_sent: stats30d.last_sms_sent || null,
+        email_sent_30d: emailSent30d,
+        email_failed_30d: emailFailed30d,
+        email_pending: parseInt(stats30d.email_pending || 0),
+        email_delivery_rate: emailDeliveryRate,
+        last_email_sent: stats30d.last_email_sent || null,
       },
       recent_errors: recentErrors.rows,
     });

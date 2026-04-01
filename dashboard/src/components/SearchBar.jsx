@@ -8,6 +8,26 @@ import { getClients } from '../api';
  * Click a result to navigate to /clients/:id.
  * Escape or click outside closes the dropdown.
  */
+// Simple LRU cache: max 20 entries, 60s TTL
+const searchCache = new Map();
+const CACHE_MAX = 20;
+const CACHE_TTL = 60_000;
+
+function getCached(key) {
+  const entry = searchCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL) { searchCache.delete(key); return null; }
+  return entry.data;
+}
+
+function setCache(key, data) {
+  if (searchCache.size >= CACHE_MAX) {
+    const oldest = searchCache.keys().next().value;
+    searchCache.delete(oldest);
+  }
+  searchCache.set(key, { data, ts: Date.now() });
+}
+
 export default function SearchBar() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -18,7 +38,7 @@ export default function SearchBar() {
   const wrapperRef = useRef(null);
   const timerRef = useRef(null);
 
-  /** Debounced search: waits 300ms after last keystroke */
+  /** Debounced search: waits 300ms after last keystroke, uses cache */
   const search = useCallback((term) => {
     if (timerRef.current) clearTimeout(timerRef.current);
 
@@ -28,11 +48,22 @@ export default function SearchBar() {
       return;
     }
 
+    const key = term.trim().toLowerCase();
+    const cached = getCached(key);
+    if (cached) {
+      setResults(cached);
+      setActiveIndex(-1);
+      setOpen(true);
+      return;
+    }
+
     timerRef.current = setTimeout(async () => {
       setLoading(true);
       try {
         const data = await getClients({ search: term.trim(), limit: 5 });
-        setResults(data.clients || []);
+        const clients = data.clients || [];
+        setResults(clients);
+        setCache(key, clients);
         setActiveIndex(-1);
         setOpen(true);
       } catch (err) {
