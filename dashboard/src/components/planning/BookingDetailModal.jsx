@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { updateClient, getClientPhotos, uploadClientPhoto, deleteClientPhoto, sendNoShowSms } from '../../api';
@@ -21,6 +22,7 @@ function DetailRow({ label, value, bold, valueStyle }) {
 export { DetailRow };
 
 export default function BookingDetailModal({ booking, barbers, services, onClose, onStatusChange, onDelete, onDeleteGroup, onReschedule, onNotesUpdated }) {
+  const queryClient = useQueryClient();
   const [subView, setSubView] = useState('main'); // 'main' | 'delete' | 'confirm-edit'
   const [notifyClient, setNotifyClient] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -667,10 +669,20 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
           {booking.status === 'no_show' && (
             <>
               <button className="btn btn-primary btn-sm" onClick={() => onStatusChange(booking.id, 'completed')}>Faux plan payé</button>
-              <button className="btn btn-secondary btn-sm" style={{ color: '#f59e0b' }} onClick={async () => {
-                if (!confirm('Envoyer le SMS faux plan au client ?')) return;
-                try { await sendNoShowSms(booking.id); alert('SMS envoyé'); } catch (e) { alert(e.message); }
-              }}>SMS faux plan</button>
+              <button
+                className="btn btn-secondary btn-sm"
+                style={{ color: booking.no_show_sms_sent ? '#22c55e' : '#f59e0b' }}
+                disabled={booking.no_show_sms_sent}
+                onClick={async () => {
+                  if (!confirm('Envoyer le SMS faux plan au client ?')) return;
+                  try {
+                    await sendNoShowSms(booking.id);
+                    queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                  } catch (e) { alert(e.message); }
+                }}
+              >
+                {booking.no_show_sms_sent ? '✓ SMS envoyé' : 'SMS faux plan'}
+              </button>
             </>
           )}
           <button className="btn btn-danger btn-sm" onClick={() => { setNotifyClient(false); setSubView('delete'); }}>

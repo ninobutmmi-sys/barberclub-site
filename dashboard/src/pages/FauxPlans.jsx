@@ -217,6 +217,9 @@ export default function FauxPlans() {
               </div>
               <div className="fp-card-bottom">
                 <span className="fp-card-service">{b.service_name || '-'}</span>
+                {b.no_show_sms_sent && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#22c55e', background: 'rgba(34,197,94,0.1)', padding: '2px 8px', borderRadius: 6 }}>SMS envoyé</span>
+                )}
                 {b.client_phone && (
                   <a href={`tel:${b.client_phone}`} className="fp-card-phone">{b.client_phone}</a>
                 )}
@@ -241,13 +244,17 @@ export default function FauxPlans() {
                 </button>
                 <button
                   className="fp-pay-btn"
-                  style={{ flex: 0, padding: '0 14px', background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}
+                  style={{ flex: 0, padding: '0 14px', background: b.no_show_sms_sent ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)', color: b.no_show_sms_sent ? '#22c55e' : '#f59e0b' }}
+                  disabled={b.no_show_sms_sent}
                   onClick={async () => {
                     if (!confirm('Envoyer le SMS faux plan ?')) return;
-                    try { await api.sendNoShowSms(b.id); alert('SMS envoyé'); } catch (e) { alert(e.message); }
+                    try {
+                      await api.sendNoShowSms(b.id);
+                      queryClient.invalidateQueries({ queryKey: ['bookingsHistory'] });
+                    } catch (e) { alert(e.message); }
                   }}
                 >
-                  SMS
+                  {b.no_show_sms_sent ? '✓ SMS' : 'SMS'}
                 </button>
               </div>
             </div>
@@ -302,14 +309,18 @@ export default function FauxPlans() {
                       </button>
                       <button
                         className="fp-pay-btn-sm"
-                        style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}
+                        style={{ background: b.no_show_sms_sent ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)', color: b.no_show_sms_sent ? '#22c55e' : '#f59e0b' }}
+                        disabled={b.no_show_sms_sent}
                         onClick={async () => {
                           if (!confirm('Envoyer le SMS faux plan ?')) return;
-                          try { await api.sendNoShowSms(b.id); alert('SMS envoyé'); } catch (e) { alert(e.message); }
+                          try {
+                            await api.sendNoShowSms(b.id);
+                            queryClient.invalidateQueries({ queryKey: ['bookingsHistory'] });
+                          } catch (e) { alert(e.message); }
                         }}
-                        title="Envoyer SMS faux plan"
+                        title={b.no_show_sms_sent ? 'SMS déjà envoyé' : 'Envoyer SMS faux plan'}
                       >
-                        SMS
+                        {b.no_show_sms_sent ? '✓ SMS' : 'SMS'}
                       </button>
                     </div>
                   </td>
