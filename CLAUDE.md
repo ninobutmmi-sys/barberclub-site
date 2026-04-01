@@ -110,8 +110,10 @@ BarberClub Site/
 |   |   |-- barbers/               # Videos presentation (6x MP4)
 |   |   +-- Barbers-coupes/        # Portfolio coupes par barber
 |   +-- js/
+|       |-- api-config.js          # Detection auto dev/prod API URL
 |       |-- booking-modal.js       # Modal politique annulation
-|       +-- cookie-consent.js      # Bandeau RGPD cookies (toutes pages)
+|       |-- cookie-consent.js      # Bandeau RGPD cookies (toutes pages)
+|       +-- phone-country.js       # Selecteur pays avec recherche (partage meylan+grenoble)
 |
 |-- config/
 |   |-- manifest.json              # PWA manifest (standalone, portrait)
@@ -124,6 +126,7 @@ BarberClub Site/
 |   |-- database/
 |   |   |-- schema.sql             # Schema complet
 |   |   |-- seed.sql               # Donnees initiales
+|   |   |-- migrate.js             # Migration runner (node database/migrate.js)
 |   |   +-- migrations/            # 003 -> 022 (20 migrations)
 |   +-- src/
 |       |-- index.js               # Entry (routes, CORS, helmet, cron, advisory locks)
@@ -155,11 +158,20 @@ BarberClub Site/
 |       |       |-- sms.js         # Campagnes SMS
 |       |       |-- notifications.js # Queue, logs, retry
 |       |       |-- campaignTracking.js # Suivi ROI
-|       |       +-- systemHealth.js # Status crons, DB health, circuit breaker
+|       |       +-- systemHealth.js # Status crons, DB health, circuit breaker, sante SMS 30j
 |       |-- services/
-|       |   |-- availability.js    # Calcul creneaux (30min public, 5min admin, guest assignments)
-|       |   |-- booking.js         # Creation atomique, annulation (+ waitlist SMS), recurrence
-|       |   +-- notification.js    # Brevo email+SMS, queue+retry, circuit breaker, templates HTML
+|       |   |-- availability.js    # Calcul creneaux (30min public, 5min admin, guest assignments, sort_order weight)
+|       |   |-- booking.js         # Creation atomique, annulation (+ waitlist SMS + WS events), recurrence
+|       |   |-- websocket.js       # Socket.IO temps reel (booking:created/updated/cancelled/client-action)
+|       |   |-- push.js            # Web Push notifications (nouveau RDV, annulation, reschedule)
+|       |   +-- notification/      # Module notification (split en sous-fichiers)
+|       |       |-- index.js       # Barrel re-exports
+|       |       |-- helpers.js     # toGSM, formatDateFR, isFrenchPhone, emailShell, design tokens
+|       |       |-- brevo.js       # API Brevo email+SMS, circuit breaker
+|       |       |-- queue.js       # queueNotification, processPendingNotifications
+|       |       |-- templates.js   # sendConfirmationEmail, sendReminderEmail, etc.
+|       |       |-- loadTemplate.js # Charge les fichiers .html avec cache memoire
+|       |       +-- email-templates/ # 6 templates HTML (confirmation, cancellation, reschedule, review, reminder, reset-password)
 |       |-- cron/                   # 6 jobs planifies (prod only, advisory locks)
 |       |   |-- reminders.js       # SMS rappel J-1 (cron 18h)
 |       |   |-- retryNotifications.js # processQueue + cleanup notifs + cleanup tokens
@@ -179,32 +191,37 @@ BarberClub Site/
         |-- api.js                 # Client API centralise (auto-refresh JWT sur 401, auto-inject salon_id)
         |-- auth.jsx               # AuthContext (localStorage: bc_user, bc_access/refresh_token, bc_salon)
         |-- constants.js           # COLOR_PALETTE (20 couleurs)
-        |-- index.css              # Theme dark/light (2100+ lignes, 100+ CSS variables)
+        |-- index.css              # Theme dark/light (3300+ lignes, 100+ CSS variables, @media print)
         |-- components/
-        |   |-- Layout.jsx         # Sidebar 240px (collapse 64px) + bottom nav mobile + notif bell + theme toggle
-        |   |-- SearchBar.jsx      # Recherche globale clients (debounce 300ms)
+        |   |-- Layout.jsx         # Sidebar 240px (collapse 64px) + bottom nav mobile + notif bell (3 types) + theme toggle
+        |   |-- LiveToasts.jsx     # Toasts temps reel (annulations/modifications/nouveaux RDV via WebSocket)
+        |   |-- SearchBar.jsx      # Recherche globale clients (debounce 300ms, cache LRU 20 entrees)
         |   +-- ErrorBoundary.jsx  # Catch errors React
         |-- hooks/
         |   |-- useMobile.js       # Breakpoint 1024px
-        |   +-- useNotifications.js # Poll /admin/bookings toutes les 30s
+        |   |-- useNotifications.js # Poll + WebSocket (nouveaux RDV + annulations/modifications client)
+        |   +-- useSocket.js       # Socket.IO shared connection + usePlanningSocket
         |-- utils/
         |   |-- csv.js             # Export CSV (UTF-8 BOM, separateur ;)
+        |   |-- phone.js           # getPhoneFlag, formatPhoneWithFlag (drapeaux emoji)
         |   +-- planning/helpers.js # formatPrice, timeToMinutes, PX_PER_MIN, etc.
         +-- pages/                 # 14 pages actives
             |-- SalonSelector.jsx  # Choix Meylan/Grenoble au login
             |-- Login.jsx          # Auth barber (email + password)
-            |-- Planning.jsx       # Grille horaire 8h-20h, day/week, auto-refresh 30s
-            |-- Analytics.jsx      # KPI, revenue, occupancy, clients inactifs (3+ visites, 3 mois)
+            |-- Planning.jsx       # Grille horaire 8h-20h, day/week, WebSocket temps reel
+            |-- Analytics.jsx      # KPI lazy-load par section, export PDF, revenue, occupancy
             |-- Services.jsx       # CRUD prestations, couleur, barbers
             |-- Barbers.jsx        # Horaires, overrides, guest days
-            |-- Clients.jsx        # Liste paginee, search, tri, export CSV
-            |-- ClientDetail.jsx   # Fiche client, notes, historique, suppression RGPD
+            |-- Clients.jsx        # Liste paginee, search, tri, export CSV, drapeaux pays
+            |-- ClientDetail.jsx   # Fiche client, notes, historique, suppression RGPD, drapeau pays
             |-- History.jsx        # Historique filtrable (date, barber, status)
             |-- Sms.jsx            # Templates + envoi bulk + historique
             |-- Mailing.jsx        # Compose + envoi bulk + historique
             |-- Campaigns.jsx      # Suivi ROI campagnes
             |-- Automation.jsx     # Triggers (review_sms, waitlist) + gestion waitlist
-            |-- SystemHealth.jsx   # API/DB health, crons, memory, notifications
+            |-- Waitlist.jsx       # Liste d'attente refaite (SMS preview, toast, appeler, drapeaux)
+            |-- FauxPlans.jsx      # Faux plans avec badge SMS envoye
+            |-- SystemHealth.jsx   # API/DB health, crons, memory, notifications, sante SMS 30j
             +-- Caisse.jsx         # NON ROUTE (code mort, pas dans App.jsx)
 ```
 
@@ -686,9 +703,17 @@ API_URL -> https://api.barberclub-grenoble.fr
 10. **Chemins relatifs** — Depuis `pages/*/` : assets = `../../assets/`, legal = `../legal/`
 11. **Crons** — Desactives en dev (`NODE_ENV !== production`)
 12. **HashRouter** — Dashboard utilise `#` dans les URLs (pas besoin de config serveur)
-13. **Brevo** — Templates email HTML inline dans `notification.js`, design monochrome dark
+13. **Brevo** — Templates email dans `email-templates/*.html`, charges via `loadTemplate()` avec cache memoire
 14. **Caisse.jsx** — Existe mais PAS route dans App.jsx (code mort)
 15. **Reactivation SMS** — Supprime du code automatique. Liste inactifs visible dans Analytics. Envoi manuel via SMS.
 16. **Guest assignments** — Un barber peut travailler dans l'autre salon (table guest_assignments)
 17. **BDD Railway** — PostgreSQL sur Railway (pas Supabase), 22 tables, 6443 clients
 18. **Domaine Squarespace** — Pas OVH, le domaine est gere sur Squarespace
+19. **Numeros internationaux** — Acceptes (E.164), SMS rappel remplace par email pour non-FR, `isFrenchPhone()` dans helpers.js
+20. **Selecteur pays** — Composant custom avec recherche dans `assets/js/phone-country.js` (partage meylan+grenoble)
+21. **Rappels SMS** — `reminder_sent=true` marque APRES envoi reussi, deduplication via notification_queue (NOT EXISTS)
+22. **Notifications temps reel** — WebSocket `booking:client-action` + LiveToasts + cloche enrichie (3 types)
+23. **Load balancing "peu importe"** — `sort_order` eleve = prioritaire (Lucas=2 favorise sur Meylan)
+24. **Migrations** — `node database/migrate.js` pour appliquer en sequence (table `schema_migrations`)
+25. **Calendrier** — Bouton "Ajouter au calendrier" (.ics) sur mon-rdv.html + email confirmation, adresse par salon
+26. **Cloudflare cache** — `.wrangler/cache/pages.json` contient l'account_id, verifier si deploy echoue
