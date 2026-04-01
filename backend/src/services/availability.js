@@ -440,16 +440,16 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
 
   // Get resident barbers that offer any equivalent service in this salon
   const barbersResult = await queryFn(
-    `SELECT DISTINCT b.id, b.name FROM barbers b
+    `SELECT DISTINCT b.id, b.name, b.sort_order FROM barbers b
      JOIN barber_services bs ON b.id = bs.barber_id
      WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
-     ORDER BY b.id`,
+     ORDER BY b.sort_order, b.id`,
     [equivalentServiceIds, salonId]
   );
 
   // Get guest barbers for this date+salon that offer any equivalent service
   const guestResult = await queryFn(
-    `SELECT DISTINCT b.id, b.name FROM barbers b
+    `SELECT DISTINCT b.id, b.name, b.sort_order FROM barbers b
      JOIN guest_assignments ga ON b.id = ga.barber_id
      JOIN barber_services bs ON b.id = bs.barber_id
      WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL
@@ -489,8 +489,12 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
     );
 
     const count = parseInt(countResult.rows[0].count, 10);
-    if (count < fewestBookings) {
-      fewestBookings = count;
+    // Weight: preferred barbers get a slight advantage (appears to have fewer bookings)
+    // This ensures preferred barbers are chosen unless significantly busier
+    const weight = barber.sort_order || 0;
+    const weightedCount = count + weight;
+    if (weightedCount < fewestBookings) {
+      fewestBookings = weightedCount;
       bestBarber = barber;
     }
   }
