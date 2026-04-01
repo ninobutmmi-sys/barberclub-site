@@ -1866,15 +1866,13 @@ select.input {
 
 /* Dropdown panel */
 .notif-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 16px;
-  width: 300px;
+  position: fixed;
+  width: 320px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  z-index: 100;
-  box-shadow: var(--shadow);
+  z-index: 999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   animation: slideUp 0.15s ease;
   overflow: hidden;
 }

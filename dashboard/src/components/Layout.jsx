@@ -265,8 +265,12 @@ export default function Layout() {
               )}
             </button>
 
-            {dropdownOpen && (
-              <div className="notif-dropdown" role="region" aria-label="Notifications" aria-live="polite">
+            {dropdownOpen && (() => {
+              const rect = expandedDropdownRef.current?.getBoundingClientRect();
+              const top = rect ? rect.bottom + 4 : 60;
+              const left = rect ? rect.left : 16;
+              return (
+              <div className="notif-dropdown" role="region" aria-label="Notifications" aria-live="polite" style={{ top, left }}>
                 <div className="notif-dropdown-header">
                   <span className="notif-dropdown-title">Notifications</span>
                   {hasNew && (
@@ -315,7 +319,8 @@ export default function Layout() {
                   )}
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
@@ -355,18 +360,29 @@ export default function Layout() {
                   )}
                 </div>
                 <div className="notif-dropdown-body">
-                  {bookings.length === 0 ? (
-                    <div className="notif-empty">Aucune nouvelle reservation</div>
+                  {bookings.length === 0 && clientActions.length === 0 ? (
+                    <div className="notif-empty">Aucune nouvelle notification</div>
                   ) : (
-                    bookings.map((b) => (
-                      <button key={b.id ?? b._id} className="notif-item" onClick={handleBookingClick}>
+                    <>
+                    {clientActions.map((a) => (
+                      <button key={a._id} className="notif-item" onClick={handleBookingClick} style={{ borderLeft: `3px solid ${a.type === 'cancelled' ? '#ef4444' : '#f59e0b'}` }}>
+                        <span className="notif-item-time" style={{ color: a.type === 'cancelled' ? '#ef4444' : '#f59e0b', fontSize: 10, fontWeight: 700 }}>{a.type === 'cancelled' ? 'ANNULÉ' : 'DÉPLACÉ'}</span>
+                        <span className="notif-item-info">
+                          <span className="notif-item-client">{a.clientName || 'Client'}</span>
+                          <span className="notif-item-service">{a.date} à {a.time}</span>
+                        </span>
+                      </button>
+                    ))}
+                    {bookings.map((b) => (
+                      <button key={b.id ?? b._id} className="notif-item" onClick={handleBookingClick} style={{ borderLeft: '3px solid #22c55e' }}>
                         <span className="notif-item-time">{formatTime(b)}</span>
                         <span className="notif-item-info">
                           <span className="notif-item-client">{clientName(b)}</span>
                           <span className="notif-item-service">{barberName(b) ? `${barberName(b)} · ${serviceName(b)}` : serviceName(b)}</span>
                         </span>
                       </button>
-                    ))
+                    ))}
+                    </>
                   )}
                 </div>
               </div>
