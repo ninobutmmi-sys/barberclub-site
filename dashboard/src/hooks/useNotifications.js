@@ -98,6 +98,15 @@ export function useNotifications() {
     }
   }, []);
 
+  // Track client-initiated actions (cancellations, reschedules)
+  const [clientActions, setClientActions] = useState([]);
+
+  useSocketEvent('booking:client-action', useCallback((data) => {
+    if (data && data.type) {
+      setClientActions((prev) => [...prev.slice(-20), { ...data, _id: Date.now() + Math.random(), _ts: Date.now() }]);
+    }
+  }, []));
+
   // Instant refresh on WebSocket booking events
   useSocketEvent('booking:created', fetchBookings);
 
@@ -126,26 +135,25 @@ export function useNotifications() {
     (b) => !seenIds.has(String(b.id ?? b._id))
   );
 
-  /**
-   * Marks every currently-visible booking as "seen" so the badge
-   * disappears and the dropdown clears.
-   */
-  const markSeen = useCallback(() => {
-    // Snapshot current IDs so we only mark what's visible now, not future arrivals
-    const currentIds = allBookings.map((b) => String(b.id ?? b._id));
-    setSeenIds((prev) => {
-      const next = new Set(prev);
-      currentIds.forEach((id) => next.add(id));
-      saveSeenIds(next);
-      return next;
-    });
-  }, [allBookings]);
+  const totalCount = newBookings.length + clientActions.length;
 
   return {
-    hasNew: newBookings.length > 0,
-    newCount: newBookings.length,
+    hasNew: totalCount > 0,
+    newCount: totalCount,
     bookings: newBookings,
-    markSeen,
+    clientActions,
+    markSeen: useCallback(() => {
+      // Mark bookings as seen
+      const currentIds = allBookings.map((b) => String(b.id ?? b._id));
+      setSeenIds((prev) => {
+        const next = new Set(prev);
+        currentIds.forEach((id) => next.add(id));
+        saveSeenIds(next);
+        return next;
+      });
+      // Clear client actions
+      setClientActions([]);
+    }, [allBookings]),
     loading,
   };
 }

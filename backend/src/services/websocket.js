@@ -66,6 +66,7 @@ const emitBlockedSlotChanged = (salonId) => emitBookingEvent(salonId, 'blockedsl
 
 module.exports = {
   init,
+  emitBookingEvent,
   emitBookingCreated,
   emitBookingUpdated,
   emitBookingCancelled,

@@ -68,4 +68,30 @@ function notifyNewBooking(salonId, booking) {
   });
 }
 
-module.exports = { notifySalon, notifyNewBooking };
+function notifyCancellation(salonId, booking) {
+  const clientName = booking.first_name || 'Client';
+  const time = (booking.start_time || '').slice(0, 5);
+  const salonLabel = salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
+
+  notifySalon(salonId, {
+    title: `RDV annulé — ${salonLabel}`,
+    body: `${clientName} a annulé son RDV du ${booking.date} à ${time}`,
+    tag: `cancel-${booking.id || Date.now()}`,
+    url: '/#/planning',
+  });
+}
+
+function notifyReschedule(salonId, booking) {
+  const clientName = booking.first_name || 'Client';
+  const time = (booking.start_time || '').slice(0, 5);
+  const salonLabel = salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
+
+  notifySalon(salonId, {
+    title: `RDV déplacé — ${salonLabel}`,
+    body: `${clientName} a déplacé son RDV au ${booking.date} à ${time}`,
+    tag: `reschedule-${Date.now()}`,
+    url: '/#/planning',
+  });
+}
+
+module.exports = { notifySalon, notifyNewBooking, notifyCancellation, notifyReschedule };

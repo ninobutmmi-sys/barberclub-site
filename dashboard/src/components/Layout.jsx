@@ -7,6 +7,7 @@ import useMobile from '../hooks/useMobile';
 import useOffline from '../hooks/useOffline';
 import usePushNotifications from '../hooks/usePushNotifications';
 import SearchBar from './SearchBar';
+import LiveToasts from './LiveToasts';
 
 /** Bell SVG icon */
 function BellIcon() {
@@ -159,7 +160,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMobile();
-  const { hasNew, newCount, bookings, markSeen } = useNotifications();
+  const { hasNew, newCount, bookings, clientActions, markSeen } = useNotifications();
   const waitlistCountQuery = useWaitlistCount();
   const waitlistCount = waitlistCountQuery.data?.count ?? 0;
   const push = usePushNotifications();
@@ -267,7 +268,7 @@ export default function Layout() {
             {dropdownOpen && (
               <div className="notif-dropdown" role="region" aria-label="Notifications" aria-live="polite">
                 <div className="notif-dropdown-header">
-                  <span className="notif-dropdown-title">Nouvelles reservations</span>
+                  <span className="notif-dropdown-title">Notifications</span>
                   {hasNew && (
                     <button className="notif-mark-read" onClick={handleMarkAllRead}>
                       Tout marquer comme lu
@@ -276,22 +277,41 @@ export default function Layout() {
                 </div>
 
                 <div className="notif-dropdown-body">
-                  {bookings.length === 0 ? (
-                    <div className="notif-empty">Aucune nouvelle reservation</div>
+                  {bookings.length === 0 && clientActions.length === 0 ? (
+                    <div className="notif-empty">Aucune nouvelle notification</div>
                   ) : (
-                    bookings.map((b) => (
-                      <button
-                        key={b.id ?? b._id}
-                        className="notif-item"
-                        onClick={handleBookingClick}
-                      >
-                        <span className="notif-item-time">{formatTime(b)}</span>
-                        <span className="notif-item-info">
-                          <span className="notif-item-client">{clientName(b)}</span>
-                          <span className="notif-item-service">{barberName(b) ? `${barberName(b)} · ${serviceName(b)}` : serviceName(b)}</span>
-                        </span>
-                      </button>
-                    ))
+                    <>
+                      {clientActions.map((a) => (
+                        <button
+                          key={a._id}
+                          className="notif-item"
+                          onClick={handleBookingClick}
+                          style={{ borderLeft: `3px solid ${a.type === 'cancelled' ? '#ef4444' : '#f59e0b'}` }}
+                        >
+                          <span className="notif-item-time" style={{ color: a.type === 'cancelled' ? '#ef4444' : '#f59e0b', fontSize: 10, fontWeight: 700 }}>
+                            {a.type === 'cancelled' ? 'ANNULÉ' : 'DÉPLACÉ'}
+                          </span>
+                          <span className="notif-item-info">
+                            <span className="notif-item-client">{a.clientName || 'Client'}</span>
+                            <span className="notif-item-service">{a.date} à {a.time}{a.barberName ? ` · ${a.barberName}` : ''}</span>
+                          </span>
+                        </button>
+                      ))}
+                      {bookings.map((b) => (
+                        <button
+                          key={b.id ?? b._id}
+                          className="notif-item"
+                          onClick={handleBookingClick}
+                          style={{ borderLeft: '3px solid #22c55e' }}
+                        >
+                          <span className="notif-item-time">{formatTime(b)}</span>
+                          <span className="notif-item-info">
+                            <span className="notif-item-client">{clientName(b)}</span>
+                            <span className="notif-item-service">{barberName(b) ? `${barberName(b)} · ${serviceName(b)}` : serviceName(b)}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </>
                   )}
                 </div>
               </div>
@@ -327,7 +347,7 @@ export default function Layout() {
             {dropdownOpen && (
               <div className="notif-dropdown" style={{ position: 'fixed', left: 70, top: 80, width: 300 }}>
                 <div className="notif-dropdown-header">
-                  <span className="notif-dropdown-title">Nouvelles reservations</span>
+                  <span className="notif-dropdown-title">Notifications</span>
                   {hasNew && (
                     <button className="notif-mark-read" onClick={handleMarkAllRead}>
                       Tout marquer comme lu
@@ -488,6 +508,7 @@ export default function Layout() {
           </div>
         )}
         <Outlet />
+        <LiveToasts />
       </main>
 
       {/* ---- Mobile bottom nav ---- */}

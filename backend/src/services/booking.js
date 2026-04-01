@@ -5,7 +5,8 @@ const availability = require('./availability');
 const notification = require('./notification');
 const logger = require('../utils/logger');
 const config = require('../config/env');
-const { notifyNewBooking } = require('./push');
+const { notifyNewBooking, notifyCancellation, notifyReschedule } = require('./push');
+const ws = require('./websocket');
 const {
   MAX_BOOKING_ADVANCE_MONTHS,
   CANCELLATION_DEADLINE_HOURS,
@@ -600,6 +601,20 @@ async function cancelBooking(bookingId, cancelToken) {
     logger.error('Failed to check waitlist after cancellation', { error: err.message });
   }
 
+  // Notify dashboard (WebSocket + push) — client-initiated cancellation
+  const cancelledSalonId = booking.salon_id || 'meylan';
+  ws.emitBookingCancelled(cancelledSalonId, bookingId);
+  ws.emitBookingEvent(cancelledSalonId, 'booking:client-action', {
+    type: 'cancelled',
+    bookingId,
+    clientName: booking.first_name || 'Client',
+    barberName: booking.barber_name,
+    serviceName: booking.service_name,
+    date: booking.date,
+    time: booking.start_time?.slice(0, 5),
+  });
+  notifyCancellation(cancelledSalonId, booking);
+
   return {
     ...booking,
     status: 'cancelled',
@@ -805,6 +820,29 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
       (e) => logger.error('Reschedule email retry failed', { bookingId, error: e.message })
     );
   }
+
+  // Notify dashboard (WebSocket + push) — client-initiated reschedule
+  const reschSalonId = result.booking.salon_id || 'meylan';
+  ws.emitBookingUpdated(reschSalonId, { id: bookingId });
+  ws.emitBookingEvent(reschSalonId, 'booking:client-action', {
+    type: 'rescheduled',
+    bookingId,
+    clientName: result.client_first_name || 'Client',
+    barberName: result.barber_name,
+    serviceName: result.service_name,
+    date: newDate,
+    time: newStartTime,
+    oldDate: result.booking.date,
+    oldTime: result.booking.start_time?.slice(0, 5),
+  });
+  notifyReschedule(reschSalonId, {
+    first_name: result.client_first_name,
+    barber_name: result.barber_name,
+    date: newDate,
+    start_time: newStartTime,
+    old_date: result.booking.date,
+    old_time: result.booking.start_time,
+  });
 
   return {
     id: bookingId,
