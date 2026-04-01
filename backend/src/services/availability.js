@@ -489,10 +489,10 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
     );
 
     const count = parseInt(countResult.rows[0].count, 10);
-    // Weight: preferred barbers get a slight advantage (appears to have fewer bookings)
-    // This ensures preferred barbers are chosen unless significantly busier
-    const weight = barber.sort_order || 0;
-    const weightedCount = count + weight;
+    // Higher sort_order = preferred for "any barber" (appears to have fewer bookings)
+    // Lucas sort_order=2 gets -1 advantage vs Julien sort_order=1
+    const priority = barber.sort_order || 0;
+    const weightedCount = count - (priority * 0.5);
     if (weightedCount < fewestBookings) {
       fewestBookings = weightedCount;
       bestBarber = barber;
