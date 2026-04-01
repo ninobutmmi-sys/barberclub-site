@@ -50,6 +50,7 @@ async function sendConfirmationEmail(data) {
   }
 
   const cancelUrl = `${config.siteUrl}${salon.bookingPath}/mon-rdv.html?id=${data.booking_id}&token=${data.cancel_token}`;
+  const icsUrl = `${config.apiUrl}/bookings/${data.booking_id}/ics?token=${data.cancel_token}`;
 
   const dateFormatted = formatDateFR(data.date);
   const timeFormatted = formatTime(data.start_time);
@@ -63,6 +64,7 @@ async function sendConfirmationEmail(data) {
     time: timeFormatted,
     price: priceFormatted,
     cancelUrl,
+    icsUrl,
     address: salon.address,
     mapsUrl: salon.mapsUrl,
     salonName: salon.name,
@@ -380,7 +382,7 @@ async function sendWaitlistSMS(data) {
 // Confirmation email HTML builder (internal)
 // ============================================
 
-function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, time, price, cancelUrl, address, mapsUrl, salonId = 'meylan' }) {
+function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, time, price, cancelUrl, icsUrl, address, mapsUrl, salonId = 'meylan' }) {
   firstName = escapeHtml(firstName);
   serviceName = escapeHtml(serviceName);
   barberName = escapeHtml(barberName);
@@ -402,6 +404,7 @@ function buildConfirmationEmailHTML({ firstName, serviceName, barberName, date, 
     mapsUrl,
     price,
     cancelUrl,
+    icsUrl: icsUrl || '',
   });
 
   return emailShell(content, { salonId });
