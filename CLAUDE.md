@@ -717,3 +717,7 @@ API_URL -> https://api.barberclub-grenoble.fr
 24. **Migrations** — `node database/migrate.js` pour appliquer en sequence (table `schema_migrations`)
 25. **Calendrier** — Bouton "Ajouter au calendrier" (.ics) sur mon-rdv.html + email confirmation, adresse par salon
 26. **Cloudflare cache** — `.wrangler/cache/pages.json` contient l'account_id, verifier si deploy echoue
+27. **Railway CLI** — `railway variables set KEY=value` pour modifier les vars prod. Projet `fortunate-benevolence`, service meme nom
+28. **Analytics lazy loading** — NE PAS utiliser IntersectionObserver + enabled sur les hooks React Query, ca casse le chargement des sections
+29. **Landing light mode** — `@media prefers-color-scheme light` sur index.html (brightness +25%, overlay renforce). Ne change rien en dark mode
+30. **Image Grenoble landing** — `salon-grenoble-landing.webp`, cadrage `background-position: 70% center`
