@@ -227,7 +227,7 @@ html, body {
   transition: filter 0.8s ease;
 }
 .salon-grenoble .salon-bg {
-  background-image: url('assets/images/salons/grenoble/salon-grenoble.jpg');
+  background-image: url('assets/images/salons/grenoble/salon-grenoble-landing.webp');
 }
 .salon-meylan .salon-bg {
   background-image: url('assets/images/salons/meylan/salon-meylan-interieur.jpg');
@@ -594,6 +594,18 @@ html, body {
    FOCUS
    ═══════════════════════════════════════ */
 a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px; border-radius: 4px; }
+
+/* ═══════════════════════════════════════
+   LIGHT MODE — meilleure lisibilité au soleil
+   ═══════════════════════════════════════ */
+@media (prefers-color-scheme: light) {
+  .salon-bg { filter: brightness(1.25) contrast(1.05); }
+  .salon-overlay { background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.85) 100%) !important; }
+  .salon-name { text-shadow: 0 2px 12px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.3); }
+  .salon-address, .salon-location { text-shadow: 0 1px 8px rgba(0,0,0,0.6); }
+  .salon-cta a { box-shadow: 0 2px 16px rgba(0,0,0,0.3); }
+  .header-logo img { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); }
+}
 </style>
 </head>
 <body>
