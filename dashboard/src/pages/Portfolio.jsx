@@ -29,9 +29,15 @@ export default function Portfolio() {
     photos.forEach(p => {
       if (map[p.created_by]) {
         map[p.created_by].photos.push(p);
+      } else {
+        // Photo by a barber not in active list (e.g. Admin) — create entry from photo data
+        map[p.created_by] = {
+          barber: { id: p.created_by, name: p.barber_name || 'Admin', is_active: true },
+          photos: [p],
+        };
       }
     });
-    // Sort: most photos first
+    // Sort: most photos first, barbers with 0 at the end
     return Object.values(map).sort((a, b) => b.photos.length - a.photos.length);
   }, [barbers, photos]);
 

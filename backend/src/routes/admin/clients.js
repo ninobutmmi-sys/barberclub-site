@@ -336,12 +336,12 @@ router.get('/photos/portfolio',
       const salonId = req.user.salon_id;
       const result = await db.query(
         `SELECT cp.id, cp.photo_data, cp.created_at, cp.created_by,
-                b.name as barber_name, b.photo_url as barber_photo,
+                b.name as barber_name, b.photo_url as barber_photo, b.salon_id as barber_salon,
                 c.first_name as client_first_name, c.last_name as client_last_name
          FROM client_photos cp
          JOIN clients c ON cp.client_id = c.id
          JOIN barbers b ON cp.created_by = b.id
-         JOIN client_salons cs ON c.id = cs.client_id AND cs.salon_id = $1
+         WHERE b.salon_id = $1
          ORDER BY cp.created_at DESC`,
         [salonId]
       );
