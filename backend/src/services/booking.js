@@ -523,6 +523,14 @@ async function cancelBooking(bookingId, cancelToken) {
 
   logger.info('Booking cancelled', { bookingId, date: booking.date, time: booking.start_time });
 
+  // Audit log — client-initiated cancellation
+  db.query(
+    `INSERT INTO audit_log (salon_id, actor_id, actor_name, action, entity_type, entity_id, details)
+     VALUES ($1, $2, $3, 'cancel', 'booking', $4, $5)`,
+    [booking.salon_id || 'meylan', booking.client_id || null, booking.first_name || 'Client', bookingId,
+     JSON.stringify({ source: 'client', date: booking.date, time: booking.start_time?.slice(0, 5) })]
+  ).catch(() => {});
+
   // Send cancellation email — direct send + queue fallback
   const cancelSalonId = booking.salon_id || 'meylan';
   try {
@@ -781,6 +789,14 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
       newDate,
       newTime: newStartTime,
     });
+
+    // Audit log — client-initiated reschedule
+    db.query(
+      `INSERT INTO audit_log (salon_id, actor_id, actor_name, action, entity_type, entity_id, details)
+       VALUES ($1, $2, $3, 'reschedule', 'booking', $4, $5)`,
+      [booking.salon_id || 'meylan', booking.client_id || null, booking.first_name || 'Client', bookingId,
+       JSON.stringify({ source: 'client', old_date: booking.date, old_time: booking.start_time?.slice(0, 5), new_date: newDate, new_time: newStartTime })]
+    ).catch(() => {});
 
     return {
       booking: updateResult.rows[0],

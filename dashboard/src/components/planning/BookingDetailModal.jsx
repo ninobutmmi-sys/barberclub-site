@@ -8,6 +8,7 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { updateClient, getClientPhotos, uploadClientPhoto, deleteClientPhoto, sendNoShowSms } from '../../api';
 import ProductPicker from './ProductPicker';
+import BookingAuditTrail from './BookingAuditTrail';
 import { formatPrice, formatPhone, FALLBACK_COLOR, STATUS_LABELS } from './helpers';
 import { CloseIcon } from './Icons';
 
@@ -462,6 +463,9 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
                 {(booking.status === 'confirmed' || booking.status === 'completed') && (
                   <ProductPicker booking={booking} barberId={booking.barber_id} />
                 )}
+
+                {/* Historique modifications */}
+                <BookingAuditTrail bookingId={booking.id} />
 
                 {/* Couleur — prestations uniquement */}
                 {serviceColors.length > 0 && (

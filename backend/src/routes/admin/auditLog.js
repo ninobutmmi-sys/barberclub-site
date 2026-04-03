@@ -9,7 +9,7 @@ const router = Router();
 router.get('/', async (req, res, next) => {
   try {
     const salonId = req.user.salon_id;
-    const { action, entity_type, page = 1, limit = 50 } = req.query;
+    const { action, entity_type, entity_id, page = 1, limit = 50 } = req.query;
     const offset = (Math.max(1, parseInt(page)) - 1) * parseInt(limit);
 
     const conditions = ['salon_id = $1'];
@@ -23,6 +23,10 @@ router.get('/', async (req, res, next) => {
     if (entity_type) {
       conditions.push(`entity_type = $${idx++}`);
       values.push(entity_type);
+    }
+    if (entity_id) {
+      conditions.push(`entity_id = $${idx++}`);
+      values.push(entity_id);
     }
 
     const where = conditions.join(' AND ');
