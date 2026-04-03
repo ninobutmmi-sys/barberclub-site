@@ -85,43 +85,41 @@ router.get('/monthly',
         count: parseInt(row.bookings_with_sale, 10),
       }));
 
-      // --- Trophy 3: "Zéro faux plan" (zero no-shows) ---
-      const noShowResult = await db.query(
-        `SELECT b.barber_id, COUNT(*) as no_show_count
-         FROM bookings b
-         WHERE b.status = 'no_show'
+      // --- Trophy 3: "Moins de faux plans" (fewest no-shows ranking) ---
+      const noShowRankResult = await db.query(
+        `SELECT br.id as barber_id, br.name as barber_name,
+                COUNT(*) FILTER (WHERE b.status = 'no_show') as no_show_count,
+                COUNT(*) FILTER (WHERE b.status = 'completed') as completed_count
+         FROM barbers br
+         LEFT JOIN bookings b ON b.barber_id = br.id
            AND b.date >= $1::date
            AND b.date < ($2::date + INTERVAL '1 month')
            AND b.deleted_at IS NULL
            AND b.salon_id = $3
-         GROUP BY b.barber_id`,
+         WHERE br.salon_id = $3 AND br.is_active = true
+         GROUP BY br.id, br.name
+         HAVING COUNT(*) FILTER (WHERE b.status = 'completed') > 0
+         ORDER BY no_show_count ASC, completed_count DESC`,
         [startDate, endDate, salonId]
       );
 
-      const noShowBarberIds = new Set(noShowResult.rows.map(r => r.barber_id));
+      const maxNoShows = noShowRankResult.rows.length > 0
+        ? Math.max(...noShowRankResult.rows.map(r => parseInt(r.no_show_count, 10)), 1)
+        : 1;
 
-      // Get completed bookings count for barbers with zero no-shows
-      const completedResult = await db.query(
-        `SELECT b.barber_id, br.name as barber_name,
-                COUNT(*) as completed_count
-         FROM bookings b
-         JOIN barbers br ON b.barber_id = br.id
-         WHERE b.status = 'completed'
-           AND b.date >= $1::date
-           AND b.date < ($2::date + INTERVAL '1 month')
-           AND b.deleted_at IS NULL
-           AND b.salon_id = $3
-         GROUP BY b.barber_id, br.name`,
-        [startDate, endDate, salonId]
-      );
-
-      const zeroNoShows = completedResult.rows
-        .filter(row => !noShowBarberIds.has(row.barber_id) && parseInt(row.completed_count, 10) > 0)
-        .map(row => ({
+      const noShowRanking = noShowRankResult.rows.map((row, i) => {
+        const count = parseInt(row.no_show_count, 10);
+        return {
           barber_id: row.barber_id,
           barber_name: row.barber_name,
+          rank: i + 1,
+          no_show_count: count,
           completed_count: parseInt(row.completed_count, 10),
-        }));
+          // Inverse percentage: 0 no-shows = 100%, max no-shows = low %
+          percentage: Math.round(((maxNoShows - count) / maxNoShows) * 100),
+          display_value: count === 0 ? '✓ 0' : `${count}`,
+        };
+      });
 
       res.json({
         month,
@@ -136,9 +134,9 @@ router.get('/monthly',
             title: 'Roi des ventes',
             ranking: salesRanking,
           },
-          zero_faux_plan: {
-            title: 'Zéro faux plan',
-            barbers: zeroNoShows,
+          moins_faux_plans: {
+            title: 'Moins de faux plans',
+            ranking: noShowRanking,
           },
         },
       });

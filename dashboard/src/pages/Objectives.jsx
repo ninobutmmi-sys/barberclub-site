@@ -349,8 +349,11 @@ export default function Objectives() {
             </div>
 
             <div style={{ marginBottom: 24 }}>
-              <ZeroNoShowCard
-                winners={data?.trophies?.zero_faux_plan?.barbers || []}
+              <TrophyCard
+                title="Moins de faux plans"
+                icon="✅"
+                description="Classement par fiabilité client"
+                ranking={data?.trophies?.moins_faux_plans?.ranking || []}
                 isMobile={isMobile}
               />
             </div>
