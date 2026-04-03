@@ -182,7 +182,7 @@ function ChallengeCard({ challenge, onDelete, isMobile }) {
     }
   }, [challenge]);
 
-  const barbers = progress?.barbers || [];
+  const barbers = progress?.progress || progress?.barbers || [];
 
   return (
     <div style={{
@@ -212,7 +212,7 @@ function ChallengeCard({ challenge, onDelete, isMobile }) {
       {barbers.length > 0 && (
         <div style={{ padding: '0 20px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           {barbers.map((b, i) => {
-            const pct = Math.min(100, Math.round((b.current / challenge.target_value) * 100));
+            const pct = Math.min(100, Math.round(((b.current_value || b.current || 0) / challenge.target_value) * 100));
             return (
               <div key={b.barber_id} style={{
                 display: 'flex', alignItems: 'center', gap: 10,
@@ -230,7 +230,7 @@ function ChallengeCard({ challenge, onDelete, isMobile }) {
                   }} />
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 700, color: pct >= 100 ? '#22c55e' : 'var(--text-muted)', flexShrink: 0, minWidth: 50, textAlign: 'right' }}>
-                  {b.current}/{challenge.target_value}
+                  {b.current_value || b.current || 0}/{challenge.target_value}
                 </span>
               </div>
             );
@@ -336,21 +336,21 @@ export default function Objectives() {
                 title="Meilleur volume"
                 icon="👑"
                 description="Classement par chiffre d'affaires"
-                ranking={data?.revenue_ranking || []}
+                ranking={data?.trophies?.meilleur_volume?.ranking || []}
                 isMobile={isMobile}
               />
               <TrophyCard
                 title="Roi des ventes"
                 icon="🛒"
                 description="RDV avec un produit vendu"
-                ranking={data?.product_ranking || []}
+                ranking={(data?.trophies?.roi_des_ventes?.ranking || []).map(r => ({ ...r, percentage: r.count ? Math.round((r.count / Math.max(...(data?.trophies?.roi_des_ventes?.ranking || []).map(x => x.count || 1))) * 100) : 0, display_value: r.count }))}
                 isMobile={isMobile}
               />
             </div>
 
             <div style={{ marginBottom: 24 }}>
               <ZeroNoShowCard
-                winners={data?.zero_noshow || []}
+                winners={data?.trophies?.zero_faux_plan?.barbers || []}
                 isMobile={isMobile}
               />
             </div>
