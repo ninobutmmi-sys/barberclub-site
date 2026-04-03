@@ -152,8 +152,10 @@ function useTheme() {
 
 // Items shown in the "Plus" drawer on mobile
 const DRAWER_NAV = [
+  { to: '/objectives', label: 'Objectifs', icon: NAV.find(n => n.to === '/objectives').icon },
   { to: '/services', label: 'Prestations', icon: NAV.find(n => n.to === '/services').icon },
   { to: '/boutique', label: 'Boutique', icon: NAV.find(n => n.to === '/boutique').icon },
+  { to: '/portfolio', label: 'Portfolio', icon: NAV.find(n => n.to === '/portfolio').icon },
   { to: '/barbers', label: 'Barbers', icon: NAV.find(n => n.to === '/barbers').icon },
   { to: '/faux-plans', label: 'Faux Plans', icon: NAV.find(n => n.to === '/faux-plans').icon },
   { to: '/history', label: 'Historique', icon: NAV.find(n => n.to === '/history').icon },
