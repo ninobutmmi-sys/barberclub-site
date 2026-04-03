@@ -1778,7 +1778,7 @@ export default function Analytics() {
             {/* ======== BLOC 1 : AUJOURD'HUI (mois courant uniquement) ======== */}
             {isCurrentMonth && (
               <TodayHero
-                todayRevenue={todayRevenue}
+                todayRevenue={todayRevenue + (dashboard?.today?.product_revenue || 0)}
                 todayBookings={todayBookings}
                 nextBookings={dashboard?.next_bookings}
               />
