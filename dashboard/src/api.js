@@ -247,6 +247,8 @@ export const uploadClientPhoto = (id, photoData) =>
   request(`/admin/clients/${id}/photos`, { method: 'POST', body: JSON.stringify({ photo_data: photoData }) });
 export const deleteClientPhoto = (clientId, photoId) =>
   request(`/admin/clients/${clientId}/photos/${photoId}`, { method: 'DELETE' });
+export const getPortfolioPhotos = () =>
+  request('/admin/clients/photos/portfolio');
 // ---- Admin: Blocked Slots ----
 export const getBlockedSlots = (params) => {
   const qs = new URLSearchParams(params).toString();

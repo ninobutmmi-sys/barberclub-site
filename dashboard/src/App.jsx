@@ -46,6 +46,7 @@ const History = lazy(() => import('./pages/History'));
 const FauxPlans = lazy(() => import('./pages/FauxPlans'));
 const Messages = lazy(() => import('./pages/Messages'));
 const Boutique = lazy(() => import('./pages/Boutique'));
+const Portfolio = lazy(() => import('./pages/Portfolio'));
 const Waitlist = lazy(() => import('./pages/Waitlist'));
 const System = lazy(() => import('./pages/System'));
 const PageLoader = () => (
@@ -85,6 +86,7 @@ function AppRoutes() {
         <Route path="planning" element={<Suspense fallback={<PageLoader />}><Planning /></Suspense>} />
         <Route path="services" element={<Suspense fallback={<PageLoader />}><Services /></Suspense>} />
         <Route path="boutique" element={<Suspense fallback={<PageLoader />}><Boutique /></Suspense>} />
+        <Route path="portfolio" element={<Suspense fallback={<PageLoader />}><Portfolio /></Suspense>} />
         <Route path="barbers" element={<Suspense fallback={<PageLoader />}><Barbers /></Suspense>} />
         <Route path="clients" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
         <Route path="clients/:id" element={<Suspense fallback={<PageLoader />}><ClientDetail /></Suspense>} />
