@@ -1829,6 +1829,46 @@ export default function Analytics() {
               />
             </div>
 
+            {/* ======== BLOC 2b : Ventes produits ======== */}
+            {(dashboard?.month?.product_revenue > 0 || dashboard?.today?.product_revenue > 0) && (
+              <div className="a-stagger a-d4" style={{
+                display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap',
+              }}>
+                <div style={{
+                  flex: 1, minWidth: 160, padding: '14px 18px', borderRadius: 12,
+                  background: 'var(--bg-card)', border: '1px solid var(--border)',
+                  display: 'flex', alignItems: 'center', gap: 14,
+                }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+                    background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+                  }}>🛒</div>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>Ventes produits (mois)</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--font-display)', marginTop: 2 }}>
+                      {formatPriceInt(dashboard?.month?.product_revenue || 0)}
+                    </div>
+                  </div>
+                  <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{dashboard?.month?.product_count || 0} vente{(dashboard?.month?.product_count || 0) > 1 ? 's' : ''}</div>
+                  </div>
+                </div>
+                {dashboard?.today?.product_revenue > 0 && (
+                  <div style={{
+                    minWidth: 140, padding: '14px 18px', borderRadius: 12,
+                    background: 'var(--bg-card)', border: '1px solid var(--border)',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                  }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>Aujourd'hui</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#8b5cf6' }}>
+                      {formatPriceInt(dashboard?.today?.product_revenue || 0)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ======== BLOC 2 suite : COURBE CA + PROJECTION inline ======== */}
             <div className="a-stagger a-d5 a-card" style={{ marginBottom: 32 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

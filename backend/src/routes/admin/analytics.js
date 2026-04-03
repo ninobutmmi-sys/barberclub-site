@@ -78,14 +78,32 @@ router.get('/dashboard', async (req, res, next) => {
       [today, salonId]
     );
 
+    // Product sales today
+    const productSalesToday = await db.query(
+      `SELECT COALESCE(SUM(total_price), 0) as revenue, COUNT(*) as count
+       FROM product_sales WHERE sold_at::date = $1 AND salon_id = $2`,
+      [today, salonId]
+    );
+
+    // Product sales this month
+    const productSalesMonth = await db.query(
+      `SELECT COALESCE(SUM(total_price), 0) as revenue, COUNT(*) as count
+       FROM product_sales WHERE sold_at::date >= $1 AND sold_at::date <= $2 AND salon_id = $3`,
+      [firstOfMonth, lastOfMonth, salonId]
+    );
+
     const t = todayStats.rows[0];
     const m = monthStats.rows[0];
+    const pt = productSalesToday.rows[0];
+    const pm2 = productSalesMonth.rows[0];
 
     const response = {
       today: {
         bookings: parseInt(t.bookings_today),
         revenue: parseInt(t.revenue_today),
         cancelled: parseInt(t.cancelled_today),
+        product_revenue: parseInt(pt.revenue),
+        product_count: parseInt(pt.count),
       },
       month: {
         bookings: parseInt(m.bookings_month),
@@ -95,6 +113,8 @@ router.get('/dashboard', async (req, res, next) => {
         average_basket: parseInt(m.bookings_month) > 0
           ? Math.round(parseInt(m.revenue_month) / parseInt(m.bookings_month))
           : 0,
+        product_revenue: parseInt(pm2.revenue),
+        product_count: parseInt(pm2.count),
       },
       next_bookings: nextBookings.rows,
     };
