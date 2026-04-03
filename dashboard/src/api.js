@@ -367,6 +367,10 @@ export const deleteProduct = (id) =>
   request(`/admin/products/${id}`, { method: 'DELETE' });
 export const recordProductSale = (id, body) =>
   request(`/admin/products/${id}/sale`, { method: 'POST', body: JSON.stringify(body) });
+export const getBookingSales = (bookingId) =>
+  request(`/admin/products/sales/booking/${bookingId}`);
+export const deleteSale = (saleId) =>
+  request(`/admin/products/sales/${saleId}`, { method: 'DELETE' });
 
 // ---- Admin: Gift Cards ----
 export const getGiftCards = () => request('/admin/products/gift-cards');

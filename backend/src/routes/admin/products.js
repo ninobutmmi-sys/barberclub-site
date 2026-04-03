@@ -442,13 +442,14 @@ router.post('/:id/sale',
     body('payment_method').isIn(['cb', 'cash', 'lydia', 'other']).withMessage('Methode de paiement invalide'),
     body('sold_by').matches(uuidRegex).withMessage('Vendeur requis'),
     body('client_id').optional({ values: 'falsy' }).matches(uuidRegex),
+    body('booking_id').optional({ values: 'falsy' }).matches(uuidRegex),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
       const { id } = req.params;
-      const { quantity, payment_method, sold_by, client_id } = req.body;
+      const { quantity, payment_method, sold_by, client_id, booking_id } = req.body;
 
       // Get product and check availability
       const productResult = await db.query(
@@ -483,10 +484,10 @@ router.post('/:id/sale',
 
       // Create sale record
       const saleResult = await db.query(
-        `INSERT INTO product_sales (product_id, quantity, unit_price, total_price, payment_method, sold_by, client_id, sold_at, salon_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
+        `INSERT INTO product_sales (product_id, quantity, unit_price, total_price, payment_method, sold_by, client_id, booking_id, sold_at, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9)
          RETURNING *`,
-        [id, quantity, unit_price, total_price, payment_method, sold_by, client_id || null, salonId]
+        [id, quantity, unit_price, total_price, payment_method, sold_by, client_id || null, booking_id || null, salonId]
       );
 
       logger.info('Product sale recorded', {
@@ -502,6 +503,67 @@ router.post('/:id/sale',
         product_name: product.name,
         new_stock_quantity: product.stock_quantity - quantity,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// DELETE /api/admin/products/sales/:saleId — Cancel a sale (rollback stock)
+// ============================================
+router.delete('/sales/:saleId',
+  [param('saleId').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const { saleId } = req.params;
+
+      const sale = await db.query(
+        'SELECT id, product_id, quantity FROM product_sales WHERE id = $1 AND salon_id = $2',
+        [saleId, salonId]
+      );
+      if (sale.rows.length === 0) throw ApiError.notFound('Vente introuvable');
+
+      const { product_id, quantity } = sale.rows[0];
+
+      // Rollback stock
+      await db.query(
+        'UPDATE products SET stock_quantity = stock_quantity + $1 WHERE id = $2',
+        [quantity, product_id]
+      );
+
+      // Delete sale
+      await db.query('DELETE FROM product_sales WHERE id = $1', [saleId]);
+
+      logger.info('Product sale cancelled', { saleId, product_id, quantity_restored: quantity });
+      res.json({ ok: true, message: 'Vente annulée, stock restauré' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /api/admin/products/sales/booking/:bookingId — Get sales for a booking
+// ============================================
+router.get('/sales/booking/:bookingId',
+  [param('bookingId').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const result = await db.query(
+        `SELECT ps.id, ps.product_id, ps.quantity, ps.unit_price, ps.total_price,
+                p.name as product_name, p.category
+         FROM product_sales ps
+         JOIN products p ON ps.product_id = p.id
+         WHERE ps.booking_id = $1 AND ps.salon_id = $2
+         ORDER BY ps.sold_at`,
+        [req.params.bookingId, salonId]
+      );
+      res.json(result.rows);
     } catch (error) {
       next(error);
     }
