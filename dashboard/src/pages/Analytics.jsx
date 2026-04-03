@@ -1829,45 +1829,59 @@ export default function Analytics() {
               />
             </div>
 
-            {/* ======== BLOC 2b : Ventes produits ======== */}
-            {(dashboard?.month?.product_revenue > 0 || dashboard?.today?.product_revenue > 0) && (
-              <div className="a-stagger a-d4" style={{
-                display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap',
-              }}>
-                <div style={{
-                  flex: 1, minWidth: 160, padding: '14px 18px', borderRadius: 12,
+            {/* ======== BLOC 2b : Résumé CA du jour (boss-friendly) ======== */}
+            {(() => {
+              const todayPresta = dashboard?.today?.revenue || 0;
+              const todayProd = dashboard?.today?.product_revenue || 0;
+              const todayTotal = todayPresta + todayProd;
+              const monthPresta = dashboard?.month?.revenue || 0;
+              const monthProd = dashboard?.month?.product_revenue || 0;
+              const monthTotal2 = monthPresta + monthProd;
+              const prodPct = monthTotal2 > 0 ? Math.round((monthProd / monthTotal2) * 100) : 0;
+              const prestaPct = monthTotal2 > 0 ? 100 - prodPct : 0;
+
+              return (
+                <div className="a-stagger a-d4" style={{
                   background: 'var(--bg-card)', border: '1px solid var(--border)',
-                  display: 'flex', alignItems: 'center', gap: 14,
+                  borderRadius: 14, padding: isMobile ? 16 : 20, marginBottom: 20,
                 }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-                    background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.15)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-                  }}>🛒</div>
-                  <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>Ventes produits (mois)</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, fontFamily: 'var(--font-display)', marginTop: 2 }}>
-                      {formatPriceInt(dashboard?.month?.product_revenue || 0)}
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
+                      CA aujourd'hui
+                    </span>
+                    <span style={{ fontSize: 24, fontWeight: 800, fontFamily: 'var(--font-display)' }}>
+                      {formatPriceInt(todayTotal)}
+                    </span>
                   </div>
-                  <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{dashboard?.month?.product_count || 0} vente{(dashboard?.month?.product_count || 0) > 1 ? 's' : ''}</div>
+
+                  {/* Stacked bar */}
+                  <div style={{ height: 10, borderRadius: 5, overflow: 'hidden', display: 'flex', marginBottom: 14, background: 'rgba(var(--overlay), 0.04)' }}>
+                    {todayPresta > 0 && <div style={{ width: `${todayTotal > 0 ? Math.round((todayPresta / todayTotal) * 100) : 0}%`, background: 'linear-gradient(90deg, #22c55e, #16a34a)', transition: 'width 0.5s' }} />}
+                    {todayProd > 0 && <div style={{ width: `${todayTotal > 0 ? Math.round((todayProd / todayTotal) * 100) : 0}%`, background: 'linear-gradient(90deg, #8b5cf6, #7c3aed)', transition: 'width 0.5s' }} />}
+                  </div>
+
+                  {/* Two columns */}
+                  <div style={{ display: 'flex', gap: isMobile ? 10 : 16 }}>
+                    <div style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.12)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: 2, background: '#22c55e' }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Prestations</span>
+                      </div>
+                      <div style={{ fontSize: 18, fontWeight: 800, fontFamily: 'var(--font-display)' }}>{formatPriceInt(todayPresta)}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>mois : {formatPriceInt(monthPresta)}</div>
+                    </div>
+                    <div style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.12)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: 2, background: '#8b5cf6' }} />
+                        <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Produits</span>
+                      </div>
+                      <div style={{ fontSize: 18, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#8b5cf6' }}>{formatPriceInt(todayProd)}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>mois : {formatPriceInt(monthProd)} ({prodPct}%)</div>
+                    </div>
                   </div>
                 </div>
-                {dashboard?.today?.product_revenue > 0 && (
-                  <div style={{
-                    minWidth: 140, padding: '14px 18px', borderRadius: 12,
-                    background: 'var(--bg-card)', border: '1px solid var(--border)',
-                    display: 'flex', alignItems: 'center', gap: 10,
-                  }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>Aujourd'hui</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)', color: '#8b5cf6' }}>
-                      {formatPriceInt(dashboard?.today?.product_revenue || 0)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+              );
+            })()}
 
             {/* ======== BLOC 2 suite : COURBE CA + PROJECTION inline ======== */}
             <div className="a-stagger a-d5 a-card" style={{ marginBottom: 32 }}>
