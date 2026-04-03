@@ -338,6 +338,18 @@ export const purgeFailedNotifications = () => request('/admin/notifications/fail
 // ---- Admin: System Health ----
 export const getSystemHealth = () => request('/admin/system/health');
 
+// ---- Admin: Objectives ----
+export const getMonthlyObjectives = (month) =>
+  request(`/admin/objectives/monthly?month=${month}`);
+export const getChallenges = () =>
+  request('/admin/objectives/challenges');
+export const createChallenge = (body) =>
+  request('/admin/objectives/challenges', { method: 'POST', body: JSON.stringify(body) });
+export const deleteChallenge = (id) =>
+  request(`/admin/objectives/challenges/${id}`, { method: 'DELETE' });
+export const getChallengeProgress = (id) =>
+  request(`/admin/objectives/challenges/${id}/progress`);
+
 // ---- Admin: Audit Log ----
 export const getAuditLog = (params) => {
   const filtered = Object.fromEntries(
