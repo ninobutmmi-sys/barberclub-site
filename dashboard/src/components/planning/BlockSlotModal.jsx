@@ -2,7 +2,7 @@
 // BlockSlotModal
 // ---------------------------------------------------------------------------
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { createBlockedSlot } from '../../api';
 import { CloseIcon } from './Icons';
@@ -10,6 +10,12 @@ import { CloseIcon } from './Icons';
 export default function BlockSlotModal({ barbers, onClose, onCreated, initialDate, initialBarberId }) {
   const [barberId, setBarberId] = useState(initialBarberId || (barbers[0]?.id ?? ''));
   const [date, setDate] = useState(initialDate || format(new Date(), 'yyyy-MM-dd'));
+
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
   const [startTime, setStartTime] = useState('12:00');
   const [endTime, setEndTime] = useState('13:00');
   const [type, setType] = useState('break');

@@ -5,6 +5,7 @@ const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
 const logger = require('../../utils/logger');
+const { getParisTodayISO } = require('../../utils/date');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -157,7 +158,7 @@ router.get('/gift-cards', async (req, res, next) => {
 router.get('/stats', async (req, res, next) => {
   try {
     const salonId = req.user.salon_id;
-    const today = new Date().toISOString().split('T')[0];
+    const today = getParisTodayISO();
 
     // Revenue today
     const todayResult = await db.query(
@@ -165,7 +166,7 @@ router.get('/stats', async (req, res, next) => {
               COUNT(*) as sales_today
        FROM product_sales ps
        JOIN products p ON ps.product_id = p.id
-       WHERE p.salon_id = $1 AND ps.sold_at::date = $2`,
+       WHERE p.salon_id = $1 AND ps.sold_at >= $2::date AND ps.sold_at < ($2::date + INTERVAL '1 day')`,
       [salonId, today]
     );
 

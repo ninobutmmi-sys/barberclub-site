@@ -32,19 +32,6 @@ function formatTime(timeStr) {
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
-/** Hook: returns [ref, hasBeenVisible] — once visible, stays true (lazy loading) */
-function useInView() {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    if (!ref.current || visible) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { rootMargin: '200px' });
-    obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, [visible]);
-  return [ref, visible];
-}
-
 // ============================================
 // Accent colors for KPIs
 // ============================================

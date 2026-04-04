@@ -81,14 +81,14 @@ router.get('/dashboard', async (req, res, next) => {
     // Product sales today
     const productSalesToday = await db.query(
       `SELECT COALESCE(SUM(total_price), 0) as revenue, COUNT(*) as count
-       FROM product_sales WHERE sold_at::date = $1 AND salon_id = $2`,
+       FROM product_sales WHERE sold_at >= $1::date AND sold_at < ($1::date + INTERVAL '1 day') AND salon_id = $2`,
       [today, salonId]
     );
 
     // Product sales this month
     const productSalesMonth = await db.query(
       `SELECT COALESCE(SUM(total_price), 0) as revenue, COUNT(*) as count
-       FROM product_sales WHERE sold_at::date >= $1 AND sold_at::date <= $2 AND salon_id = $3`,
+       FROM product_sales WHERE sold_at >= $1::date AND sold_at < ($2::date + INTERVAL '1 day') AND salon_id = $3`,
       [firstOfMonth, lastOfMonth, salonId]
     );
 

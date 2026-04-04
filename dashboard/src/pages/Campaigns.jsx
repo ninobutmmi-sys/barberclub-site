@@ -2,10 +2,7 @@ import { useState } from 'react';
 import { getCampaignROI } from '../api';
 import { useCampaigns } from '../hooks/useApi';
 import useMobile from '../hooks/useMobile';
-
-function formatPrice(cents) {
-  return (cents / 100).toFixed(2).replace('.', ',') + ' €';
-}
+import { formatPrice } from '../utils/format';
 
 export default function Campaigns({ embedded } = {}) {
   const isMobile = useMobile();

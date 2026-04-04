@@ -296,7 +296,7 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
 
     // Get current user info
     const table = decoded.type === 'barber' ? 'barbers' : 'clients';
-    const nameCol = decoded.type === 'barber' ? 'name, photo_url, salon_id' : "first_name || ' ' || last_name as name, NULL as photo_url";
+    const nameCol = decoded.type === 'barber' ? 'name, photo_url, salon_id, is_active' : "first_name || ' ' || last_name as name, NULL as photo_url";
     const userResult = await db.query(
       `SELECT id, email, ${nameCol} FROM ${table} WHERE id = $1 AND deleted_at IS NULL`,
       [decoded.id]
@@ -305,6 +305,12 @@ router.post('/refresh', authLimiter, async (req, res, next) => {
     if (userResult.rows.length === 0) {
       clearRefreshTokenCookie(res);
       throw ApiError.unauthorized('Utilisateur introuvable');
+    }
+
+    // Block deactivated barber accounts from refreshing tokens
+    if (decoded.type === 'barber' && !userResult.rows[0]?.is_active) {
+      clearRefreshTokenCookie(res);
+      throw ApiError.unauthorized('Compte désactivé');
     }
 
     const user = userResult.rows[0];

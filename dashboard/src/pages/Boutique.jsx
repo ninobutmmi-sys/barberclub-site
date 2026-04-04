@@ -12,15 +12,11 @@ import {
   useCreateGiftCard,
   useUpdateGiftCard,
 } from '../hooks/useApi';
+import { formatPrice } from '../utils/format';
 
 // ============================================
 // Helpers
 // ============================================
-
-function formatPrice(cents) {
-  if (!cents && cents !== 0) return '0,00 \u20AC';
-  return (cents / 100).toFixed(2).replace('.', ',') + ' \u20AC';
-}
 
 function formatPriceCompact(cents) {
   const val = cents / 100;

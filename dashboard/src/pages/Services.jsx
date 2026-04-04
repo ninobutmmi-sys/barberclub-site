@@ -1,11 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import useMobile from '../hooks/useMobile';
 import { useServices, useBarbers, useCreateService, useUpdateService, useDeleteService, useServiceRestrictions, useUpdateServiceRestrictions } from '../hooks/useApi';
-
-function formatPrice(cents) {
-  return (cents / 100).toFixed(2).replace('.', ',') + ' €';
-}
-
+import { formatPrice } from '../utils/format';
 import { COLOR_PALETTE } from '../utils/constants';
 
 export default function Services() {
@@ -156,6 +152,12 @@ function ServiceModal({ service, barbers, onClose }) {
   // restrictions state: { [barberId]: { [dayOfWeek]: { enabled, start_time, end_time } } }
   const [restrictions, setRestrictions] = useState({});
   const saving = createMutation.isPending || updateMutation.isPending || restrictionsMutation.isPending;
+
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
   // Initialize restrictions from existing data
   useEffect(() => {

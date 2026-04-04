@@ -4,7 +4,7 @@
  * Auto-dismisses after 8s. Click to dismiss.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSocketEvent } from '../hooks/useSocket';
 
 const TOAST_DURATION = 8000;
@@ -47,17 +47,30 @@ const TYPES = {
 
 export default function LiveToasts() {
   const [toasts, setToasts] = useState([]);
+  const timersRef = useRef(new Map());
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach((timerId) => clearTimeout(timerId));
+      timers.clear();
+    };
+  }, []);
 
   const addToast = useCallback((data) => {
     const id = Date.now() + Math.random();
     setToasts((prev) => [...prev.slice(-4), { id, ...data }]); // Max 5 visible
-    setTimeout(() => {
+    const timerId = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
+      timersRef.current.delete(id);
     }, TOAST_DURATION);
+    timersRef.current.set(id, timerId);
   }, []);
 
   const dismiss = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+    clearTimeout(timersRef.current.get(id));
+    timersRef.current.delete(id);
   }, []);
 
   // Listen for client actions

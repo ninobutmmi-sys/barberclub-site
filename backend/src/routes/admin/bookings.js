@@ -9,6 +9,7 @@ const logger = require('../../utils/logger');
 const db = require('../../config/database');
 const { logAudit } = require('../../middleware/auditLog');
 const ws = require('../../services/websocket');
+const { getParisTodayISO } = require('../../utils/date');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,7 +28,7 @@ router.get('/',
     try {
       const salonId = req.user.salon_id;
       const { date, barber_id, view } = req.query;
-      const targetDate = date || new Date().toISOString().split('T')[0];
+      const targetDate = date || getParisTodayISO();
       const viewType = view || 'day';
 
       let dateCondition;
@@ -506,8 +507,7 @@ router.delete('/group/:groupId',
       const futureOnly = req.query.future_only === 'true';
 
       // Build date condition: future_only = only today and future bookings
-      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-      const todayStr = now.toISOString().split('T')[0];
+      const todayStr = getParisTodayISO();
       const salonParamIndex = futureOnly ? 3 : 2;
       const params = futureOnly ? [groupId, todayStr, salonId] : [groupId, salonId];
       const dateCondition = futureOnly ? ` AND b.date >= $2` : '';

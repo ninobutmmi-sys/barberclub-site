@@ -31,6 +31,12 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   if (!booking) return null;
 
   const hasEmail = !!booking.client_email;
@@ -47,6 +53,21 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
   const initEndTime = booking.end_time?.slice(0, 5) || '';
   const [editEndTime, setEditEndTime] = useState(initEndTime);
   const [editColor, setEditColor] = useState(initColor);
+
+  // Reset edit fields when booking changes
+  useEffect(() => {
+    if (!booking) return;
+    const dateStr = typeof booking.date === 'string' ? booking.date.slice(0, 10) : format(new Date(booking.date), 'yyyy-MM-dd');
+    setEditDate(dateStr);
+    setEditTime(booking.start_time?.slice(0, 5) || '09:00');
+    setEditBarberId(booking.barber_id || '');
+    setEditServiceId(booking.service_id || '');
+    setEditEndTime(booking.end_time?.slice(0, 5) || '');
+    setEditColor(booking.booking_color || booking.service_color || FALLBACK_COLOR);
+    setSubView('main');
+    setNotifyClient(false);
+    setSaveError('');
+  }, [booking?.id]);
 
   // Filter services by selected barber
   const filteredServices = useMemo(() => {

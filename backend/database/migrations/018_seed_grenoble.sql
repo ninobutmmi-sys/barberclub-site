@@ -6,7 +6,6 @@
 
 -- ============================================
 -- ADMIN ACCOUNT (dashboard login)
--- Password: "Barberclot1968@@"
 -- ============================================
 INSERT INTO barbers (id, name, role, photo_url, email, password_hash, is_active, sort_order, salon_id) VALUES
 (

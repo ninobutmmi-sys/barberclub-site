@@ -3,19 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import useMobile from '../hooks/useMobile';
 import { useBookingsHistory, useBarbers } from '../hooks/useApi';
 import * as api from '../api';
+import { formatPrice, formatDateFR } from '../utils/format';
 
 const LIMIT = 50;
-
-function formatPrice(cents) {
-  return (cents / 100).toFixed(2).replace('.', ',') + ' \u20AC';
-}
-
-function formatDateFR(dateStr) {
-  const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-  const months = ['jan', 'fev', 'mars', 'avr', 'mai', 'juin', 'juil', 'aout', 'sept', 'oct', 'nov', 'dec'];
-  const d = new Date(dateStr + 'T00:00:00');
-  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
-}
 
 function formatTime(time) {
   if (!time) return '-';

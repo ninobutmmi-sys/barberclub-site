@@ -3,6 +3,7 @@ const { body, param, query } = require('express-validator');
 const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
+const { getParisTodayISO } = require('../../utils/date');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -19,7 +20,7 @@ router.get('/daily',
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const targetDate = req.query.date || new Date().toISOString().split('T')[0];
+      const targetDate = req.query.date || getParisTodayISO();
 
       // 1. Get completed bookings for the date with any linked payment
       const bookingsResult = await db.query(
@@ -123,7 +124,7 @@ router.post('/',
 
       // Check that the date is not already closed
       const paidAt = new Date();
-      const dateStr = paidAt.toISOString().split('T')[0];
+      const dateStr = getParisTodayISO();
       const closingCheck = await db.query(
         'SELECT id FROM register_closings WHERE salon_id = $1 AND date = $2',
         [salonId, dateStr]

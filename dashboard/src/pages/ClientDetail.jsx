@@ -1,18 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useMobile from '../hooks/useMobile';
 import { useClient, useUpdateClient, useDeleteClient } from '../hooks/useApi';
 import { getPhoneFlag } from '../utils/phone';
-
-function formatPrice(cents) {
-  return (cents / 100).toFixed(2).replace('.', ',') + ' €';
-}
-
-function formatDateFR(dateStr) {
-  if (!dateStr) return '–';
-  const d = new Date(dateStr.slice(0, 10) + 'T00:00:00');
-  return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-}
+import { formatPrice, formatDateFR } from '../utils/format';
 
 const PencilIcon = () => (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -88,15 +79,19 @@ export default function ClientDetail() {
   const [toast, setToast] = useState(null);
   const [phoneConfirm, setPhoneConfirm] = useState(null); // { newPhone, onConfirm }
   const saving = updateMutation.isPending;
+  const toastTimer = useRef(null);
 
   useEffect(() => {
     if (client) setNotes(client.notes || '');
   }, [client]);
 
-  function showToast(message, type = 'success') {
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  }
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  }, []);
 
   async function handleFieldSave(fieldKey, value, onDone) {
     // Pour le phone, on passe par la modale de confirmation

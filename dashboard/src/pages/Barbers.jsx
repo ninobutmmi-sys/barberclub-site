@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import useMobile from '../hooks/useMobile';
 import {
   useBarbers,
@@ -379,11 +379,13 @@ function ScheduleModal({ barber, onClose }) {
     setSchedule(sched);
   }
 
+  const flashTimer = useRef(null);
   const flash = useCallback((type, message) => {
     setStatus({ type, message });
-    const timer = setTimeout(() => setStatus(null), 3000);
-    return () => clearTimeout(timer);
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setStatus(null), 3000);
   }, []);
+  useEffect(() => () => clearTimeout(flashTimer.current), []);
 
   async function saveSchedule() {
     try {
@@ -936,11 +938,13 @@ function GuestDaysModal({ barber, onClose }) {
   const [gdEndTime, setGdEndTime] = useState('19:00');
   const adding = addMutation.isPending;
 
+  const flashTimer = useRef(null);
   const flash = useCallback((type, message) => {
     setStatus({ type, message });
-    const timer = setTimeout(() => setStatus(null), 3000);
-    return () => clearTimeout(timer);
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setStatus(null), 3000);
   }, []);
+  useEffect(() => () => clearTimeout(flashTimer.current), []);
 
   const destinations = SALON_OPTIONS.filter(s => s.id !== barber.salon_id);
 

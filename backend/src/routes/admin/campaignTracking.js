@@ -159,6 +159,11 @@ trackRouter.get('/t/:tracking_code', async (req, res, next) => {
   try {
     const { tracking_code } = req.params;
 
+    // Validate tracking_code format (alphanumeric + dashes only)
+    if (!/^[a-zA-Z0-9-]+$/.test(tracking_code)) {
+      return res.redirect(302, 'https://barberclub-grenoble.fr/pages/meylan/reserver.html');
+    }
+
     // Find campaign by tracking code
     const campaignResult = await db.query(
       'SELECT id, salon_id FROM campaigns WHERE tracking_code = $1',
@@ -173,7 +178,7 @@ trackRouter.get('/t/:tracking_code', async (req, res, next) => {
     const campaign_id = campaignResult.rows[0].id;
     const campaignSalon = campaignResult.rows[0].salon_id || 'meylan';
     const ip_address = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
-    const user_agent = req.headers['user-agent'] || null;
+    const ua = (req.headers['user-agent'] || '').slice(0, 500);
 
     // Increment clicks and record click details in parallel
     await Promise.all([
@@ -184,7 +189,7 @@ trackRouter.get('/t/:tracking_code', async (req, res, next) => {
       db.query(
         `INSERT INTO campaign_clicks (campaign_id, clicked_at, ip_address, user_agent)
          VALUES ($1, NOW(), $2, $3)`,
-        [campaign_id, ip_address, user_agent]
+        [campaign_id, ip_address, ua || null]
       ),
     ]);
 

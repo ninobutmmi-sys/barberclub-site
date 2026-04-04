@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import useMobile from '../hooks/useMobile';
 import {
   useWaitlist, useWaitlistCount, useAddToWaitlist, useUpdateWaitlistEntry, useDeleteWaitlistEntry,
@@ -54,10 +54,13 @@ export default function Waitlist() {
   const updateMutation = useUpdateWaitlistEntry();
   const notifySms = useNotifyWaitlistSms();
 
-  function showToast(message, type = 'success') {
+  const toastTimer = useRef(null);
+  const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  }
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3500);
+  }, []);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   async function handleDelete(id) {
     if (!confirm('Retirer de la liste d\'attente ?')) return;

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useMobile from '../hooks/useMobile';
 import { useBookingsHistory, useBarbers, useAuditLog } from '../hooks/useApi';
+import { formatPrice, formatDateFR } from '../utils/format';
 
 const LIMIT = 50;
 
@@ -18,20 +19,6 @@ const SOURCE_LABELS = {
   phone: 'Tel.',
   walk_in: 'Sans RDV',
 };
-
-function formatPrice(cents) {
-  return (cents / 100).toFixed(2).replace('.', ',') + ' \u20AC';
-}
-
-function formatDateFR(dateStr) {
-  const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-  const months = [
-    'jan', 'fev', 'mars', 'avr', 'mai', 'juin',
-    'juil', 'aout', 'sept', 'oct', 'nov', 'dec',
-  ];
-  const d = new Date(dateStr + 'T00:00:00');
-  return `${days[d.getDay()]}. ${d.getDate()} ${months[d.getMonth()]}. ${d.getFullYear()}`;
-}
 
 function formatTime(time) {
   if (!time) return '-';

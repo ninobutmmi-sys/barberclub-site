@@ -4,6 +4,7 @@ const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
 const ws = require('../../services/websocket');
+const { getParisTodayISO } = require('../../utils/date');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -23,7 +24,7 @@ router.get('/',
     try {
       const salonId = req.user.salon_id;
       const { date, barber_id, view } = req.query;
-      const targetDate = date || new Date().toISOString().split('T')[0];
+      const targetDate = date || getParisTodayISO();
       const viewType = view || 'day';
 
       let dateCondition;

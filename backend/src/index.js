@@ -17,6 +17,7 @@ const { publicLimiter, adminLimiter } = require('./middleware/rateLimiter');
 const { requireAuth, requireBarber } = require('./middleware/auth');
 const { GRACEFUL_SHUTDOWN_TIMEOUT_MS } = require('./constants');
 const { alertCronFailure } = require('./utils/discord');
+const { getParisTodayISO } = require('./utils/date');
 
 // Route imports
 const healthRoutes = require('./routes/health');
@@ -226,7 +227,7 @@ adminRouter.use(async (req, res, next) => {
     if (fromRequest !== req.user.salon_id) {
       // Check if barber is a guest in the requested salon today
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getParisTodayISO();
         const guestCheck = await db.query(
           'SELECT 1 FROM guest_assignments WHERE barber_id = $1 AND host_salon_id = $2 AND date = $3',
           [req.user.id, fromRequest, today]

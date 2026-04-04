@@ -11,6 +11,12 @@ import { CloseIcon } from './Icons';
 export default function CreateBookingModal({ barbers, services, onClose, onCreated, initialDate, initialTime, initialBarberId, initialServiceId, initialFirstName, initialLastName, initialPhone }) {
   const [barberId, setBarberId] = useState(initialBarberId || (barbers[0]?.id ?? ''));
 
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   // Filter services by selected barber
   const filteredServices = useMemo(() => {
     if (!barberId) return services;

@@ -5,16 +5,7 @@ import { exportToCSV } from '../utils/csv';
 import useMobile from '../hooks/useMobile';
 import { formatPhoneWithFlag } from '../utils/phone';
 import { useClients } from '../hooks/useApi';
-
-function formatPrice(cents) {
-  return (cents / 100).toFixed(2).replace('.', ',') + ' €';
-}
-
-function formatDateFR(dateStr) {
-  if (!dateStr) return '-';
-  const d = new Date(dateStr.slice(0, 10) + 'T00:00:00');
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-}
+import { formatPrice, formatDateFR } from '../utils/format';
 
 const PAGE_SIZE = 20;
 
