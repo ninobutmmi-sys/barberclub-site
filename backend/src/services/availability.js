@@ -120,9 +120,33 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   // For time-restricted services, use service duration as slot interval for optimal packing
   const slotStep = restrictionWindow ? duration : undefined;
 
+  // Check per-barber service restrictions (e.g. Tom can't do student cuts on Friday PM / Saturday)
+  const restrictionsResult = await db.query(
+    `SELECT barber_id, start_time, end_time FROM service_restrictions
+     WHERE service_id = $1 AND day_of_week = $2 AND salon_id = $3`,
+    [serviceId, dayOfWeek, salonId]
+  );
+  const barberRestrictions = {};
+  for (const r of restrictionsResult.rows) {
+    barberRestrictions[r.barber_id] = { start: timeToMinutes(r.start_time.slice(0, 5)), end: timeToMinutes(r.end_time.slice(0, 5)) };
+  }
+
   for (const bId of barberIds) {
+    // Skip barber entirely if restricted for the whole day
+    const restriction = barberRestrictions[bId];
+    if (restriction && restriction.start === 0 && restriction.end >= 1439) continue;
+
     const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration, { ...options, salonId, slotStep });
-    allSlots.push(...slots);
+
+    // Filter out restricted time windows for this barber
+    if (restriction) {
+      allSlots.push(...slots.filter(s => {
+        const slotMin = timeToMinutes(s.time);
+        return slotMin < restriction.start || slotMin >= restriction.end;
+      }));
+    } else {
+      allSlots.push(...slots);
+    }
   }
 
   // 5. Sort by time, then by barber sort order
