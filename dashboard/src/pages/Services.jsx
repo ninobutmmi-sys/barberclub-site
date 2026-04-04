@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import useMobile from '../hooks/useMobile';
-import { useServices, useBarbers, useCreateService, useUpdateService, useDeleteService } from '../hooks/useApi';
+import { useServices, useBarbers, useCreateService, useUpdateService, useDeleteService, useServiceRestrictions, useUpdateServiceRestrictions } from '../hooks/useApi';
 
 function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace('.', ',') + ' €';
@@ -131,10 +131,14 @@ export default function Services() {
   );
 }
 
+const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
 function ServiceModal({ service, barbers, onClose }) {
   const isEdit = !!service;
   const createMutation = useCreateService();
   const updateMutation = useUpdateService();
+  const restrictionsMutation = useUpdateServiceRestrictions();
+  const { data: existingRestrictions } = useServiceRestrictions(isEdit ? service.id : null);
   const [name, setName] = useState(service?.name || '');
   const [description, setDescription] = useState(service?.description || '');
   const [price, setPrice] = useState(service ? (service.price / 100).toFixed(2) : '');
@@ -147,12 +151,72 @@ function ServiceModal({ service, barbers, onClose }) {
     service?.barbers?.map((b) => b.id) || barbers.map((b) => b.id)
   );
   const [error, setError] = useState('');
-  const saving = createMutation.isPending || updateMutation.isPending;
+  const [showRestrictions, setShowRestrictions] = useState(false);
+  const [expandedBarber, setExpandedBarber] = useState(null);
+  // restrictions state: { [barberId]: { [dayOfWeek]: { enabled, start_time, end_time } } }
+  const [restrictions, setRestrictions] = useState({});
+  const saving = createMutation.isPending || updateMutation.isPending || restrictionsMutation.isPending;
+
+  // Initialize restrictions from existing data
+  useEffect(() => {
+    if (!existingRestrictions) return;
+    const state = {};
+    for (const r of existingRestrictions) {
+      if (!state[r.barber_id]) state[r.barber_id] = {};
+      state[r.barber_id][r.day_of_week] = {
+        enabled: true,
+        start_time: r.start_time?.slice(0, 5) || '',
+        end_time: r.end_time?.slice(0, 5) || '',
+      };
+    }
+    setRestrictions(state);
+    if (existingRestrictions.length > 0) setShowRestrictions(true);
+  }, [existingRestrictions]);
+
+  // Barbers that have restrictions configured
+  const barbersWithRestrictions = useMemo(() => {
+    const ids = new Set();
+    for (const [bId, days] of Object.entries(restrictions)) {
+      if (Object.values(days).some(d => d.enabled)) ids.add(bId);
+    }
+    return ids;
+  }, [restrictions]);
 
   const toggleBarber = (id) => {
     setSelectedBarbers((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  };
+
+  const updateRestriction = (barberId, day, field, value) => {
+    setRestrictions(prev => ({
+      ...prev,
+      [barberId]: {
+        ...(prev[barberId] || {}),
+        [day]: {
+          ...(prev[barberId]?.[day] || { enabled: false, start_time: '', end_time: '' }),
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const toggleAllDays = (barberId, enable) => {
+    const days = {};
+    for (let d = 0; d < 7; d++) {
+      days[d] = enable
+        ? { enabled: true, start_time: '', end_time: '' }
+        : { enabled: false, start_time: '', end_time: '' };
+    }
+    setRestrictions(prev => ({ ...prev, [barberId]: days }));
+  };
+
+  const clearBarberRestrictions = (barberId) => {
+    setRestrictions(prev => {
+      const next = { ...prev };
+      delete next[barberId];
+      return next;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -174,6 +238,20 @@ function ServiceModal({ service, barbers, onClose }) {
     try {
       if (isEdit) {
         await updateMutation.mutateAsync({ id: service.id, data: body });
+        // Save restrictions
+        const restrictionRows = [];
+        for (const [barberId, days] of Object.entries(restrictions)) {
+          for (const [day, config] of Object.entries(days)) {
+            if (!config.enabled) continue;
+            restrictionRows.push({
+              barber_id: barberId,
+              day_of_week: parseInt(day),
+              start_time: config.start_time || null,
+              end_time: config.end_time || null,
+            });
+          }
+        }
+        await restrictionsMutation.mutateAsync({ id: service.id, restrictions: restrictionRows });
       } else {
         await createMutation.mutateAsync(body);
       }
@@ -185,7 +263,7 @@ function ServiceModal({ service, barbers, onClose }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: isEdit && showRestrictions ? 580 : 480 }}>
         <div className="modal-header">
           <h3 className="modal-title">{isEdit ? 'Modifier' : 'Nouvelle prestation'}</h3>
           <button className="btn-ghost" onClick={onClose}>
@@ -264,6 +342,11 @@ function ServiceModal({ service, barbers, onClose }) {
                     onClick={() => toggleBarber(b.id)}
                   >
                     {b.name}
+                    {barbersWithRestrictions.has(b.id) && (
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginLeft: 4 }}>
+                        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                      </svg>
+                    )}
                   </button>
                 ))}
               </div>
@@ -293,6 +376,160 @@ function ServiceModal({ service, barbers, onClose }) {
                 {adminOnly ? 'Masqué côté client' : 'Visible côté client'}
               </span>
             </div>
+
+            {/* === Restrictions Section (edit only) === */}
+            {isEdit && (
+              <div style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowRestrictions(!showRestrictions)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                    background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer',
+                    padding: '4px 0', fontSize: 13, fontWeight: 600,
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"
+                    style={{ transition: 'transform 0.2s', transform: showRestrictions ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                  >
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                  Disponibilité par barber
+                  {barbersWithRestrictions.size > 0 && (
+                    <span style={{
+                      fontSize: 10, background: 'var(--warning)', color: '#000',
+                      borderRadius: 10, padding: '1px 7px', fontWeight: 700,
+                    }}>
+                      {barbersWithRestrictions.size}
+                    </span>
+                  )}
+                </button>
+
+                {showRestrictions && (
+                  <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: '0 0 4px' }}>
+                      Par défaut, un barber peut faire cette prestation à tout moment. Configurez des restrictions pour limiter les jours/horaires.
+                    </p>
+                    {barbers.filter(b => selectedBarbers.includes(b.id)).map((barber) => {
+                      const isExpanded = expandedBarber === barber.id;
+                      const hasRestrictions = barbersWithRestrictions.has(barber.id);
+                      return (
+                        <div key={barber.id} style={{
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-sm)',
+                          overflow: 'hidden',
+                          background: hasRestrictions ? 'rgba(245,158,11,0.04)' : 'transparent',
+                        }}>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedBarber(isExpanded ? null : barber.id)}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              width: '100%', padding: '10px 12px', background: 'none', border: 'none',
+                              color: 'var(--text)', cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                            }}
+                          >
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <svg
+                                viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"
+                                style={{ transition: 'transform 0.2s', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                              >
+                                <polyline points="9 18 15 12 9 6"/>
+                              </svg>
+                              {barber.name}
+                            </span>
+                            {hasRestrictions ? (
+                              <span style={{ fontSize: 11, color: 'var(--warning)' }}>
+                                Restreint
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                Aucune restriction
+                              </span>
+                            )}
+                          </button>
+                          {isExpanded && (
+                            <div style={{ padding: '0 12px 12px', borderTop: '1px solid var(--border)' }}>
+                              <div style={{ display: 'flex', gap: 8, padding: '8px 0 4px', justifyContent: 'flex-end' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleAllDays(barber.id, true)}
+                                  style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                                >
+                                  Tout cocher
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => clearBarberRestrictions(barber.id)}
+                                  style={{ fontSize: 11, color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                                >
+                                  Effacer
+                                </button>
+                              </div>
+                              {DAY_NAMES.map((dayName, dayIdx) => {
+                                const dayConfig = restrictions[barber.id]?.[dayIdx] || { enabled: false, start_time: '', end_time: '' };
+                                return (
+                                  <div key={dayIdx} style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    padding: '5px 0',
+                                    borderBottom: dayIdx < 6 ? '1px solid rgba(var(--overlay),0.04)' : 'none',
+                                  }}>
+                                    <label style={{
+                                      display: 'flex', alignItems: 'center', gap: 6,
+                                      width: 60, fontSize: 12, cursor: 'pointer', flexShrink: 0,
+                                      color: dayConfig.enabled ? 'var(--text)' : 'var(--text-muted)',
+                                    }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={dayConfig.enabled}
+                                        onChange={(e) => updateRestriction(barber.id, dayIdx, 'enabled', e.target.checked)}
+                                        style={{ accentColor: 'var(--warning)' }}
+                                      />
+                                      {dayName}
+                                    </label>
+                                    {dayConfig.enabled && (
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
+                                        <input
+                                          type="time"
+                                          value={dayConfig.start_time}
+                                          onChange={(e) => updateRestriction(barber.id, dayIdx, 'start_time', e.target.value)}
+                                          placeholder="—"
+                                          style={{
+                                            background: 'var(--bg-input)', border: '1px solid var(--border)',
+                                            borderRadius: 6, color: 'var(--text)', padding: '4px 6px',
+                                            fontSize: 12, width: 90, fontFamily: 'inherit',
+                                          }}
+                                        />
+                                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>→</span>
+                                        <input
+                                          type="time"
+                                          value={dayConfig.end_time}
+                                          onChange={(e) => updateRestriction(barber.id, dayIdx, 'end_time', e.target.value)}
+                                          placeholder="—"
+                                          style={{
+                                            background: 'var(--bg-input)', border: '1px solid var(--border)',
+                                            borderRadius: 6, color: 'var(--text)', padding: '4px 6px',
+                                            fontSize: 12, width: 90, fontFamily: 'inherit',
+                                          }}
+                                        />
+                                        <span style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                          {dayConfig.start_time && dayConfig.end_time ? '' : '(toute la journée)'}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="modal-footer">

@@ -134,7 +134,7 @@ router.get('/services', publicLimiter,
       const serviceSalonId = barberHomeSalon !== salonId ? barberHomeSalon : salonId;
 
       queryText = `
-        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.time_restrictions
+        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color
         FROM services s
         JOIN barber_services bs ON s.id = bs.service_id
         WHERE bs.barber_id = $1 AND s.is_active = true AND s.deleted_at IS NULL AND s.salon_id = $2
@@ -145,13 +145,13 @@ router.get('/services', publicLimiter,
       // "Peu importe" mode: only return services offered by 2+ barbers
       // so barber-specific services don't confuse clients
       queryText = `
-        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.time_restrictions
+        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color
         FROM services s
         JOIN barber_services bs ON s.id = bs.service_id
         JOIN barbers b ON bs.barber_id = b.id AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $1
         WHERE s.is_active = true AND s.deleted_at IS NULL AND s.salon_id = $1
           AND (s.admin_only = false OR s.admin_only IS NULL)
-        GROUP BY s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.time_restrictions, s.sort_order
+        GROUP BY s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color, s.sort_order
         HAVING COUNT(DISTINCT bs.barber_id) >= 2
         ORDER BY s.sort_order`;
       params = [salonId];

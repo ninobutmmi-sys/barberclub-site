@@ -15,7 +15,7 @@ router.get('/', async (req, res, next) => {
   try {
     const salonId = req.user.salon_id;
     const result = await db.query(
-      `SELECT s.id, s.name, s.description, s.price, s.duration, s.duration_saturday, s.is_active, s.admin_only, s.sort_order, s.color, s.time_restrictions,
+      `SELECT s.id, s.name, s.description, s.price, s.duration, s.duration_saturday, s.is_active, s.admin_only, s.sort_order, s.color,
               COALESCE(
                 json_agg(json_build_object('id', b.id, 'name', b.name))
                 FILTER (WHERE b.id IS NOT NULL), '[]'
@@ -47,13 +47,12 @@ router.post('/',
     body('color').optional().matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide (format #RRGGBB)'),
     body('barber_ids').optional().isArray(),
     body('barber_ids.*').optional().matches(uuidRegex),
-    body('time_restrictions').optional({ values: 'null' }).isArray(),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const { name, description, price, duration, duration_saturday, color, barber_ids, time_restrictions } = req.body;
+      const { name, description, price, duration, duration_saturday, color, barber_ids } = req.body;
 
       // Get max sort order
       const maxOrder = await db.query(
@@ -62,9 +61,9 @@ router.post('/',
       );
 
       const result = await db.query(
-        `INSERT INTO services (name, description, price, duration, duration_saturday, sort_order, color, salon_id, time_restrictions)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-        [name, description || null, price, duration, duration_saturday || null, maxOrder.rows[0].next, color || '#22c55e', salonId, time_restrictions ? JSON.stringify(time_restrictions) : null]
+        `INSERT INTO services (name, description, price, duration, duration_saturday, sort_order, color, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [name, description || null, price, duration, duration_saturday || null, maxOrder.rows[0].next, color || '#22c55e', salonId]
       );
 
       const service = result.rows[0];
@@ -104,14 +103,13 @@ router.put('/:id',
     body('barber_ids').optional().isArray(),
     body('barber_ids.*').optional().matches(uuidRegex),
     body('admin_only').optional().isBoolean(),
-    body('time_restrictions').optional({ values: 'null' }).isArray(),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
       const { id } = req.params;
-      const { name, description, price, duration, duration_saturday, is_active, admin_only, sort_order, color, barber_ids, time_restrictions } = req.body;
+      const { name, description, price, duration, duration_saturday, is_active, admin_only, sort_order, color, barber_ids } = req.body;
 
       const fields = [];
       const values = [];
@@ -126,7 +124,6 @@ router.put('/:id',
       if (admin_only !== undefined) { fields.push(`admin_only = $${paramIndex++}`); values.push(admin_only); }
       if (sort_order !== undefined) { fields.push(`sort_order = $${paramIndex++}`); values.push(sort_order); }
       if (color !== undefined) { fields.push(`color = $${paramIndex++}`); values.push(color); }
-      if (time_restrictions !== undefined) { fields.push(`time_restrictions = $${paramIndex++}`); values.push(time_restrictions ? JSON.stringify(time_restrictions) : null); }
 
       if (fields.length > 0) {
         values.push(id, salonId);
@@ -193,6 +190,88 @@ router.delete('/:id',
 
       logAudit(req, 'delete', 'service', req.params.id);
       res.json({ message: 'Prestation supprimée' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /api/admin/services/:id/restrictions — Per-barber availability restrictions
+// ============================================
+router.get('/:id/restrictions',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const result = await db.query(
+        `SELECT id, barber_id, day_of_week, start_time, end_time
+         FROM service_restrictions
+         WHERE service_id = $1 AND salon_id = $2
+         ORDER BY barber_id, day_of_week`,
+        [req.params.id, salonId]
+      );
+      res.json(result.rows);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// PUT /api/admin/services/:id/restrictions — Save per-barber restrictions
+// Body: { restrictions: [{ barber_id, day_of_week, start_time?, end_time? }] }
+// Empty array = no restrictions. Rows = whitelist of allowed days/windows.
+// ============================================
+router.put('/:id/restrictions',
+  [
+    param('id').matches(uuidRegex),
+    body('restrictions').isArray(),
+    body('restrictions.*.barber_id').matches(uuidRegex),
+    body('restrictions.*.day_of_week').isInt({ min: 0, max: 6 }),
+    body('restrictions.*.start_time').optional({ values: 'null' }).matches(/^\d{2}:\d{2}$/),
+    body('restrictions.*.end_time').optional({ values: 'null' }).matches(/^\d{2}:\d{2}$/),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const { id } = req.params;
+      const { restrictions } = req.body;
+
+      // Verify service exists
+      const svc = await db.query(
+        'SELECT id FROM services WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
+        [id, salonId]
+      );
+      if (svc.rows.length === 0) throw ApiError.notFound('Prestation introuvable');
+
+      // Replace all restrictions in a transaction
+      const client = await db.pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(
+          'DELETE FROM service_restrictions WHERE service_id = $1 AND salon_id = $2',
+          [id, salonId]
+        );
+        for (const r of restrictions) {
+          await client.query(
+            `INSERT INTO service_restrictions (service_id, barber_id, day_of_week, start_time, end_time, salon_id)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [id, r.barber_id, r.day_of_week, r.start_time || null, r.end_time || null, salonId]
+          );
+        }
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+
+      logAudit(req, 'update', 'service_restrictions', id, { count: restrictions.length });
+      res.json({ message: 'Restrictions enregistrées', count: restrictions.length });
     } catch (error) {
       next(error);
     }

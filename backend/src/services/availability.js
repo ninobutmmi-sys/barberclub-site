@@ -38,7 +38,7 @@ async function getBarberHomeSalon(barberId) {
 async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   // 1. Get service duration
   const serviceResult = await db.query(
-    'SELECT name, price, duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND deleted_at IS NULL',
+    'SELECT name, price, duration, duration_saturday FROM services WHERE id = $1 AND deleted_at IS NULL',
     [serviceId]
   );
   if (serviceResult.rows.length === 0) {
@@ -53,18 +53,6 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   const duration = (isSaturday && serviceResult.rows[0].duration_saturday)
     ? serviceResult.rows[0].duration_saturday
     : serviceResult.rows[0].duration;
-
-  // Check time restrictions (service available only on certain days/times)
-  const timeRestrictions = serviceResult.rows[0].time_restrictions;
-  let restrictionWindow = null;
-  if (timeRestrictions && timeRestrictions.length > 0) {
-    const restriction = timeRestrictions.find(r => r.day_of_week === dayOfWeek);
-    if (!restriction) return []; // Service not available this day
-    restrictionWindow = {
-      start: timeToMinutes(restriction.start_time || '00:00'),
-      end: timeToMinutes(restriction.end_time || '23:59'),
-    };
-  }
 
   // 2. Determine which barbers to check
   const salonId = options.salonId || 'meylan';
@@ -117,32 +105,47 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
   // 4. For each barber, compute available slots
   const allSlots = [];
 
-  // For time-restricted services, use service duration as slot interval for optimal packing
-  const slotStep = restrictionWindow ? duration : undefined;
-
-  // Check per-barber service restrictions (e.g. Tom can't do student cuts on Friday PM / Saturday)
+  // Per-barber service restrictions (whitelist approach):
+  // If rows exist for barber+service → barber can ONLY do this service on listed days/windows
+  // No rows → no restrictions (available whenever scheduled)
   const restrictionsResult = await db.query(
-    `SELECT barber_id, start_time, end_time FROM service_restrictions
-     WHERE service_id = $1 AND day_of_week = $2 AND salon_id = $3`,
-    [serviceId, dayOfWeek, salonId]
+    `SELECT barber_id, day_of_week, start_time, end_time FROM service_restrictions
+     WHERE service_id = $1 AND salon_id = $2`,
+    [serviceId, salonId]
   );
+  // Group restrictions by barber
   const barberRestrictions = {};
   for (const r of restrictionsResult.rows) {
-    barberRestrictions[r.barber_id] = { start: timeToMinutes(r.start_time.slice(0, 5)), end: timeToMinutes(r.end_time.slice(0, 5)) };
+    if (!barberRestrictions[r.barber_id]) barberRestrictions[r.barber_id] = [];
+    barberRestrictions[r.barber_id].push(r);
   }
 
   for (const bId of barberIds) {
-    // Skip barber entirely if restricted for the whole day
-    const restriction = barberRestrictions[bId];
-    if (restriction && restriction.start === 0 && restriction.end >= 1439) continue;
+    const restrictions = barberRestrictions[bId];
 
+    if (!restrictions) {
+      // No restrictions → full availability
+      const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration, { ...options, salonId });
+      allSlots.push(...slots);
+      continue;
+    }
+
+    // Has restrictions → check if this day is in the whitelist
+    const dayRestriction = restrictions.find(r => r.day_of_week === dayOfWeek);
+    if (!dayRestriction) continue; // Day not allowed → skip barber
+
+    // Use duration as slot step for time-restricted windows (tighter packing)
+    const hasTimeWindow = dayRestriction.start_time && dayRestriction.end_time;
+    const slotStep = hasTimeWindow ? duration : undefined;
     const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration, { ...options, salonId, slotStep });
 
-    // Filter out restricted time windows for this barber
-    if (restriction) {
+    if (hasTimeWindow) {
+      const windowStart = timeToMinutes(dayRestriction.start_time.slice(0, 5));
+      const windowEnd = timeToMinutes(dayRestriction.end_time.slice(0, 5));
       allSlots.push(...slots.filter(s => {
-        const slotMin = timeToMinutes(s.time);
-        return slotMin < restriction.start || slotMin >= restriction.end;
+        const slotStart = timeToMinutes(s.time);
+        const slotEnd = slotStart + duration;
+        return slotStart >= windowStart && slotEnd <= windowEnd;
       }));
     } else {
       allSlots.push(...slots);
@@ -151,15 +154,6 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
 
   // 5. Sort by time, then by barber sort order
   allSlots.sort((a, b) => a.time.localeCompare(b.time));
-
-  // 6. Apply time restriction window (filter slots outside allowed hours)
-  if (restrictionWindow) {
-    return allSlots.filter(slot => {
-      const slotStart = timeToMinutes(slot.time);
-      const slotEnd = slotStart + duration;
-      return slotStart >= restrictionWindow.start && slotEnd <= restrictionWindow.end;
-    });
-  }
 
   return allSlots;
 }
@@ -495,7 +489,33 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
   let bestBarber = null;
   let fewestBookings = Infinity;
 
+  // Pre-fetch service restrictions for this service+salon
+  const svcRestrictions = await queryFn(
+    `SELECT barber_id, day_of_week, start_time, end_time FROM service_restrictions
+     WHERE service_id = $1 AND salon_id = $2`,
+    [serviceId, salonId]
+  );
+  const restrictionsByBarber = {};
+  for (const r of svcRestrictions.rows) {
+    if (!restrictionsByBarber[r.barber_id]) restrictionsByBarber[r.barber_id] = [];
+    restrictionsByBarber[r.barber_id].push(r);
+  }
+
   for (const barber of allBarbers) {
+    // Check per-barber service restrictions (whitelist)
+    const restrictions = restrictionsByBarber[barber.id];
+    if (restrictions) {
+      const dayR = restrictions.find(r => r.day_of_week === dayOfWeek);
+      if (!dayR) continue; // Day not in whitelist
+      if (dayR.start_time && dayR.end_time) {
+        const rStart = timeToMinutes(dayR.start_time.slice(0, 5));
+        const rEnd = timeToMinutes(dayR.end_time.slice(0, 5));
+        const slotStart = timeToMinutes(startTime);
+        const slotEnd = slotStart + duration;
+        if (slotStart < rStart || slotEnd > rEnd) continue;
+      }
+    }
+
     // Check if barber works at this time (schedule/overrides/guest assignments)
     const worksAtTime = await barberWorksAtTime(barber.id, date, dayOfWeek, startTime, endTime, salonId);
     if (!worksAtTime) continue;
@@ -696,7 +716,7 @@ function addMinutesToTime(timeStr, minutesToAdd) {
 async function getMonthAvailabilitySummary(serviceId, year, month, barberId, salonId, includeAlternatives = false) {
   // 1. Get service duration
   const serviceResult = await db.query(
-    'SELECT name, price, duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND deleted_at IS NULL',
+    'SELECT name, price, duration, duration_saturday FROM services WHERE id = $1 AND deleted_at IS NULL',
     [serviceId]
   );
   if (serviceResult.rows.length === 0) return {};
@@ -777,6 +797,18 @@ async function getMonthAvailabilitySummary(serviceId, year, month, barberId, sal
       if (!guestVisitors[row.date]) guestVisitors[row.date] = [];
       guestVisitors[row.date].push(row);
     }
+  }
+
+  // Pre-fetch per-barber service restrictions (whitelist)
+  const svcRestrictionsResult = await db.query(
+    `SELECT barber_id, day_of_week, start_time, end_time FROM service_restrictions
+     WHERE service_id = $1 AND salon_id = $2`,
+    [serviceId, salonId]
+  );
+  const svcRestrictionsMap = {}; // { barber_id: [{ day_of_week, start_time, end_time }] }
+  for (const row of svcRestrictionsResult.rows) {
+    if (!svcRestrictionsMap[row.barber_id]) svcRestrictionsMap[row.barber_id] = [];
+    svcRestrictionsMap[row.barber_id].push(row);
   }
 
   // 6. Get ALL bookings for these barbers for the month
@@ -916,27 +948,25 @@ async function getMonthAvailabilitySummary(serviceId, year, month, barberId, sal
       ? service.duration_saturday
       : service.duration;
 
-    // Check time restrictions
-    const timeRestrictions = service.time_restrictions;
-    let restrictionWindow = null;
-    if (timeRestrictions && timeRestrictions.length > 0) {
-      const restriction = timeRestrictions.find(r => r.day_of_week === dayOfWeek);
-      if (!restriction) {
-        result[dateStr] = { total: 0, status: 'full' };
-        continue;
-      }
-      restrictionWindow = {
-        start: timeToMinutes(restriction.start_time || '00:00'),
-        end: timeToMinutes(restriction.end_time || '23:59'),
-      };
-    }
-
     // Min slot start for today
     const minSlotStart = dateStr === todayStr ? nowMinutes + MIN_BOOKING_LEAD_MINUTES : 0;
 
     let totalSlots = 0;
 
     for (const bId of barberIds) {
+      // Per-barber service restrictions (whitelist)
+      const barberRestrictions = svcRestrictionsMap[bId];
+      let restrictionWindow = null;
+      if (barberRestrictions) {
+        const dayR = barberRestrictions.find(r => r.day_of_week === dayOfWeek);
+        if (!dayR) continue; // Day not in whitelist → skip barber
+        if (dayR.start_time && dayR.end_time) {
+          restrictionWindow = {
+            start: timeToMinutes(dayR.start_time.slice(0, 5)),
+            end: timeToMinutes(dayR.end_time.slice(0, 5)),
+          };
+        }
+      }
       const count = countSlotsForBarber(bId, dateStr, dayOfWeek, duration, minSlotStart,
         schedulesMap, overridesMap, guestMap, bookingsMap, blockedMap, salonId, restrictionWindow);
       totalSlots += count;
@@ -951,11 +981,21 @@ async function getMonthAvailabilitySummary(serviceId, year, month, barberId, sal
     if (entry.status === 'full' && includeAlternatives && specificBarber && altBarbers.length > 0) {
       const alternatives = [];
       for (const alt of altBarbers) {
+        // Per-barber restriction for alternative barber
+        const altRestrictions = svcRestrictionsMap[alt.id];
+        let altRestrictionWindow = null;
+        if (altRestrictions) {
+          const dayR = altRestrictions.find(r => r.day_of_week === dayOfWeek);
+          if (!dayR) continue;
+          if (dayR.start_time && dayR.end_time) {
+            altRestrictionWindow = { start: timeToMinutes(dayR.start_time.slice(0, 5)), end: timeToMinutes(dayR.end_time.slice(0, 5)) };
+          }
+        }
         const altCount = countSlotsForBarber(alt.id, dateStr, dayOfWeek, duration, minSlotStart,
-          schedulesMap, overridesMap, guestMap, bookingsMap, blockedMap, salonId, restrictionWindow);
+          schedulesMap, overridesMap, guestMap, bookingsMap, blockedMap, salonId, altRestrictionWindow);
         if (altCount > 0) {
           const sampleTimes = getSampleTimesForBarber(alt.id, dateStr, dayOfWeek, duration, minSlotStart,
-            schedulesMap, overridesMap, guestMap, bookingsMap, blockedMap, salonId, restrictionWindow, 3);
+            schedulesMap, overridesMap, guestMap, bookingsMap, blockedMap, salonId, altRestrictionWindow, 3);
           alternatives.push({
             barber_id: alt.id,
             barber_name: alt.name,

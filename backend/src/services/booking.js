@@ -65,8 +65,8 @@ async function createBooking(data) {
     // 1. Get service details (price, duration)
     // Admin can book admin_only or inactive services
     const serviceQuery = isAdmin
-      ? 'SELECT id, name, price, duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND deleted_at IS NULL'
-      : 'SELECT id, name, price, duration, duration_saturday, time_restrictions FROM services WHERE id = $1 AND is_active = true AND (admin_only = false OR admin_only IS NULL) AND deleted_at IS NULL';
+      ? 'SELECT id, name, price, duration, duration_saturday FROM services WHERE id = $1 AND deleted_at IS NULL'
+      : 'SELECT id, name, price, duration, duration_saturday FROM services WHERE id = $1 AND is_active = true AND (admin_only = false OR admin_only IS NULL) AND deleted_at IS NULL';
     const serviceResult = await client.query(serviceQuery, [data.service_id]);
     if (serviceResult.rows.length === 0) {
       throw ApiError.badRequest('Prestation introuvable ou inactive');
@@ -80,18 +80,28 @@ async function createBooking(data) {
       ? service.duration_saturday : service.duration;
     const effectiveDuration = parseInt(data.duration, 10) || serviceDuration;
 
-    // 1b. Check time restrictions (public bookings only)
-    if (!isAdmin && service.time_restrictions && service.time_restrictions.length > 0) {
-      const restriction = service.time_restrictions.find(r => r.day_of_week === bookDayOfWeek);
-      if (!restriction) {
-        throw ApiError.badRequest('Cette prestation n\'est pas disponible ce jour');
-      }
-      const startMin = parseInt(data.start_time.split(':')[0], 10) * 60 + parseInt(data.start_time.split(':')[1], 10);
-      const endMin = startMin + effectiveDuration;
-      const restrictStart = restriction.start_time ? parseInt(restriction.start_time.split(':')[0], 10) * 60 + parseInt(restriction.start_time.split(':')[1], 10) : 0;
-      const restrictEnd = restriction.end_time ? parseInt(restriction.end_time.split(':')[0], 10) * 60 + parseInt(restriction.end_time.split(':')[1], 10) : 1440;
-      if (startMin < restrictStart || endMin > restrictEnd) {
-        throw ApiError.badRequest('Cette prestation n\'est pas disponible à cet horaire');
+    // 1b. Check per-barber service restrictions (public bookings only)
+    if (!isAdmin && data.barber_id && data.barber_id !== 'any') {
+      const salonId = data.salon_id || 'meylan';
+      const restrictResult = await client.query(
+        `SELECT day_of_week, start_time, end_time FROM service_restrictions
+         WHERE service_id = $1 AND barber_id = $2 AND salon_id = $3`,
+        [data.service_id, data.barber_id, salonId]
+      );
+      if (restrictResult.rows.length > 0) {
+        const dayR = restrictResult.rows.find(r => r.day_of_week === bookDayOfWeek);
+        if (!dayR) {
+          throw ApiError.badRequest('Cette prestation n\'est pas disponible ce jour pour ce barber');
+        }
+        if (dayR.start_time && dayR.end_time) {
+          const startMin = parseInt(data.start_time.split(':')[0], 10) * 60 + parseInt(data.start_time.split(':')[1], 10);
+          const endMin = startMin + effectiveDuration;
+          const restrictStart = parseInt(dayR.start_time.slice(0, 5).split(':')[0], 10) * 60 + parseInt(dayR.start_time.slice(0, 5).split(':')[1], 10);
+          const restrictEnd = parseInt(dayR.end_time.slice(0, 5).split(':')[0], 10) * 60 + parseInt(dayR.end_time.slice(0, 5).split(':')[1], 10);
+          if (startMin < restrictStart || endMin > restrictEnd) {
+            throw ApiError.badRequest('Cette prestation n\'est pas disponible à cet horaire');
+          }
+        }
       }
     }
 

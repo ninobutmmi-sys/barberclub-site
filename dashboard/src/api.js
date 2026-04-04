@@ -204,6 +204,9 @@ export const createService = (body) =>
   request('/admin/services', { method: 'POST', body: JSON.stringify(body) });
 export const updateService = (id, body) =>
   request(`/admin/services/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+export const getServiceRestrictions = (id) => request(`/admin/services/${id}/restrictions`);
+export const updateServiceRestrictions = (id, restrictions) =>
+  request(`/admin/services/${id}/restrictions`, { method: 'PUT', body: JSON.stringify({ restrictions }) });
 export const deleteService = (id) =>
   request(`/admin/services/${id}`, { method: 'DELETE' });
 

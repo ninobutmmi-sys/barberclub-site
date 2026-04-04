@@ -161,6 +161,23 @@ export function useDeleteService() {
   });
 }
 
+export function useServiceRestrictions(id) {
+  return useQuery({
+    queryKey: ['serviceRestrictions', id],
+    queryFn: () => api.getServiceRestrictions(id),
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+}
+
+export function useUpdateServiceRestrictions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, restrictions }) => api.updateServiceRestrictions(id, restrictions),
+    onSuccess: (_, { id }) => qc.invalidateQueries({ queryKey: ['serviceRestrictions', id] }),
+  });
+}
+
 // ---------- Bookings (Planning) ----------
 export function useBookings(params, options) {
   return useQuery({
