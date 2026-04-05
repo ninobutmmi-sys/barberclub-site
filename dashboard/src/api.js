@@ -372,6 +372,7 @@ export const getProducts = (params) => {
   return request(`/admin/products${qs ? '?' + qs : ''}`);
 };
 export const getProductStats = () => request('/admin/products/stats');
+export const getDailyPayments = (date) => request(`/admin/payments/daily?date=${date}`);
 export const getProductSales = (params) => {
   const qs = params ? new URLSearchParams(params).toString() : '';
   return request(`/admin/products/sales${qs ? '?' + qs : ''}`);

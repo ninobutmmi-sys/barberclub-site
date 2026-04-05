@@ -591,6 +591,16 @@ export function useProductSales(params, options) {
   });
 }
 
+export function useDailyPayments(date, options) {
+  return useQuery({
+    queryKey: ['dailyPayments', date],
+    queryFn: () => api.getDailyPayments(date),
+    enabled: !!date,
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
 export function useCreateProduct() {
   const qc = useQueryClient();
   return useMutation({

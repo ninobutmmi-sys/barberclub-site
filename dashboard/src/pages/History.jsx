@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useMobile from '../hooks/useMobile';
-import { useBookingsHistory, useBarbers, useAuditLog } from '../hooks/useApi';
+import { useBookingsHistory, useBarbers, useAuditLog, useDailyPayments, useProductSales } from '../hooks/useApi';
 import { formatPrice, formatDateFR } from '../utils/format';
 
 const LIMIT = 50;
@@ -324,13 +324,254 @@ function AuditTab({ isMobile }) {
 }
 
 // ============================================
+// Caisse Tab (daily financial view)
+// ============================================
+
+const METHOD_LABELS = { cb: 'CB', cash: 'Espèces', lydia: 'Lydia', other: 'Autre' };
+
+function CaisseTab({ isMobile }) {
+  const [date, setDate] = useState(toLocalDateStr);
+
+  const { data: payments, isLoading: loadingPayments } = useDailyPayments(date);
+  const { data: productData, isLoading: loadingProducts } = useProductSales({ from: date, to: date });
+
+  const loading = loadingPayments || loadingProducts;
+
+  // Navigate days
+  const shiftDay = (delta) => {
+    const d = new Date(date + 'T00:00:00');
+    d.setDate(d.getDate() + delta);
+    setDate(toLocalDateStr(d));
+  };
+
+  const isToday = date === toLocalDateStr();
+
+  // Compute totals
+  const completedBookings = (payments?.bookings || []).filter(b => b.status === 'completed' || b.status === 'confirmed');
+  const prestationRevenue = completedBookings.reduce((s, b) => s + (b.price || 0), 0);
+  const productSales = productData?.sales || [];
+  const productRevenue = productData?.total_revenue || 0;
+  const totalRevenue = prestationRevenue + productRevenue;
+
+  // Build unified transaction list sorted by time
+  const transactions = [
+    ...completedBookings.map(b => ({
+      type: 'prestation',
+      time: b.start_time?.slice(0, 5) || '—',
+      label: b.service_name,
+      client: `${b.client_first_name || ''} ${b.client_last_name || ''}`.trim() || '—',
+      barber: b.barber_name || '—',
+      amount: b.price || 0,
+      method: b.payment_method || '—',
+    })),
+    ...productSales.map(s => ({
+      type: 'produit',
+      time: s.sold_at ? new Date(s.sold_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '—',
+      label: s.product_name,
+      client: `${s.client_first_name || ''} ${s.client_last_name || ''}`.trim() || '—',
+      barber: s.barber_name || '—',
+      amount: s.total_price || 0,
+      method: s.payment_method || '—',
+    })),
+  ].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+  // Format display date
+  const displayDate = (() => {
+    if (isToday) return "Aujourd'hui";
+    const d = new Date(date + 'T00:00:00');
+    return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  })();
+
+  return (
+    <>
+      {/* Date navigator */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        gap: 16, marginBottom: 24,
+      }}>
+        <button
+          onClick={() => shiftDay(-1)}
+          className="btn btn-ghost btn-sm"
+          style={{ padding: 8 }}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div style={{ position: 'relative', minWidth: isMobile ? 180 : 240, textAlign: 'center' }}>
+          <span style={{
+            fontFamily: 'var(--font-display)', fontWeight: 800,
+            fontSize: isMobile ? 14 : 16, textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}>
+            {displayDate}
+          </span>
+          <input
+            type="date"
+            value={date}
+            onChange={e => setDate(e.target.value)}
+            style={{
+              position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer',
+              width: '100%', height: '100%',
+            }}
+          />
+        </div>
+        <button
+          onClick={() => shiftDay(1)}
+          className="btn btn-ghost btn-sm"
+          style={{ padding: 8 }}
+          disabled={isToday}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="empty-state">Chargement...</div>
+      ) : (
+        <>
+          {/* Summary cards */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+            gap: 12,
+            marginBottom: 24,
+          }}>
+            {/* Total */}
+            <div style={{
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)', padding: '20px 24px',
+              borderLeft: '3px solid #fff',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>
+                CA Total
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800 }}>
+                {formatPrice(totalRevenue)}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                {transactions.length} transaction{transactions.length > 1 ? 's' : ''}
+              </div>
+            </div>
+            {/* Prestations */}
+            <div style={{
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)', padding: '20px 24px',
+              borderLeft: '3px solid #22c55e',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>
+                Prestations
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800 }}>
+                {formatPrice(prestationRevenue)}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                {completedBookings.length} RDV
+              </div>
+            </div>
+            {/* Produits */}
+            <div style={{
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)', padding: '20px 24px',
+              borderLeft: '3px solid #8b5cf6',
+            }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>
+                Produits
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800 }}>
+                {formatPrice(productRevenue)}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                {productSales.length} vente{productSales.length > 1 ? 's' : ''}
+              </div>
+            </div>
+          </div>
+
+          {/* Transaction list */}
+          {transactions.length === 0 ? (
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: 28, marginBottom: 12 }}>--</div>
+              <p style={{ margin: 0, fontSize: 14 }}>Aucune transaction ce jour</p>
+            </div>
+          ) : isMobile ? (
+            <div className="mob-card-list">
+              {transactions.map((t, i) => (
+                <div key={i} className="mob-card-item" style={{ cursor: 'default' }}>
+                  <div style={{
+                    width: 6, alignSelf: 'stretch', borderRadius: 3, flexShrink: 0,
+                    background: t.type === 'prestation' ? '#22c55e' : '#8b5cf6',
+                  }} />
+                  <div className="mob-card-left">
+                    <div className="mob-card-title">{t.label}</div>
+                    <div className="mob-card-sub">{t.time} · {t.client} · {t.barber}</div>
+                  </div>
+                  <div className="mob-card-right">
+                    <div className="mob-card-value">{formatPrice(t.amount)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+                      {METHOD_LABELS[t.method] || t.method}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{ width: 60 }}>Heure</th>
+                    <th>Type</th>
+                    <th>Prestation / Produit</th>
+                    <th>Client</th>
+                    <th>Barber</th>
+                    <th>Montant</th>
+                    <th>Paiement</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map((t, i) => (
+                    <tr key={i}>
+                      <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{t.time}</td>
+                      <td>
+                        <span style={{
+                          display: 'inline-block', padding: '2px 8px', borderRadius: 4,
+                          fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
+                          background: t.type === 'prestation' ? 'rgba(34,197,94,0.12)' : 'rgba(139,92,246,0.12)',
+                          color: t.type === 'prestation' ? '#22c55e' : '#8b5cf6',
+                        }}>
+                          {t.type === 'prestation' ? 'Presta' : 'Produit'}
+                        </span>
+                      </td>
+                      <td style={{ fontWeight: 600, fontSize: 13 }}>{t.label}</td>
+                      <td style={{ fontSize: 13 }}>{t.client}</td>
+                      <td style={{ fontSize: 13 }}>{t.barber}</td>
+                      <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{formatPrice(t.amount)}</td>
+                      <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{METHOD_LABELS[t.method] || t.method}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: 'right', fontWeight: 700, fontSize: 13, paddingRight: 16 }}>Total</td>
+                    <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15 }}>{formatPrice(totalRevenue)}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+// ============================================
 // Main History Page
 // ============================================
 
 export default function History() {
   const navigate = useNavigate();
   const isMobile = useMobile();
-  const [tab, setTab] = useState('bookings'); // 'bookings' | 'journal'
+  const [tab, setTab] = useState('bookings'); // 'bookings' | 'caisse' | 'journal'
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // -- Filters --
@@ -409,7 +650,7 @@ export default function History() {
         <div>
           <h2 className="page-title">Historique</h2>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            {tab === 'bookings' ? `${total} rendez-vous` : 'Journal des modifications'}
+            {tab === 'bookings' ? `${total} rendez-vous` : tab === 'caisse' ? 'Chiffre d\'affaires par jour' : 'Journal des modifications'}
           </p>
         </div>
       </div>
@@ -419,6 +660,7 @@ export default function History() {
         <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'rgba(var(--overlay),0.04)', borderRadius: 8, padding: 3, width: 'fit-content' }}>
           {[
             { key: 'bookings', label: 'Rendez-vous' },
+            { key: 'caisse', label: 'Caisse' },
             { key: 'journal', label: 'Journal' },
           ].map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
@@ -430,6 +672,9 @@ export default function History() {
             }}>{t.label}</button>
           ))}
         </div>
+
+        {/* ===== CAISSE TAB ===== */}
+        {tab === 'caisse' && <CaisseTab isMobile={isMobile} />}
 
         {/* ===== JOURNAL TAB ===== */}
         {tab === 'journal' && <AuditTab isMobile={isMobile} />}
