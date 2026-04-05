@@ -332,10 +332,13 @@ const METHOD_LABELS = { cb: 'CB', cash: 'Espèces', lydia: 'Lydia', other: 'Autr
 function CaisseTab({ isMobile }) {
   const [date, setDate] = useState(toLocalDateStr);
 
-  const { data: payments, isLoading: loadingPayments } = useDailyPayments(date);
+  const { data: bookingData, isLoading: loadingBookings } = useBookingsHistory(
+    { from: date, to: date, limit: 200, sort: 'date', order: 'asc' },
+    { enabled: true }
+  );
   const { data: productData, isLoading: loadingProducts } = useProductSales({ from: date, to: date });
 
-  const loading = loadingPayments || loadingProducts;
+  const loading = loadingBookings || loadingProducts;
 
   // Navigate days
   const shiftDay = (delta) => {
@@ -347,7 +350,7 @@ function CaisseTab({ isMobile }) {
   const isToday = date === toLocalDateStr();
 
   // Compute totals
-  const completedBookings = (payments?.bookings || []).filter(b => b.status === 'completed' || b.status === 'confirmed');
+  const completedBookings = (bookingData?.bookings || []).filter(b => b.status === 'completed' || b.status === 'confirmed');
   const prestationRevenue = completedBookings.reduce((s, b) => s + (b.price || 0), 0);
   const productSales = productData?.sales || [];
   const productRevenue = productData?.total_revenue || 0;
