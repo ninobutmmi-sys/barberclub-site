@@ -1,0 +1,914 @@
+/* ═══════════════════════════════════════════
+   BarberClub — Prestations page CSS
+   ═══════════════════════════════════════════ */
+
+/* PAGE HEADER */
+.page-header {
+    position: relative;
+    z-index: 1;
+    padding: 110px 20px 30px;
+    text-align: center;
+}
+
+.page-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(28px, 8vw, 42px);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    overflow: hidden;
+}
+.page-title .letter {
+    display: inline-block; opacity: 0; transform: translateY(110%);
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+body.loaded .page-title .letter { opacity: 1; transform: translateY(0); }
+
+.page-subtitle {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.page-intro {
+    max-width: 520px;
+    margin: 16px auto 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.55);
+    text-align: center;
+}
+
+/* CONTENT */
+.content {
+    position: relative;
+    z-index: 1;
+    padding: 10px 16px 120px;
+}
+
+/* SECTION TITLE */
+.section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.4), transparent);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+}
+
+/* TARIFS SECTION */
+.tarifs-section {
+    margin-bottom: 40px;
+}
+
+.tarif-category-group {
+    margin-bottom: 28px;
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.category-icon {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 11px;
+    flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.04);
+    transition: all 0.4s ease;
+}
+
+.category-icon svg {
+    width: 18px;
+    height: 18px;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.tarif-category-group:hover .category-icon {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 18px rgba(255, 255, 255, 0.08);
+}
+
+.tarif-category-group:hover .category-icon svg {
+    opacity: 0.9;
+}
+
+.category-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.category-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.15), transparent);
+}
+
+.tarif-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.tarif-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.tarif-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.tarif-card:hover::before,
+.tarif-card:active::before {
+    opacity: 1;
+}
+
+/* Shimmer sweep on reveal */
+.tarif-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%);
+    pointer-events: none;
+    opacity: 0;
+    transition: none;
+}
+
+.tarif-card.visible::after {
+    opacity: 1;
+    animation: shimmerSweep 0.7s ease-out forwards;
+}
+
+@keyframes shimmerSweep {
+    0% { left: -50%; }
+    100% { left: 130%; opacity: 0; }
+}
+
+.tarif-card:active {
+    transform: scale(0.97) !important;
+    transition-duration: 0.1s;
+}
+
+.tarif-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Highlight card — glowing left accent + breathing border */
+.tarif-card.highlight {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+    border-left: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.tarif-card.highlight.visible {
+    animation: highlightGlow 3s ease-in-out 0.8s infinite;
+}
+
+@keyframes highlightGlow {
+    0%, 100% {
+        border-left-color: rgba(255, 255, 255, 0.5);
+        box-shadow: -4px 0 20px rgba(255, 255, 255, 0.04), 0 0 20px rgba(255, 255, 255, 0.02);
+    }
+    50% {
+        border-left-color: rgba(255, 255, 255, 0.9);
+        box-shadow: -4px 0 30px rgba(255, 255, 255, 0.1), 0 0 40px rgba(255, 255, 255, 0.04);
+    }
+}
+
+.tarif-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.tarif-card-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+    line-height: 1.3;
+    letter-spacing: 0.01em;
+}
+
+.tarif-card-desc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.tarif-card-duration {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.3);
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tarif-card-duration svg {
+    width: 10px;
+    height: 10px;
+    opacity: 0.5;
+}
+
+.tarif-card-price-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+.tarif-card-price {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.12);
+    transition: all 0.3s ease;
+}
+
+.tarif-card:hover .tarif-card-price,
+.tarif-card:active .tarif-card-price {
+    text-shadow: 0 0 25px rgba(255, 255, 255, 0.35);
+    transform: scale(1.05);
+}
+
+.tarif-card.highlight .tarif-card-price {
+    font-size: 28px;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.tarif-card-price .euro {
+    font-size: 14px;
+    opacity: 0.35;
+    margin-left: 1px;
+}
+
+/* Reduced tarifs */
+.tarif-category-group.reduced .tarif-card {
+    background: rgba(255, 255, 255, 0.025);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+.tarif-category-group.reduced .tarif-card-price {
+    font-size: 20px;
+}
+
+.tarif-category-group.reduced .category-icon {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* REVIEWS SECTION */
+.reviews-section {
+    margin-top: 48px;
+    margin-bottom: 40px;
+}
+
+.reviews-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.reviews-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+}
+
+.reviews-subtitle {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.reviews-subtitle span {
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Reviews Carousel */
+.reviews-carousel {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overscroll-behavior-x: contain;
+    padding: 10px 0;
+    margin: 0 -16px;
+    padding-left: 16px;
+}
+
+.reviews-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.reviews-track {
+    display: flex;
+    gap: 12px;
+    padding-right: 16px;
+}
+
+.reviews-track .review-card:last-child {
+    scroll-snap-align: end;
+}
+
+.review-card {
+    flex: 0 0 280px;
+    scroll-snap-align: start;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.review-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.review-avatar {
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.review-author {
+    flex: 1;
+    min-width: 0;
+}
+
+.review-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.review-stars {
+    display: flex;
+    gap: 2px;
+}
+
+.review-stars svg {
+    width: 12px;
+    height: 12px;
+    fill: #fbbf24;
+}
+
+.review-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.75);
+    flex: 1;
+}
+
+.reviews-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 20px;
+}
+
+.reviews-dots span {
+    width: 6px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.reviews-dots span.active {
+    background: #fff;
+    width: 20px;
+    border-radius: 3px;
+}
+
+.barbers-section {
+    margin-top: 40px;
+}
+
+.barbers-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.barber-card {
+    display: block;
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: #fff;
+}
+
+.barber-card:active {
+    transform: scale(0.97);
+    transition-duration: 0.1s;
+}
+
+.barber-photo {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.05);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.barber-card:active .barber-photo {
+    transform: scale(1.05);
+}
+
+.barber-arrow {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.barber-arrow svg {
+    width: 14px;
+    height: 14px;
+}
+
+.barber-card:hover .barber-arrow {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.barber-info {
+    padding: 14px;
+    text-align: center;
+}
+
+.barber-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+}
+
+.barber-role {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.barber-specialty {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* BOTTOM NAV */
+.bottom-nav {
+    position: fixed;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 8px 4px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 50;
+}
+
+.nav-row {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: none;
+    font-size: 9px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    transition: color 0.3s ease;
+    padding: 4px 8px;
+}
+
+.nav-item.active {
+    color: #fff;
+}
+
+.nav-item svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* CTA Central */
+.nav-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    margin-top: -26px;
+}
+
+.nav-cta-btn {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border-radius: 50%;
+    color: #000;
+    box-shadow: 0 4px 20px rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.nav-cta-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+.nav-cta:active .nav-cta-btn {
+    transform: scale(0.95);
+    box-shadow: 0 2px 12px rgba(255, 255, 255, 0.2);
+}
+
+.nav-cta-label {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #fff;
+}
+
+.desktop-hero { display: none; }
+
+/* DESKTOP */
+@media (min-width: 768px) {
+    .content {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+    .barbers-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .logo {
+        height: 75px;
+    }
+
+    .tarif-card:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.07);
+        transform: translateY(-3px);
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.06), 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .tarif-card.highlight:hover {
+        border-color: rgba(255, 255, 255, 0.35);
+        background: rgba(255, 255, 255, 0.09);
+        box-shadow: 0 0 35px rgba(255, 255, 255, 0.1), 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .tarif-card:active {
+        transform: scale(0.98) !important;
+    }
+
+    .nav-item:hover {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .nav-cta:hover .nav-cta-btn {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.4);
+    }
+
+    .barber-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .review-card {
+        flex: 0 0 220px;
+    }
+}
+
+/* ANIMATIONS */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(25px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.page-header {
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.tarifs-section {
+    opacity: 0;
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+}
+
+.tarif-card {
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.3s ease,
+        background 0.3s ease;
+}
+
+.reveal {
+    opacity: 0;
+    transform: translateY(25px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.barber-card {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+        border-color 0.3s ease;
+}
+
+.barbers-grid.visible .barber-card:nth-child(1) {
+    transition-delay: 0s;
+}
+
+.barbers-grid.visible .barber-card:nth-child(2) {
+    transition-delay: 0.08s;
+}
+
+.barbers-grid.visible .barber-card:nth-child(3) {
+    transition-delay: 0.16s;
+}
+
+.barbers-grid.visible .barber-card:nth-child(4) {
+    transition-delay: 0.24s;
+}
+
+.barbers-grid.visible .barber-card {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.bottom-nav {
+    animation: fadeIn 0.4s ease 0.3s both;
+}
+
+@media (pointer: fine) { a, .nav-cta, .tarif-card, .review-card, .barber-card { cursor: none; } }
+
+/* REDUCED MOTION — page-specific overrides */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0s !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .page-header,
+    .tarifs-section,
+    .tarif-card,
+    .barber-card,
+    .reveal,
+    .page-title .letter {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes kenBurnsSlow {
+    0% { transform: scale(1) translate(0, 0); }
+    100% { transform: scale(1.1) translate(-1%, -1%); }
+}
+
+@media (min-width: 1024px) {
+    html, body { background: #000; }
+
+    .header { z-index: 100; background: rgba(0,0,0,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .header.scrolled { background: rgba(0,0,0,0.9); border-bottom-color: rgba(255,255,255,0.1); }
+
+    body::before {
+        content: ''; position: fixed; left: 50%; top: 0;
+        width: 1px; height: 100%;
+        background: linear-gradient(to bottom, transparent 5%, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.08) 70%, transparent 95%);
+        box-shadow: 0 0 60px 15px rgba(255,255,255,0.015);
+        z-index: 5; pointer-events: none;
+    }
+    body::after { display: none; }
+
+    .desktop-hero {
+        display: block; position: fixed; left: 0; top: 0;
+        width: 50%; height: 100vh; overflow: hidden; z-index: 1;
+    }
+    .desktop-hero-img { width: 100%; height: 100%; object-fit: cover; animation: kenBurnsSlow 25s ease-in-out infinite alternate; }
+    .desktop-hero-gradient {
+        position: absolute; right: 0; top: 0; bottom: 0; width: 200px;
+        background: linear-gradient(to left, rgba(0,0,0,0.6) 0%, transparent 100%);
+    }
+
+    .page-header {
+        position: relative; z-index: 2;
+        margin-left: 50%; padding: 100px 60px 16px; max-width: 50vw; text-align: left;
+    }
+    .page-title { font-size: clamp(48px, 5vw, 72px); line-height: 0.9; letter-spacing: 0.02em; }
+    .page-subtitle { font-size: 11px; letter-spacing: 0.35em; color: rgba(255,255,255,0.3); text-align: left; }
+    .page-intro { margin: 12px 0 0; text-align: left; max-width: 420px; font-size: 14px; color: rgba(255,255,255,0.45); }
+
+    .content {
+        position: relative; z-index: 2;
+        margin-left: 50%; max-width: 50vw;
+        padding: 10px 60px 120px;
+    }
+
+    .section-title { font-size: 10px; letter-spacing: 0.35em; color: rgba(255,255,255,0.25); font-weight: 400; }
+    .section-title::after { background: linear-gradient(to right, rgba(255,255,255,0.1), transparent); box-shadow: none; }
+
+    .tarif-cards { display: flex; flex-direction: column; gap: 10px; }
+
+    .tarif-card { padding: 16px 20px; border-radius: 14px; }
+    .tarif-card-name { font-size: 14px; }
+    .tarif-card-desc { font-size: 11px; }
+    .tarif-card-price { font-size: 24px; }
+    .tarif-card.highlight .tarif-card-price { font-size: 26px; }
+
+    .category-title { font-size: 12px; letter-spacing: 0.15em; color: rgba(255,255,255,0.4); }
+
+    .barbers-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 400px; }
+
+    .reviews-section { margin-top: 32px; }
+    .reviews-track .review-card { flex: 0 0 280px; padding: 20px; }
+
+    .cta-section { margin-top: 32px; }
+    .cta-btn { padding: 18px 44px; font-size: 13px; }
+
+    /* Floating dock nav */
+    .bottom-nav {
+        position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+        width: auto; z-index: 50;
+        background: rgba(0,0,0,0.4); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
+        padding: 14px 20px; box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+    }
+    .nav-row { gap: 12px; }
+    .nav-item {
+        flex-direction: row; gap: 10px; padding: 16px 24px; flex-shrink: 0; white-space: nowrap;
+        font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 600;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 14px; transition: all 0.3s ease;
+    }
+    .nav-item.active { color: #fff; }
+    .nav-item svg { width: 18px; height: 18px; opacity: 0.6; }
+    .nav-item:hover { transform: translateY(-4px); background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.25); }
+    .nav-item:hover svg { opacity: 1; }
+    .nav-cta {
+        margin-top: 0; flex-direction: row; gap: 10px; padding: 16px 32px; flex-shrink: 0; white-space: nowrap;
+        font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 600;
+        letter-spacing: 0.1em; text-transform: uppercase;
+        background: #fff; color: #000; border: none; border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(255,255,255,0.15); position: relative; overflow: hidden;
+    }
+    .nav-cta::before {
+        content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        animation: ctaNavShimmer 3s ease-in-out infinite;
+    }
+    @keyframes ctaNavShimmer { 0%, 100% { left: -100%; } 50% { left: 100%; } }
+    .nav-cta-btn { width: auto; height: auto; background: none; border-radius: 0; box-shadow: none; color: #000; }
+    .nav-cta-btn svg { width: 18px; height: 18px; }
+    .nav-cta-label { font-size: 13px; color: #000; }
+    .nav-cta:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 12px 40px rgba(255,255,255,0.25); }
+    .nav-cta:hover .nav-cta-btn { transform: none; box-shadow: none; }
+}
