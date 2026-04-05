@@ -378,7 +378,7 @@
         window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
         document.querySelectorAll('a[href]').forEach(a => {
             const href = a.getAttribute('href');
-            if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto') || href.startsWith('tel') || a.target === '_blank') return;
+            if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto') || href.startsWith('tel') || a.target === '_blank' || a.getAttribute('onclick')) return;
             a.addEventListener('click', e => {
                 e.preventDefault();
                 trans.classList.add('active');

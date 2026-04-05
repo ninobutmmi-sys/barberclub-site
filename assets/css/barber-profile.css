@@ -50,6 +50,7 @@
     z-index: 9000;
     pointer-events: none;
     opacity: 0.03;
+    background-image: none; /* barber pages use inline SVG grain instead of CSS background */
 }
 
 /* ═══ PAGE TRANSITION OVERLAY ═══ */
