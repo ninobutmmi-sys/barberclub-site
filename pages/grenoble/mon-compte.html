@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mon espace fidélité BarberClub — gérer mes rendez-vous">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#000000">
+    <title>Mon Compte | BarberClub</title>
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://api.barberclub-grenoble.fr">
+    <link rel="preconnect" href="https://api.barberclub-grenoble.fr" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/mon-compte.css">
+</head>
+<body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="page-transition" aria-hidden="true"></div>
+    <div class="cursor-dot" aria-hidden="true"></div>
+    <div class="cursor-ring" aria-hidden="true"></div>
+    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
+
+    <!-- ========== HEADER ========== -->
+    <div class="header" id="header">
+        <div class="header-left">
+            <a href="./" class="header-back" aria-label="Retour à l'accueil">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </a>
+        </div>
+        <div class="header-center">
+            <div class="header-title">BarberClub</div>
+            <div class="header-subtitle" id="headerSubtitle">Espace fidélité</div>
+        </div>
+        <div class="header-right" id="headerRight"></div>
+    </div>
+
+    <!-- ========== MAIN ========== -->
+    <div class="container" id="main-content">
+
+        <!-- STATE: Loading -->
+        <div class="state active" id="stateLoading">
+            <div class="spinner"></div>
+            <div class="loading-text">Chargement...</div>
+        </div>
+
+        <!-- STATE: Auth (Login / Register) -->
+        <div class="state" id="stateAuth">
+            <div class="auth-wrapper">
+                <div class="auth-logo">
+                    <img src="../../assets/images/common/couronne.png" alt="" aria-hidden="true">
+                </div>
+                <div class="auth-brand">BarberClub</div>
+                <div class="auth-tagline">Espace fidélité</div>
+
+                <div class="auth-card">
+                    <!-- Error -->
+                    <div class="auth-error" id="authError" role="alert"></div>
+
+                    <!-- LOGIN FORM -->
+                    <form class="auth-form" id="loginForm" novalidate>
+                        <div class="auth-form-title">Connexion</div>
+                        <div class="form-group">
+                            <label for="loginEmail">Email</label>
+                            <input type="email" id="loginEmail" autocomplete="email" placeholder="votre@email.fr" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Mot de passe</label>
+                            <div class="input-password-wrap">
+                                <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Votre mot de passe" required>
+                                <button type="button" class="btn-eye" aria-label="Afficher le mot de passe" data-target="loginPassword">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-primary" id="loginBtn">Se connecter</button>
+                        <a href="reset-password.html" class="forgot-link">Mot de passe oublié ?</a>
+                    </form>
+
+                    <!-- REGISTER FORM -->
+                    <form class="auth-form hidden" id="registerForm" novalidate>
+                        <div class="auth-form-title">Créer mon compte</div>
+                        <div class="form-group">
+                            <label for="regFirstName">Prénom</label>
+                            <input type="text" id="regFirstName" autocomplete="given-name" placeholder="Prénom" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regLastName">Nom</label>
+                            <input type="text" id="regLastName" autocomplete="family-name" placeholder="Nom" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regPhone">Téléphone</label>
+                            <input type="tel" id="regPhone" autocomplete="tel" placeholder="06 12 34 56 78" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regEmail">Email</label>
+                            <input type="email" id="regEmail" autocomplete="email" placeholder="votre@email.fr" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="regPassword">Mot de passe</label>
+                            <div class="input-password-wrap">
+                                <input type="password" id="regPassword" autocomplete="new-password" placeholder="8 caractères min." required minlength="8">
+                                <button type="button" class="btn-eye" aria-label="Afficher le mot de passe" data-target="regPassword">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                            <div class="password-strength"><div class="password-strength-bar" id="strengthBar"></div></div>
+                            <div class="password-hint">Majuscule, minuscule et chiffre requis</div>
+                        </div>
+                        <button type="submit" class="btn-primary" id="registerBtn">Créer mon compte</button>
+                    </form>
+
+                    <!-- Separator + toggle -->
+                    <div class="auth-separator">
+                        <div class="auth-separator-line"></div>
+                        <span class="auth-separator-text" id="separatorText">Pas encore de compte ?</span>
+                        <div class="auth-separator-line"></div>
+                    </div>
+                    <button class="btn-toggle-auth" id="toggleAuth">Créer mon compte fidélité</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATE: Account (logged in) -->
+        <div class="state" id="stateAccount">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="bookings">Mes RDV</button>
+                <button class="tab-btn" data-tab="profile">Mon Profil</button>
+                <div class="tab-indicator" id="tabIndicator"></div>
+            </div>
+
+            <!-- Tab: Mes RDV -->
+            <div class="tab-panel active" id="panelBookings">
+                <div id="bookingsContent"></div>
+                <div class="bottom-cta">
+                    <a href="reserver.html" class="btn-cta">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Prendre un RDV
+                    </a>
+                </div>
+            </div>
+
+            <!-- Tab: Mon Profil -->
+            <div class="tab-panel" id="panelProfile">
+                <div id="profileContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== DIALOG: Cancel booking ========== -->
+    <div class="dialog-overlay" id="cancelDialog" role="dialog" aria-modal="true" aria-label="Confirmer l'annulation">
+        <div class="dialog">
+            <h3>Annuler le RDV ?</h3>
+            <p>Cette action est irréversible. Vous devrez reprendre un nouveau rendez-vous.</p>
+            <div class="dialog-actions">
+                <button class="btn-dialog-cancel" id="cancelNo">Non</button>
+                <button class="btn-dialog-confirm" id="cancelYes">Oui, annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== DIALOG: Delete account ========== -->
+    <div class="dialog-overlay" id="deleteDialog" role="dialog" aria-modal="true" aria-label="Supprimer le compte">
+        <div class="dialog">
+            <h3>Supprimer votre compte ?</h3>
+            <p>Vos RDV à venir seront annulés et vos données personnelles anonymisées. Cette action est irréversible.</p>
+            <div class="form-group">
+                <label for="deletePassword">Confirmez votre mot de passe</label>
+                <input type="password" id="deletePassword" autocomplete="current-password" placeholder="Mot de passe">
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-dialog-cancel" id="deleteNo">Annuler</button>
+                <button class="btn-dialog-confirm" id="deleteYes" disabled>Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../assets/js/api-config.js"></script>
+    <script>
+    (() => {
+        'use strict';
+
+        const API = window.BARBERCLUB_API;
+        const SALON_ID = 'grenoble';
+
+        const KEYS = {
+            access: 'bc_client_access',
+            refresh: 'bc_client_refresh',
+            user: 'bc_client_user',
+        };
+
+        const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+        const DAYS_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+        const STATUS_LABELS = { confirmed: 'Confirmé', completed: 'Terminé', cancelled: 'Annulé', no_show: 'Absent' };
+
+        const $ = s => document.querySelector(s);
+        const $$ = s => document.querySelectorAll(s);
+
+        /* ---- Utils ---- */
+        function show(id) {
+            $$('.state').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function esc(str) {
+            if (!str) return '';
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function formatDateFR(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr + 'T00:00:00');
+            return DAYS_FR[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS_FR[d.getMonth()] + ' ' + d.getFullYear();
+        }
+
+        function formatPrice(cents) {
+            if (!cents) return '\u2014';
+            return (cents / 100).toFixed(2).replace('.', ',') + ' \u20AC';
+        }
+
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().slice(0, 2);
+        }
+
+        function showError(msg) { var el = $('#authError'); el.textContent = msg; el.classList.add('visible'); }
+        function hideError() { var el = $('#authError'); el.textContent = ''; el.classList.remove('visible'); }
+
+        /* ---- Auth storage ---- */
+        function saveSession(data) {
+            localStorage.setItem(KEYS.access, data.access_token);
+            localStorage.setItem(KEYS.refresh, data.refresh_token);
+            localStorage.setItem(KEYS.user, JSON.stringify(data.user));
+        }
+        function clearSession() {
+            localStorage.removeItem(KEYS.access);
+            localStorage.removeItem(KEYS.refresh);
+            localStorage.removeItem(KEYS.user);
+        }
+        function getAccessToken() { return localStorage.getItem(KEYS.access); }
+        function getRefreshToken() { return localStorage.getItem(KEYS.refresh); }
+        function getUser() { try { return JSON.parse(localStorage.getItem(KEYS.user)); } catch(e) { return null; } }
+
+        /* ---- Auth fetch with auto-refresh ---- */
+        async function authFetch(url, opts) {
+            opts = opts || {};
+            var token = getAccessToken();
+            if (!token) throw new Error('Non connect\u00E9');
+
+            if (!opts.headers) opts.headers = {};
+            opts.headers['Authorization'] = 'Bearer ' + token;
+
+            if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
+                opts.headers['Content-Type'] = 'application/json';
+                opts.body = JSON.stringify(opts.body);
+            }
+
+            var res = await fetch(url, opts);
+
+            if (res.status === 401) {
+                var refreshed = await refreshAccessToken();
+                if (refreshed) {
+                    opts.headers['Authorization'] = 'Bearer ' + getAccessToken();
+                    res = await fetch(url, opts);
+                } else {
+                    clearSession();
+                    show('stateAuth');
+                    throw new Error('Session expir\u00E9e');
+                }
+            }
+            return res;
+        }
+
+        async function refreshAccessToken() {
+            var rt = getRefreshToken();
+            if (!rt) return false;
+            try {
+                var res = await fetch(API + '/auth/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token: rt }),
+                });
+                if (!res.ok) return false;
+                var data = await res.json();
+                saveSession(data);
+                return true;
+            } catch(e) { return false; }
+        }
+
+        async function login(email, password) {
+            var res = await fetch(API + '/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password, type: 'client' }),
+            });
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Identifiants incorrects');
+            saveSession(data);
+            return data;
+        }
+
+        async function register(firstName, lastName, phone, email, password) {
+            var res = await fetch(API + '/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ first_name: firstName, last_name: lastName, phone: phone, email: email, password: password }),
+            });
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.error || (data.errors && data.errors[0] && data.errors[0].msg) || 'Erreur lors de l\'inscription');
+            saveSession(data);
+            return data;
+        }
+
+        async function logout() {
+            var rt = getRefreshToken();
+            if (rt) {
+                try {
+                    await fetch(API + '/auth/logout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refresh_token: rt }),
+                    });
+                } catch(e) { /* silent */ }
+            }
+            clearSession();
+            updateHeader(null);
+            show('stateAuth');
+        }
+
+        async function checkSession() {
+            var token = getAccessToken();
+            if (!token) return false;
+            try {
+                var res = await authFetch(API + '/client/profile');
+                return res.ok;
+            } catch(e) { return false; }
+        }
+
+        /* ---- Header ---- */
+        function updateHeader(user) {
+            var right = $('#headerRight');
+            var subtitle = $('#headerSubtitle');
+            if (user) {
+                subtitle.textContent = user.name || '';
+                right.textContent = '';
+                var btn = document.createElement('button');
+                btn.className = 'btn-logout-icon';
+                btn.id = 'btnLogoutIcon';
+                btn.setAttribute('aria-label', 'Se d\u00E9connecter');
+                btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
+                btn.addEventListener('click', logout);
+                right.appendChild(btn);
+            } else {
+                subtitle.textContent = 'Espace fid\u00E9lit\u00E9';
+                right.textContent = '';
+            }
+        }
+
+        /* ---- Tabs ---- */
+        function setupTabs() {
+            var btns = $$('.tab-btn');
+            var indicator = $('#tabIndicator');
+            btns.forEach(function(btn, i) {
+                btn.addEventListener('click', function() {
+                    btns.forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    $$('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+                    var panelId = 'panel' + btn.dataset.tab.charAt(0).toUpperCase() + btn.dataset.tab.slice(1);
+                    document.getElementById(panelId).classList.add('active');
+                    if (i === 1) indicator.classList.add('right');
+                    else indicator.classList.remove('right');
+                });
+            });
+        }
+
+        /* ---- Bookings ---- */
+        async function loadBookings() {
+            try {
+                var res = await authFetch(API + '/client/bookings?salon_id=' + SALON_ID);
+                if (!res.ok) throw new Error('Erreur chargement RDV');
+                return await res.json();
+            } catch(e) {
+                console.error('loadBookings:', e);
+                return { upcoming: [], past: [] };
+            }
+        }
+
+        function renderBookings(data) {
+            var container = $('#bookingsContent');
+            var upcoming = data.upcoming || [];
+            var past = data.past || [];
+
+            if (upcoming.length === 0 && past.length === 0) {
+                container.textContent = '';
+                var empty = document.createElement('div');
+                empty.className = 'empty-state fade-in';
+                empty.innerHTML = '<div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="empty-state-text">Aucun rendez-vous pour le moment</div><a href="reserver.html" class="empty-state-link">R\u00E9server un cr\u00E9neau</a>';
+                container.appendChild(empty);
+                return;
+            }
+
+            container.textContent = '';
+
+            // Upcoming
+            if (upcoming.length > 0) {
+                container.appendChild(buildNextCard(upcoming[0]));
+                for (var i = 1; i < upcoming.length; i++) {
+                    container.appendChild(buildBookingCard(upcoming[i], false));
+                }
+            }
+
+            // Past
+            if (past.length > 0) {
+                var title = document.createElement('div');
+                title.className = 'section-title';
+                title.textContent = 'Historique';
+                container.appendChild(title);
+                var max = Math.min(past.length, 10);
+                for (var j = 0; j < max; j++) {
+                    container.appendChild(buildBookingCard(past[j], true));
+                }
+            }
+
+            setupCursorHover();
+        }
+
+        function buildNextCard(b) {
+            var canCancel = canModifyBooking(b);
+            var card = document.createElement('div');
+            card.className = 'booking-next fade-in';
+
+            var badge = document.createElement('div');
+            badge.className = 'booking-next-badge';
+            badge.innerHTML = '<div class="booking-next-badge-dot"></div> Prochain RDV';
+            card.appendChild(badge);
+
+            card.appendChild(buildDetailRows(b));
+
+            var actions = document.createElement('div');
+            actions.className = 'booking-next-actions';
+
+            // Reschedule
+            var reschedule = document.createElement('a');
+            reschedule.href = 'mon-rdv.html?id=' + b.id + '&token=' + b.cancel_token;
+            reschedule.className = 'btn-booking-action reschedule';
+            reschedule.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> D\u00E9caler';
+            actions.appendChild(reschedule);
+
+            // Cancel
+            var cancelBtn = document.createElement('button');
+            cancelBtn.className = 'btn-booking-action cancel';
+            cancelBtn.disabled = !canCancel;
+            if (!canCancel) { cancelBtn.style.opacity = '0.4'; cancelBtn.style.cursor = 'not-allowed'; }
+            cancelBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Annuler';
+            cancelBtn.addEventListener('click', function() { openCancelDialog(b.id, b.cancel_token); });
+            actions.appendChild(cancelBtn);
+
+            // Calendar
+            var calBtn = document.createElement('a');
+            calBtn.href = API + '/bookings/' + b.id + '/ics?token=' + b.cancel_token;
+            calBtn.className = 'btn-booking-action calendar';
+            calBtn.setAttribute('download', 'rdv-barberclub.ics');
+            calBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> .ics';
+            actions.appendChild(calBtn);
+
+            card.appendChild(actions);
+            return card;
+        }
+
+        function buildBookingCard(b, isPast) {
+            var card = document.createElement('div');
+            card.className = 'booking-card fade-in' + (isPast ? ' past' : '');
+
+            var statusClass = b.status || 'confirmed';
+            var statusLabel = STATUS_LABELS[b.status] || b.status;
+
+            var badge = document.createElement('div');
+            badge.className = 'booking-status ' + statusClass;
+            badge.innerHTML = '<div class="booking-status-dot"></div>';
+            badge.appendChild(document.createTextNode(' ' + statusLabel));
+            card.appendChild(badge);
+
+            card.appendChild(buildDetailRows(b));
+            return card;
+        }
+
+        function buildDetailRows(b) {
+            var frag = document.createDocumentFragment();
+            var rows = [
+                ['Prestation', b.service_name || ''],
+                ['Barber', b.barber_name || ''],
+                ['Date', formatDateFR(b.date)],
+                ['Horaire', (b.start_time || '').slice(0, 5) + ' \u2014 ' + (b.end_time || '').slice(0, 5)],
+                ['Prix', formatPrice(b.price)],
+            ];
+            rows.forEach(function(r) {
+                var row = document.createElement('div');
+                row.className = 'detail-row';
+                var label = document.createElement('span');
+                label.className = 'detail-label';
+                label.textContent = r[0];
+                var value = document.createElement('span');
+                value.className = 'detail-value';
+                value.textContent = r[1];
+                row.appendChild(label);
+                row.appendChild(value);
+                frag.appendChild(row);
+            });
+            return frag;
+        }
+
+        function canModifyBooking(b) {
+            var now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+            var parts = b.date.split('-');
+            var timeParts = (b.start_time || '00:00').slice(0, 5).split(':');
+            var rdv = new Date(+parts[0], +parts[1] - 1, +parts[2], +timeParts[0], +timeParts[1], 0);
+            return (rdv - now) / (1000 * 60 * 60) >= 12;
+        }
+
+        /* ---- Cancel dialog ---- */
+        var cancelTarget = { id: null, token: null };
+
+        function openCancelDialog(id, token) {
+            cancelTarget = { id: id, token: token };
+            $('#cancelDialog').classList.add('active');
+        }
+        function closeCancelDialog() {
+            $('#cancelDialog').classList.remove('active');
+            cancelTarget = { id: null, token: null };
+        }
+
+        async function performCancel() {
+            var btn = $('#cancelYes');
+            btn.disabled = true;
+            btn.textContent = 'Annulation...';
+            try {
+                var res = await fetch(API + '/bookings/' + cancelTarget.id + '/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: cancelTarget.token, salon_id: SALON_ID }),
+                });
+                if (!res.ok) {
+                    var data = await res.json().catch(function() { return {}; });
+                    throw new Error(data.error || 'Erreur annulation');
+                }
+                closeCancelDialog();
+                var bookings = await loadBookings();
+                renderBookings(bookings);
+            } catch(e) {
+                alert(e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Oui, annuler';
+            }
+        }
+
+        /* ---- Profile ---- */
+        async function loadProfile() {
+            try {
+                var res = await authFetch(API + '/client/profile');
+                if (!res.ok) throw new Error('Erreur chargement profil');
+                return await res.json();
+            } catch(e) {
+                console.error('loadProfile:', e);
+                return null;
+            }
+        }
+
+        function renderProfile(p) {
+            var container = $('#profileContent');
+            container.textContent = '';
+
+            if (!p) {
+                var err = document.createElement('div');
+                err.className = 'empty-state';
+                err.innerHTML = '<div class="empty-state-text">Erreur de chargement du profil</div>';
+                container.appendChild(err);
+                return;
+            }
+
+            var initials = getInitials((p.first_name || '') + ' ' + (p.last_name || ''));
+            var memberSince = p.created_at ? formatDateFR(p.created_at.slice(0, 10)) : '\u2014';
+
+            // Avatar
+            var avatar = document.createElement('div');
+            avatar.className = 'profile-avatar fade-in';
+            avatar.textContent = initials;
+            container.appendChild(avatar);
+
+            // Card
+            var card = document.createElement('div');
+            card.className = 'profile-card fade-in';
+            var fields = [
+                ['Pr\u00E9nom', p.first_name],
+                ['Nom', p.last_name],
+                ['T\u00E9l\u00E9phone', p.phone],
+                ['Email', p.email],
+                ['Membre depuis', memberSince],
+            ];
+            fields.forEach(function(f) {
+                var row = document.createElement('div');
+                row.className = 'profile-row';
+                var label = document.createElement('span');
+                label.className = 'profile-row-label';
+                label.textContent = f[0];
+                var value = document.createElement('span');
+                value.className = 'profile-row-value';
+                value.textContent = f[1] || '\u2014';
+                row.appendChild(label);
+                row.appendChild(value);
+                card.appendChild(row);
+            });
+            container.appendChild(card);
+
+            // Actions
+            var actions = document.createElement('div');
+            actions.className = 'profile-actions fade-in';
+
+            // Export
+            var exportBtn = document.createElement('button');
+            exportBtn.className = 'btn-secondary';
+            exportBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exporter mes donn\u00E9es';
+            exportBtn.addEventListener('click', exportData);
+            actions.appendChild(exportBtn);
+
+            // Delete
+            var deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn-danger';
+            deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Supprimer mon compte';
+            deleteBtn.addEventListener('click', openDeleteDialog);
+            actions.appendChild(deleteBtn);
+
+            // Logout
+            var logoutBtn = document.createElement('button');
+            logoutBtn.className = 'btn-logout-full';
+            logoutBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Se d\u00E9connecter';
+            logoutBtn.addEventListener('click', logout);
+            actions.appendChild(logoutBtn);
+
+            container.appendChild(actions);
+            setupCursorHover();
+        }
+
+        async function exportData() {
+            try {
+                var res = await authFetch(API + '/client/export-data');
+                if (!res.ok) throw new Error('Erreur export');
+                var data = await res.json();
+                var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'mes-donnees-barberclub.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch(e) { alert(e.message); }
+        }
+
+        /* ---- Delete account dialog ---- */
+        function openDeleteDialog() {
+            $('#deletePassword').value = '';
+            $('#deleteYes').disabled = true;
+            $('#deleteDialog').classList.add('active');
+        }
+        function closeDeleteDialog() { $('#deleteDialog').classList.remove('active'); }
+
+        async function performDelete() {
+            var password = $('#deletePassword').value;
+            if (!password) return;
+            var btn = $('#deleteYes');
+            btn.disabled = true;
+            btn.textContent = 'Suppression...';
+            try {
+                var res = await authFetch(API + '/client/delete-account', {
+                    method: 'DELETE',
+                    body: { password: password },
+                });
+                if (!res.ok) {
+                    var data = await res.json().catch(function() { return {}; });
+                    throw new Error(data.error || 'Erreur suppression');
+                }
+                clearSession();
+                closeDeleteDialog();
+                show('stateAuth');
+                alert('Votre compte a \u00E9t\u00E9 supprim\u00E9.');
+            } catch(e) { alert(e.message); } finally {
+                btn.disabled = false;
+                btn.textContent = 'Supprimer';
+            }
+        }
+
+        /* ---- Password strength ---- */
+        function checkPasswordStrength(pw) {
+            var bar = $('#strengthBar');
+            if (!pw || pw.length < 1) { bar.className = 'password-strength-bar'; return; }
+            var hasLower = /[a-z]/.test(pw);
+            var hasUpper = /[A-Z]/.test(pw);
+            var hasDigit = /\d/.test(pw);
+            var long = pw.length >= 8;
+            var score = [hasLower, hasUpper, hasDigit, long].filter(Boolean).length;
+            if (score <= 2) bar.className = 'password-strength-bar weak';
+            else if (score === 3) bar.className = 'password-strength-bar medium';
+            else bar.className = 'password-strength-bar strong';
+        }
+
+        /* ---- Load all account data ---- */
+        async function loadAccountData() {
+            var user = getUser();
+            updateHeader(user);
+            var results = await Promise.all([loadBookings(), loadProfile()]);
+            renderBookings(results[0]);
+            renderProfile(results[1]);
+        }
+
+        /* ---- Events ---- */
+        function setupEvents() {
+            // Toggle login/register
+            var isRegister = false;
+            $('#toggleAuth').addEventListener('click', function() {
+                isRegister = !isRegister;
+                hideError();
+                if (isRegister) {
+                    $('#loginForm').classList.add('hidden');
+                    $('#registerForm').classList.remove('hidden');
+                    $('#toggleAuth').textContent = 'D\u00E9j\u00E0 un compte ? Se connecter';
+                    $('#separatorText').textContent = 'D\u00E9j\u00E0 un compte ?';
+                } else {
+                    $('#registerForm').classList.add('hidden');
+                    $('#loginForm').classList.remove('hidden');
+                    $('#toggleAuth').textContent = 'Cr\u00E9er mon compte fid\u00E9lit\u00E9';
+                    $('#separatorText').textContent = 'Pas encore de compte ?';
+                }
+            });
+
+            // Login
+            $('#loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                hideError();
+                var email = $('#loginEmail').value.trim();
+                var password = $('#loginPassword').value;
+                if (!email || !password) { showError('Remplissez tous les champs'); return; }
+                var btn = $('#loginBtn');
+                btn.disabled = true; btn.textContent = 'Connexion...';
+                try {
+                    await login(email, password);
+                    await loadAccountData();
+                    show('stateAccount');
+                } catch(e) { showError(e.message); } finally {
+                    btn.disabled = false; btn.textContent = 'Se connecter';
+                }
+            });
+
+            // Register
+            $('#registerForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                hideError();
+                var firstName = $('#regFirstName').value.trim();
+                var lastName = $('#regLastName').value.trim();
+                var phone = $('#regPhone').value.trim();
+                var email = $('#regEmail').value.trim();
+                var password = $('#regPassword').value;
+                if (!firstName || !lastName || !phone || !email || !password) {
+                    showError('Remplissez tous les champs'); return;
+                }
+                if (password.length < 8) { showError('Mot de passe : 8 caract\u00E8res minimum'); return; }
+                if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+                    showError('Mot de passe : majuscule, minuscule et chiffre requis'); return;
+                }
+                var btn = $('#registerBtn');
+                btn.disabled = true; btn.textContent = 'Cr\u00E9ation...';
+                try {
+                    await register(firstName, lastName, phone, email, password);
+                    await loadAccountData();
+                    show('stateAccount');
+                } catch(e) { showError(e.message); } finally {
+                    btn.disabled = false; btn.textContent = 'Cr\u00E9er mon compte';
+                }
+            });
+
+            // Password eye toggles
+            $$('.btn-eye').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var input = document.getElementById(btn.dataset.target);
+                    var isPassword = input.type === 'password';
+                    input.type = isPassword ? 'text' : 'password';
+                    btn.setAttribute('aria-label', isPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+                });
+            });
+
+            // Password strength
+            $('#regPassword').addEventListener('input', function(e) { checkPasswordStrength(e.target.value); });
+
+            // Cancel dialog
+            $('#cancelNo').addEventListener('click', closeCancelDialog);
+            $('#cancelDialog').addEventListener('click', function(e) { if (e.target === $('#cancelDialog')) closeCancelDialog(); });
+            $('#cancelYes').addEventListener('click', performCancel);
+
+            // Delete dialog
+            $('#deleteNo').addEventListener('click', closeDeleteDialog);
+            $('#deleteDialog').addEventListener('click', function(e) { if (e.target === $('#deleteDialog')) closeDeleteDialog(); });
+            $('#deleteYes').addEventListener('click', performDelete);
+            $('#deletePassword').addEventListener('input', function(e) {
+                $('#deleteYes').disabled = e.target.value.length === 0;
+            });
+
+            // Escape key closes dialogs
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    if ($('#cancelDialog').classList.contains('active')) closeCancelDialog();
+                    if ($('#deleteDialog').classList.contains('active')) closeDeleteDialog();
+                }
+            });
+
+            // Tabs
+            setupTabs();
+        }
+
+        /* ---- Custom cursor ---- */
+        function setupCursor() {
+            if (matchMedia('(pointer: coarse)').matches) return;
+            var dot = $('.cursor-dot');
+            var ring = $('.cursor-ring');
+            if (!dot || !ring) return;
+            var mx = 0, my = 0, cx = 0, cy = 0;
+            document.addEventListener('mousemove', function(e) { mx = e.clientX; my = e.clientY; });
+            (function loop() {
+                cx += (mx - cx) * 0.15;
+                cy += (my - cy) * 0.15;
+                dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+                ring.style.left = cx + 'px'; ring.style.top = cy + 'px';
+                requestAnimationFrame(loop);
+            })();
+            setupCursorHover();
+        }
+
+        function setupCursorHover() {
+            if (matchMedia('(pointer: coarse)').matches) return;
+            var ring = $('.cursor-ring');
+            if (!ring) return;
+            document.querySelectorAll('a, button, input, [role="button"]').forEach(function(el) {
+                if (el._cursorBound) return;
+                el._cursorBound = true;
+                el.addEventListener('mouseenter', function() { ring.classList.add('hovering'); });
+                el.addEventListener('mouseleave', function() { ring.classList.remove('hovering'); });
+            });
+        }
+
+        /* ---- Init ---- */
+        setupEvents();
+        setupCursor();
+
+        (async function() {
+            show('stateLoading');
+            var ok = await checkSession();
+            if (ok) {
+                await loadAccountData();
+                show('stateAccount');
+            } else {
+                show('stateAuth');
+            }
+        })();
+    })();
+    </script>
+</body>
+</html>
