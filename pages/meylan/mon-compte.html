@@ -37,6 +37,12 @@
         <div class="header-right" id="headerRight"></div>
     </div>
 
+    <!-- ========== BACKGROUND (auth only) ========== -->
+    <div class="auth-bg" id="authBg">
+        <div class="auth-bg-img"></div>
+        <div class="auth-bg-overlay"></div>
+    </div>
+
     <!-- ========== MAIN ========== -->
     <div class="container" id="main-content">
 
@@ -49,86 +55,128 @@
         <!-- STATE: Auth (Login / Register) -->
         <div class="state" id="stateAuth">
             <div class="auth-wrapper">
+                <!-- Hero with logo -->
                 <div class="auth-hero">
-                    <div class="auth-hero-glow" aria-hidden="true"></div>
-                    <div class="auth-logo">
-                        <img src="../../assets/images/common/couronne.png" alt="" class="auth-crown" aria-hidden="true">
-                        <img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="auth-logo-img">
-                    </div>
-                    <div class="auth-tagline">Espace fidélité</div>
-                    <div class="auth-features">
-                        <span class="auth-feature">Vos RDV</span>
-                        <span class="auth-feature-dot"></span>
-                        <span class="auth-feature">Modifier</span>
-                        <span class="auth-feature-dot"></span>
-                        <span class="auth-feature">Historique</span>
+                    <img src="../../assets/images/common/couronne.png" alt="" class="auth-crown" aria-hidden="true">
+                    <img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="auth-logo-img">
+                    <p class="auth-tagline">Espace fidélité</p>
+                </div>
+
+                <!-- Auth choice cards (visible by default) -->
+                <div class="auth-choice" id="authChoice">
+                    <button class="auth-option" id="showLoginBtn" type="button">
+                        <div class="auth-option-icon">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        </div>
+                        <div class="auth-option-text">
+                            <div class="auth-option-title">Connexion</div>
+                            <div class="auth-option-desc">J'ai déjà un compte</div>
+                        </div>
+                        <svg class="auth-option-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+
+                    <div class="auth-signup-cta">
+                        <div class="auth-signup-divider">
+                            <div class="auth-signup-divider-line"></div>
+                            <p class="auth-signup-label">Pas encore membre ?</p>
+                            <div class="auth-signup-divider-line"></div>
+                        </div>
+                        <div class="auth-signup-card" id="showRegisterBtn">
+                            <div class="auth-signup-card-shine"></div>
+                            <div class="auth-signup-card-content">
+                                <img src="../../assets/images/common/logo.png" alt="BarberClub" class="auth-signup-logo">
+                                <div class="auth-signup-perks">
+                                    <div class="auth-perk">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                                        Gérez vos RDV en ligne
+                                    </div>
+                                    <div class="auth-perk">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                                        Annulez ou décalez facilement
+                                    </div>
+                                    <div class="auth-perk">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                                        Historique de vos visites
+                                    </div>
+                                </div>
+                                <button class="auth-signup-btn" type="button">
+                                    Créer mon compte
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="auth-card">
-                    <!-- Error -->
-                    <div class="auth-error" id="authError" role="alert"></div>
-
-                    <!-- LOGIN FORM -->
-                    <form class="auth-form" id="loginForm" novalidate>
-                        <div class="auth-form-title">Connexion</div>
-                        <div class="form-group">
-                            <label for="loginEmail">Email</label>
-                            <input type="email" id="loginEmail" autocomplete="email" placeholder="votre@email.fr" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="loginPassword">Mot de passe</label>
-                            <div class="input-password-wrap">
-                                <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Votre mot de passe" required>
-                                <button type="button" class="btn-eye" aria-label="Afficher le mot de passe" data-target="loginPassword">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </button>
+                <!-- Login form (hidden by default) -->
+                <div class="auth-form-section hidden" id="loginSection">
+                    <button class="auth-back-btn" id="loginBackBtn" type="button">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        Retour
+                    </button>
+                    <div class="auth-card">
+                        <div class="auth-error" id="authError" role="alert"></div>
+                        <form id="loginForm" novalidate>
+                            <div class="auth-form-title">Connexion</div>
+                            <div class="form-group">
+                                <label for="loginEmail">Email</label>
+                                <input type="email" id="loginEmail" autocomplete="email" placeholder="votre@email.fr" required>
                             </div>
-                        </div>
-                        <button type="submit" class="btn-primary" id="loginBtn">Se connecter</button>
-                        <a href="reset-password.html" class="forgot-link">Mot de passe oublié ?</a>
-                    </form>
-
-                    <!-- REGISTER FORM -->
-                    <form class="auth-form hidden" id="registerForm" novalidate>
-                        <div class="auth-form-title">Créer mon compte</div>
-                        <div class="form-group">
-                            <label for="regFirstName">Prénom</label>
-                            <input type="text" id="regFirstName" autocomplete="given-name" placeholder="Prénom" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="regLastName">Nom</label>
-                            <input type="text" id="regLastName" autocomplete="family-name" placeholder="Nom" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="regPhone">Téléphone</label>
-                            <input type="tel" id="regPhone" autocomplete="tel" placeholder="06 12 34 56 78" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="regEmail">Email</label>
-                            <input type="email" id="regEmail" autocomplete="email" placeholder="votre@email.fr" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="regPassword">Mot de passe</label>
-                            <div class="input-password-wrap">
-                                <input type="password" id="regPassword" autocomplete="new-password" placeholder="8 caractères min." required minlength="8">
-                                <button type="button" class="btn-eye" aria-label="Afficher le mot de passe" data-target="regPassword">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                </button>
+                            <div class="form-group">
+                                <label for="loginPassword">Mot de passe</label>
+                                <div class="input-password-wrap">
+                                    <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Votre mot de passe" required>
+                                    <button type="button" class="btn-eye" aria-label="Afficher le mot de passe" data-target="loginPassword">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="password-strength"><div class="password-strength-bar" id="strengthBar"></div></div>
-                            <div class="password-hint">Majuscule, minuscule et chiffre requis</div>
-                        </div>
-                        <button type="submit" class="btn-primary" id="registerBtn">Créer mon compte</button>
-                    </form>
-
-                    <!-- Separator + toggle -->
-                    <div class="auth-separator">
-                        <div class="auth-separator-line"></div>
-                        <span class="auth-separator-text" id="separatorText">Pas encore de compte ?</span>
-                        <div class="auth-separator-line"></div>
+                            <button type="submit" class="btn-primary" id="loginBtn">Se connecter</button>
+                            <a href="reset-password.html" class="forgot-link">Mot de passe oublié ?</a>
+                        </form>
                     </div>
-                    <button class="btn-toggle-auth" id="toggleAuth">Créer mon compte fidélité</button>
+                </div>
+
+                <!-- Register form (hidden by default) -->
+                <div class="auth-form-section hidden" id="registerSection">
+                    <button class="auth-back-btn" id="registerBackBtn" type="button">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        Retour
+                    </button>
+                    <div class="auth-card">
+                        <div class="auth-error" id="authErrorReg" role="alert"></div>
+                        <form id="registerForm" novalidate>
+                            <div class="auth-form-title">Créer mon compte</div>
+                            <div class="form-group">
+                                <label for="regFirstName">Prénom</label>
+                                <input type="text" id="regFirstName" autocomplete="given-name" placeholder="Prénom" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="regLastName">Nom</label>
+                                <input type="text" id="regLastName" autocomplete="family-name" placeholder="Nom" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="regPhone">Téléphone</label>
+                                <input type="tel" id="regPhone" autocomplete="tel" placeholder="06 12 34 56 78" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="regEmail">Email</label>
+                                <input type="email" id="regEmail" autocomplete="email" placeholder="votre@email.fr" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="regPassword">Mot de passe</label>
+                                <div class="input-password-wrap">
+                                    <input type="password" id="regPassword" autocomplete="new-password" placeholder="8 caractères min." required minlength="8">
+                                    <button type="button" class="btn-eye" aria-label="Afficher le mot de passe" data-target="regPassword">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </button>
+                                </div>
+                                <div class="password-strength"><div class="password-strength-bar" id="strengthBar"></div></div>
+                                <div class="password-hint">Majuscule, minuscule et chiffre requis</div>
+                            </div>
+                            <button type="submit" class="btn-primary" id="registerBtn">Créer mon compte</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -213,6 +261,12 @@
         function show(id) {
             $$('.state').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
+            // Show/hide salon background photo
+            var bg = document.getElementById('authBg');
+            if (bg) {
+                if (id === 'stateAuth' || id === 'stateLoading') bg.classList.remove('hidden');
+                else bg.classList.add('hidden');
+            }
         }
 
         function esc(str) {
@@ -238,8 +292,7 @@
             return name.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().slice(0, 2);
         }
 
-        function showError(msg) { var el = $('#authError'); el.textContent = msg; el.classList.add('visible'); }
-        function hideError() { var el = $('#authError'); el.textContent = ''; el.classList.remove('visible'); }
+        /* showError/hideError defined in setupEvents below */
 
         /* ---- Auth storage ---- */
         function saveSession(data) {
@@ -727,25 +780,53 @@
             renderProfile(results[1]);
         }
 
+        /* ---- Auth navigation ---- */
+        function showAuthChoice() {
+            $('#authChoice').classList.remove('hidden');
+            $('#loginSection').classList.add('hidden');
+            $('#registerSection').classList.add('hidden');
+            hideError();
+        }
+
+        function showLoginForm() {
+            $('#authChoice').classList.add('hidden');
+            $('#loginSection').classList.remove('hidden');
+            $('#registerSection').classList.add('hidden');
+            hideError();
+            var emailInput = $('#loginEmail');
+            if (emailInput) setTimeout(function() { emailInput.focus(); }, 300);
+        }
+
+        function showRegisterForm() {
+            $('#authChoice').classList.add('hidden');
+            $('#loginSection').classList.add('hidden');
+            $('#registerSection').classList.remove('hidden');
+            hideError();
+            var nameInput = $('#regFirstName');
+            if (nameInput) setTimeout(function() { nameInput.focus(); }, 300);
+        }
+
+        function showError(msg) {
+            var el = $('#authError');
+            if (!el) el = $('#authErrorReg');
+            // Show in whichever form is visible
+            var loginVisible = !$('#loginSection').classList.contains('hidden');
+            el = loginVisible ? $('#authError') : $('#authErrorReg');
+            if (el) { el.textContent = msg; el.classList.add('visible'); }
+        }
+        function hideError() {
+            var e1 = $('#authError'); var e2 = $('#authErrorReg');
+            if (e1) { e1.textContent = ''; e1.classList.remove('visible'); }
+            if (e2) { e2.textContent = ''; e2.classList.remove('visible'); }
+        }
+
         /* ---- Events ---- */
         function setupEvents() {
-            // Toggle login/register
-            var isRegister = false;
-            $('#toggleAuth').addEventListener('click', function() {
-                isRegister = !isRegister;
-                hideError();
-                if (isRegister) {
-                    $('#loginForm').classList.add('hidden');
-                    $('#registerForm').classList.remove('hidden');
-                    $('#toggleAuth').textContent = 'D\u00E9j\u00E0 un compte ? Se connecter';
-                    $('#separatorText').textContent = 'D\u00E9j\u00E0 un compte ?';
-                } else {
-                    $('#registerForm').classList.add('hidden');
-                    $('#loginForm').classList.remove('hidden');
-                    $('#toggleAuth').textContent = 'Cr\u00E9er mon compte fid\u00E9lit\u00E9';
-                    $('#separatorText').textContent = 'Pas encore de compte ?';
-                }
-            });
+            // Auth navigation
+            $('#showLoginBtn').addEventListener('click', showLoginForm);
+            $('#showRegisterBtn').addEventListener('click', showRegisterForm);
+            $('#loginBackBtn').addEventListener('click', showAuthChoice);
+            $('#registerBackBtn').addEventListener('click', showAuthChoice);
 
             // Login
             $('#loginForm').addEventListener('submit', async function(e) {
