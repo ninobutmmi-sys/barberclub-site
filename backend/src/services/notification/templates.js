@@ -315,12 +315,7 @@ async function sendConfirmationSMS(data) {
   const timeFormatted = formatTime(data.start_time);
   const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
 
-  // Include manage link via short redirect
-  const manageLink = data.cancel_token
-    ? `\nModifier/annuler: ${config.apiUrl}/r/rdv/${data.booking_id}/${data.cancel_token}`
-    : '';
-
-  const message = toGSM(`BarberClub - RDV confirme\nLe ${dateFR} a ${timeFormatted} avec ${data.barber_name}.${manageLink}`);
+  const message = toGSM(`BarberClub - RDV confirme\nLe ${dateFR} a ${timeFormatted} avec ${data.barber_name}.\n${salon.address}`);
 
   await brevoSMS(data.phone, message, salonId);
   logger.info('Confirmation SMS sent', { bookingId: data.booking_id, phone: data.phone, salonId });
