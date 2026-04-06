@@ -169,6 +169,27 @@
             </a>
         </div>
 
+        <!-- Lookup by phone (no token) -->
+        <div class="state" id="stateLookup">
+            <div class="result-icon" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </div>
+            <div class="result-title">Retrouver mon RDV</div>
+            <p class="result-text">Pas reçu d'email ? Entrez votre numéro de téléphone pour retrouver vos rendez-vous à venir.</p>
+            <div style="width:100%;max-width:320px;margin:0 auto;">
+                <input type="tel" id="lookupPhone" placeholder="06 12 34 56 78" autocomplete="tel" style="width:100%;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-family:'Inter',sans-serif;font-size:16px;outline:none;text-align:center;margin-bottom:12px;">
+                <button id="lookupBtn" style="width:100%;padding:14px;background:#fff;border:none;border-radius:12px;color:#000;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;">Rechercher</button>
+                <p id="lookupError" style="display:none;color:#ef4444;font-size:13px;margin-top:12px;text-align:center;"></p>
+            </div>
+            <div id="lookupResults" style="width:100%;margin-top:20px;"></div>
+            <a href="./" class="home-link" style="margin-top:20px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Retour à l'accueil
+            </a>
+        </div>
+
         <!-- Error -->
         <div class="state" id="stateError">
             <div class="result-icon error">
@@ -285,7 +306,8 @@
         // =============================================
         async function loadBooking() {
             if (!bookingId || !token) {
-                show('stateError');
+                show('stateLookup');
+                setupLookup();
                 return;
             }
 
@@ -642,6 +664,69 @@
                 }
                 errEl.textContent = e.message || 'Une erreur est survenue';
             }
+        }
+
+        // =============================================
+        // =============================================
+        // PHONE LOOKUP
+        // =============================================
+        function setupLookup() {
+            const phoneInput = document.getElementById('lookupPhone');
+            const btn = document.getElementById('lookupBtn');
+            const errEl = document.getElementById('lookupError');
+            const resultsEl = document.getElementById('lookupResults');
+            if (!btn) return;
+
+            async function doLookup() {
+                const phone = phoneInput.value.replace(/[\s.-]/g, '');
+                if (!phone || !/^(\+\d{7,15}|0[1-9]\d{8})$/.test(phone)) {
+                    errEl.textContent = 'Entrez un numéro valide (ex: 0612345678)';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                errEl.style.display = 'none';
+                btn.disabled = true;
+                btn.textContent = 'Recherche...';
+                try {
+                    const res = await fetch(`${API}/bookings/lookup?phone=${encodeURIComponent(phone)}&salon_id=${SALON_ID}`);
+                    if (!res.ok) throw new Error('Erreur serveur');
+                    const bookings = await res.json();
+                    if (bookings.length === 0) {
+                        errEl.textContent = 'Aucun RDV à venir trouvé pour ce numéro.';
+                        errEl.style.display = 'block';
+                        resultsEl.innerHTML = '';
+                        return;
+                    }
+                    resultsEl.innerHTML = '';
+                    bookings.forEach(function(b) {
+                        const dateFR = formatDateFR(b.date);
+                        const time = (b.start_time || '').slice(0, 5);
+                        const price = (b.price / 100).toFixed(2).replace('.', ',') + ' \u20AC';
+                        const card = document.createElement('div');
+                        card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-bottom:12px;text-align:left;';
+                        card.innerHTML =
+                            '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:14px;background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.2);"><div style="width:6px;height:6px;border-radius:50%;background:currentColor;"></div>Confirm\u00E9</div>' +
+                            '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Prestation</span><span style="font-size:14px;font-weight:600;">' + esc(b.service_name) + '</span></div>' +
+                            '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Barber</span><span style="font-size:14px;font-weight:600;">' + esc(b.barber_name) + '</span></div>' +
+                            '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Date</span><span style="font-size:14px;font-weight:600;">' + dateFR + '</span></div>' +
+                            '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Horaire</span><span style="font-size:14px;font-weight:600;">' + time + '</span></div>' +
+                            '<div style="display:flex;justify-content:space-between;padding:10px 0;"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Prix</span><span style="font-size:14px;font-weight:600;">' + price + '</span></div>' +
+                            '<div style="display:flex;gap:8px;margin-top:14px;">' +
+                              '<a href="mon-rdv.html?id=' + b.id + '&token=' + b.cancel_token + '" style="flex:1;padding:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-size:12px;font-weight:600;text-align:center;text-decoration:none;">G\u00E9rer ce RDV</a>' +
+                            '</div>';
+                        resultsEl.appendChild(card);
+                    });
+                } catch(e) {
+                    errEl.textContent = e.message;
+                    errEl.style.display = 'block';
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'RECHERCHER';
+                }
+            }
+
+            btn.addEventListener('click', doLookup);
+            phoneInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLookup(); });
         }
 
         // =============================================

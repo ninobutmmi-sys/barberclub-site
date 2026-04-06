@@ -312,6 +312,48 @@ router.post('/bookings',
 );
 
 // ============================================
+// GET /api/bookings/lookup — Find upcoming bookings by phone (no auth needed)
+// ============================================
+router.get('/bookings/lookup',
+  publicLimiter,
+  [
+    query('phone').trim().notEmpty().withMessage('Téléphone requis')
+      .matches(/^(\+\d{7,15}|0[1-9]\d{8})$/).withMessage('Numéro invalide'),
+    query('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const phone = req.query.phone.replace(/[\s.-]/g, '');
+      const salonId = req.query.salon_id || 'meylan';
+
+      const result = await db.query(
+        `SELECT b.id, b.date, b.start_time, b.end_time, b.status, b.price,
+                b.cancel_token, b.rescheduled, b.salon_id,
+                s.name as service_name, s.duration as service_duration,
+                br.name as barber_name
+         FROM bookings b
+         JOIN clients c ON b.client_id = c.id
+         JOIN services s ON b.service_id = s.id
+         JOIN barbers br ON b.barber_id = br.id
+         WHERE c.phone = $1
+           AND b.salon_id = $2
+           AND b.status = 'confirmed'
+           AND b.deleted_at IS NULL
+           AND (b.date > CURRENT_DATE OR (b.date = CURRENT_DATE AND b.start_time > (NOW() AT TIME ZONE 'Europe/Paris')::time))
+         ORDER BY b.date ASC, b.start_time ASC
+         LIMIT 5`,
+        [phone, salonId]
+      );
+
+      res.json(result.rows);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
 // GET /api/bookings/:id — Get booking details (via cancel token)
 // ============================================
 router.get('/bookings/:id',
