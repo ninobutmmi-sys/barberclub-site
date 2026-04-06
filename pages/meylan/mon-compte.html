@@ -282,6 +282,14 @@
             return DAYS_FR[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS_FR[d.getMonth()] + ' ' + d.getFullYear();
         }
 
+        function formatDateShort(dateStr) {
+            if (!dateStr) return '';
+            var d = new Date(dateStr + 'T00:00:00');
+            var dayNames = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+            var monthNames = ['Jan','F\u00E9v','Mars','Avr','Mai','Juin','Juil','Ao\u00FBt','Sep','Oct','Nov','D\u00E9c'];
+            return dayNames[d.getDay()] + '. ' + d.getDate() + ' ' + monthNames[d.getMonth()];
+        }
+
         function formatPrice(cents) {
             if (!cents) return '\u2014';
             return (cents / 100).toFixed(2).replace('.', ',') + ' \u20AC';
@@ -539,16 +547,62 @@
             var card = document.createElement('div');
             card.className = 'booking-card fade-in' + (isPast ? ' past' : '');
 
+            // Avatar (barber initial)
+            var avatar = document.createElement('div');
+            avatar.className = 'booking-card-avatar';
+            avatar.textContent = (b.barber_name || '?')[0].toUpperCase();
+            card.appendChild(avatar);
+
+            // Info block
+            var info = document.createElement('div');
+            info.className = 'booking-card-info';
+
+            // Top: service + status
+            var top = document.createElement('div');
+            top.className = 'booking-card-top';
+            var svc = document.createElement('span');
+            svc.className = 'booking-card-service';
+            svc.textContent = b.service_name || '';
+            top.appendChild(svc);
             var statusClass = b.status || 'confirmed';
             var statusLabel = STATUS_LABELS[b.status] || b.status;
-
-            var badge = document.createElement('div');
-            badge.className = 'booking-status ' + statusClass;
-            badge.innerHTML = '<div class="booking-status-dot"></div>';
+            var badge = document.createElement('span');
+            badge.className = 'booking-card-status ' + statusClass;
+            badge.innerHTML = '<span class="booking-card-status-dot"></span>';
             badge.appendChild(document.createTextNode(' ' + statusLabel));
-            card.appendChild(badge);
+            top.appendChild(badge);
+            info.appendChild(top);
 
-            card.appendChild(buildDetailRows(b));
+            // Barber name
+            var barber = document.createElement('div');
+            barber.className = 'booking-card-barber';
+            barber.textContent = b.barber_name || '';
+            info.appendChild(barber);
+
+            // Bottom: date + time + price
+            var bottom = document.createElement('div');
+            bottom.className = 'booking-card-bottom';
+            // Calendar icon
+            bottom.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+            var dateSpan = document.createElement('span');
+            dateSpan.textContent = formatDateShort(b.date);
+            bottom.appendChild(dateSpan);
+            var dot1 = document.createElement('span');
+            dot1.className = 'booking-card-dot';
+            bottom.appendChild(dot1);
+            var timeSpan = document.createElement('span');
+            timeSpan.textContent = (b.start_time || '').slice(0, 5);
+            bottom.appendChild(timeSpan);
+            var dot2 = document.createElement('span');
+            dot2.className = 'booking-card-dot';
+            bottom.appendChild(dot2);
+            var priceSpan = document.createElement('span');
+            priceSpan.className = 'booking-card-price';
+            priceSpan.textContent = formatPrice(b.price);
+            bottom.appendChild(priceSpan);
+            info.appendChild(bottom);
+
+            card.appendChild(info);
             return card;
         }
 

@@ -752,17 +752,19 @@ body {
     color: rgba(255, 255, 255, 0.6);
 }
 
-/* Regular upcoming card */
+/* ---- Booking card (compact, visual) ---- */
 .booking-card {
+    display: flex;
+    gap: 14px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
     width: 100%;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     transition: border-color 0.3s, background 0.3s;
+    position: relative;
+    overflow: hidden;
 }
 
 .booking-card:not(.past):hover {
@@ -770,48 +772,105 @@ body {
     background: rgba(255, 255, 255, 0.05);
 }
 
-.booking-card .booking-status {
+/* Left: barber initial circle */
+.booking-card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+/* Right: info */
+.booking-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.booking-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.booking-card-service {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.booking-card-status {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    margin-bottom: 14px;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
 }
 
-.booking-status.confirmed {
-    background: rgba(34, 197, 94, 0.12);
-    color: #22c55e;
-    border: 1px solid rgba(34, 197, 94, 0.2);
-}
+.booking-card-status.confirmed { background: rgba(34,197,94,0.12); color: #22c55e; }
+.booking-card-status.completed { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
+.booking-card-status.cancelled { background: rgba(239,68,68,0.08); color: rgba(239,68,68,0.6); }
+.booking-card-status.no_show { background: rgba(245,158,11,0.1); color: rgba(245,158,11,0.7); }
 
-.booking-status.completed {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.booking-status.cancelled {
-    background: rgba(239, 68, 68, 0.08);
-    color: rgba(239, 68, 68, 0.6);
-    border: 1px solid rgba(239, 68, 68, 0.15);
-}
-
-.booking-status.no_show {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.booking-status-dot {
-    width: 6px; height: 6px;
+.booking-card-status-dot {
+    width: 5px; height: 5px;
     border-radius: 50%;
     background: currentColor;
 }
 
-/* Detail rows */
+.booking-card-barber {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 10px;
+}
+
+.booking-card-bottom {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.booking-card-bottom svg {
+    width: 12px; height: 12px; flex-shrink: 0; opacity: 0.4;
+}
+
+.booking-card-dot {
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+}
+
+.booking-card-price {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Muted past cards */
+.booking-card.past { opacity: 0.55; }
+.booking-card.past:hover { opacity: 0.7; }
+
+/* ---- Legacy detail rows (for prochain RDV gold card) ---- */
 .detail-row {
     display: flex;
     justify-content: space-between;
