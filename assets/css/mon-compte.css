@@ -144,7 +144,7 @@ body {
 .auth-bg-img {
     position: absolute;
     inset: -20px;
-    background: url('../../assets/images/salons/meylan/salon-meylan-interieur.jpg') center/cover no-repeat;
+    background: url('../images/salons/meylan/salon-meylan-interieur.jpg') center/cover no-repeat;
     filter: brightness(0.25) saturate(0.6);
     animation: authKenBurns 30s ease-in-out infinite alternate;
 }
@@ -184,7 +184,7 @@ body {
     position: relative;
 }
 
-.auth-logo .auth-crown {
+.auth-crown {
     width: 20px;
     height: auto;
     opacity: 0.5;
@@ -198,7 +198,7 @@ body {
     50% { transform: translateY(-3px); }
 }
 
-.auth-logo .auth-logo-img {
+.auth-logo-img {
     height: 60px;
     width: auto;
     display: block;
