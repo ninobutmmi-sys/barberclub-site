@@ -46,8 +46,11 @@ async function queueReminders() {
 
       try {
         if (booking.phone && isFrenchPhone(booking.phone)) {
-          // French number → SMS
-          const message = toGSM(`BarberClub - Rappel\nRDV le ${dateFR} a ${timeFormatted}\n${salon.address}.\nA bientot!`);
+          // French number → SMS (with manage link)
+          const manageLink = booking.cancel_token
+            ? `\nModifier/annuler: ${config.apiUrl}/r/rdv/${booking.id}/${booking.cancel_token}`
+            : '';
+          const message = toGSM(`BarberClub - Rappel\nRDV le ${dateFR} a ${timeFormatted}\n${salon.address}.${manageLink}`);
           await queueNotification(booking.id, 'reminder_sms', {
             phone: booking.phone,
             message,

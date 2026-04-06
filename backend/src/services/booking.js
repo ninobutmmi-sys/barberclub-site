@@ -328,14 +328,8 @@ async function createBooking(data) {
       }
     }
 
-    // 2. SMS confirmation if booking is within 24h
-    const smsNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-    const [smsY, smsM, smsD] = result.date.split('-').map(Number);
-    const [smsH, smsMn] = result.start_time.slice(0, 5).split(':').map(Number);
-    const smsBookingDateTime = new Date(smsY, smsM - 1, smsD, smsH, smsMn, 0);
-    const hoursUntilBooking = (smsBookingDateTime - smsNow) / (1000 * 60 * 60);
-
-    if (hoursUntilBooking > 0 && hoursUntilBooking <= SMS_CONFIRMATION_THRESHOLD_HOURS && bookingDetails.client_phone && notification.isFrenchPhone(bookingDetails.client_phone)) {
+    // 2. SMS confirmation — always sent (with manage link)
+    if (bookingDetails.client_phone && notification.isFrenchPhone(bookingDetails.client_phone)) {
       try {
         await notification.sendConfirmationSMS({
           booking_id: result.id,
@@ -346,14 +340,14 @@ async function createBooking(data) {
           start_time: bookingDetails.start_time,
           salon_id: salonId,
         });
-        await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [result.id]);
-        logger.info('Confirmation SMS sent (booking within 24h)', { bookingId: result.id, hoursUntil: Math.round(hoursUntilBooking) });
+        logger.info('Confirmation SMS sent', { bookingId: result.id });
       } catch (err) {
         logger.error('Direct confirmation SMS failed, queueing for retry', { bookingId: result.id, error: err.message });
         const salonConf = config.getSalonConfig(salonId);
         const dateFR = notification.formatDateFR(bookingDetails.date);
         const timeFmt = notification.formatTime(bookingDetails.start_time);
-        const smsMsg = notification.toGSM(`BarberClub - RDV confirme\nLe ${dateFR} a ${timeFmt} avec ${bookingDetails.barber_name}.\n${salonConf.address}`);
+        const manageLink = `\nModifier/annuler: ${config.apiUrl}/r/rdv/${result.id}/${result.cancel_token}`;
+        const smsMsg = notification.toGSM(`BarberClub - RDV confirme\nLe ${dateFR} a ${timeFmt} avec ${bookingDetails.barber_name}.${manageLink}`);
         try {
           await notification.queueNotification(result.id, 'confirmation_sms', {
             phone: bookingDetails.client_phone, message: smsMsg, salonId,
