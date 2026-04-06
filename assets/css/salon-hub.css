@@ -59,9 +59,23 @@
   transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
   opacity: 0; animation: fadeIn 0.5s ease 0.1s forwards;
 }
-@media (pointer: fine) { .back-btn { cursor: none; } }
+@media (pointer: fine) { .back-btn, .account-btn { cursor: none; } }
 .back-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.15); }
 .back-btn svg { width: 20px; height: 20px; }
+
+.account-btn {
+  position: absolute; right: 20px; top: 20px;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 50%;
+  color: #fff; text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  opacity: 0; animation: fadeIn 0.5s ease 0.2s forwards;
+}
+.account-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.15); }
+.account-btn svg { width: 20px; height: 20px; }
 
 .header-logo {
   position: absolute; left: 50%; transform: translateX(-50%);
