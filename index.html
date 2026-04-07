@@ -654,29 +654,11 @@ html, body {
   text-transform: uppercase;
 }
 
+/* Desktop: teaser reste en dessous (scroll to discover) */
 @media (min-width: 768px) {
-  .separator-secondary {
-    width: 2px; height: auto; flex-shrink: 0;
-    align-self: stretch;
-  }
-  .separator-secondary .separator-line {
-    transform: scaleY(0); transform-origin: center;
-  }
-  .landing.visible .separator-secondary .separator-line { transform: scaleY(1); }
-  .separator-secondary .separator-line::before {
-    background: linear-gradient(180deg, transparent 10%, rgba(255,255,255,0.3) 50%, transparent 90%);
-    box-shadow: 0 0 8px rgba(255,255,255,0.15);
-  }
-  .separator-secondary .separator-glow {
-    top: 15%; bottom: 15%; left: -18px; right: auto;
-    width: 38px; height: auto;
-    background: radial-gradient(ellipse 50% 80% at 50% 50%, rgba(255,255,255,0.02), transparent 70%);
-  }
   .salon-teaser {
-    flex: none; width: 10%;
-    min-height: 100vh; min-height: 100dvh;
+    min-height: 15vh; min-height: 15dvh;
   }
-  .teaser-text { font-size: 11px; }
 }
 
 /* ═══════════════════════════════════════
@@ -800,23 +782,21 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       </div>
     </a>
 
-    <!-- Séparateur secondaire (subtil) -->
-    <div class="separator-secondary" aria-hidden="true">
-      <div class="separator-line"></div>
-      <div class="separator-glow"></div>
-    </div>
-
-    <!-- Voiron teaser — coming soon -->
-    <div class="salon-teaser" aria-label="Nouveau salon bientôt">
-      <div class="teaser-bg"></div>
-      <div class="teaser-overlay"></div>
-      <div class="teaser-content">
-        <span class="teaser-text">Bientôt...</span>
-        <span class="teaser-sub">nouveau salon</span>
-      </div>
-    </div>
-
   </main>
+
+  <!-- Voiron teaser — coming soon (hors du container .salons) -->
+  <div class="separator-secondary" aria-hidden="true">
+    <div class="separator-line"></div>
+    <div class="separator-glow"></div>
+  </div>
+  <div class="salon-teaser" aria-label="Nouveau salon bientôt">
+    <div class="teaser-bg"></div>
+    <div class="teaser-overlay"></div>
+    <div class="teaser-content">
+      <span class="teaser-text">Bientôt...</span>
+      <span class="teaser-sub">nouveau salon</span>
+    </div>
+  </div>
 </div>
 
 <script>
