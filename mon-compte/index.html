@@ -7,14 +7,14 @@
     <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#000000">
     <title>Mon Compte | BarberClub</title>
-    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="../assets/icons/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://api.barberclub-grenoble.fr">
     <link rel="preconnect" href="https://api.barberclub-grenoble.fr" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../../assets/css/base.css">
-    <link rel="stylesheet" href="../../assets/css/mon-compte.css">
+    <link rel="stylesheet" href="../assets/css/base.css">
+    <link rel="stylesheet" href="../assets/css/mon-compte.css">
 </head>
 <body>
     <div class="grain" aria-hidden="true"></div>
@@ -26,7 +26,7 @@
     <!-- ========== HEADER ========== -->
     <div class="header" id="header">
         <div class="header-left">
-            <a href="./" class="header-back" aria-label="Retour à l'accueil">
+            <a href="/" class="header-back" aria-label="Retour à l'accueil">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             </a>
         </div>
@@ -39,13 +39,13 @@
 
     <!-- ========== BACKGROUND (auth only) ========== -->
     <div class="auth-bg" id="authBg">
-        <div class="auth-bg-img" style="background-image:url('../../assets/images/salons/grenoble/salon-grenoble.jpg')"></div>
+        <div class="auth-bg-img"></div>
         <div class="auth-bg-overlay"></div>
     </div>
 
     <!-- ========== BACKGROUND (account — ambient) ========== -->
     <div class="account-bg hidden" id="accountBg">
-        <div class="account-bg-img" style="background-image:url('../../assets/images/salons/grenoble/salon-grenoble.jpg')"></div>
+        <div class="account-bg-img" style="background-image:url('../assets/images/salons/meylan/salon-meylan-interieur.jpg')"></div>
         <div class="account-bg-overlay"></div>
     </div>
 
@@ -66,8 +66,8 @@
             <div class="auth-wrapper">
                 <!-- Hero with logo -->
                 <div class="auth-hero">
-                    <img src="../../assets/images/common/couronne.png" alt="" class="auth-crown" aria-hidden="true">
-                    <img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="auth-logo-img">
+                    <img src="../assets/images/common/couronne.png" alt="" class="auth-crown" aria-hidden="true">
+                    <img src="../assets/images/common/logo-blanc.png" alt="BarberClub" class="auth-logo-img">
                     <p class="auth-tagline">Espace fidélité</p>
                 </div>
 
@@ -94,7 +94,7 @@
                         <div class="auth-signup-card" id="showRegisterBtn">
                             <div class="auth-signup-card-shine"></div>
                             <div class="auth-signup-card-content">
-                                <img src="../../assets/images/common/logo.png" alt="BarberClub" class="auth-signup-logo">
+                                <img src="../assets/images/common/logo.png" alt="BarberClub" class="auth-signup-logo">
                                 <div class="auth-signup-perks">
                                     <div class="auth-perk">
                                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
@@ -142,7 +142,28 @@
                                 </div>
                             </div>
                             <button type="submit" class="btn-primary" id="loginBtn">Se connecter</button>
-                            <a href="reset-password.html" class="forgot-link">Mot de passe oublié ?</a>
+                            <button type="button" class="forgot-link" id="showForgotBtn">Mot de passe oublié ?</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Forgot password form (hidden by default) -->
+                <div class="auth-form-section hidden" id="forgotSection">
+                    <button class="auth-back-btn" id="forgotBackBtn" type="button">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        Retour
+                    </button>
+                    <div class="auth-card">
+                        <div class="auth-error" id="authErrorForgot" role="alert"></div>
+                        <div class="auth-success hidden" id="forgotSuccess" role="status"></div>
+                        <form id="forgotForm" novalidate>
+                            <div class="auth-form-title">Mot de passe oublié</div>
+                            <p style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:20px;line-height:1.5;text-align:center;">Entrez votre email, vous recevrez un lien pour réinitialiser votre mot de passe.</p>
+                            <div class="form-group">
+                                <label for="forgotEmail">Email</label>
+                                <input type="email" id="forgotEmail" autocomplete="email" placeholder="votre@email.fr" required>
+                            </div>
+                            <button type="submit" class="btn-primary" id="forgotBtn">Envoyer le lien</button>
                         </form>
                     </div>
                 </div>
@@ -231,7 +252,7 @@
             <div class="tab-panel active" id="panelBookings">
                 <div id="bookingsContent"></div>
                 <div class="bottom-cta">
-                    <a href="reserver.html" class="btn-cta">
+                    <a href="/" class="btn-cta">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         Prendre un RDV
                     </a>
@@ -273,13 +294,12 @@
         </div>
     </div>
 
-    <script src="../../assets/js/api-config.js"></script>
+    <script src="../assets/js/api-config.js"></script>
     <script>
     (() => {
         'use strict';
 
         const API = window.BARBERCLUB_API;
-        const SALON_ID = 'grenoble';
 
         const KEYS = {
             access: 'bc_client_access',
@@ -288,12 +308,12 @@
         };
 
         const BARBER_PHOTOS = {
-            'lucas': '../../assets/images/barbers/lucas.png',
-            'julien': '../../assets/images/barbers/julien.jpg',
-            'tom': '../../assets/images/barbers/tom.png',
-            'alan': '../../assets/images/barbers/alan.png',
-            'nathan': '../../assets/images/barbers/nathan.png',
-            'clement': '../../assets/images/barbers/clement.png',
+            'lucas': '../assets/images/barbers/lucas.png',
+            'julien': '../assets/images/barbers/julien.jpg',
+            'tom': '../assets/images/barbers/tom.png',
+            'alan': '../assets/images/barbers/alan.png',
+            'nathan': '../assets/images/barbers/nathan.png',
+            'clement': '../assets/images/barbers/clement.png',
         };
 
         function getBarberPhoto(name) {
@@ -509,7 +529,7 @@
         /* ---- Bookings ---- */
         async function loadBookings() {
             try {
-                var res = await authFetch(API + '/client/bookings?salon_id=' + SALON_ID);
+                var res = await authFetch(API + '/client/bookings');
                 if (!res.ok) throw new Error('Erreur chargement RDV');
                 return await res.json();
             } catch(e) {
@@ -527,7 +547,7 @@
                 container.textContent = '';
                 var empty = document.createElement('div');
                 empty.className = 'empty-state fade-in';
-                empty.innerHTML = '<div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="empty-state-text">Aucun rendez-vous pour le moment</div><a href="reserver.html" class="empty-state-link">R\u00E9server un cr\u00E9neau</a>';
+                empty.innerHTML = '<div class="empty-state-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="empty-state-text">Aucun rendez-vous pour le moment</div><a href="/" class="empty-state-link">R\u00E9server un cr\u00E9neau</a>';
                 container.appendChild(empty);
                 return;
             }
@@ -574,7 +594,7 @@
 
             // Reschedule
             var reschedule = document.createElement('a');
-            reschedule.href = 'mon-rdv.html?id=' + b.id + '&token=' + b.cancel_token;
+            reschedule.href = '../pages/' + (b.salon_id || 'meylan') + '/mon-rdv.html?id=' + b.id + '&token=' + b.cancel_token;
             reschedule.className = 'btn-booking-action reschedule';
             reschedule.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> D\u00E9caler';
             actions.appendChild(reschedule);
@@ -585,7 +605,7 @@
             cancelBtn.disabled = !canCancel;
             if (!canCancel) { cancelBtn.style.opacity = '0.4'; cancelBtn.style.cursor = 'not-allowed'; }
             cancelBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Annuler';
-            cancelBtn.addEventListener('click', function() { openCancelDialog(b.id, b.cancel_token); });
+            cancelBtn.addEventListener('click', function() { openCancelDialog(b.id, b.cancel_token, b.salon_id); });
             actions.appendChild(cancelBtn);
 
             // Calendar
@@ -707,10 +727,10 @@
         }
 
         /* ---- Cancel dialog ---- */
-        var cancelTarget = { id: null, token: null };
+        var cancelTarget = { id: null, token: null, salon_id: null };
 
-        function openCancelDialog(id, token) {
-            cancelTarget = { id: id, token: token };
+        function openCancelDialog(id, token, salonId) {
+            cancelTarget = { id: id, token: token, salon_id: salonId };
             $('#cancelDialog').classList.add('active');
         }
         function closeCancelDialog() {
@@ -726,7 +746,7 @@
                 var res = await fetch(API + '/bookings/' + cancelTarget.id + '/cancel', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: cancelTarget.token, salon_id: SALON_ID }),
+                    body: JSON.stringify({ token: cancelTarget.token, salon_id: cancelTarget.salon_id }),
                 });
                 if (!res.ok) {
                     var data = await res.json().catch(function() { return {}; });
@@ -954,7 +974,22 @@
             $('#authChoice').classList.remove('hidden');
             $('#loginSection').classList.add('hidden');
             $('#registerSection').classList.add('hidden');
+            $('#forgotSection').classList.add('hidden');
             hideError();
+        }
+
+        function showForgotForm() {
+            $('#authChoice').classList.add('hidden');
+            $('#loginSection').classList.add('hidden');
+            $('#registerSection').classList.add('hidden');
+            $('#forgotSection').classList.remove('hidden');
+            var forgotSuccess = $('#forgotSuccess');
+            if (forgotSuccess) { forgotSuccess.classList.add('hidden'); forgotSuccess.textContent = ''; }
+            var forgotForm = $('#forgotForm');
+            if (forgotForm) forgotForm.style.display = '';
+            hideError();
+            var emailInput = $('#forgotEmail');
+            if (emailInput) setTimeout(function() { emailInput.focus(); }, 300);
         }
 
         function showLoginForm() {
@@ -976,17 +1011,19 @@
         }
 
         function showError(msg) {
-            var el = $('#authError');
-            if (!el) el = $('#authErrorReg');
-            // Show in whichever form is visible
             var loginVisible = !$('#loginSection').classList.contains('hidden');
-            el = loginVisible ? $('#authError') : $('#authErrorReg');
+            var forgotVisible = !$('#forgotSection').classList.contains('hidden');
+            var el;
+            if (forgotVisible) el = $('#authErrorForgot');
+            else if (loginVisible) el = $('#authError');
+            else el = $('#authErrorReg');
             if (el) { el.textContent = msg; el.classList.add('visible'); }
         }
         function hideError() {
-            var e1 = $('#authError'); var e2 = $('#authErrorReg');
+            var e1 = $('#authError'); var e2 = $('#authErrorReg'); var e3 = $('#authErrorForgot');
             if (e1) { e1.textContent = ''; e1.classList.remove('visible'); }
             if (e2) { e2.textContent = ''; e2.classList.remove('visible'); }
+            if (e3) { e3.textContent = ''; e3.classList.remove('visible'); }
         }
 
         /* ---- Events ---- */
@@ -994,8 +1031,42 @@
             // Auth navigation
             $('#showLoginBtn').addEventListener('click', showLoginForm);
             $('#showRegisterBtn').addEventListener('click', showRegisterForm);
+            $('#showForgotBtn').addEventListener('click', showForgotForm);
             $('#loginBackBtn').addEventListener('click', showAuthChoice);
             $('#registerBackBtn').addEventListener('click', showAuthChoice);
+            $('#forgotBackBtn').addEventListener('click', showLoginForm);
+
+            // Forgot password
+            $('#forgotForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                hideError();
+                var email = $('#forgotEmail').value.trim();
+                if (!email) { showError('Entrez votre email'); return; }
+                var btn = $('#forgotBtn');
+                btn.disabled = true; btn.textContent = 'Envoi...';
+                try {
+                    var res = await fetch(API + '/auth/forgot-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email }),
+                    });
+                    var data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Erreur');
+                    // Always show success (anti-enumeration)
+                    var successEl = $('#forgotSuccess');
+                    successEl.textContent = 'Si un compte existe avec cet email, vous recevrez un lien de r\u00E9initialisation.';
+                    successEl.classList.remove('hidden');
+                    $('#forgotForm').style.display = 'none';
+                } catch(e) {
+                    // Still show success for anti-enumeration
+                    var successEl = $('#forgotSuccess');
+                    successEl.textContent = 'Si un compte existe avec cet email, vous recevrez un lien de r\u00E9initialisation.';
+                    successEl.classList.remove('hidden');
+                    $('#forgotForm').style.display = 'none';
+                } finally {
+                    btn.disabled = false; btn.textContent = 'Envoyer le lien';
+                }
+            });
 
             // Login
             $('#loginForm').addEventListener('submit', async function(e) {

@@ -1030,14 +1030,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       // Check if user has a salon preference from previous booking/login
       const user = (() => { try { return JSON.parse(localStorage.getItem('bc_client_user')); } catch(e) { return null; } })();
       const salonPref = (user && user.salon_id) || localStorage.getItem('bc_client_salon') || null;
-      if (salonPref === 'grenoble') {
-        window.location.href = 'pages/grenoble/mon-compte.html';
-      } else if (salonPref === 'meylan') {
-        window.location.href = 'pages/meylan/mon-compte.html';
-      } else {
-        // No preference — default to Meylan (primary salon)
-        window.location.href = 'pages/meylan/mon-compte.html';
-      }
+      window.location.href = '/mon-compte';
     });
   }
 })();

@@ -43,6 +43,15 @@
         <div class="auth-bg-overlay"></div>
     </div>
 
+    <!-- ========== BACKGROUND (account — ambient) ========== -->
+    <div class="account-bg hidden" id="accountBg">
+        <div class="account-bg-img" style="background-image:url('../../assets/images/salons/meylan/salon-meylan-interieur.jpg')"></div>
+        <div class="account-bg-overlay"></div>
+    </div>
+
+    <!-- ========== PARTICLES ========== -->
+    <div class="particles" id="particles" aria-hidden="true"></div>
+
     <!-- ========== MAIN ========== -->
     <div class="container" id="main-content">
 
@@ -75,6 +84,7 @@
                         <svg class="auth-option-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
                     </button>
 
+                    <div class="auth-separator-glow"></div>
                     <div class="auth-signup-cta">
                         <div class="auth-signup-divider">
                             <div class="auth-signup-divider-line"></div>
@@ -183,6 +193,33 @@
 
         <!-- STATE: Account (logged in) -->
         <div class="state" id="stateAccount">
+            <!-- Welcome Hero -->
+            <div class="welcome fade-in" id="welcomeSection">
+                <div class="welcome-avatar-wrap">
+                    <div class="welcome-avatar" id="welcomeAvatar"></div>
+                    <div class="welcome-avatar-ring"></div>
+                    <div class="welcome-avatar-ring-2"></div>
+                </div>
+                <h1 class="welcome-name" id="welcomeName"></h1>
+                <p class="welcome-since" id="welcomeSince"></p>
+                <div class="welcome-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="statVisits">&mdash;</div>
+                        <div class="stat-label">Visites</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statMember">&mdash;</div>
+                        <div class="stat-label">Membre</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="statUpcoming">&mdash;</div>
+                        <div class="stat-label">&Agrave; venir</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tabs -->
             <div class="tabs">
                 <button class="tab-btn active" data-tab="bookings">Mes RDV</button>
@@ -250,6 +287,21 @@
             user: 'bc_client_user',
         };
 
+        const BARBER_PHOTOS = {
+            'lucas': '../../assets/images/barbers/lucas.png',
+            'julien': '../../assets/images/barbers/julien.jpg',
+            'tom': '../../assets/images/barbers/tom.png',
+            'alan': '../../assets/images/barbers/alan.png',
+            'nathan': '../../assets/images/barbers/nathan.png',
+            'clement': '../../assets/images/barbers/clement.png',
+        };
+
+        function getBarberPhoto(name) {
+            if (!name) return null;
+            var key = name.toLowerCase().split(' ')[0];
+            return BARBER_PHOTOS[key] || null;
+        }
+
         const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
         const DAYS_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
         const STATUS_LABELS = { confirmed: 'Confirmé', completed: 'Terminé', cancelled: 'Annulé', no_show: 'Absent' };
@@ -261,11 +313,16 @@
         function show(id) {
             $$('.state').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            // Show/hide salon background photo
-            var bg = document.getElementById('authBg');
-            if (bg) {
-                if (id === 'stateAuth' || id === 'stateLoading') bg.classList.remove('hidden');
-                else bg.classList.add('hidden');
+            // Show/hide backgrounds
+            var authBg = document.getElementById('authBg');
+            var accountBg = document.getElementById('accountBg');
+            if (authBg) {
+                if (id === 'stateAuth' || id === 'stateLoading') authBg.classList.remove('hidden');
+                else authBg.classList.add('hidden');
+            }
+            if (accountBg) {
+                if (id === 'stateAccount') accountBg.classList.remove('hidden');
+                else accountBg.classList.add('hidden');
             }
         }
 
@@ -547,11 +604,21 @@
             var card = document.createElement('div');
             card.className = 'booking-card fade-in' + (isPast ? ' past' : '');
 
-            // Avatar (barber initial)
-            var avatar = document.createElement('div');
-            avatar.className = 'booking-card-avatar';
-            avatar.textContent = (b.barber_name || '?')[0].toUpperCase();
-            card.appendChild(avatar);
+            // Avatar (barber photo or initial)
+            var photo = getBarberPhoto(b.barber_name);
+            if (photo) {
+                var avatarImg = document.createElement('img');
+                avatarImg.className = 'booking-card-avatar-img';
+                avatarImg.src = photo;
+                avatarImg.alt = b.barber_name || '';
+                avatarImg.loading = 'lazy';
+                card.appendChild(avatarImg);
+            } else {
+                var avatar = document.createElement('div');
+                avatar.className = 'booking-card-avatar';
+                avatar.textContent = (b.barber_name || '?')[0].toUpperCase();
+                card.appendChild(avatar);
+            }
 
             // Info block
             var info = document.createElement('div');
@@ -825,11 +892,59 @@
             else bar.className = 'password-strength-bar strong';
         }
 
+        /* ---- Welcome hero ---- */
+        function renderWelcome(profile, bookings) {
+            if (!profile) return;
+            var firstName = profile.first_name || '';
+            var initials = getInitials((profile.first_name || '') + ' ' + (profile.last_name || ''));
+
+            var avatarEl = $('#welcomeAvatar');
+            var nameEl = $('#welcomeName');
+            var sinceEl = $('#welcomeSince');
+
+            if (avatarEl) avatarEl.textContent = initials;
+
+            if (nameEl) nameEl.textContent = 'Bonjour, ' + firstName + '.';
+
+            // Member since
+            if (profile.created_at && sinceEl) {
+                var d = new Date(profile.created_at);
+                var mois = ['janvier','f\u00E9vrier','mars','avril','mai','juin','juillet','ao\u00FBt','septembre','octobre','novembre','d\u00E9cembre'];
+                sinceEl.textContent = 'Membre depuis ' + mois[d.getMonth()] + ' ' + d.getFullYear();
+            }
+
+            // Stats
+            var upcoming = (bookings.upcoming || []);
+            var past = (bookings.past || []);
+            var completed = past.filter(function(b) { return b.status === 'completed'; });
+
+            var statVisits = $('#statVisits');
+            var statMember = $('#statMember');
+            var statUpcoming = $('#statUpcoming');
+
+            if (statVisits) statVisits.textContent = completed.length || '0';
+            if (statUpcoming) statUpcoming.textContent = upcoming.length || '0';
+
+            // Member duration
+            if (profile.created_at && statMember) {
+                var now = new Date();
+                var created = new Date(profile.created_at);
+                var diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+                if (diffDays < 30) statMember.textContent = diffDays + 'j';
+                else if (diffDays < 365) statMember.textContent = Math.floor(diffDays / 30) + ' mois';
+                else {
+                    var years = Math.floor(diffDays / 365);
+                    statMember.textContent = years + ' an' + (years > 1 ? 's' : '');
+                }
+            }
+        }
+
         /* ---- Load all account data ---- */
         async function loadAccountData() {
             var user = getUser();
             updateHeader(user);
             var results = await Promise.all([loadBookings(), loadProfile()]);
+            renderWelcome(results[1], results[0]);
             renderBookings(results[0]);
             renderProfile(results[1]);
         }
@@ -995,9 +1110,28 @@
             });
         }
 
+        /* ---- Particles ---- */
+        function spawnParticles() {
+            var container = document.getElementById('particles');
+            if (!container) return;
+            var count = window.innerWidth < 768 ? 12 : 18;
+            for (var i = 0; i < count; i++) {
+                var p = document.createElement('div');
+                p.className = 'particle';
+                var size = 1 + Math.random() * 2;
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDuration = (8 + Math.random() * 14) + 's';
+                p.style.animationDelay = (Math.random() * 10) + 's';
+                container.appendChild(p);
+            }
+        }
+
         /* ---- Init ---- */
         setupEvents();
         setupCursor();
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) spawnParticles();
 
         (async function() {
             show('stateLoading');

@@ -40,3 +40,4 @@ pages/grenoble/reserver-timify.html
 
 # Claude Code local settings
 .claude/
+.gstack/
