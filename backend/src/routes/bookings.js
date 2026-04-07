@@ -100,6 +100,7 @@ router.get('/barbers', publicLimiter,
       off_dates: overrideOffDates[b.id] || undefined,
       guest_dates: guestDatesMap[b.id] || undefined,
     }));
+    res.set('Cache-Control', 'no-store');
     res.json(barbers);
   } catch (error) {
     next(error);
@@ -158,6 +159,7 @@ router.get('/services', publicLimiter,
     }
 
     const result = await db.query(queryText, params);
+    res.set('Cache-Control', 'no-store');
     res.json(result.rows);
   } catch (error) {
     next(error);
@@ -190,6 +192,7 @@ router.get('/availability/month',
         service_id, year, month, barber_id || 'any', salonId, includeAlternatives
       );
 
+      res.set('Cache-Control', 'no-store');
       res.json(summary);
     } catch (error) {
       next(error);
@@ -238,6 +241,7 @@ router.get('/availability',
         { salonId }
       );
 
+      res.set('Cache-Control', 'no-store');
       res.json(slots);
     } catch (error) {
       next(error);
