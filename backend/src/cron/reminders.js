@@ -24,11 +24,17 @@ async function queueReminders() {
          AND (b.date::text || ' ' || b.start_time::text)::timestamp
              BETWEEN (NOW() AT TIME ZONE 'Europe/Paris')
                  AND (NOW() AT TIME ZONE 'Europe/Paris') + INTERVAL '24 hours'
-         AND NOT EXISTS (
-           SELECT 1 FROM notification_queue nq
-           WHERE nq.booking_id = b.id
-             AND nq.type IN ('reminder_sms', 'reminder_email')
-             AND nq.status IN ('pending', 'processing', 'sent')
+         AND (
+           NOT EXISTS (
+             SELECT 1 FROM notification_queue nq
+             WHERE nq.booking_id = b.id AND nq.type = 'reminder_sms'
+               AND nq.status IN ('pending', 'processing', 'sent')
+           )
+           OR NOT EXISTS (
+             SELECT 1 FROM notification_queue nq
+             WHERE nq.booking_id = b.id AND nq.type = 'reminder_email'
+               AND nq.status IN ('pending', 'processing', 'sent')
+           )
          )`
     );
 
@@ -45,16 +51,18 @@ async function queueReminders() {
       const dateFR = formatDateFR(typeof booking.date === 'string' ? booking.date.slice(0, 10) : booking.date);
 
       try {
+        // SMS for French phones
         if (booking.phone && isFrenchPhone(booking.phone)) {
-          // French number → SMS
           const message = toGSM(`BarberClub - Rappel\nRDV le ${dateFR} a ${timeFormatted}\n${salon.address}.\nA bientot!`);
           await queueNotification(booking.id, 'reminder_sms', {
             phone: booking.phone,
             message,
             salonId,
           });
-        } else if (booking.email) {
-          // International number → email reminder
+        }
+
+        // Email as backup (always, if email exists)
+        if (booking.email) {
           await queueNotification(booking.id, 'reminder_email', {
             email: booking.email,
             salonId,

@@ -32,6 +32,18 @@ const {
 async function queueNotification(bookingId, type, opts = {}) {
   const { phone, email, message, salonId, recipientName, metadata } = opts;
   const channel = type.endsWith('_sms') ? 'sms' : 'email';
+
+  // Prevent duplicate queue entries for same booking + type
+  if (bookingId) {
+    const existing = await db.query(
+      `SELECT 1 FROM notification_queue
+       WHERE booking_id = $1 AND type = $2 AND status IN ('pending', 'processing', 'sent')
+       LIMIT 1`,
+      [bookingId, type]
+    );
+    if (existing.rows.length > 0) return;
+  }
+
   await db.query(
     `INSERT INTO notification_queue
        (booking_id, type, status, channel, phone, email, message, salon_id, recipient_name, metadata, next_retry_at)
