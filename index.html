@@ -583,6 +583,103 @@ html, body {
 }
 
 /* ═══════════════════════════════════════
+   SALON TEASER (Voiron — coming soon)
+   ═══════════════════════════════════════ */
+.separator-secondary {
+  position: relative; z-index: 50;
+  height: 2px;
+}
+.separator-secondary .separator-line {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.04);
+  opacity: 0; transform: scaleX(0); transform-origin: center;
+  transition: opacity 0.8s ease 1s, transform 1s cubic-bezier(0.16,1,0.3,1) 1s;
+}
+.landing.visible .separator-secondary .separator-line { opacity: 1; transform: scaleX(1); }
+.separator-secondary .separator-line::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.3) 50%, transparent 90%);
+  box-shadow: 0 0 8px rgba(255,255,255,0.15);
+}
+.separator-secondary .separator-glow {
+  position: absolute;
+  top: -15px; left: 15%; right: 15%; height: 32px;
+  background: radial-gradient(ellipse 80% 50% at 50% 50%, rgba(255,255,255,0.03), transparent 70%);
+  animation: sepPulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.salon-teaser {
+  position: relative;
+  min-height: 12vh; min-height: 12dvh;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.salon-teaser .teaser-bg {
+  position: absolute; top: -20px; left: -20px; right: -20px; bottom: -20px;
+  background-image: url('assets/images/salons/Voiron/salon-voiron-facade.webp');
+  background-size: cover; background-position: center 30%;
+  filter: brightness(0.3) saturate(0.5);
+  will-change: transform;
+  animation: kenBurns3 30s ease-in-out infinite alternate;
+}
+@keyframes kenBurns3 {
+  0%   { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.06) translate(-0.5%, -0.3%); }
+}
+.salon-teaser .teaser-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 100%);
+  pointer-events: none; z-index: 2;
+}
+.salon-teaser .teaser-content {
+  position: relative; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  opacity: 0;
+  transition: opacity 0.8s ease 1.2s;
+}
+.landing.visible .salon-teaser .teaser-content { opacity: 1; }
+.teaser-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px; font-weight: 800;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+}
+.teaser-sub {
+  font-size: 7px;
+  color: rgba(255,255,255,0.12);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 768px) {
+  .separator-secondary {
+    width: 2px; height: auto; flex-shrink: 0;
+    align-self: stretch;
+  }
+  .separator-secondary .separator-line {
+    transform: scaleY(0); transform-origin: center;
+  }
+  .landing.visible .separator-secondary .separator-line { transform: scaleY(1); }
+  .separator-secondary .separator-line::before {
+    background: linear-gradient(180deg, transparent 10%, rgba(255,255,255,0.3) 50%, transparent 90%);
+    box-shadow: 0 0 8px rgba(255,255,255,0.15);
+  }
+  .separator-secondary .separator-glow {
+    top: 15%; bottom: 15%; left: -18px; right: auto;
+    width: 38px; height: auto;
+    background: radial-gradient(ellipse 50% 80% at 50% 50%, rgba(255,255,255,0.02), transparent 70%);
+  }
+  .salon-teaser {
+    flex: none; width: 10%;
+    min-height: 100vh; min-height: 100dvh;
+  }
+  .teaser-text { font-size: 11px; }
+}
+
+/* ═══════════════════════════════════════
    MOBILE
    ═══════════════════════════════════════ */
 @media (max-width: 767px) {
@@ -598,9 +695,11 @@ html, body {
   *, *::before, *::after {
     animation-duration: 0.01ms !important; animation-delay: 0s !important; transition-duration: 0.01ms !important;
   }
-  .salon-bg { animation: none !important; }
+  .salon-bg, .teaser-bg { animation: none !important; }
   .salon-title .letter, .salon-location, .salon-cta, .salon-content, .salon-address { opacity: 1; transform: none; }
+  .teaser-content { opacity: 1 !important; }
   .separator-line { opacity: 1; transform: none; }
+  .separator-secondary .separator-line { opacity: 1; transform: none; }
   .cursor-dot, .cursor-ring { display: none; }
   body { cursor: auto; }
   .logo-wrap { opacity: 1; transform: none; }
@@ -620,6 +719,8 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
    ═══════════════════════════════════════ */
 @media (prefers-color-scheme: light) {
   .salon-bg { filter: brightness(1.25) contrast(1.05); }
+  /* Teaser stays dark in light mode — intentional mystery effect */
+  .salon-teaser .teaser-bg { filter: brightness(0.3) saturate(0.5); }
   .salon-overlay { background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.85) 100%) !important; }
   .salon-name { text-shadow: 0 2px 12px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.3); }
   .salon-address, .salon-location { text-shadow: 0 1px 8px rgba(0,0,0,0.6); }
@@ -698,6 +799,22 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
         </span>
       </div>
     </a>
+
+    <!-- Séparateur secondaire (subtil) -->
+    <div class="separator-secondary" aria-hidden="true">
+      <div class="separator-line"></div>
+      <div class="separator-glow"></div>
+    </div>
+
+    <!-- Voiron teaser — coming soon -->
+    <div class="salon-teaser" aria-label="Nouveau salon bientôt">
+      <div class="teaser-bg"></div>
+      <div class="teaser-overlay"></div>
+      <div class="teaser-content">
+        <span class="teaser-text">Bientôt...</span>
+        <span class="teaser-sub">nouveau salon</span>
+      </div>
+    </div>
 
   </main>
 </div>
