@@ -36,9 +36,17 @@ router.get('/',
         offset = 0,
       } = req.query;
 
-      let whereConditions = ['c.deleted_at IS NULL', 'EXISTS (SELECT 1 FROM client_salons cs WHERE cs.client_id = c.id AND cs.salon_id = $1)'];
+      // Cross-salon mode: when filtering by has_account, show ALL accounts regardless of salon
+      const crossSalon = req.query.has_account === 'true';
+
+      let whereConditions = ['c.deleted_at IS NULL'];
       let params = [salonId];
       let paramIndex = 2;
+
+      if (!crossSalon) {
+        // Normal mode: only clients linked to this salon
+        whereConditions.push('EXISTS (SELECT 1 FROM client_salons cs WHERE cs.client_id = c.id AND cs.salon_id = $1)');
+      }
 
       // Search by name, phone, or email
       if (search) {
@@ -84,6 +92,11 @@ router.get('/',
       const sortCol = sortMap[sort] || 'last_visit';
       const sortOrder = order === 'asc' ? 'ASC' : 'DESC';
 
+      // Cross-salon: join bookings from ALL salons; normal: only this salon
+      const bookingJoin = crossSalon
+        ? 'LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL'
+        : 'LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $1';
+
       const result = await db.query(
         `SELECT c.id, c.first_name, c.last_name, c.phone, c.email, c.has_account,
                 c.notes, c.created_at,
@@ -91,7 +104,7 @@ router.get('/',
                 COALESCE(SUM(b.price) FILTER (WHERE b.status = 'completed'), 0) as total_spent,
                 MAX(b.date) FILTER (WHERE b.status IN ('completed', 'confirmed')) as last_visit
          FROM clients c
-         LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $1
+         ${bookingJoin}
          WHERE ${whereConditions.join(' AND ')}
          GROUP BY c.id
          ORDER BY ${sortCol} ${sortOrder} NULLS LAST
@@ -103,7 +116,7 @@ router.get('/',
       const countResult = await db.query(
         `SELECT COUNT(DISTINCT c.id) as total
          FROM clients c
-         LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $1
+         ${bookingJoin}
          WHERE ${whereConditions.join(' AND ')}`,
         params
       );
