@@ -52,7 +52,17 @@ router.put('/profile',
 
       if (first_name) { fields.push(`first_name = $${paramIndex++}`); values.push(first_name); }
       if (last_name) { fields.push(`last_name = $${paramIndex++}`); values.push(last_name); }
-      if (email) { fields.push(`email = $${paramIndex++}`); values.push(email); }
+      if (email) {
+        // Check email uniqueness before updating
+        const emailCheck = await db.query(
+          'SELECT id FROM clients WHERE email = $1 AND id != $2 AND has_account = true AND deleted_at IS NULL',
+          [email, req.user.id]
+        );
+        if (emailCheck.rows.length > 0) {
+          throw ApiError.conflict('Cet email est déjà utilisé par un autre compte');
+        }
+        fields.push(`email = $${paramIndex++}`); values.push(email);
+      }
 
       if (fields.length === 0) {
         throw ApiError.badRequest('Aucune donnée à mettre à jour');

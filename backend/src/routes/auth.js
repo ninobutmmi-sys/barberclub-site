@@ -196,21 +196,22 @@ router.post('/register',
 
       const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-      // Check if client already exists by phone OR email (from previous bookings without account)
+      // Check if client already exists by phone AND email (same person from previous booking)
+      // Only upgrade if BOTH phone and email match the same record — prevents hijacking another client's data
       const existingCheck = await db.query(
-        'SELECT id FROM clients WHERE (phone = $1 OR email = $2) AND deleted_at IS NULL LIMIT 1',
+        'SELECT id FROM clients WHERE phone = $1 AND email = $2 AND has_account = false AND deleted_at IS NULL LIMIT 1',
         [phone, email]
       );
 
       let clientId;
       try {
         if (existingCheck.rows.length > 0) {
-          // Upgrade existing client to account
+          // Upgrade existing guest to account (phone + email confirmed same person)
           clientId = existingCheck.rows[0].id;
           await db.query(
-            `UPDATE clients SET first_name = $1, last_name = $2, email = $3, phone = $4,
-             password_hash = $5, has_account = true WHERE id = $6`,
-            [first_name, last_name, email, phone, passwordHash, clientId]
+            `UPDATE clients SET first_name = $1, last_name = $2,
+             password_hash = $3, has_account = true WHERE id = $4`,
+            [first_name, last_name, passwordHash, clientId]
           );
         } else {
           // Create new client with account
@@ -417,10 +418,15 @@ router.post('/forgot-password',
         [resetToken, expiresAt, client.id]
       );
 
-      // Build reset URL (dynamic per salon)
-      const { getSalonConfig } = config;
-      const salonCfg = getSalonConfig(salonId);
-      const resetUrl = `${config.siteUrl}${salonCfg.bookingPath}/reset-password.html?token=${resetToken}`;
+      // Build reset URL — use salon-specific page if salon_id provided, otherwise unified mon-compte
+      let resetUrl;
+      if (req.body.salon_id) {
+        const { getSalonConfig } = config;
+        const salonCfg = getSalonConfig(salonId);
+        resetUrl = `${config.siteUrl}${salonCfg.bookingPath}/reset-password.html?token=${resetToken}`;
+      } else {
+        resetUrl = `${config.siteUrl}/pages/meylan/reset-password.html?token=${resetToken}`;
+      }
 
       // Send email (async, don't block response, with single retry)
       const resetEmailData = { email: client.email, first_name: client.first_name, resetUrl };
