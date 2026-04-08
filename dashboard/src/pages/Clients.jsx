@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getClients } from '../api';
+import { getClients, getAccountStats } from '../api';
 import { exportToCSV } from '../utils/csv';
 import useMobile from '../hooks/useMobile';
 import { formatPhoneWithFlag } from '../utils/phone';
-import { useClients } from '../hooks/useApi';
+import { useClients, useAccountStats } from '../hooks/useApi';
 import { formatPrice, formatDateFR } from '../utils/format';
 
 const PAGE_SIZE = 20;
@@ -37,6 +37,8 @@ export default function Clients() {
   const clients = clientData?.clients || [];
   const total = clientData?.total || 0;
   const hasMore = clients.length < total;
+
+  const { data: accountStats } = useAccountStats({ enabled: tab === 'accounts' });
 
   function handleExportCSV() {
     if (!clients.length) return;
@@ -101,6 +103,31 @@ export default function Clients() {
             </button>
           ))}
         </div>
+
+        {tab === 'accounts' && accountStats && (
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#a78bfa' }}>{accountStats.total_accounts}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total comptes</div>
+            </div>
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#4ade80' }}>+{accountStats.new_this_month}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ce mois</div>
+            </div>
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800 }}>{accountStats.by_salon?.meylan || 0}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Meylan</div>
+            </div>
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800 }}>{accountStats.by_salon?.grenoble || 0}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Grenoble</div>
+            </div>
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', textAlign: 'center', gridColumn: isMobile ? 'span 2' : 'auto' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#fbbf24' }}>{accountStats.no_booking_yet}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sans RDV</div>
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, marginBottom: 20 }}>
           <input

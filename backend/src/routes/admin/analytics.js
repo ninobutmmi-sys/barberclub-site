@@ -1292,7 +1292,7 @@ router.get('/no-shows', async (req, res, next) => {
 router.get('/accounts', async (req, res, next) => {
   try {
     // Total accounts (global — clients are not salon-scoped)
-    const totals = await pool.query(`
+    const totals = await db.query(`
       SELECT
         COUNT(*) FILTER (WHERE has_account = true) AS total_accounts,
         COUNT(*) AS total_clients,
@@ -1302,7 +1302,7 @@ router.get('/accounts', async (req, res, next) => {
     `);
 
     // Per-salon breakdown via client_salons pivot
-    const perSalon = await pool.query(`
+    const perSalon = await db.query(`
       SELECT
         cs.salon_id,
         COUNT(DISTINCT cs.client_id) AS accounts
@@ -1314,7 +1314,7 @@ router.get('/accounts', async (req, res, next) => {
     `);
 
     // Monthly trend (last 12 months)
-    const trend = await pool.query(`
+    const trend = await db.query(`
       SELECT
         TO_CHAR(created_at, 'YYYY-MM') AS month,
         COUNT(*) AS accounts_created
@@ -1327,7 +1327,7 @@ router.get('/accounts', async (req, res, next) => {
     `);
 
     // Accounts without any booking yet
-    const noBooking = await pool.query(`
+    const noBooking = await db.query(`
       SELECT COUNT(*) AS count
       FROM clients c
       WHERE c.has_account = true
