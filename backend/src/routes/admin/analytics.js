@@ -1288,4 +1288,76 @@ router.get('/no-shows', async (req, res, next) => {
   }
 });
 
+// ─── Client Accounts (cross-salon) ───
+router.get('/accounts', async (req, res, next) => {
+  try {
+    // Total accounts (global — clients are not salon-scoped)
+    const totals = await pool.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE has_account = true) AS total_accounts,
+        COUNT(*) AS total_clients,
+        COUNT(*) FILTER (WHERE has_account = true AND created_at >= DATE_TRUNC('month', NOW() AT TIME ZONE 'Europe/Paris')) AS new_this_month
+      FROM clients
+      WHERE deleted_at IS NULL
+    `);
+
+    // Per-salon breakdown via client_salons pivot
+    const perSalon = await pool.query(`
+      SELECT
+        cs.salon_id,
+        COUNT(DISTINCT cs.client_id) AS accounts
+      FROM client_salons cs
+      JOIN clients c ON c.id = cs.client_id
+      WHERE c.has_account = true AND c.deleted_at IS NULL
+      GROUP BY cs.salon_id
+      ORDER BY cs.salon_id
+    `);
+
+    // Monthly trend (last 12 months)
+    const trend = await pool.query(`
+      SELECT
+        TO_CHAR(created_at, 'YYYY-MM') AS month,
+        COUNT(*) AS accounts_created
+      FROM clients
+      WHERE has_account = true
+        AND deleted_at IS NULL
+        AND created_at >= (NOW() AT TIME ZONE 'Europe/Paris') - INTERVAL '12 months'
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+      ORDER BY month
+    `);
+
+    // Accounts without any booking yet
+    const noBooking = await pool.query(`
+      SELECT COUNT(*) AS count
+      FROM clients c
+      WHERE c.has_account = true
+        AND c.deleted_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM bookings b WHERE b.client_id = c.id AND b.deleted_at IS NULL
+        )
+    `);
+
+    const row = totals.rows[0];
+    const salonMap = {};
+    perSalon.rows.forEach(r => { salonMap[r.salon_id] = parseInt(r.accounts); });
+
+    res.json({
+      total_accounts: parseInt(row.total_accounts),
+      total_clients: parseInt(row.total_clients),
+      new_this_month: parseInt(row.new_this_month),
+      no_booking_yet: parseInt(noBooking.rows[0].count),
+      by_salon: {
+        meylan: salonMap.meylan || 0,
+        grenoble: salonMap.grenoble || 0,
+      },
+      monthly_trend: trend.rows.map(r => ({
+        month: r.month,
+        count: parseInt(r.accounts_created),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

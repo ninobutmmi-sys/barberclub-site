@@ -288,6 +288,7 @@ export const getBarberStats = (params) => {
   return request(`/admin/analytics/barbers?${qs}`);
 };
 export const getMemberStats = () => request('/admin/analytics/members');
+export const getAccountStats = () => request('/admin/analytics/accounts');
 export const getTrends = () => request('/admin/analytics/trends');
 export const getNoShowStats = (params) => {
   const qs = params ? new URLSearchParams(params).toString() : '';

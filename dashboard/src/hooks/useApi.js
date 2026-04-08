@@ -25,6 +25,7 @@ export const keys = {
   serviceStats: (params) => ['serviceStats', params],
   barberStats: (params) => ['barberStats', params],
   memberStats: ['memberStats'],
+  accountStats: ['accountStats'],
   trends: ['trends'],
   revenueHourly: (params) => ['revenueHourly', params],
   noShowStats: (params) => ['noShowStats', params],
@@ -380,6 +381,15 @@ export function useMemberStats(options) {
   return useQuery({
     queryKey: keys.memberStats,
     queryFn: api.getMemberStats,
+    staleTime: 5 * 60_000,
+    ...options,
+  });
+}
+
+export function useAccountStats(options) {
+  return useQuery({
+    queryKey: keys.accountStats,
+    queryFn: api.getAccountStats,
     staleTime: 5 * 60_000,
     ...options,
   });

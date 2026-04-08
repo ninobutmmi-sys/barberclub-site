@@ -12,6 +12,7 @@ import {
   useInactiveClients,
   useOccupancy,
   useMemberStats,
+  useAccountStats,
   useTrends,
   useRevenueHourly,
   useNoShowStats,
@@ -874,6 +875,86 @@ function RevenueHourlyHeatmap({ data }) {
 }
 
 // ============================================
+// Accounts Section (cross-salon)
+// ============================================
+
+function AccountsSection({ stats }) {
+  if (!stats) return null;
+
+  const MONTHS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+  const trend = stats.monthly_trend || [];
+  const maxCount = Math.max(...trend.map(t => t.count), 1);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        </div>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>Comptes clients</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>Vue cross-salon</div>
+        </div>
+      </div>
+
+      {/* KPI row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px', textAlign: 'center' }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: '#a78bfa' }}>{stats.total_accounts}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total comptes</div>
+        </div>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px', textAlign: 'center' }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: '#4ade80' }}>+{stats.new_this_month}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ce mois</div>
+        </div>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 12px', textAlign: 'center' }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: '#fbbf24' }}>{stats.no_booking_yet}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sans RDV</div>
+        </div>
+      </div>
+
+      {/* Per-salon breakdown */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Meylan</div>
+            <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }}>{stats.by_salon?.meylan || 0}</div>
+          </div>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#60a5fa' }} />
+        </div>
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Grenoble</div>
+            <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }}>{stats.by_salon?.grenoble || 0}</div>
+          </div>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f472b6' }} />
+        </div>
+      </div>
+
+      {/* Monthly trend bars */}
+      {trend.length > 0 && (
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Inscriptions mensuelles</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 80 }}>
+            {trend.map((t, i) => {
+              const h = Math.max((t.count / maxCount) * 100, 4);
+              const monthIdx = parseInt(t.month.split('-')[1]) - 1;
+              return (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-secondary)' }}>{t.count}</div>
+                  <div style={{ width: '100%', height: `${h}%`, background: 'linear-gradient(180deg, #a78bfa, #7c3aed)', borderRadius: 4, minHeight: 3 }} />
+                  <div style={{ fontSize: 8, color: 'var(--text-muted)' }}>{MONTHS_FR[monthIdx]}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // Members Section
 // ============================================
 
@@ -1559,6 +1640,7 @@ export default function Analytics() {
   const occupancyQuery = useOccupancy(monthParams);
   const inactiveQuery = useInactiveClients();
   const memberStatsQuery = useMemberStats();
+  const accountStatsQuery = useAccountStats();
   const trendsQuery = useTrends({ enabled: isCurrentMonth });
   const revenueHourlyQuery = useRevenueHourly(monthParams);
   const noShowQuery = useNoShowStats(monthParams);
@@ -1576,6 +1658,7 @@ export default function Analytics() {
   const occupancy = occupancyQuery.data || null;
   const inactiveClients = inactiveQuery.data?.clients || [];
   const memberStats = memberStatsQuery.data || null;
+  const accountStats = accountStatsQuery.data || null;
   const trends = trendsQuery.data || null;
   const revenueHourly = revenueHourlyQuery.data || null;
   const noShowStats = noShowQuery.data || null;
@@ -1592,6 +1675,7 @@ export default function Analytics() {
     occupancyQuery.refetch();
     inactiveQuery.refetch();
     memberStatsQuery.refetch();
+    accountStatsQuery.refetch();
     trendsQuery.refetch();
     revenueHourlyQuery.refetch();
     noShowQuery.refetch();
@@ -2009,9 +2093,16 @@ export default function Analytics() {
               subtitle="Membres, conversion et clients inactifs"
             />
 
+            {/* Comptes clients (cross-salon) */}
+            {accountStats && (
+              <div className="a-stagger a-d9" style={{ marginBottom: 20 }}>
+                <AccountsSection stats={accountStats} />
+              </div>
+            )}
+
             {/* Membres */}
             {memberStats && (
-              <div className="a-stagger a-d9" style={{ marginBottom: 20 }}>
+              <div className="a-stagger a-d10" style={{ marginBottom: 20 }}>
                 <MembersSection stats={memberStats} />
               </div>
             )}

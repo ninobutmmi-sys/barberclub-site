@@ -10,6 +10,10 @@
 /package.json      /pages/404.html    404
 /package-lock.json /pages/404.html    404
 
+# Mon Compte — SPA rewrite (acces direct + refresh navigateur)
+/mon-compte              /mon-compte/index.html   200
+/mon-compte/*            /mon-compte/index.html   200
+
 # Redirections 301 — anciennes URLs Framer → nouveau site
 # Preserve SEO juice lors de la migration
 
