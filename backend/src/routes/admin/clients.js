@@ -40,11 +40,13 @@ router.get('/',
       const crossSalon = req.query.has_account === 'true';
 
       let whereConditions = ['c.deleted_at IS NULL'];
-      let params = [salonId];
-      let paramIndex = 2;
+      let params = [];
+      let paramIndex = 1;
 
       if (!crossSalon) {
         // Normal mode: only clients linked to this salon
+        params.push(salonId);
+        paramIndex = 2;
         whereConditions.push('EXISTS (SELECT 1 FROM client_salons cs WHERE cs.client_id = c.id AND cs.salon_id = $1)');
       }
 
