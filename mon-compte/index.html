@@ -1092,7 +1092,7 @@
                 hideError();
                 var firstName = $('#regFirstName').value.trim();
                 var lastName = $('#regLastName').value.trim();
-                var phone = $('#regPhone').value.trim();
+                var phone = $('#regPhone').value.trim().replace(/\s+/g, '');
                 var email = $('#regEmail').value.trim();
                 var password = $('#regPassword').value;
                 if (!firstName || !lastName || !phone || !email || !password) {
