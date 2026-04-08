@@ -59,7 +59,7 @@ export default function Clients() {
     <>
       {error && (
         <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
-          <span>{error}</span>
+          <span>{error?.message || String(error)}</span>
           <button onClick={() => window.location.reload()} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
         </div>
       )}
