@@ -214,6 +214,10 @@ export const deleteService = (id) =>
 export const getBarbers = () => request('/admin/barbers');
 export const updateBarber = (id, body) =>
   request(`/admin/barbers/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+export const createBarber = (body) =>
+  request('/admin/barbers', { method: 'POST', body: JSON.stringify(body) });
+export const deleteBarber = (id) =>
+  request(`/admin/barbers/${id}`, { method: 'DELETE' });
 export const getBarberSchedule = (id) =>
   request(`/admin/barbers/${id}/schedule`);
 export const updateBarberSchedule = (id, schedules) =>

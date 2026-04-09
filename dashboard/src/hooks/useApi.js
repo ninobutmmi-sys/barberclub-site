@@ -78,7 +78,32 @@ export function useUpdateBarber() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }) => api.updateBarber(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.barbers }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.barbers });
+      qc.invalidateQueries({ queryKey: keys.services });
+    },
+  });
+}
+
+export function useCreateBarber() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => api.createBarber(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.barbers });
+      qc.invalidateQueries({ queryKey: keys.services });
+    },
+  });
+}
+
+export function useDeleteBarber() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.deleteBarber(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.barbers });
+      qc.invalidateQueries({ queryKey: keys.services });
+    },
   });
 }
 
