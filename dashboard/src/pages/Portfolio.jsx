@@ -9,7 +9,8 @@ function formatDate(iso) {
 
 export default function Portfolio() {
   const isMobile = useMobile();
-  const { data: barbers = [] } = useBarbers();
+  const { data: allBarbers = [] } = useBarbers();
+  const barbers = allBarbers.filter(b => b.is_active);
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null);

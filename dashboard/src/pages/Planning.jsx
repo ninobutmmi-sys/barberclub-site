@@ -112,7 +112,7 @@ export default function Planning() {
   }, [bookingsQuery.data]);
   const barbers = useMemo(() => {
     const b = barbersQuery.data;
-    return Array.isArray(b) ? b : [];
+    return Array.isArray(b) ? b.filter(x => x.is_active) : [];
   }, [barbersQuery.data]);
   const services = useMemo(() => {
     const s = servicesQuery.data;

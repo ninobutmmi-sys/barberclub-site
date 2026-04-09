@@ -69,7 +69,8 @@ export default function Boutique() {
   const isMobile = useMobile();
   const { data: products = [], isLoading, error, refetch } = useProducts();
   const { data: stats } = useProductStats();
-  const { data: barbers = [] } = useBarbers();
+  const { data: allBarbers = [] } = useBarbers();
+  const barbers = allBarbers.filter(b => b.is_active);
   const [search, setSearch] = useState('');
   const [productModal, setProductModal] = useState(null);
   const [saleModal, setSaleModal] = useState(null);

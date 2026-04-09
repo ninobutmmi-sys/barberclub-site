@@ -7,7 +7,8 @@ import { COLOR_PALETTE } from '../utils/constants';
 export default function Services() {
   const isMobile = useMobile();
   const { data: services = [], isLoading: loading, error, refetch } = useServices();
-  const { data: barbers = [] } = useBarbers();
+  const { data: allBarbers = [] } = useBarbers();
+  const barbers = allBarbers.filter(b => b.is_active);
   const [modal, setModal] = useState(null);
   const deleteMutation = useDeleteService();
 

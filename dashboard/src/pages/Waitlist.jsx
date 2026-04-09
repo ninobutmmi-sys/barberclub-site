@@ -47,7 +47,7 @@ export default function Waitlist() {
 
   const waitlist = waitlistQuery.data || [];
   const waitlistCount = waitlistCountQuery.data?.count ?? 0;
-  const barbers = barbersQuery.data || [];
+  const barbers = (barbersQuery.data || []).filter(b => b.is_active);
   const services = servicesQuery.data || [];
 
   const deleteMutation = useDeleteWaitlistEntry();
