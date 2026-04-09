@@ -539,6 +539,7 @@ function EditBarberModal({ barber, onClose }) {
   const [role, setRole] = useState(barber.role || '');
   const [photoUrl, setPhotoUrl] = useState(barber.photo_url || '');
   const [isActive, setIsActive] = useState(barber.is_active);
+  const [showDelete, setShowDelete] = useState(false);
   const saving = mutation.isPending;
 
   const handleSubmit = async (e) => {
@@ -619,6 +620,27 @@ function EditBarberModal({ barber, onClose }) {
                 {isActive ? 'Actif' : 'Inactif'}
               </span>
             </div>
+
+            {/* Danger Zone */}
+            <div className="danger-zone">
+              <div className="danger-zone-label">Zone danger</div>
+              <div className="danger-zone-card">
+                <div style={{ flex: 1 }}>
+                  <div className="danger-title">Supprimer ce barber</div>
+                  <div className="danger-desc">
+                    Les futurs RDV seront annules et les clients notifies. L'historique sera conserve.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  style={{ background: '#dc2626', color: '#fff', border: 'none', flexShrink: 0 }}
+                  onClick={() => setShowDelete(true)}
+                >
+                  Supprimer
+                </button>
+              </div>
+            </div>
           </div>
           <div className="modal-footer">
             <button
@@ -637,6 +659,78 @@ function EditBarberModal({ barber, onClose }) {
             </button>
           </div>
         </form>
+      </div>
+      {showDelete && (
+        <DeleteBarberDialog
+          barber={barber}
+          onClose={() => setShowDelete(false)}
+          onDeleted={() => { setShowDelete(false); onClose(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// Delete Barber Confirmation Dialog
+// ============================================
+
+function DeleteBarberDialog({ barber, onClose, onDeleted }) {
+  const mutation = useDeleteBarber();
+  const [confirmName, setConfirmName] = useState('');
+  const nameMatch = confirmName.trim().toLowerCase() === barber.name.toLowerCase();
+
+  const handleDelete = async () => {
+    try {
+      await mutation.mutateAsync(barber.id);
+      onDeleted();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  return (
+    <div className="delete-dialog-overlay" onClick={onClose}>
+      <div className="delete-dialog" onClick={e => e.stopPropagation()}>
+        <div className="delete-dialog-header">
+          <div className="delete-dialog-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#dc2626" strokeWidth="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#fca5a5' }}>Supprimer {barber.name} ?</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Cette action est irreversible</div>
+          </div>
+        </div>
+        <div className="delete-dialog-body">
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>
+            Tous les futurs RDV de ce barber seront annules et les clients notifies. L'historique sera conserve.
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 8px' }}>
+            Ecrivez <strong style={{ color: '#fca5a5' }}>{barber.name}</strong> pour confirmer :
+          </p>
+          <input
+            className="input confirm-input"
+            value={confirmName}
+            onChange={e => setConfirmName(e.target.value)}
+            placeholder={barber.name}
+            autoFocus
+            style={{ width: '100%', marginBottom: 16 }}
+          />
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={onClose}>Annuler</button>
+            <button
+              className="btn btn-sm"
+              style={{ flex: 1, background: nameMatch ? '#dc2626' : '#333', color: nameMatch ? '#fff' : '#555', border: 'none', cursor: nameMatch ? 'pointer' : 'not-allowed' }}
+              disabled={!nameMatch || mutation.isPending}
+              onClick={handleDelete}
+            >
+              {mutation.isPending ? 'Suppression...' : 'Supprimer'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
