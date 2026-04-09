@@ -1,8 +1,14 @@
+const express = require('express');
 const { Router } = require('express');
 const { body, param, query } = require('express-validator');
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
+const { queueNotification } = require('../../services/notification');
+const logger = require('../../utils/logger');
 const db = require('../../config/database');
+const { BCRYPT_ROUNDS } = require('../../constants');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -16,7 +22,7 @@ router.get('/', async (req, res, next) => {
     // Resident barbers
     const result = await db.query(
       `SELECT id, name, role, photo_url, email, is_active, sort_order, salon_id, FALSE as is_guest
-       FROM barbers WHERE deleted_at IS NULL AND is_active = true AND salon_id = $1
+       FROM barbers WHERE deleted_at IS NULL AND salon_id = $1
        ORDER BY sort_order`,
       [salonId]
     );
@@ -59,6 +65,194 @@ router.get('/guest-assignments/list', async (req, res, next) => {
     next(error);
   }
 });
+
+// ============================================
+// POST /api/admin/barbers — Create a new barber
+// ============================================
+router.post('/',
+  express.json({ limit: '5mb' }),
+  [
+    body('name').trim().notEmpty().isLength({ max: 100 }).withMessage('Nom requis (max 100 caractères)'),
+    body('role').optional().trim().isLength({ max: 200 }),
+    body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('Email invalide'),
+    body('photo_url').optional({ values: 'falsy' }).trim().isLength({ max: 3000000 }),
+    body('schedules').isArray({ min: 7, max: 7 }).withMessage('7 horaires requis (lundi à dimanche)'),
+    body('schedules.*.day_of_week').isInt({ min: 0, max: 6 }),
+    body('schedules.*.is_working').isBoolean(),
+    body('schedules.*.start_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/),
+    body('schedules.*.end_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/),
+    body('service_ids').optional().isArray(),
+    body('service_ids.*').optional().matches(uuidRegex).withMessage('UUID service invalide'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const { name, role, email, photo_url, schedules, service_ids } = req.body;
+
+      // Auto-generate email if not provided: name-slug@barberclub-{salonId}.fr
+      let barberEmail = email;
+      if (!barberEmail) {
+        const slug = name
+          .toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove accents
+          .replace(/[^a-z0-9]+/g, '-')                       // non-alphanum -> dash
+          .replace(/^-+|-+$/g, '');                           // trim dashes
+        barberEmail = `${slug}@barberclub-${salonId}.fr`;
+      }
+
+      // Check email uniqueness
+      const emailCheck = await db.query(
+        'SELECT id FROM barbers WHERE email = $1 AND deleted_at IS NULL',
+        [barberEmail]
+      );
+      if (emailCheck.rows.length > 0) {
+        throw ApiError.conflict('Un barber avec cet email existe déjà');
+      }
+
+      // Generate random password hash (barbers don't login individually)
+      const passwordHash = await bcrypt.hash(crypto.randomUUID(), BCRYPT_ROUNDS);
+
+      // Get next sort_order
+      const sortResult = await db.query(
+        'SELECT COALESCE(MAX(sort_order), 0) + 1 as next_order FROM barbers WHERE salon_id = $1 AND deleted_at IS NULL',
+        [salonId]
+      );
+      const nextSortOrder = sortResult.rows[0].next_order;
+
+      // Transaction: INSERT barber + schedules + barber_services
+      const client = await db.pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        const barberResult = await client.query(
+          `INSERT INTO barbers (name, role, photo_url, email, password_hash, is_active, sort_order, salon_id)
+           VALUES ($1, $2, $3, $4, $5, false, $6, $7)
+           RETURNING id, name, role, photo_url, email, is_active, sort_order, salon_id`,
+          [name, role || null, photo_url || null, barberEmail, passwordHash, nextSortOrder, salonId]
+        );
+        const barber = barberResult.rows[0];
+
+        // Insert 7 schedules
+        for (const schedule of schedules) {
+          const startTime = schedule.is_working ? (schedule.start_time || '09:00').slice(0, 5) : '09:00';
+          const endTime = schedule.is_working ? (schedule.end_time || '19:00').slice(0, 5) : '19:00';
+          await client.query(
+            `INSERT INTO schedules (barber_id, day_of_week, start_time, end_time, is_working, salon_id)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [barber.id, schedule.day_of_week, startTime, endTime, schedule.is_working, salonId]
+          );
+        }
+
+        // Insert barber_services if provided
+        if (service_ids && service_ids.length > 0) {
+          for (const serviceId of service_ids) {
+            await client.query(
+              'INSERT INTO barber_services (barber_id, service_id) VALUES ($1, $2)',
+              [barber.id, serviceId]
+            );
+          }
+        }
+
+        await client.query('COMMIT');
+
+        res.status(201).json(barber);
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// DELETE /api/admin/barbers/:id — Soft delete a barber
+// ============================================
+router.delete('/:id',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const salonId = req.user.salon_id;
+
+      // Verify barber belongs to this salon
+      const barberCheck = await db.query(
+        'SELECT id, name FROM barbers WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
+        [id, salonId]
+      );
+      if (barberCheck.rows.length === 0) {
+        throw ApiError.notFound('Barber introuvable');
+      }
+
+      const client = await db.pool.connect();
+      let cancelledCount = 0;
+      try {
+        await client.query('BEGIN');
+
+        // Soft delete the barber
+        await client.query(
+          'UPDATE barbers SET deleted_at = NOW(), is_active = false WHERE id = $1',
+          [id]
+        );
+
+        // Cancel future confirmed bookings
+        const cancelledBookings = await client.query(
+          `UPDATE bookings SET status = 'cancelled', deleted_at = NOW()
+           WHERE barber_id = $1 AND deleted_at IS NULL AND status = 'confirmed'
+             AND (date > CURRENT_DATE OR (date = CURRENT_DATE AND start_time > LOCALTIME))
+           RETURNING id, salon_id`,
+          [id]
+        );
+        cancelledCount = cancelledBookings.rows.length;
+
+        // Queue cancellation notifications for each cancelled booking
+        for (const booking of cancelledBookings.rows) {
+          await client.query(
+            `INSERT INTO notification_queue (booking_id, type, status, channel, salon_id, next_retry_at)
+             VALUES ($1, 'cancellation_email', 'pending', 'email', $2, NOW())`,
+            [booking.id, booking.salon_id]
+          );
+        }
+
+        // Cleanup: delete future guest assignments
+        await client.query(
+          'DELETE FROM guest_assignments WHERE barber_id = $1 AND date >= CURRENT_DATE',
+          [id]
+        );
+
+        // Cleanup: delete future blocked slots
+        await client.query(
+          'DELETE FROM blocked_slots WHERE barber_id = $1 AND date >= CURRENT_DATE',
+          [id]
+        );
+
+        // Cleanup: delete barber_services
+        await client.query(
+          'DELETE FROM barber_services WHERE barber_id = $1',
+          [id]
+        );
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+
+      logger.info('Barber deleted', { barberId: id, name: barberCheck.rows[0].name, cancelledBookings: cancelledCount });
+
+      res.json({ deleted: true, cancelled_bookings: cancelledCount });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 // ============================================
 // PUT /api/admin/barbers/:id — Update a barber
