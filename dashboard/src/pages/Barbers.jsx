@@ -5,6 +5,9 @@ import {
   useBarberSchedule,
   useBarberGuestDays,
   useUpdateBarber,
+  useCreateBarber,
+  useDeleteBarber,
+  useServices,
   useUpdateBarberSchedule,
   useAddBarberOverride,
   useDeleteBarberOverride,
@@ -64,10 +67,12 @@ function InlineStatus({ status }) {
 
 export default function Barbers() {
   const isMobile = useMobile();
+  const updateBarber = useUpdateBarber();
   const { data: barbers = [], isLoading: loading, error, refetch } = useBarbers();
   const [editBarber, setEditBarber] = useState(null);
   const [scheduleBarber, setScheduleBarber] = useState(null);
   const [guestBarber, setGuestBarber] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   return (
     <>
@@ -78,7 +83,21 @@ export default function Barbers() {
         </div>
       )}
       <div className="page-header">
-        <h2 className="page-title">Barbers</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <h2 className="page-title" style={{ margin: 0 }}>Barbers</h2>
+          {!loading && (
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>
+              {barbers.length} barbers · {barbers.filter(b => b.is_active).length} actifs
+            </span>
+          )}
+        </div>
+        <button
+          className="btn btn-sm"
+          style={{ background: 'var(--success)', color: '#000', fontWeight: 700, border: 'none' }}
+          onClick={() => setShowCreate(true)}
+        >
+          + Ajouter
+        </button>
       </div>
 
       <div className="page-body">
@@ -93,7 +112,7 @@ export default function Barbers() {
             }}
           >
             {barbers.map((b) => (
-              <div className="card" key={b.id}>
+              <div className="card" key={b.id} style={!b.is_active ? { opacity: 0.45 } : undefined}>
                 <div
                   style={{
                     display: 'flex',
@@ -149,9 +168,10 @@ export default function Barbers() {
                     </div>
                   </div>
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, flexDirection: 'column', alignItems: 'flex-end' }}>
-                    <span className={`badge badge-${b.is_active ? 'active' : 'inactive'}`}>
-                      {b.is_active ? 'Actif' : 'Inactif'}
-                    </span>
+                    <button
+                      className={`toggle ${b.is_active ? 'active' : ''}`}
+                      onClick={() => updateBarber.mutateAsync({ id: b.id, data: { is_active: !b.is_active } })}
+                    />
                     {b.is_guest && (
                       <span style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', background: 'rgba(59,130,246,0.12)', padding: '1px 8px', borderRadius: 10 }}>
                         Invite
@@ -197,6 +217,11 @@ export default function Barbers() {
                 </div>
               </div>
             ))}
+
+            <div className="barber-ghost-card" onClick={() => setShowCreate(true)}>
+              <div className="ghost-icon">+</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>Ajouter un barber</div>
+            </div>
           </div>
         )}
       </div>
@@ -221,7 +246,35 @@ export default function Barbers() {
           onClose={() => setGuestBarber(null)}
         />
       )}
+
+      {showCreate && (
+        <CreateBarberModal onClose={() => setShowCreate(false)} />
+      )}
     </>
+  );
+}
+
+// ============================================
+// Create Barber Modal (placeholder — Task 7)
+// ============================================
+
+function CreateBarberModal({ onClose }) {
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Nouveau barber</h3>
+          <button className="btn-ghost" onClick={onClose}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="modal-body">
+          <div className="empty-state">A venir...</div>
+        </div>
+      </div>
+    </div>
   );
 }
 
