@@ -206,10 +206,12 @@ Modal de confirmation superposée (au-dessus de la modal Modifier) :
 **Validation :**
 - `name` : requis, trim, 1-100 chars
 - `role` : optionnel, trim, max 200 chars
-- `email` : optionnel, format email, unique parmi barbers du salon
+- `email` : toujours fourni (auto-généré si vide : `{prenom}@barberclub-{salon}.fr`). Format email. Unicité **globale** (contrainte UNIQUE sur la colonne, pas par salon). Le format auto-généré avec le nom du salon évite les collisions cross-salon.
 - `photo_url` : optionnel, max 2MB en base64 (vérifier taille string < 2.8M chars)
-- `schedules` : array, chaque item a day_of_week (0-6), is_working (bool), start_time/end_time (HH:MM si is_working)
+- `schedules` : array de **exactement 7 items**, chaque day_of_week (0-6) apparaît une seule fois, is_working (bool), start_time/end_time (HH:MM si is_working)
 - `service_ids` : array d'UUIDs
+
+**Note Express :** Augmenter la limite body-parser sur cette route : `express.json({ limit: '5mb' })` (défaut 100kb, insuffisant pour les photos base64).
 
 ### Nouveau : `DELETE /api/admin/barbers/:id`
 
@@ -217,10 +219,22 @@ Modal de confirmation superposée (au-dessus de la modal Modifier) :
 1. Vérifier que le barber appartient au salon de l'admin
 2. Transaction :
    - Soft delete : `UPDATE barbers SET deleted_at = NOW(), is_active = false WHERE id = $1`
-   - Récupérer les bookings futurs confirmés du barber
-   - Les annuler : `UPDATE bookings SET status = 'cancelled' WHERE barber_id = $1 AND date >= CURRENT_DATE AND status = 'confirmed'`
-   - Queue les notifications d'annulation pour chaque booking annulé
+   - Récupérer les bookings **strictement futurs** confirmés du barber (pas ceux en cours aujourd'hui) :
+     ```sql
+     UPDATE bookings SET status = 'cancelled'
+     WHERE barber_id = $1
+       AND deleted_at IS NULL
+       AND status = 'confirmed'
+       AND (date > CURRENT_DATE OR (date = CURRENT_DATE AND start_time > LOCALTIME))
+     ```
+   - **Queue** (pas d'envoi direct) les notifications d'annulation pour chaque booking annulé — c'est une opération bulk, l'envoi direct serait trop lent
+   - Nettoyer les données orphelines :
+     - `DELETE FROM guest_assignments WHERE barber_id = $1 AND date >= CURRENT_DATE`
+     - `DELETE FROM blocked_slots WHERE barber_id = $1 AND date >= CURRENT_DATE`
+     - `DELETE FROM barber_services WHERE barber_id = $1`
 3. Retourner `{ deleted: true, cancelled_bookings: N }`
+
+**Note :** Le soft delete ne déclenche pas les CASCADE FK. Le nettoyage explicite ci-dessus évite les données orphelines (guest assignments, blocked slots, services). Les schedules et overrides restent en BDD (inoffensifs, le barber est filtré par `deleted_at IS NULL`).
 
 ### Modifié : `GET /api/admin/barbers`
 
@@ -233,6 +247,16 @@ WHERE deleted_at IS NULL AND is_active = true AND salon_id = $1
 -- Après
 WHERE deleted_at IS NULL AND salon_id = $1
 ```
+
+### Modifié : `GET /api/admin/barbers`
+
+**Note sur les guests :** La query guest barbers conserve le filtre `is_active = true`. Si un barber est désactivé à son salon d'origine, il disparaît aussi des listes guest — c'est le comportement voulu.
+
+**Note sur les photos base64 :** La réponse inclut `photo_url` pour chaque barber. Avec 6-10 barbers et des photos base64, la réponse peut atteindre plusieurs MB. Acceptable pour <10 barbers. Si le nombre augmente, envisager un endpoint séparé pour les photos.
+
+### Invalidation cache React Query
+
+Quand `is_active` change via le toggle switch, invalider aussi le cache `['services']` car l'assignation barber/prestation impacte les services disponibles.
 
 ### Migration BDD
 
