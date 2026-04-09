@@ -1797,6 +1797,213 @@ select.input {
 
 .toggle.active::after { transform: translateX(18px); }
 
+/* ---- BARBER CARD GHOST ---- */
+.barber-ghost-card {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.15s;
+}
+.barber-ghost-card:hover {
+  border-color: var(--success);
+  background: rgba(34,197,94,0.04);
+}
+.barber-ghost-card .ghost-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(34,197,94,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: var(--success);
+  margin-bottom: 8px;
+  transition: transform 0.2s;
+}
+.barber-ghost-card:hover .ghost-icon {
+  transform: scale(1.1);
+}
+
+/* ---- DANGER ZONE ---- */
+.danger-zone {
+  border-top: 1px solid rgba(220,38,38,0.2);
+  margin-top: 20px;
+  padding-top: 16px;
+}
+.danger-zone-label {
+  font-size: 11px;
+  color: #dc2626;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.danger-zone-card {
+  background: rgba(220,38,38,0.06);
+  border: 1px solid rgba(220,38,38,0.2);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.danger-zone-card .danger-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fca5a5;
+}
+.danger-zone-card .danger-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ---- DELETE CONFIRM DIALOG ---- */
+.delete-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  animation: fadeIn 0.15s ease;
+}
+.delete-dialog {
+  background: var(--bg-card);
+  border: 1px solid rgba(220,38,38,0.3);
+  border-radius: 14px;
+  max-width: 400px;
+  width: 90%;
+  overflow: hidden;
+  animation: slideUp 0.2s ease;
+}
+.delete-dialog-header {
+  background: rgba(220,38,38,0.08);
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(220,38,38,0.2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.delete-dialog-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(220,38,38,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.delete-dialog-body {
+  padding: 20px;
+}
+.delete-dialog-body .confirm-input {
+  border-color: rgba(220,38,38,0.3);
+}
+.delete-dialog-body .confirm-input:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220,38,38,0.15);
+}
+
+/* ---- CREATE BARBER MODAL SECTIONS ---- */
+.create-section-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.photo-upload-zone {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px dashed var(--border);
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  overflow: hidden;
+}
+.photo-upload-zone:hover {
+  border-color: var(--text-secondary);
+}
+.photo-upload-zone img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.schedule-row .day-name {
+  font-size: 13px;
+  flex: 1;
+}
+.schedule-row .time-inputs {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.service-pill {
+  display: inline-flex;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+}
+.service-pill.selected {
+  background: rgba(34,197,94,0.12);
+  border-color: rgba(34,197,94,0.3);
+  color: var(--success);
+}
+.service-pill:hover {
+  border-color: var(--text-secondary);
+}
+
+/* ---- RECAP SCREEN ---- */
+.recap-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+.recap-warning {
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #f59e0b;
+  margin-top: 16px;
+  text-align: left;
+}
+
 /* ---- NOTIFICATIONS ---- */
 .notif-area {
   position: relative;
