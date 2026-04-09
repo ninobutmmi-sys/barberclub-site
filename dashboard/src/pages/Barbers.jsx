@@ -255,13 +255,159 @@ export default function Barbers() {
 }
 
 // ============================================
-// Create Barber Modal (placeholder — Task 7)
+// Create Barber Modal (wizard with photo, schedules, services)
 // ============================================
 
 function CreateBarberModal({ onClose }) {
+  const createMutation = useCreateBarber();
+  const { data: services = [] } = useServices();
+  const [name, setName] = useState('');
+  const [role, setRole] = useState('Barber');
+  const [email, setEmail] = useState('');
+  const [emailManual, setEmailManual] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [schedules, setSchedules] = useState(
+    DAYS.map((_, i) => ({ day_of_week: i, is_working: i < 6, start_time: '09:00', end_time: '19:00' }))
+  );
+  const [selectedServices, setSelectedServices] = useState(new Set());
+  const [showRecap, setShowRecap] = useState(false);
+  const [status, setStatus] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Pre-select all active services on load
+  useEffect(() => {
+    if (services.length > 0 && selectedServices.size === 0) {
+      setSelectedServices(new Set(services.filter(s => s.is_active !== false).map(s => s.id)));
+    }
+  }, [services]);
+
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { setStatus({ type: 'error', message: 'Photo trop lourde (max 2 Mo)' }); return; }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { setStatus({ type: 'error', message: 'Format photo invalide' }); return; }
+    const reader = new FileReader();
+    reader.onload = () => setPhotoPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const toggleDay = (i) => {
+    setSchedules(prev => prev.map((s, idx) => idx === i ? { ...s, is_working: !s.is_working } : s));
+  };
+  const updateTime = (i, field, value) => {
+    setSchedules(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
+  };
+
+  const toggleService = (id) => {
+    setSelectedServices(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleCreate = async () => {
+    try {
+      await createMutation.mutateAsync({
+        name: name.trim(),
+        role: role.trim() || 'Barber',
+        email: email.trim() || undefined,
+        photo_url: photoPreview || undefined,
+        schedules,
+        service_ids: [...selectedServices],
+      });
+      onClose();
+    } catch (err) {
+      setStatus({ type: 'error', message: err.message });
+      setShowRecap(false);
+    }
+  };
+
+  // Summarize schedule for recap
+  const scheduleSummary = () => {
+    const working = schedules.filter(s => s.is_working);
+    if (working.length === 0) return 'Aucun jour travaille';
+    const allSameTime = working.every(w => w.start_time === working[0].start_time && w.end_time === working[0].end_time);
+    const dayNames = working.map(w => DAYS[w.day_of_week].slice(0, 3));
+    const off = schedules.filter(s => !s.is_working).map(s => DAYS[s.day_of_week].slice(0, 3));
+    if (allSameTime) {
+      return `${dayNames.join('-')} ${working[0].start_time}—${working[0].end_time}${off.length ? ` · ${off.join(', ')} repos` : ''}`;
+    }
+    return `${working.length} jours travailles`;
+  };
+
+  // Recap screen
+  if (showRecap) {
+    return (
+      <div className="modal-backdrop" onClick={onClose}>
+        <div className="modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3 className="modal-title">Recapitulatif</h3>
+            <button className="btn-ghost" onClick={onClose}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="modal-body">
+            <InlineStatus status={status} />
+            <div className="recap-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                {photoPreview ? (
+                  <img src={photoPreview} alt={name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
+                ) : (
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(var(--overlay),0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 22, border: '2px solid var(--border)' }}>
+                    {name.trim().charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {name.trim()}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{role || 'Barber'}</div>
+                </div>
+              </div>
+
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                <span style={{ color: 'var(--text-muted)', marginRight: 8 }}>Email</span>
+                {email.trim() || 'Auto-genere'}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                <span style={{ color: 'var(--text-muted)', marginRight: 8 }}>Horaires</span>
+                {scheduleSummary()}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+                <span style={{ color: 'var(--text-muted)', marginRight: 8 }}>Prestations</span>
+                {selectedServices.size}/{services.length} prestations
+              </div>
+
+              <div className="recap-warning">
+                Le barber sera cree en mode INACTIF. Activez-le depuis la page Barbers quand il sera pret.
+              </div>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowRecap(false)}>
+              ← Retour
+            </button>
+            <button
+              className="btn btn-sm"
+              style={{ background: 'var(--success)', color: '#000', fontWeight: 700, border: 'none' }}
+              disabled={createMutation.isPending}
+              onClick={handleCreate}
+            >
+              {createMutation.isPending ? 'Creation...' : 'Confirmer ✓'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main form
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-title">Nouveau barber</h3>
           <button className="btn-ghost" onClick={onClose}>
@@ -271,7 +417,112 @@ function CreateBarberModal({ onClose }) {
           </button>
         </div>
         <div className="modal-body">
-          <div className="empty-state">A venir...</div>
+          <InlineStatus status={status} />
+
+          {/* Photo */}
+          <div className="create-section-label">Photo</div>
+          <div
+            className="photo-upload-zone"
+            onClick={() => fileInputRef.current?.click()}
+            style={photoPreview ? { backgroundImage: `url(${photoPreview})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+          >
+            {!photoPreview && (
+              <>
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" style={{ marginBottom: 6 }}>
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
+                </svg>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Cliquer pour uploader</span>
+              </>
+            )}
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoSelect} style={{ display: 'none' }} />
+          {photoPreview && (
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ marginTop: 8, fontSize: 11 }}
+              onClick={() => setPhotoPreview(null)}
+            >
+              Supprimer la photo
+            </button>
+          )}
+
+          {/* Informations */}
+          <div className="create-section-label" style={{ marginTop: 20 }}>Informations</div>
+          <div className="form-group">
+            <label className="label">Nom *</label>
+            <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Prenom du barber" required />
+          </div>
+          <div className="form-group">
+            <label className="label">Role</label>
+            <input className="input" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Barber" />
+          </div>
+          <div className="form-group">
+            <label className="label">Email (optionnel)</label>
+            <input
+              className="input"
+              type="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setEmailManual(true); }}
+              placeholder="Auto-genere a partir du nom"
+            />
+          </div>
+
+          {/* Horaires */}
+          <div className="create-section-label" style={{ marginTop: 20 }}>Horaires de travail</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
+            {schedules.map((s, i) => (
+              <div className="schedule-row" key={i}>
+                <button
+                  type="button"
+                  className={`toggle ${s.is_working ? 'active' : ''}`}
+                  onClick={() => toggleDay(i)}
+                  style={{ transform: 'scale(0.8)' }}
+                />
+                <span className="day-name">{DAYS[i]}</span>
+                {s.is_working ? (
+                  <div className="time-inputs">
+                    <input className="input" type="time" value={s.start_time} onChange={(e) => updateTime(i, 'start_time', e.target.value)} style={{ width: 100, padding: '4px 6px', fontSize: 13, textAlign: 'center' }} />
+                    <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>a</span>
+                    <input className="input" type="time" value={s.end_time} onChange={(e) => updateTime(i, 'end_time', e.target.value)} style={{ width: 100, padding: '4px 6px', fontSize: 13, textAlign: 'center' }} />
+                  </div>
+                ) : (
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Repos</span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Prestations */}
+          <div className="create-section-label" style={{ marginTop: 20 }}>Prestations</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+            {services.filter(s => s.is_active !== false).map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={`service-pill ${selectedServices.has(s.id) ? 'selected' : ''}`}
+                onClick={() => toggleService(s.id)}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+            {selectedServices.size}/{services.filter(s => s.is_active !== false).length} selectionnees
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary btn-sm" onClick={onClose}>
+            Annuler
+          </button>
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={!name.trim()}
+            onClick={() => setShowRecap(true)}
+          >
+            Verifier et creer →
+          </button>
         </div>
       </div>
     </div>
