@@ -78,7 +78,18 @@ async function createBooking(data) {
     const bookDayOfWeek = bookJsDay === 0 ? 6 : bookJsDay - 1;
     const serviceDuration = (bookDayOfWeek === 5 && service.duration_saturday)
       ? service.duration_saturday : service.duration;
-    const effectiveDuration = parseInt(data.duration, 10) || serviceDuration;
+    // Check for per-barber custom duration override
+    let barberCustomDuration = null;
+    if (data.barber_id && data.barber_id !== 'any') {
+      const customDurResult = await client.query(
+        'SELECT custom_duration FROM barber_services WHERE barber_id = $1 AND service_id = $2 AND custom_duration IS NOT NULL',
+        [data.barber_id, data.service_id]
+      );
+      if (customDurResult.rows.length > 0) {
+        barberCustomDuration = customDurResult.rows[0].custom_duration;
+      }
+    }
+    const effectiveDuration = parseInt(data.duration, 10) || barberCustomDuration || serviceDuration;
 
     // 1b. Check per-barber service restrictions (public bookings only)
     if (!isAdmin && data.barber_id && data.barber_id !== 'any') {

@@ -120,12 +120,24 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
     barberRestrictions[r.barber_id].push(r);
   }
 
+  // Per-barber custom duration overrides
+  const customDurResult = await db.query(
+    `SELECT barber_id, custom_duration FROM barber_services
+     WHERE service_id = $1 AND barber_id = ANY($2) AND custom_duration IS NOT NULL`,
+    [serviceId, barberIds]
+  );
+  const barberCustomDuration = {};
+  for (const r of customDurResult.rows) {
+    barberCustomDuration[r.barber_id] = r.custom_duration;
+  }
+
   for (const bId of barberIds) {
     const restrictions = barberRestrictions[bId];
+    const barberDuration = barberCustomDuration[bId] || duration;
 
     if (!restrictions) {
       // No restrictions → full availability
-      const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration, { ...options, salonId });
+      const slots = await getSlotsForBarber(bId, date, dayOfWeek, barberDuration, { ...options, salonId });
       allSlots.push(...slots);
       continue;
     }
@@ -136,15 +148,15 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
 
     // Use duration as slot step for time-restricted windows (tighter packing)
     const hasTimeWindow = dayRestriction.start_time && dayRestriction.end_time;
-    const slotStep = hasTimeWindow ? duration : undefined;
-    const slots = await getSlotsForBarber(bId, date, dayOfWeek, duration, { ...options, salonId, slotStep });
+    const slotStep = hasTimeWindow ? barberDuration : undefined;
+    const slots = await getSlotsForBarber(bId, date, dayOfWeek, barberDuration, { ...options, salonId, slotStep });
 
     if (hasTimeWindow) {
       const windowStart = timeToMinutes(dayRestriction.start_time.slice(0, 5));
       const windowEnd = timeToMinutes(dayRestriction.end_time.slice(0, 5));
       allSlots.push(...slots.filter(s => {
         const slotStart = timeToMinutes(s.time);
-        const slotEnd = slotStart + duration;
+        const slotEnd = slotStart + barberDuration;
         return slotStart >= windowStart && slotEnd <= windowEnd;
       }));
     } else {

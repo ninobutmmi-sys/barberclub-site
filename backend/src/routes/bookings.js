@@ -135,7 +135,8 @@ router.get('/services', publicLimiter,
       const serviceSalonId = barberHomeSalon !== salonId ? barberHomeSalon : salonId;
 
       queryText = `
-        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color
+        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color,
+               bs.custom_duration
         FROM services s
         JOIN barber_services bs ON s.id = bs.service_id
         WHERE bs.barber_id = $1 AND s.is_active = true AND s.deleted_at IS NULL AND s.salon_id = $2

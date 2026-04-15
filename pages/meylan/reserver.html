@@ -984,7 +984,11 @@
                     }
                     services = [...seen.values()];
                 }
-                state.services = services;
+                // Apply per-barber custom duration if present
+                state.services = services.map(s => ({
+                    ...s,
+                    duration: s.custom_duration || s.duration
+                }));
                 renderServices();
             } catch (e) {
                 $('#serviceList').innerHTML = `
