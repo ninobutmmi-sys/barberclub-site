@@ -288,6 +288,25 @@ export function useDeleteBlockedSlot() {
   });
 }
 
+export function useBarberBreaks(barberId) {
+  return useQuery({
+    queryKey: ['barberBreaks', barberId],
+    queryFn: () => api.getBarberBreaks(barberId),
+    enabled: !!barberId,
+  });
+}
+
+export function useDeleteBarberBreaksBulk() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ barberId, reason }) => api.deleteBarberBreaksBulk(barberId, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['barberBreaks'] });
+      qc.invalidateQueries({ queryKey: ['blockedSlots'] });
+    },
+  });
+}
+
 // ---------- Clients ----------
 export function useClients(params, options) {
   return useQuery({

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import useMobile from '../hooks/useMobile';
 import {
   useBarbers,
@@ -13,6 +13,10 @@ import {
   useDeleteBarberOverride,
   useAddBarberGuestDay,
   useDeleteBarberGuestDay,
+  useBarberBreaks,
+  useCreateBlockedSlot,
+  useDeleteBlockedSlot,
+  useDeleteBarberBreaksBulk,
 } from '../hooks/useApi';
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -72,6 +76,7 @@ export default function Barbers() {
   const [editBarber, setEditBarber] = useState(null);
   const [scheduleBarber, setScheduleBarber] = useState(null);
   const [guestBarber, setGuestBarber] = useState(null);
+  const [breaksBarber, setBreaksBarber] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
 
   return (
@@ -205,6 +210,13 @@ export default function Barbers() {
                   >
                     Horaires
                   </button>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    style={{ flex: 1 }}
+                    onClick={() => setBreaksBarber(b)}
+                  >
+                    Pauses
+                  </button>
                   {!b.is_guest && (
                     <button
                       className="btn btn-secondary btn-sm"
@@ -247,10 +259,268 @@ export default function Barbers() {
         />
       )}
 
+      {breaksBarber && (
+        <BreaksModal
+          barber={breaksBarber}
+          onClose={() => setBreaksBarber(null)}
+        />
+      )}
+
       {showCreate && (
         <CreateBarberModal onClose={() => setShowCreate(false)} />
       )}
     </>
+  );
+}
+
+// ============================================
+// Breaks Modal — manage recurring breaks for a barber
+// ============================================
+
+function BreaksModal({ barber, onClose }) {
+  const { data: breaks = [], isLoading } = useBarberBreaks(barber.id);
+  const createMutation = useCreateBlockedSlot();
+  const deleteMutation = useDeleteBlockedSlot();
+  const bulkDeleteMutation = useDeleteBarberBreaksBulk();
+
+  const [showForm, setShowForm] = useState(false);
+  const [startTime, setStartTime] = useState('13:00');
+  const [endTime, setEndTime] = useState('14:00');
+  const [reason, setReason] = useState('Pause déjeuner');
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+  });
+  const [recurrence, setRecurrence] = useState('weekly');
+  const [occurrences, setOccurrences] = useState(52);
+  const [status, setStatus] = useState(null);
+
+  const flashTimer = useRef(null);
+  const flash = useCallback((type, message) => {
+    setStatus({ type, message });
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setStatus(null), 3000);
+  }, []);
+  useEffect(() => () => clearTimeout(flashTimer.current), []);
+
+  // Group breaks by reason + time pattern
+  const grouped = useMemo(() => {
+    const map = {};
+    for (const b of breaks) {
+      const key = `${b.reason || 'Sans motif'}|${(b.start_time || '').slice(0, 5)}-${(b.end_time || '').slice(0, 5)}`;
+      if (!map[key]) map[key] = { reason: b.reason || 'Sans motif', start_time: (b.start_time || '').slice(0, 5), end_time: (b.end_time || '').slice(0, 5), slots: [] };
+      map[key].slots.push(b);
+    }
+    return Object.values(map).sort((a, b) => a.slots[0].date.localeCompare(b.slots[0].date));
+  }, [breaks]);
+
+  async function handleCreate(e) {
+    e.preventDefault();
+    try {
+      const payload = {
+        barber_id: barber.id,
+        date: startDate,
+        start_time: startTime,
+        end_time: endTime,
+        type: 'break',
+        reason: reason || undefined,
+      };
+      if (recurrence !== 'none') {
+        payload.recurrence = {
+          type: recurrence,
+          end_type: 'occurrences',
+          occurrences: parseInt(occurrences) || 52,
+        };
+      }
+      await createMutation.mutateAsync(payload);
+      setShowForm(false);
+      flash('success', 'Pause(s) créée(s)');
+    } catch (err) {
+      flash('error', err.message);
+    }
+  }
+
+  async function handleDeleteGroup(group) {
+    if (!window.confirm(`Supprimer les ${group.slots.length} pauses "${group.reason}" ?`)) return;
+    try {
+      await bulkDeleteMutation.mutateAsync({ barberId: barber.id, reason: group.reason !== 'Sans motif' ? group.reason : undefined });
+      flash('success', `${group.slots.length} pauses supprimées`);
+    } catch (err) {
+      flash('error', err.message);
+    }
+  }
+
+  async function handleDeleteOne(id) {
+    try {
+      await deleteMutation.mutateAsync(id);
+      flash('success', 'Pause supprimée');
+    } catch (err) {
+      flash('error', err.message);
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">Pauses — {barber.name}</h3>
+          <button className="btn-ghost" onClick={onClose}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+          <InlineStatus status={status} />
+
+          {isLoading ? (
+            <div className="empty-state">Chargement...</div>
+          ) : grouped.length === 0 ? (
+            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+              Aucune pause programmée.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              {grouped.map((group, gi) => (
+                <div
+                  key={gi}
+                  style={{
+                    padding: '12px 14px',
+                    background: 'rgba(245,158,11,0.04)',
+                    border: '1px solid rgba(245,158,11,0.12)',
+                    borderRadius: 10,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>
+                        {group.reason}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {group.start_time} - {group.end_time} · {group.slots.length} occurrence{group.slots.length > 1 ? 's' : ''}
+                      </div>
+                    </div>
+                    <button
+                      className="btn btn-sm"
+                      style={{ background: 'rgba(239,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)', fontSize: 12, padding: '4px 10px' }}
+                      onClick={() => handleDeleteGroup(group)}
+                      disabled={bulkDeleteMutation.isPending}
+                    >
+                      Tout supprimer
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {group.slots.slice(0, 8).map((slot) => (
+                      <span
+                        key={slot.id}
+                        style={{
+                          fontSize: 11,
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          background: 'rgba(var(--overlay),0.06)',
+                          color: 'var(--text-secondary)',
+                          cursor: 'pointer',
+                        }}
+                        title="Cliquer pour supprimer"
+                        onClick={() => handleDeleteOne(slot.id)}
+                      >
+                        {new Date(slot.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      </span>
+                    ))}
+                    {group.slots.length > 8 && (
+                      <span style={{ fontSize: 11, padding: '2px 8px', color: 'var(--text-muted)' }}>
+                        +{group.slots.length - 8} autres
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add break form */}
+          {!showForm ? (
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ width: '100%' }}
+              onClick={() => setShowForm(true)}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6 }}>
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Ajouter une pause
+            </button>
+          ) : (
+            <form
+              onSubmit={handleCreate}
+              style={{
+                padding: 16,
+                background: 'rgba(var(--overlay),0.02)',
+                border: '1px solid var(--border)',
+                borderRadius: 10,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <label className="label" style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>
+                  Nouvelle pause
+                </label>
+                <button type="button" className="btn-ghost" style={{ padding: 4 }} onClick={() => setShowForm(false)}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="form-group">
+                <label className="label">Motif</label>
+                <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Pause déjeuner" />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+                <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                  <label className="label">Début</label>
+                  <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                </div>
+                <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                  <label className="label">Fin</label>
+                  <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="label">Date de début</label>
+                <input className="input" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+              </div>
+
+              <div className="form-group">
+                <label className="label">Récurrence</label>
+                <select className="input" value={recurrence} onChange={(e) => setRecurrence(e.target.value)}>
+                  <option value="none">Unique</option>
+                  <option value="weekly">Chaque semaine</option>
+                  <option value="biweekly">Toutes les 2 semaines</option>
+                </select>
+              </div>
+
+              {recurrence !== 'none' && (
+                <div className="form-group">
+                  <label className="label">Nombre de semaines</label>
+                  <input className="input" type="number" min="2" max="52" value={occurrences} onChange={(e) => setOccurrences(e.target.value)} />
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm"
+                style={{ width: '100%' }}
+                disabled={createMutation.isPending}
+              >
+                {createMutation.isPending ? 'Création...' : recurrence !== 'none' ? `Créer ${occurrences} pauses` : 'Créer la pause'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -679,7 +679,7 @@
 
             async function doLookup() {
                 const phone = phoneInput.value.replace(/[\s.-]/g, '');
-                if (!phone || !/^(\+\d{7,15}|0[1-9]\d{8})$/.test(phone)) {
+                if (!phone || !/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14}|0[1-9]\d{8})$/.test(phone)) {
                     errEl.textContent = 'Entrez un numéro valide (ex: 0612345678)';
                     errEl.style.display = 'block';
                     return;

@@ -90,7 +90,7 @@
                     <span class="policy-rule-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
                     <div class="policy-rule-content">
                         <div class="policy-rule-title">Ponctualité</div>
-                        <div class="policy-rule-text">Au-delà de 5 minutes de retard, nous nous réservons le droit de refuser votre rendez-vous afin de ne pas décaler les clients suivants.</div>
+                        <div class="policy-rule-text">Au-delà de 5 minutes de retard, nous nous réservons le droit de refuser votre rendez-vous afin de ne pas décaler les clients suivants. Cette prestation sera facturée comme un rendez-vous non honoré.</div>
                     </div>
                 </div>
                 <div class="policy-rule">
@@ -1555,7 +1555,7 @@
 
             // Phone — country code + local number
             const fullPhone = getFullPhone('#phoneCountry', '#phone');
-            if (!fullPhone || !/^\+\d{7,15}$/.test(fullPhone)) {
+            if (!fullPhone || !/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14})$/.test(fullPhone)) {
                 $('#phone').classList.add('error');
                 $('#phoneError').classList.add('visible');
                 valid = false;
@@ -1956,7 +1956,7 @@
 
             // Validation
             if (!firstName || !lastName) { toast('Prénom et nom requis'); return; }
-            if (!phone || !/^\+\d{7,15}$/.test(phone)) { toast('Numéro de téléphone invalide'); return; }
+            if (!phone || !/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14})$/.test(phone)) { toast('Numéro de téléphone invalide'); return; }
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('Email invalide'); return; }
             if (password.length < 8) { toast('Mot de passe : 8 caractères minimum'); return; }
 

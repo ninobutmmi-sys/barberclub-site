@@ -174,7 +174,7 @@ router.post('/register',
     body('first_name').trim().notEmpty().withMessage('Prénom requis').isLength({ max: 100 }),
     body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
     body('phone').trim().notEmpty().withMessage('Téléphone requis')
-      .matches(/^(\+\d{7,15}|0[1-9]\d{8})$/).withMessage('Numéro de téléphone invalide'),
+      .matches(/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14}|0[1-9]\d{8})$/).withMessage('Numéro de téléphone invalide'),
     body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
     body('password')
       .isLength({ min: 8 }).withMessage('Mot de passe : 8 caractères minimum')

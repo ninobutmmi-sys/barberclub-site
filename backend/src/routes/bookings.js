@@ -266,7 +266,7 @@ router.post('/bookings',
     body('first_name').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
     body('last_name').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
     body('phone').optional({ values: 'falsy' }).trim()
-      .matches(/^(\+\d{7,15}|0[1-9]\d{8})$/).withMessage('Numéro de téléphone invalide'),
+      .matches(/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14}|0[1-9]\d{8})$/).withMessage('Numéro de téléphone invalide'),
     body('email').trim().custom((value, { req }) => {
       if (!req.headers.authorization && !value) {
         throw new Error('Email requis pour une réservation en invité');
@@ -489,7 +489,7 @@ router.post('/waitlist',
     body('preferred_date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide'),
     body('client_name').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
     body('client_phone').optional({ values: 'falsy' }).trim()
-      .matches(/^(\+\d{7,15}|0[1-9]\d{8})$/).withMessage('Numéro de téléphone invalide'),
+      .matches(/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14}|0[1-9]\d{8})$/).withMessage('Numéro de téléphone invalide'),
     body('preferred_time_start').optional({ values: 'falsy' }).matches(/^([01]\d|2[0-3]):[0-5]\d$/),
     body('preferred_time_end').optional({ values: 'falsy' }).matches(/^([01]\d|2[0-3]):[0-5]\d$/),
     body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),

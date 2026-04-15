@@ -175,6 +175,71 @@ router.post('/',
 );
 
 // ============================================
+// GET /api/admin/blocked-slots/barber/:barberId — List future breaks for a barber
+// ============================================
+router.get('/barber/:barberId',
+  [param('barberId').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const { barberId } = req.params;
+      const today = getParisTodayISO();
+
+      const result = await db.query(
+        `SELECT bs.id, bs.barber_id, bs.date, bs.start_time, bs.end_time,
+                bs.reason, bs.type, bs.created_at
+         FROM blocked_slots bs
+         JOIN barbers br ON bs.barber_id = br.id
+         WHERE bs.barber_id = $1 AND br.salon_id = $2 AND bs.date >= $3
+         ORDER BY bs.date, bs.start_time`,
+        [barberId, salonId, today]
+      );
+
+      res.json(result.rows);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// DELETE /api/admin/blocked-slots/barber/:barberId/bulk — Remove all future breaks for a barber
+// Supports optional ?reason=... to only delete matching reason
+// ============================================
+router.delete('/barber/:barberId/bulk',
+  [param('barberId').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const { barberId } = req.params;
+      const { reason } = req.query;
+      const today = getParisTodayISO();
+
+      let query = `DELETE FROM blocked_slots
+         WHERE barber_id = $1 AND date >= $2
+         AND barber_id IN (SELECT id FROM barbers WHERE salon_id = $3)`;
+      const params = [barberId, today, salonId];
+
+      if (reason) {
+        query += ` AND reason = $4`;
+        params.push(reason);
+      }
+
+      query += ' RETURNING id';
+
+      const result = await db.query(query, params);
+
+      ws.emitBlockedSlotChanged(salonId);
+      res.json({ deleted: result.rows.length });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
 // DELETE /api/admin/blocked-slots/:id — Remove a blocked slot
 // ============================================
 router.delete('/:id',

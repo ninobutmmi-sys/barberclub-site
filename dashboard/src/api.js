@@ -265,6 +265,12 @@ export const createBlockedSlot = (body) =>
   request('/admin/blocked-slots', { method: 'POST', body: JSON.stringify(body) });
 export const deleteBlockedSlot = (id) =>
   request(`/admin/blocked-slots/${id}`, { method: 'DELETE' });
+export const getBarberBreaks = (barberId) =>
+  request(`/admin/blocked-slots/barber/${barberId}`);
+export const deleteBarberBreaksBulk = (barberId, reason) => {
+  const qs = reason ? `?reason=${encodeURIComponent(reason)}` : '';
+  return request(`/admin/blocked-slots/barber/${barberId}/bulk${qs}`, { method: 'DELETE' });
+};
 
 // ---- Admin: Analytics ----
 export const getDashboard = (params) => {
