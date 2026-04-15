@@ -93,6 +93,33 @@ router.get('/barbers', publicLimiter,
       }
     }
 
+    // Count bookings this week per barber for dynamic sort (least busy first)
+    const allIds = allBarbers.map(b => b.id);
+    let weeklyBookingCount = {};
+    if (allIds.length > 0) {
+      const today = new Date();
+      const jsDay = today.getDay(); // 0=Sunday
+      const mondayOffset = jsDay === 0 ? -6 : 1 - jsDay;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + mondayOffset);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const mondayStr = monday.toISOString().split('T')[0];
+      const sundayStr = sunday.toISOString().split('T')[0];
+
+      const countResult = await db.query(
+        `SELECT barber_id, COUNT(*)::int as cnt
+         FROM bookings
+         WHERE barber_id = ANY($1) AND date BETWEEN $2 AND $3
+           AND status != 'cancelled' AND deleted_at IS NULL
+         GROUP BY barber_id`,
+        [allIds, mondayStr, sundayStr]
+      );
+      for (const r of countResult.rows) {
+        weeklyBookingCount[r.barber_id] = r.cnt;
+      }
+    }
+
     const barbers = allBarbers.map((b) => ({
       ...b,
       off_days: offMap[b.id] || [],
@@ -100,6 +127,10 @@ router.get('/barbers', publicLimiter,
       off_dates: overrideOffDates[b.id] || undefined,
       guest_dates: guestDatesMap[b.id] || undefined,
     }));
+
+    // Sort by weekly booking count ascending (least busy first)
+    barbers.sort((a, b) => (weeklyBookingCount[a.id] || 0) - (weeklyBookingCount[b.id] || 0));
+
     res.set('Cache-Control', 'no-store');
     res.json(barbers);
   } catch (error) {
