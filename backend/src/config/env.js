@@ -38,7 +38,7 @@ const SALONS = {
     googleReviewUrl: process.env.GOOGLE_REVIEW_URL || '',
     bookingPath: '/pages/meylan',
     mapsUrl: 'https://maps.google.com/?q=26+Av+du+Gr%C3%A9sivaudan+38700+Corenc',
-    heroImage: '/assets/images/salons/meylan/salon-meylan-interieur.jpg',
+    heroImage: '/assets/images/salons/meylan/salon-meylan-v3.jpg',
     brevo: {
       apiKey: process.env.BREVO_API_KEY || '',
       senderEmail: process.env.BREVO_SENDER_EMAIL || 'noreply@barberclub-grenoble.fr',
