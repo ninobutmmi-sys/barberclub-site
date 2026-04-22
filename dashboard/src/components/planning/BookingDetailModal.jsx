@@ -88,22 +88,15 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
     }
   }, [editBarberId, filteredServices, editServiceId]);
 
-  // Auto-set color + recalculate end time when service is manually changed
+  // Auto-set color when service is manually changed.
+  // End time is kept intact — admin adjusts Fin manually if the new service
+  // needs a longer slot. Prevents phantom « créneau déjà pris » errors when
+  // reclassifying a booking to a longer prestation without wanting to extend.
   const initialServiceId = useRef(booking.service_id || '');
   useEffect(() => {
     if (!editServiceId || editServiceId === initialServiceId.current) return;
     const svc = services.find((s) => s.id === editServiceId);
     if (svc?.color) setEditColor(svc.color);
-    // Recalculate end time based on new service duration
-    if (svc && editTime) {
-      const [h, m] = editTime.split(':').map(Number);
-      const duration = svc.duration_saturday && editDate ? (() => {
-        const d = new Date(editDate + 'T00:00:00');
-        return d.getDay() === 6 ? svc.duration_saturday : svc.duration;
-      })() : svc.duration;
-      const endMin = h * 60 + m + duration;
-      setEditEndTime(`${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`);
-    }
   }, [editServiceId, services]);
 
   // Auto-adjust end time when start time changes (keep service duration)
