@@ -93,13 +93,9 @@ async function sendReminderSMS(data) {
 
   const message = `${salon.name} - Rappel RDV le ${dateFR} a ${timeFormatted} au ${salon.address}.`;
 
-  await brevoSMS(data.phone, message, salonId);
-
-  // Mark reminder as sent on the booking
-  await db.query(
-    'UPDATE bookings SET reminder_sent = true WHERE id = $1',
-    [data.booking_id]
-  );
+  // Return the brevoSMS result so the queue processor can capture provider_message_id.
+  // Note: queue.js marks reminder_sent on success — no need to UPDATE here.
+  return brevoSMS(data.phone, message, salonId);
 }
 
 /**

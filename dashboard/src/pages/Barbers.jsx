@@ -1015,20 +1015,25 @@ function ScheduleModal({ barber, onClose }) {
   const saveMutation = useUpdateBarberSchedule();
   const addOverrideMutation = useAddBarberOverride();
   const deleteOverrideMutation = useDeleteBarberOverride();
+  const createBlockedSlotMutation = useCreateBlockedSlot();
 
   // Local editable copy of the schedule
   const [schedule, setSchedule] = useState(null);
   const [status, setStatus] = useState(null);
   const [activeTab, setActiveTab] = useState('schedule');
   const [ovDate, setOvDate] = useState('');
-  const [ovIsDayOff, setOvIsDayOff] = useState(true);
+  // ovMode: 'off' = jour de congé | 'custom' = horaire spécial | 'unblock' = débloquer un jour off
+  const [ovMode, setOvMode] = useState('off');
   const [ovStartTime, setOvStartTime] = useState('09:00');
   const [ovEndTime, setOvEndTime] = useState('19:00');
   const [ovReason, setOvReason] = useState('');
+  const [ovBreakEnabled, setOvBreakEnabled] = useState(true);
+  const [ovBreakStart, setOvBreakStart] = useState('12:00');
+  const [ovBreakEnd, setOvBreakEnd] = useState('13:00');
   const [showOverrideForm, setShowOverrideForm] = useState(false);
 
   const saving = saveMutation.isPending;
-  const addingOverride = addOverrideMutation.isPending;
+  const addingOverride = addOverrideMutation.isPending || createBlockedSlotMutation.isPending;
   const overrides = rawSchedule?.overrides || [];
 
   // Initialize local schedule from query data
@@ -1066,20 +1071,53 @@ function ScheduleModal({ barber, onClose }) {
 
   async function handleAddOverride(e) {
     e.preventDefault();
+    const isDayOff = ovMode === 'off';
+    const isUnblock = ovMode === 'unblock';
+    if (isUnblock && ovBreakEnabled) {
+      if (ovBreakStart < ovStartTime || ovBreakEnd > ovEndTime) {
+        flash('error', 'La pause doit être dans les horaires de travail');
+        return;
+      }
+      if (ovBreakStart >= ovBreakEnd) {
+        flash('error', 'Heure de fin de pause invalide');
+        return;
+      }
+    }
+    let createdOverride = null;
     try {
-      await addOverrideMutation.mutateAsync({
+      createdOverride = await addOverrideMutation.mutateAsync({
         id: barber.id,
         data: {
           date: ovDate,
-          is_day_off: ovIsDayOff,
-          start_time: ovIsDayOff ? undefined : ovStartTime,
-          end_time: ovIsDayOff ? undefined : ovEndTime,
-          reason: ovReason || undefined,
+          is_day_off: isDayOff,
+          start_time: isDayOff ? undefined : ovStartTime,
+          end_time: isDayOff ? undefined : ovEndTime,
+          reason: ovReason || (isUnblock ? 'Ouverture exceptionnelle' : undefined),
         },
       });
-      setOvDate(''); setOvIsDayOff(true); setOvStartTime('09:00'); setOvEndTime('19:00'); setOvReason('');
+      if (isUnblock && ovBreakEnabled) {
+        try {
+          await createBlockedSlotMutation.mutateAsync({
+            barber_id: barber.id,
+            date: ovDate,
+            start_time: ovBreakStart,
+            end_time: ovBreakEnd,
+            type: 'break',
+            reason: 'Pause déjeuner',
+          });
+        } catch (breakErr) {
+          // Rollback: the day was unblocked but the break failed — undo the override
+          // so the user can retry from a clean slate (otherwise unique-date constraint blocks retry).
+          if (createdOverride?.id) {
+            try { await deleteOverrideMutation.mutateAsync(createdOverride.id); } catch (_) {}
+          }
+          throw breakErr;
+        }
+      }
+      setOvDate(''); setOvMode('off'); setOvStartTime('09:00'); setOvEndTime('19:00');
+      setOvReason(''); setOvBreakEnabled(true); setOvBreakStart('12:00'); setOvBreakEnd('13:00');
       setShowOverrideForm(false);
-      flash('success', 'Exception ajoutee');
+      flash('success', isUnblock ? 'Jour débloqué' : 'Exception ajoutee');
     } catch (err) {
       flash('error', err.message);
     }
@@ -1177,14 +1215,20 @@ function ScheduleModal({ barber, onClose }) {
               formProps={{
                 ovDate,
                 setOvDate,
-                ovIsDayOff,
-                setOvIsDayOff,
+                ovMode,
+                setOvMode,
                 ovStartTime,
                 setOvStartTime,
                 ovEndTime,
                 setOvEndTime,
                 ovReason,
                 setOvReason,
+                ovBreakEnabled,
+                setOvBreakEnabled,
+                ovBreakStart,
+                setOvBreakStart,
+                ovBreakEnd,
+                setOvBreakEnd,
                 addingOverride,
               }}
               onAddOverride={handleAddOverride}
@@ -1321,16 +1365,24 @@ function OverridesEditor({
   const {
     ovDate,
     setOvDate,
-    ovIsDayOff,
-    setOvIsDayOff,
+    ovMode,
+    setOvMode,
     ovStartTime,
     setOvStartTime,
     ovEndTime,
     setOvEndTime,
     ovReason,
     setOvReason,
+    ovBreakEnabled,
+    setOvBreakEnabled,
+    ovBreakStart,
+    setOvBreakStart,
+    ovBreakEnd,
+    setOvBreakEnd,
     addingOverride,
   } = formProps;
+  const ovIsDayOff = ovMode === 'off';
+  const ovIsUnblock = ovMode === 'unblock';
 
   return (
     <>
@@ -1482,25 +1534,33 @@ function OverridesEditor({
             </button>
           </div>
 
-          {/* Type toggle: day off vs custom hours */}
+          {/* Type toggle: day off vs custom hours vs unblock */}
           <div className="form-group">
             <label className="label">Type</label>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               <button
                 type="button"
-                className={`btn btn-sm ${ovIsDayOff ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setOvIsDayOff(true)}
-                style={{ flex: 1 }}
+                className={`btn btn-sm ${ovMode === 'off' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setOvMode('off')}
+                style={{ flex: '1 1 0', minWidth: 0, padding: '8px 6px', fontSize: 12 }}
               >
-                Jour de conge
+                Jour de congé
               </button>
               <button
                 type="button"
-                className={`btn btn-sm ${!ovIsDayOff ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setOvIsDayOff(false)}
-                style={{ flex: 1 }}
+                className={`btn btn-sm ${ovMode === 'custom' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setOvMode('custom')}
+                style={{ flex: '1 1 0', minWidth: 0, padding: '8px 6px', fontSize: 12 }}
               >
-                Horaire special
+                Horaire spécial
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${ovMode === 'unblock' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setOvMode('unblock')}
+                style={{ flex: '1 1 0', minWidth: 0, padding: '8px 6px', fontSize: 12 }}
+              >
+                Débloquer ce jour
               </button>
             </div>
           </div>
@@ -1546,6 +1606,47 @@ function OverridesEditor({
             </div>
           )}
 
+          {/* Pause (unblock mode only) */}
+          {ovIsUnblock && (
+            <div className="form-group">
+              <label
+                className="label"
+                style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={ovBreakEnabled}
+                  onChange={(e) => setOvBreakEnabled(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                Pause déjeuner
+              </label>
+              {ovBreakEnabled && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                  <input
+                    className="input"
+                    type="time"
+                    value={ovBreakStart}
+                    onChange={(e) => setOvBreakStart(e.target.value)}
+                    required
+                    style={{ flex: 1, fontSize: 13, textAlign: 'center' }}
+                  />
+                  <span style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}>
+                    a
+                  </span>
+                  <input
+                    className="input"
+                    type="time"
+                    value={ovBreakEnd}
+                    onChange={(e) => setOvBreakEnd(e.target.value)}
+                    required
+                    style={{ flex: 1, fontSize: 13, textAlign: 'center' }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Reason */}
           <div className="form-group">
             <label className="label">Raison (optionnel)</label>
@@ -1553,7 +1654,13 @@ function OverridesEditor({
               className="input"
               value={ovReason}
               onChange={(e) => setOvReason(e.target.value)}
-              placeholder={ovIsDayOff ? 'ex: Vacances, RDV medical...' : 'ex: Fermeture anticipee...'}
+              placeholder={
+                ovIsDayOff
+                  ? 'ex: Vacances, RDV medical...'
+                  : ovIsUnblock
+                    ? 'ex: Ouverture exceptionnelle...'
+                    : 'ex: Fermeture anticipee...'
+              }
               style={{ fontSize: 13 }}
             />
           </div>
@@ -1574,7 +1681,13 @@ function OverridesEditor({
               disabled={addingOverride}
               style={{ flex: 1 }}
             >
-              {addingOverride ? '...' : ovIsDayOff ? 'Ajouter le conge' : 'Ajouter l\'exception'}
+              {addingOverride
+                ? '...'
+                : ovIsDayOff
+                  ? 'Ajouter le congé'
+                  : ovIsUnblock
+                    ? 'Débloquer ce jour'
+                    : 'Ajouter l\'exception'}
             </button>
           </div>
         </form>

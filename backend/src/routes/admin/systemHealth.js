@@ -133,7 +133,7 @@ router.get('/health', async (req, res, next) => {
         sms_cost_estimate: Math.round(smsCost * 100) / 100,
         brevo_sender: config.brevo?.senderEmail || null,
         brevo_sms_sender: config.brevo?.smsSender || null,
-        brevo_status: (() => { try { return require('../../services/notification').getBrevoStatus(); } catch { return null; } })(),
+        brevo_status: (() => { try { return require('../../services/notification').getBrevoStatus(req.user?.salon_id); } catch { return null; } })(),
         // 30-day health stats
         sms_sent_30d: smsSent30d,
         sms_failed_30d: smsFailed30d,

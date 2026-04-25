@@ -5,9 +5,29 @@ const {
   BREVO_CIRCUIT_THRESHOLD,
   BREVO_CIRCUIT_COOLDOWN_MS,
   BREVO_REQUEST_TIMEOUT_MS,
+  BREVO_CREDIT_LOW_THRESHOLD,
 } = require('../../constants');
-const { alertCircuitOpen, alertCircuitClosed } = require('../../utils/discord');
+const { alertCircuitOpen, alertCircuitClosed, alertBrevoCreditsLow } = require('../../utils/discord');
 const { formatPhoneInternational, htmlToText } = require('./helpers');
+
+// In-memory latest credit balance per salon (exposed via getBrevoStatus)
+const latestCredits = {};
+
+async function logCredits(salonId, remaining, used, smsCount) {
+  latestCredits[salonId] = { remainingCredits: remaining, recordedAt: new Date().toISOString() };
+  try {
+    await db.query(
+      `INSERT INTO brevo_credit_log (salon_id, remaining_credits, used_credits, sms_count)
+       VALUES ($1, $2, $3, $4)`,
+      [salonId, remaining, used || null, smsCount || null]
+    );
+  } catch (err) {
+    logger.debug('Failed to log brevo credits', { error: err.message });
+  }
+  if (typeof remaining === 'number' && remaining < BREVO_CREDIT_LOW_THRESHOLD) {
+    alertBrevoCreditsLow(salonId, remaining);
+  }
+}
 
 // ============================================
 // Circuit breaker for Brevo API (per salon)
@@ -74,19 +94,25 @@ function recordBrevoFailure(salonId = 'meylan', statusCode) {
 }
 
 /**
- * Get Brevo status for all salons (used by systemHealth + dashboard)
+ * Get Brevo status, scoped to one salon (used by systemHealth + dashboard).
+ * Pass a salonId to get only that salon's status; omit to get all salons (internal use).
  */
-function getBrevoStatus() {
+function getBrevoStatus(salonId) {
+  const salonIds = salonId ? [salonId] : ['meylan', 'grenoble'];
   const result = {};
-  for (const salonId of ['meylan', 'grenoble']) {
-    const circuit = getCircuit(salonId);
-    const brevo = getBrevoConfig(salonId);
-    result[salonId] = {
+  for (const id of salonIds) {
+    const circuit = getCircuit(id);
+    const brevo = getBrevoConfig(id);
+    const credits = latestCredits[id] || null;
+    result[id] = {
       keyConfigured: !!brevo.apiKey,
       keyDisabled: circuit.keyDisabled,
       keyDisabledAt: circuit.keyDisabledAt,
-      circuitOpen: isCircuitOpen(salonId),
+      circuitOpen: isCircuitOpen(id),
       failures: circuit.failures,
+      smsCredits: credits ? credits.remainingCredits : null,
+      smsCreditsRecordedAt: credits ? credits.recordedAt : null,
+      lowCreditThreshold: BREVO_CREDIT_LOW_THRESHOLD,
     };
   }
   return result;
@@ -192,23 +218,32 @@ async function brevoEmail(to, subject, htmlContent, salonId = 'meylan', meta = {
       throw new Error(`Brevo email API error ${response.status}: ${errorBody}`);
     }
     recordBrevoSuccess(salonId);
+
+    let parsed = {};
+    try { parsed = await response.json(); } catch (_) {}
+    const messageId = parsed.messageId != null ? String(parsed.messageId) : null;
+
     if (meta.fromQueue) {
-      // Update subject on the existing queue row (so Messages page shows it)
+      // Update subject + messageId on the existing queue row
       try {
         if (meta.queueId) {
-          await db.query('UPDATE notification_queue SET subject = $1 WHERE id = $2', [subject, meta.queueId]);
+          await db.query(
+            'UPDATE notification_queue SET subject = $1, provider_message_id = COALESCE($2, provider_message_id) WHERE id = $3',
+            [subject, messageId, meta.queueId]
+          );
         }
       } catch (_) { /* silent */ }
     } else {
       // Log successful email as a new row (direct send, not from queue)
       try {
         await db.query(
-          `INSERT INTO notification_queue (id, booking_id, type, status, channel, email, recipient_name, subject, salon_id, created_at, sent_at)
-           VALUES (gen_random_uuid(), $1, $2, 'sent', 'email', $3, $4, $5, $6, NOW(), NOW())`,
-          [meta.bookingId || null, meta.type || 'email', to, meta.recipientName || null, subject, salonId]
+          `INSERT INTO notification_queue (id, booking_id, type, status, channel, email, recipient_name, subject, salon_id, created_at, sent_at, provider_message_id)
+           VALUES (gen_random_uuid(), $1, $2, 'sent', 'email', $3, $4, $5, $6, NOW(), NOW(), $7)`,
+          [meta.bookingId || null, meta.type || 'email', to, meta.recipientName || null, subject, salonId, messageId]
         );
       } catch (_) { /* silent */ }
     }
+    return { messageId };
   } catch (err) {
     if (err.name === 'AbortError') recordBrevoFailure(salonId);
     throw err;
@@ -220,7 +255,7 @@ async function brevoEmail(to, subject, htmlContent, salonId = 'meylan', meta = {
 async function brevoSMS(phone, content, salonId = 'meylan') {
   if (config.nodeEnv === 'test') {
     logger.debug('Brevo SMS skipped (test mode)', { phone });
-    return;
+    return { messageId: null, remainingCredits: null };
   }
   if (isCircuitOpen(salonId)) {
     throw new Error('Brevo circuit breaker open — skipping SMS');
@@ -255,6 +290,25 @@ async function brevoSMS(phone, content, salonId = 'meylan') {
       throw new Error(`Brevo SMS API error ${response.status}: ${errorBody}`);
     }
     recordBrevoSuccess(salonId);
+
+    // Parse Brevo response: { reference, messageId, smsCount, usedCredits, remainingCredits }
+    let parsed = {};
+    try {
+      parsed = await response.json();
+    } catch (_) {
+      // Shouldn't happen on 2xx but don't break the send if body is weird
+    }
+    const messageId = parsed.messageId != null ? String(parsed.messageId) : null;
+    const remainingCredits = typeof parsed.remainingCredits === 'number' ? parsed.remainingCredits : null;
+    const usedCredits = typeof parsed.usedCredits === 'number' ? parsed.usedCredits : null;
+    const smsCount = typeof parsed.smsCount === 'number' ? parsed.smsCount : null;
+
+    if (remainingCredits != null) {
+      // Fire and forget — don't block the send on credit logging
+      logCredits(salonId, remainingCredits, usedCredits, smsCount).catch(() => {});
+    }
+
+    return { messageId, remainingCredits, reference: parsed.reference || null };
   } catch (err) {
     if (err.name === 'AbortError') recordBrevoFailure(salonId);
     throw err;

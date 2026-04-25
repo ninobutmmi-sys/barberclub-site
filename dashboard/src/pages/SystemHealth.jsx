@@ -166,6 +166,37 @@ export default function SystemHealth({ embedded } = {}) {
                 <span>SMS: {notifs.brevo_sms_sender}</span>
               </div>
             )}
+            {notifs.brevo_status && (
+              <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+                {Object.entries(notifs.brevo_status).map(([salon, s]) => {
+                  const credits = typeof s.smsCredits === 'number' ? s.smsCredits : null;
+                  const threshold = s.lowCreditThreshold ?? 50;
+                  const low = credits != null && credits < threshold;
+                  const color = credits == null ? 'var(--text-muted)' : low ? '#f59e0b' : '#10b981';
+                  return (
+                    <div key={salon} style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      background: 'rgba(var(--overlay), 0.02)',
+                      border: `1px solid ${low ? 'rgba(245,158,11,0.3)' : 'rgba(var(--overlay), 0.06)'}`,
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)' }}>
+                          Crédits SMS {salon}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                          {s.smsCreditsRecordedAt ? `MAJ ${timeAgo(s.smsCreditsRecordedAt)}` : 'Pas encore mesuré'}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color }}>
+                        {credits != null ? credits : '–'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 

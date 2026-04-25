@@ -6,6 +6,7 @@
 
 const config = require('../config/env');
 const logger = require('./logger');
+const { BREVO_CREDIT_ALERT_COOLDOWN_MS } = require('../constants');
 
 const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || '';
 const TIMEOUT_MS = 5000;
@@ -92,10 +93,26 @@ function alertDatabaseDown(errorMessage) {
   );
 }
 
+function alertBrevoCreditsLow(salonId, remainingCredits) {
+  // Custom cooldown (BREVO_CREDIT_ALERT_COOLDOWN_MS, default 6h per salon) — avoid spam during a low-credit period
+  const key = `credits_low_${salonId}`;
+  const now = Date.now();
+  const last = alertCooldowns[key] || 0;
+  if (now - last < BREVO_CREDIT_ALERT_COOLDOWN_MS) return;
+  alertCooldowns[key] = now;
+
+  sendDiscordAlert(
+    'Credits Brevo SMS bas',
+    `Salon **${salonId}** : il reste **${remainingCredits}** SMS. Rechargez pour eviter les rappels manques.`,
+    0xffa500
+  );
+}
+
 module.exports = {
   sendDiscordAlert,
   alertCronFailure,
   alertCircuitOpen,
   alertCircuitClosed,
   alertDatabaseDown,
+  alertBrevoCreditsLow,
 };

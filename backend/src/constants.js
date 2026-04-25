@@ -43,6 +43,10 @@ module.exports = {
   BREVO_CIRCUIT_COOLDOWN_MS: 60000, // 60s cooldown
   BREVO_REQUEST_TIMEOUT_MS: 15000,  // 15s per request
 
+  // --- Brevo credit alerts ---
+  BREVO_CREDIT_LOW_THRESHOLD: 50,      // alert when remaining SMS credits drop below this
+  BREVO_CREDIT_ALERT_COOLDOWN_MS: 6 * 60 * 60 * 1000, // 6h cooldown per salon to avoid spam
+
   // --- Graceful shutdown ---
   GRACEFUL_SHUTDOWN_TIMEOUT_MS: 10000,
 };

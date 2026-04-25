@@ -536,6 +536,25 @@ export default function Sms({ embedded } = {}) {
                             </td>
                             <td style={{ padding: '10px 12px' }}>
                               <span style={{ color: st.color, fontWeight: 600, fontSize: 12 }}>{st.text}</span>
+                              {log.provider_message_id && (
+                                <button
+                                  type="button"
+                                  title="Copier l'ID Brevo (a donner au support Brevo)"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard?.writeText(log.provider_message_id);
+                                  }}
+                                  style={{
+                                    display: 'block', marginTop: 3, padding: 0,
+                                    background: 'transparent', border: 'none',
+                                    color: 'var(--text-muted)', fontSize: 10,
+                                    fontFamily: 'ui-monospace, monospace', cursor: 'pointer',
+                                    textAlign: 'left',
+                                  }}
+                                >
+                                  ID: {log.provider_message_id}
+                                </button>
+                              )}
                             </td>
                           </tr>
                         );

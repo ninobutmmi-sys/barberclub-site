@@ -108,13 +108,17 @@ async function processPendingNotifications() {
     try {
       notification.fromQueue = true;
       notification.queueId = notification.id;
-      await sendNotification(notification);
+      const sendResult = await sendNotification(notification);
+      const messageId = sendResult && sendResult.messageId ? sendResult.messageId : null;
       await db.query(
-        `UPDATE notification_queue SET status = 'sent', sent_at = NOW()
+        `UPDATE notification_queue
+         SET status = 'sent',
+             sent_at = NOW(),
+             provider_message_id = COALESCE($2, provider_message_id)
          WHERE id = $1`,
-        [notification.id]
+        [notification.id, messageId]
       );
-      logger.info('Notification sent', { id: notification.id, type: notification.type });
+      logger.info('Notification sent', { id: notification.id, type: notification.type, messageId });
     } catch (error) {
       const attempts = notification.attempts + 1;
       const nextRetry = getNextRetryTime(attempts);
@@ -152,17 +156,17 @@ async function sendNotification(notification) {
     if (!notification.phone || !notification.message) {
       // Legacy fallback for old reminder_sms entries queued without message
       if (type === 'reminder_sms' && notification.booking_id) {
-        await sendReminderSMS(notification);
-        return;
+        const legacyResult = await sendReminderSMS(notification);
+        return legacyResult || null;
       }
       throw new Error(`Missing phone/message for ${type}`);
     }
-    await brevoSMS(notification.phone, notification.message, notification.salon_id || 'meylan');
+    const smsResult = await brevoSMS(notification.phone, notification.message, notification.salon_id || 'meylan');
     // Post-send: mark reminder_sent on booking (confirmation_sms / reminder_sms)
     if ((type === 'reminder_sms' || type === 'confirmation_sms') && notification.booking_id) {
       await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [notification.booking_id]);
     }
-    return;
+    return smsResult;
   }
 
   // -- Email types: build template from JOINed booking data --
