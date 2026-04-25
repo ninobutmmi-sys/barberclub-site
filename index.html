@@ -663,6 +663,262 @@ html, body {
 }
 
 /* ═══════════════════════════════════════
+   HIRING BANNER — Meylan (RED)
+   ═══════════════════════════════════════ */
+.hiring-badge {
+  position: absolute;
+  z-index: 20;
+  top: calc(50% + 24px);
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px 14px 20px;
+  background: linear-gradient(135deg, #E2182B 0%, #B20E1E 50%, #7E0814 100%);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 16px;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow:
+    0 14px 40px rgba(210,20,40,0.45),
+    0 0 60px rgba(230,30,50,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 -1px 0 rgba(0,0,0,0.25);
+  opacity: 0;
+  transform: translate(-50%, -14px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.4s cubic-bezier(0.16,1,0.3,1),
+    left 0.35s cubic-bezier(0.22,1,0.36,1),
+    box-shadow 0.35s;
+  overflow: hidden;
+  animation: hiringGlow 2.6s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.landing.visible .hiring-badge {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 1.25s;
+  animation-play-state: running;
+}
+@keyframes hiringGlow {
+  0%, 100% {
+    box-shadow:
+      0 14px 40px rgba(210,20,40,0.45),
+      0 0 50px rgba(230,30,50,0.3),
+      inset 0 1px 0 rgba(255,255,255,0.22),
+      inset 0 -1px 0 rgba(0,0,0,0.25);
+  }
+  50% {
+    box-shadow:
+      0 18px 50px rgba(230,30,50,0.6),
+      0 0 90px rgba(255,40,60,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.3),
+      inset 0 -1px 0 rgba(0,0,0,0.25);
+  }
+}
+@media (pointer: fine) { .hiring-badge { cursor: none; } }
+
+/* Two-line text */
+.hiring-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1;
+  text-align: left;
+}
+.hiring-main {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.35), 0 0 14px rgba(255,255,255,0.25);
+}
+.hiring-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.88);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+
+/* White pulse dot with halo */
+.hiring-pulse {
+  position: relative;
+  width: 11px; height: 11px;
+  flex-shrink: 0;
+}
+.hiring-pulse::before,
+.hiring-pulse::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+.hiring-pulse::before {
+  box-shadow: 0 0 12px rgba(255,255,255,0.95), 0 0 24px rgba(255,220,220,0.7);
+}
+.hiring-pulse::after {
+  animation: hiringPing 1.5s cubic-bezier(0,0,0.2,1) infinite;
+}
+@keyframes hiringPing {
+  0%        { transform: scale(1);   opacity: 0.95; }
+  80%, 100% { transform: scale(3.4); opacity: 0; }
+}
+
+/* Instagram icon */
+.hiring-icon {
+  width: 20px; height: 20px;
+  opacity: 0.95;
+  flex-shrink: 0;
+  transition: opacity 0.35s, transform 0.35s cubic-bezier(0.16,1,0.3,1);
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,0.3));
+}
+
+/* Shimmer sweep */
+.hiring-badge::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -80%;
+  width: 55%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+  animation: hiringShimmer 4s ease-in-out infinite 2s;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes hiringShimmer {
+  0%        { left: -60%; }
+  40%, 100% { left: 170%; }
+}
+.hiring-badge > * { position: relative; z-index: 1; }
+
+.hiring-badge:hover {
+  animation-play-state: paused;
+  box-shadow:
+    0 20px 60px rgba(230,30,50,0.65),
+    0 0 100px rgba(255,60,80,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.3),
+    inset 0 -1px 0 rgba(0,0,0,0.25);
+  transform: translate(-50%, -4px);
+}
+.hiring-badge:hover .hiring-icon {
+  opacity: 1;
+  transform: rotate(8deg) scale(1.14);
+}
+.hiring-badge:active { transform: translate(-50%, 0) scale(0.97); }
+
+@media (min-width: 768px) {
+  .hiring-badge {
+    top: 130px;
+    left: 75%;
+    padding: 20px 32px 20px 28px;
+    gap: 20px;
+    border-radius: 22px;
+    animation-name: hiringGlowXl;
+    animation-duration: 3.2s;
+  }
+  .hiring-main { font-size: 17px; letter-spacing: 0.26em; }
+  .hiring-sub { font-size: 12px; letter-spacing: 0.18em; }
+  .hiring-pulse { width: 13px; height: 13px; }
+  .hiring-icon { width: 24px; height: 24px; }
+
+  /* Wider shimmer, slower cadence */
+  .hiring-badge::before {
+    width: 45%;
+    animation-duration: 4s;
+  }
+
+  /* Cursor-tracked spotlight (overlay blend) */
+  .hiring-badge::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle 160px at var(--hx, 50%) var(--hy, 50%), rgba(255,255,255,0.3), transparent 55%);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+    z-index: 2;
+    mix-blend-mode: overlay;
+  }
+  .hiring-badge:hover::after { opacity: 1; }
+
+  /* XL breathing halo */
+  @keyframes hiringGlowXl {
+    0%, 100% {
+      box-shadow:
+        0 18px 55px rgba(210,20,40,0.5),
+        0 0 130px rgba(255,40,60,0.35),
+        0 0 240px rgba(230,30,50,0.22),
+        inset 0 1px 0 rgba(255,255,255,0.28),
+        inset 0 -1px 0 rgba(0,0,0,0.3);
+    }
+    50% {
+      box-shadow:
+        0 26px 80px rgba(240,30,50,0.72),
+        0 0 200px rgba(255,50,70,0.55),
+        0 0 340px rgba(255,60,80,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.38),
+        inset 0 -1px 0 rgba(0,0,0,0.3);
+    }
+  }
+
+  .hiring-badge:hover {
+    box-shadow:
+      0 30px 100px rgba(240,30,50,0.8),
+      0 0 220px rgba(255,60,80,0.65),
+      0 0 400px rgba(255,70,90,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.4),
+      inset 0 -1px 0 rgba(0,0,0,0.3);
+    transform: translate(-50%, -5px) scale(1.02);
+  }
+
+  /* Keep Meylan expanded while banner is hovered (banner is DOM-sibling, not child) */
+  .salons .salon-meylan.force-expand { flex: 1.24; }
+}
+
+/* Animated chevron — click affordance integrated into banner */
+.hiring-arrow {
+  width: 18px; height: 18px;
+  color: #fff;
+  flex-shrink: 0;
+  stroke-width: 3;
+  opacity: 0.95;
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,0.3));
+  animation: hiringArrowBounce 1.3s cubic-bezier(0.4,0,0.2,1) infinite;
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes hiringArrowBounce {
+  0%, 100% { transform: translateX(0);   opacity: 0.7; }
+  50%      { transform: translateX(5px); opacity: 1; }
+}
+.hiring-badge:hover .hiring-arrow {
+  animation-play-state: paused;
+  transform: translateX(6px) scale(1.15);
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .hiring-arrow { width: 20px; height: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hiring-pulse::after,
+  .hiring-badge::before,
+  .hiring-arrow { animation: none !important; }
+  .hiring-badge {
+    opacity: 1 !important;
+    transform: translate(-50%, 0) !important;
+    animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════
    MOBILE
    ═══════════════════════════════════════ */
 @media (max-width: 767px) {
@@ -781,6 +1037,26 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
           <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </span>
       </div>
+    </a>
+
+    <a href="https://www.instagram.com/barberclub_grenoble/"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="hiring-badge"
+       aria-label="Nous recrutons — Contactez-nous sur Instagram">
+      <span class="hiring-pulse" aria-hidden="true"></span>
+      <span class="hiring-text">
+        <span class="hiring-main">Nous recrutons</span>
+        <span class="hiring-sub">Contactez-nous sur Instagram</span>
+      </span>
+      <svg class="hiring-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+      </svg>
+      <svg class="hiring-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 6l6 6-6 6"/>
+      </svg>
     </a>
 
   </main>
@@ -969,6 +1245,43 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
         salon.querySelector('.salon-content').style.transform = '';
       });
     });
+  }
+
+  /* ═══════════════════════════════════════
+     HIRING BANNER — cursor spotlight + follow Meylan expand (desktop)
+     ═══════════════════════════════════════ */
+  if (!isTouch) {
+    const hiring = document.querySelector('.hiring-badge');
+    const meylanEl = document.querySelector('.salon-meylan');
+    const grenobleEl = document.querySelector('.salon-grenoble');
+
+    if (hiring && !prefersReduced) {
+      hiring.addEventListener('mousemove', e => {
+        const r = hiring.getBoundingClientRect();
+        const x = ((e.clientX - r.left) / r.width) * 100;
+        const y = ((e.clientY - r.top) / r.height) * 100;
+        hiring.style.setProperty('--hx', x + '%');
+        hiring.style.setProperty('--hy', y + '%');
+      });
+    }
+
+    /* Follow Meylan panel when it expands on hover (flex 1 → 1.24) */
+    if (hiring && meylanEl && grenobleEl && matchMedia('(min-width: 768px)').matches) {
+      let onMeylan = false, onGrenoble = false, onBanner = false;
+      const apply = () => {
+        const meylanActive = onMeylan || onBanner;
+        meylanEl.classList.toggle('force-expand', onBanner && !onMeylan);
+        if (meylanActive)       hiring.style.left = '72.3%';
+        else if (onGrenoble)    hiring.style.left = '77.7%';
+        else                    hiring.style.left = '';
+      };
+      meylanEl.addEventListener('mouseenter', () => { onMeylan = true; apply(); });
+      meylanEl.addEventListener('mouseleave', () => { onMeylan = false; apply(); });
+      grenobleEl.addEventListener('mouseenter', () => { onGrenoble = true; apply(); });
+      grenobleEl.addEventListener('mouseleave', () => { onGrenoble = false; apply(); });
+      hiring.addEventListener('mouseenter', () => { onBanner = true; apply(); });
+      hiring.addEventListener('mouseleave', () => { onBanner = false; apply(); });
+    }
   }
 
   /* ═══════════════════════════════════════
