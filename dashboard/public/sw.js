@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bc-dashboard-v2';
+const CACHE_NAME = 'bc-dashboard-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -64,40 +64,58 @@ self.addEventListener('fetch', (e) => {
 });
 
 // ============================================
-// Push Notifications
+// Push Notifications — rich payloads with actions
 // ============================================
 self.addEventListener('push', (e) => {
   if (!e.data) return;
   try {
     const data = e.data.json();
-    e.waitUntil(
-      self.registration.showNotification(data.title || 'BarberClub', {
-        body: data.body || '',
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-96x96.png',
-        tag: data.tag || 'default',
-        data: { url: data.url || '/' },
-      })
-    );
+    const options = {
+      body: data.body || '',
+      icon: data.icon || '/icons/icon-192x192.png',
+      badge: data.badge || '/icons/icon-96x96.png',
+      tag: data.tag || 'default',
+      vibrate: data.vibrate || [180, 90, 180],
+      requireInteraction: data.requireInteraction === true,
+      renotify: data.renotify === true,
+      silent: data.silent === true,
+      lang: data.lang || 'fr',
+      dir: data.dir || 'ltr',
+      timestamp: data.timestamp || Date.now(),
+      data: data.data || { url: data.url || '/' },
+    };
+    if (data.image) options.image = data.image;
+    if (Array.isArray(data.actions) && data.actions.length > 0) {
+      options.actions = data.actions.slice(0, 2);
+    }
+    e.waitUntil(self.registration.showNotification(data.title || 'BarberClub', options));
   } catch {
     // ignore malformed push
   }
 });
 
 self.addEventListener('notificationclick', (e) => {
+  const action = e.action;
+  const d = e.notification.data || {};
   e.notification.close();
-  const url = e.notification.data?.url || '/';
+
+  // Action "Appeler" (SMS failed) -> ouvre tel:... directement
+  if (action === 'call' && d.phone) {
+    e.waitUntil(self.clients.openWindow(`tel:${d.phone}`));
+    return;
+  }
+
+  // Tout le reste (action "view" ou clic body) -> ouvre dashboard
+  const url = d.url || '/';
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      // Focus existing tab if one is open
       for (const client of clients) {
         if (client.url.includes(self.location.origin)) {
           client.focus();
-          client.navigate(url);
+          if (client.navigate) client.navigate(url);
           return;
         }
       }
-      // Open new tab
       return self.clients.openWindow(url);
     })
   );

@@ -377,8 +377,15 @@ async function createBooking(data) {
     }
   }
 
-  // Push notification to dashboard (fire-and-forget)
-  notifyNewBooking(salonId, result);
+  // Push notification to dashboard (fire-and-forget) — merge bookingDetails
+  // for client name + service info that result alone doesn't include
+  notifyNewBooking(salonId, {
+    ...result,
+    ...(bookingDetails || {}),
+    // getBookingDetails aliases as client_first_name — re-map for push payload
+    first_name: (bookingDetails && bookingDetails.client_first_name) || result.first_name,
+    last_name: (bookingDetails && bookingDetails.client_last_name) || result.last_name,
+  });
 
   return result;
 }
