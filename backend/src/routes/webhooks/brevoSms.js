@@ -22,6 +22,8 @@ const { sendDiscordAlert } = require('../../utils/discord');
 const router = express.Router();
 
 // Map Brevo event names -> our delivery_status values
+// Valid SMS events from Brevo: delivered, sent, softBounce, hardBounce, blocked, error
+// (Brevo dashboard shows "Rejeté" but the API event is actually "blocked" or "error")
 function mapEventToStatus(event) {
   const e = String(event || '').toLowerCase();
   if (e === 'delivered') return 'delivered';
@@ -29,8 +31,9 @@ function mapEventToStatus(event) {
   if (e === 'accepted') return 'accepted';
   if (e === 'soft_bounce' || e === 'softbounce') return 'soft_bounce';
   if (e === 'hard_bounce' || e === 'hardbounce') return 'hard_bounce';
-  if (e === 'rejected') return 'rejected';
-  if (e === 'blocked') return 'rejected';
+  if (e === 'blocked') return 'rejected';   // crédits insuffisants, blacklist Brevo, etc.
+  if (e === 'error') return 'rejected';     // erreur opérateur générique
+  if (e === 'rejected') return 'rejected';  // legacy / dashboard label
   if (e === 'blacklisted') return 'blacklisted';
   if (e === 'unsubscribe' || e === 'unsubscribed') return 'unsubscribed';
   return 'unknown';

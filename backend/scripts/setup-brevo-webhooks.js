@@ -19,7 +19,10 @@ const { Pool } = require('pg');
 
 const API_URL = process.env.API_URL || process.env.SITE_URL || '';
 const SECRET = process.env.BREVO_WEBHOOK_SECRET || '';
-const EVENTS = ['delivered', 'sent', 'accepted', 'rejected', 'hardBounce', 'softBounce', 'blocked', 'blacklisted'];
+// Valid SMS event names per Brevo API (probed):
+// delivered, sent, softBounce, hardBounce, blocked, error
+// (accepted/rejected/blacklisted/replied are NOT accepted by the create-webhook API)
+const EVENTS = ['delivered', 'sent', 'softBounce', 'hardBounce', 'blocked', 'error'];
 
 const SALONS = {
   meylan: process.env.BREVO_API_KEY,
@@ -41,11 +44,19 @@ async function listWebhooks(apiKey) {
   const resp = await fetch('https://api.brevo.com/v3/webhooks?type=transactional', {
     headers: { 'api-key': apiKey, 'accept': 'application/json' },
   });
+  const text = await resp.text();
+  // Brevo quirk: returns 400 "Webhook record does not exist" when zero webhooks exist
+  if (resp.status === 400 && text.includes('document_not_found')) {
+    return { webhooks: [] };
+  }
   if (!resp.ok) {
-    const text = await resp.text();
     throw new Error(`List webhooks failed: ${resp.status} ${text}`);
   }
-  return resp.json();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { webhooks: [] };
+  }
 }
 
 async function createWebhook(apiKey) {
@@ -59,7 +70,7 @@ async function createWebhook(apiKey) {
     body: JSON.stringify({
       url: webhookUrl,
       type: 'transactional',
-      channel: 'sms',
+      domain: 'sms', // NB: API uses "domain" not "channel" for SMS webhooks
       events: EVENTS,
       description: 'BarberClub SMS delivery tracking',
     }),
