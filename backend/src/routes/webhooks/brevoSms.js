@@ -57,14 +57,26 @@ router.post('/brevo/sms', async (req, res) => {
   }
 
   const payload = req.body || {};
-  const messageId = payload.messageId != null ? String(payload.messageId) : null;
+  // Brevo can send messageId under several names depending on the event type
+  const rawMsgId = payload.messageId
+    ?? payload['message-id']
+    ?? payload.message_id
+    ?? payload.smsId
+    ?? payload['sms-id']
+    ?? payload.id
+    ?? null;
+  const messageId = rawMsgId != null ? String(rawMsgId) : null;
   const event = payload.event || payload.msg_status || null;
-  const recipient = payload.to || null;
+  const recipient = payload.to || payload.recipient || null;
   const description = payload.description || payload.reason || null;
   const errorCode = payload.error_code || null;
 
   if (!messageId || !event) {
-    logger.warn('Brevo webhook payload incomplete', { messageId, event });
+    // Log the full payload so we can see what Brevo actually sends
+    logger.warn('Brevo webhook payload incomplete', {
+      keys: Object.keys(payload),
+      payloadSample: JSON.stringify(payload).slice(0, 500),
+    });
     return res.status(200).json({ ok: true, ignored: 'missing fields' });
   }
 
@@ -95,12 +107,12 @@ router.post('/brevo/sms', async (req, res) => {
   try {
     const update = await db.query(
       `UPDATE notification_queue
-       SET delivery_status = $1,
+       SET delivery_status = $1::text,
            delivery_event_at = NOW(),
-           delivered_at = CASE WHEN $1 = 'delivered' THEN NOW() ELSE delivered_at END,
-           last_error = CASE WHEN $1 IN ('hard_bounce','rejected','blacklisted','soft_bounce')
-                            THEN COALESCE($2, last_error) ELSE last_error END
-       WHERE provider_message_id = $3
+           delivered_at = CASE WHEN $1::text = 'delivered' THEN NOW() ELSE delivered_at END,
+           last_error = CASE WHEN $1::text IN ('hard_bounce','rejected','blacklisted','soft_bounce')
+                            THEN COALESCE($2::text, last_error) ELSE last_error END
+       WHERE provider_message_id = $3::text
        RETURNING id, salon_id, phone, booking_id, type`,
       [deliveryStatus, description, messageId]
     );

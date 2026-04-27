@@ -101,12 +101,12 @@ async function applyEvent(salonId, ev) {
   try {
     await db.query(
       `UPDATE notification_queue
-       SET delivery_status = $1,
+       SET delivery_status = $1::text,
            delivery_event_at = NOW(),
-           delivered_at = CASE WHEN $1 = 'delivered' THEN NOW() ELSE delivered_at END,
-           last_error = CASE WHEN $1 IN ('hard_bounce','rejected','blacklisted','soft_bounce')
-                            THEN COALESCE($2, last_error) ELSE last_error END
-       WHERE provider_message_id = $3`,
+           delivered_at = CASE WHEN $1::text = 'delivered' THEN NOW() ELSE delivered_at END,
+           last_error = CASE WHEN $1::text IN ('hard_bounce','rejected','blacklisted','soft_bounce')
+                            THEN COALESCE($2::text, last_error) ELSE last_error END
+       WHERE provider_message_id = $3::text`,
       [status, ev.description, ev.messageId]
     );
   } catch (err) {
