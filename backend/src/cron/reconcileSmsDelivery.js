@@ -9,8 +9,8 @@
 
 const db = require('../config/database');
 const logger = require('../utils/logger');
-const { getBrevoConfig } = require('../services/notification/brevo');
-const { sendDiscordAlert } = require('../utils/discord');
+const { getBrevoConfig, brevoEmail } = require('../services/notification/brevo');
+const { notifySmsFailed } = require('../services/push');
 const {
   BREVO_SMS_RECONCILE_LOOKBACK_HOURS,
   BREVO_SMS_DELIVERY_TIMEOUT_MS,
@@ -193,16 +193,27 @@ async function reconcileSmsDelivery() {
         `UPDATE notification_queue SET delivery_status = 'unknown' WHERE id = ANY($1)`,
         [ids]
       );
-      sendDiscordAlert(
-        'SMS sans confirmation de delivery',
-        `${stuck.rows.length} SMS envoye(s) il y a +${Math.round(BREVO_SMS_DELIVERY_TIMEOUT_MS / 60000)}min sans event delivered/rejected.`,
-        0xffa500,
-        stuck.rows.slice(0, 5).map(r => ({
-          name: `${r.salon_id} ${r.type}`,
-          value: `${r.phone} • msgId=${r.provider_message_id || 'n/a'}`,
-          inline: false,
-        }))
-      );
+      // Push notification + email pour chaque SMS bloqué
+      for (const r of stuck.rows.slice(0, 5)) {
+        notifySmsFailed(r.salon_id, {
+          phone: r.phone,
+          reason: 'pas de confirmation delivery',
+          messageId: r.provider_message_id,
+        });
+      }
+      const ownerEmail = process.env.OWNER_ALERT_EMAIL || 'barberclubmeylan@gmail.com';
+      const list = stuck.rows.slice(0, 10)
+        .map(r => `<li>${r.salon_id} • ${r.phone} • ${r.type} • msgId=${r.provider_message_id || 'n/a'}</li>`)
+        .join('');
+      const subject = `[BarberClub] ${stuck.rows.length} SMS sans confirmation delivery`;
+      const html = `
+        <h2>SMS envoye(s) sans event delivered/rejected</h2>
+        <p>${stuck.rows.length} SMS apres +${Math.round(BREVO_SMS_DELIVERY_TIMEOUT_MS / 60000)}min sans confirmation Brevo.</p>
+        <ul>${list}</ul>
+      `;
+      const firstSalon = stuck.rows[0]?.salon_id || 'meylan';
+      brevoEmail(ownerEmail, subject, html, firstSalon, { type: 'sms_stuck_alert' })
+        .catch((e) => logger.error('Stuck SMS owner alert failed', { error: e.message }));
     }
   } catch (err) {
     logger.error('Stuck SMS check failed', { error: err.message });

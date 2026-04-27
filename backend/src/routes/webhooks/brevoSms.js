@@ -17,7 +17,8 @@
 const express = require('express');
 const db = require('../../config/database');
 const logger = require('../../utils/logger');
-const { sendDiscordAlert } = require('../../utils/discord');
+const { notifySmsFailed } = require('../../services/push');
+const { brevoEmail } = require('../../services/notification/brevo');
 
 const router = express.Router();
 
@@ -128,18 +129,55 @@ router.post('/brevo/sms', async (req, res) => {
         }
       }
 
-      // 4. Discord alert on rejected/blacklisted (low-cooldown — once per minute per type)
+      // 4. Alerter Nino via push dashboard + email (pas de Discord)
       if (isTerminalFailure(deliveryStatus)) {
-        sendDiscordAlert(
-          'SMS NON DELIVRE',
-          `Salon **${row.salon_id}** — SMS rejete par Brevo/operateur.\nClient: ${recipient || row.phone}\nRaison: ${description || event}\nType: ${row.type}`,
-          0xff8800,
-          [
-            { name: 'MessageId', value: messageId, inline: true },
-            { name: 'Event', value: event, inline: true },
-            { name: 'BookingId', value: row.booking_id || 'n/a', inline: true },
-          ]
-        );
+        // Récupère détails du booking pour message clair
+        let clientName = '', dateTime = '';
+        try {
+          if (row.booking_id) {
+            const det = await db.query(
+              `SELECT c.first_name, c.last_name, b.date, b.start_time, br.name AS barber
+               FROM bookings b
+               LEFT JOIN clients c ON b.client_id = c.id
+               LEFT JOIN barbers br ON b.barber_id = br.id
+               WHERE b.id = $1`,
+              [row.booking_id]
+            );
+            if (det.rows.length) {
+              const r = det.rows[0];
+              clientName = [r.first_name, r.last_name].filter(Boolean).join(' ');
+              const t = (r.start_time || '').slice(0, 5);
+              dateTime = `${r.date} ${t} avec ${r.barber || ''}`.trim();
+            }
+          }
+        } catch (_) { /* silent */ }
+
+        // Push notification → dashboard PWA (Nino's phone)
+        notifySmsFailed(row.salon_id, {
+          phone: recipient || row.phone,
+          reason: description || event,
+          messageId,
+          clientName,
+          dateTime,
+        });
+
+        // Email backup → propriétaire (toujours fiable car email use Brevo l'autre côté
+        // et compte SMS != compte email credits)
+        const ownerEmail = process.env.OWNER_ALERT_EMAIL || 'barberclubmeylan@gmail.com';
+        const subject = `[BarberClub ${row.salon_id}] SMS non delivre — ${clientName || recipient}`;
+        const html = `
+          <h2 style="font-family:Arial">SMS rejete par Brevo/operateur</h2>
+          <p><b>Salon:</b> ${row.salon_id}</p>
+          <p><b>Client:</b> ${clientName || '(inconnu)'} — ${recipient || row.phone}</p>
+          <p><b>RDV:</b> ${dateTime || row.type}</p>
+          <p><b>Raison:</b> ${description || event}</p>
+          <p><b>Type notification:</b> ${row.type}</p>
+          <p><b>MessageId Brevo:</b> ${messageId}</p>
+          <hr>
+          <p style="color:#888">Action recommandee : appeler ${recipient || row.phone} pour confirmer le RDV.</p>
+        `;
+        brevoEmail(ownerEmail, subject, html, row.salon_id, { type: 'sms_failure_alert' })
+          .catch((e) => logger.error('Owner alert email failed', { error: e.message }));
       }
     }
   } catch (err) {

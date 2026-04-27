@@ -94,4 +94,24 @@ function notifyReschedule(salonId, booking) {
   });
 }
 
-module.exports = { notifySalon, notifyNewBooking, notifyCancellation, notifyReschedule };
+/**
+ * Push alert when an SMS reminder/notification fails to deliver.
+ * Lands on Nino's phone via the dashboard PWA — replaces Discord alerts.
+ */
+function notifySmsFailed(salonId, info) {
+  const salonLabel = salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
+  const phone = info.phone || info.recipient || 'inconnu';
+  const reason = info.reason || info.event || 'rejected';
+  const client = info.clientName || '';
+  const dateTime = info.dateTime ? ` (${info.dateTime})` : '';
+
+  notifySalon(salonId, {
+    title: `SMS NON DELIVRE — ${salonLabel}`,
+    body: `${client ? client + ' ' : ''}${phone}${dateTime} • ${reason}`,
+    tag: `sms-failed-${info.messageId || Date.now()}`,
+    url: '/#/notifications',
+    requireInteraction: true,
+  });
+}
+
+module.exports = { notifySalon, notifyNewBooking, notifyCancellation, notifyReschedule, notifySmsFailed };
