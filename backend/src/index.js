@@ -42,12 +42,14 @@ const pushRoutes = require('./routes/admin/push');
 const productRoutes = require('./routes/admin/products');
 const objectivesRoutes = require('./routes/admin/objectives');
 const { publicRouter: eventAlertPublicRoutes, adminRouter: eventAlertAdminRoutes } = require('./routes/eventAlerts');
+const brevoSmsWebhookRoutes = require('./routes/webhooks/brevoSms');
 
 // Cron job imports
 const { queueReminders } = require('./cron/reminders');
 const { processQueue, cleanupOldNotifications, cleanupExpiredTokens } = require('./cron/retryNotifications');
 const { processAutomationTriggers } = require('./cron/automationTriggers');
 const { dailyBackupSnapshot } = require('./cron/backup');
+const { reconcileSmsDelivery } = require('./cron/reconcileSmsDelivery');
 
 // ============================================
 // Cron job tracking (in-memory)
@@ -59,6 +61,7 @@ const cronStatus = {
   cleanupExpiredTokens:  { label: 'Cleanup tokens',     schedule: '30 3 * * *',  lastRun: null, status: 'idle', error: null },
   automationTriggers:    { label: 'Triggers auto',      schedule: '*/10 * * * *', lastRun: null, status: 'idle', error: null },
   dailyBackup:           { label: 'Backup snapshot',    schedule: '0 4 * * *',   lastRun: null, status: 'idle', error: null },
+  reconcileSmsDelivery:  { label: 'Reconcile SMS Brevo', schedule: '*/30 * * * *', lastRun: null, status: 'idle', error: null },
 };
 
 // Advisory lock IDs — unique per cron to prevent concurrent execution
@@ -69,6 +72,7 @@ const CRON_LOCK_IDS = {
   cleanupExpiredTokens: 100005,
   automationTriggers: 100006,
   dailyBackup: 100007,
+  reconcileSmsDelivery: 100008,
 };
 
 // Track consecutive failures per cron job for alerting
@@ -270,6 +274,9 @@ app.use('/api/event-alerts', eventAlertPublicRoutes);
 // Public campaign tracking (no auth)
 app.use('/api/track', campaignTrackRoutes);
 
+// Brevo SMS delivery webhook (no auth — token in URL)
+app.use('/api/webhooks', brevoSmsWebhookRoutes);
+
 // ============================================
 // Short redirect URLs (for SMS links)
 // ============================================
@@ -390,6 +397,7 @@ if (config.nodeEnv === 'production') {
   cron.schedule('30 3 * * *',   trackCron('cleanupExpiredTokens', cleanupExpiredTokens));
   cron.schedule('*/10 * * * *', trackCron('automationTriggers', processAutomationTriggers));
   cron.schedule('0 4 * * *',    trackCron('dailyBackup', dailyBackupSnapshot));
+  cron.schedule('*/30 * * * *', trackCron('reconcileSmsDelivery', reconcileSmsDelivery));
   logger.info('Cron jobs enabled (production)');
 } else {
   logger.info('Cron jobs disabled (development) — only production sends SMS/emails via crons');

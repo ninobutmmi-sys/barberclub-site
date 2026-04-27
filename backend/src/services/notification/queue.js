@@ -110,13 +110,17 @@ async function processPendingNotifications() {
       notification.queueId = notification.id;
       const sendResult = await sendNotification(notification);
       const messageId = sendResult && sendResult.messageId ? sendResult.messageId : null;
+      // For SMS: delivery_status='pending' until webhook confirms delivered/rejected
+      // For email: no webhook tracking, leave delivery_status NULL
+      const isSms = notification.channel === 'sms';
       await db.query(
         `UPDATE notification_queue
          SET status = 'sent',
              sent_at = NOW(),
-             provider_message_id = COALESCE($2, provider_message_id)
+             provider_message_id = COALESCE($2, provider_message_id),
+             delivery_status = CASE WHEN $3::boolean THEN 'pending' ELSE delivery_status END
          WHERE id = $1`,
-        [notification.id, messageId]
+        [notification.id, messageId, isSms]
       );
       logger.info('Notification sent', { id: notification.id, type: notification.type, messageId });
     } catch (error) {

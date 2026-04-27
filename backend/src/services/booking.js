@@ -361,10 +361,11 @@ async function createBooking(data) {
         logger.info('Confirmation SMS sent (booking within 24h)', { bookingId: result.id, hoursUntil: Math.round(hoursUntilBooking) });
       } catch (err) {
         logger.error('Direct confirmation SMS failed, queueing for retry', { bookingId: result.id, error: err.message });
-        const salonConf = config.getSalonConfig(salonId);
-        const dateFR = notification.formatDateFR(bookingDetails.date);
+        const salonShort = salonId === 'meylan' ? 'Meylan' : 'Grenoble';
+        const dateFRFull = notification.formatDateFR(bookingDetails.date);
+        const dateFR = dateFRFull.replace(/\s+\d{4}$/, '');
         const timeFmt = notification.formatTime(bookingDetails.start_time);
-        const smsMsg = notification.toGSM(`BarberClub - RDV confirme\nLe ${dateFR} a ${timeFmt} avec ${bookingDetails.barber_name}.\n${salonConf.address}`);
+        const smsMsg = notification.toGSM(`BarberClub ${salonShort} - RDV confirme ${dateFR} a ${timeFmt} avec ${bookingDetails.barber_name}. A bientot!`);
         try {
           await notification.queueNotification(result.id, 'confirmation_sms', {
             phone: bookingDetails.client_phone, message: smsMsg, salonId,

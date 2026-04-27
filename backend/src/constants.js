@@ -45,7 +45,12 @@ module.exports = {
 
   // --- Brevo credit alerts ---
   BREVO_CREDIT_LOW_THRESHOLD: 50,      // alert when remaining SMS credits drop below this
+  BREVO_CREDIT_CRITICAL_THRESHOLD: 5,  // BLOCK SMS sends below this — fallback to email
   BREVO_CREDIT_ALERT_COOLDOWN_MS: 6 * 60 * 60 * 1000, // 6h cooldown per salon to avoid spam
+
+  // --- Brevo SMS delivery webhook ---
+  BREVO_SMS_DELIVERY_TIMEOUT_MS: 2 * 60 * 60 * 1000, // alert if no delivery confirmation after 2h
+  BREVO_SMS_RECONCILE_LOOKBACK_HOURS: 6, // polling fallback window
 
   // --- Graceful shutdown ---
   GRACEFUL_SHUTDOWN_TIMEOUT_MS: 10000,

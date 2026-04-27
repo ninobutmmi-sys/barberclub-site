@@ -290,12 +290,13 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl, salon_id })
  */
 async function sendReminderSMSDirect(data) {
   const salonId = data.salon_id || 'meylan';
-  const salon = config.getSalonConfig(salonId);
+  const salonShort = salonId === 'meylan' ? 'Meylan' : 'Grenoble';
 
   const timeFormatted = formatTime(data.start_time);
-  const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
+  const dateFRFull = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
+  const dateFR = dateFRFull.replace(/\s+\d{4}$/, '');
 
-  const message = toGSM(`BarberClub - Rappel\nRDV le ${dateFR} a ${timeFormatted}\n${salon.address}.\nA bientot!`);
+  const message = toGSM(`BarberClub ${salonShort} - RDV ${dateFR} a ${timeFormatted}. A bientot!`);
 
   await brevoSMS(data.phone, message, salonId);
 }
@@ -306,12 +307,13 @@ async function sendReminderSMSDirect(data) {
  */
 async function sendConfirmationSMS(data) {
   const salonId = data.salon_id || 'meylan';
-  const salon = config.getSalonConfig(salonId);
+  const salonShort = salonId === 'meylan' ? 'Meylan' : 'Grenoble';
 
   const timeFormatted = formatTime(data.start_time);
-  const dateFR = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
+  const dateFRFull = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
+  const dateFR = dateFRFull.replace(/\s+\d{4}$/, '');
 
-  const message = toGSM(`BarberClub - RDV confirme\nLe ${dateFR} a ${timeFormatted} avec ${data.barber_name}.\n${salon.address}`);
+  const message = toGSM(`BarberClub ${salonShort} - RDV confirme ${dateFR} a ${timeFormatted} avec ${data.barber_name}. A bientot!`);
 
   await brevoSMS(data.phone, message, salonId);
   logger.info('Confirmation SMS sent', { bookingId: data.booking_id, phone: data.phone, salonId });

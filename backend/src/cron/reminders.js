@@ -11,16 +11,20 @@ const logger = require('../utils/logger');
  */
 async function queueReminders() {
   try {
-    // Find all confirmed bookings in the next 24h that haven't been reminded
-    // Uses wide window (now → +24h) so missed runs are automatically recovered
+    // Find all confirmed bookings in the next 24h that haven't been reminded.
+    // Skip bookings created < 2h ago (client just booked, doesn't need reminder yet).
+    // Skip blacklisted phones (Brevo already told us they fail).
+    // Uses wide window (now → +24h) so missed runs are automatically recovered.
     const result = await db.query(
       `SELECT b.id, b.date, b.start_time, b.cancel_token, b.salon_id,
               c.phone, c.email
        FROM bookings b
        JOIN clients c ON b.client_id = c.id
+       LEFT JOIN sms_blacklist bl ON bl.phone = c.phone
        WHERE b.status = 'confirmed'
          AND b.deleted_at IS NULL
          AND (c.phone IS NOT NULL OR c.email IS NOT NULL)
+         AND b.created_at < NOW() - INTERVAL '2 hours'
          AND (b.date::text || ' ' || b.start_time::text)::timestamp
              BETWEEN (NOW() AT TIME ZONE 'Europe/Paris')
                  AND (NOW() AT TIME ZONE 'Europe/Paris') + INTERVAL '24 hours'
@@ -35,7 +39,8 @@ async function queueReminders() {
              WHERE nq.booking_id = b.id AND nq.type = 'reminder_email'
                AND nq.status IN ('pending', 'processing', 'sent')
            )
-         )`
+         )
+       ORDER BY b.date, b.start_time`,
     );
 
     if (result.rows.length === 0) {
@@ -48,12 +53,16 @@ async function queueReminders() {
       const salonId = booking.salon_id || 'meylan';
       const salon = config.getSalonConfig(salonId);
       const timeFormatted = formatTime(booking.start_time);
-      const dateFR = formatDateFR(typeof booking.date === 'string' ? booking.date.slice(0, 10) : booking.date);
+      // Date sans année pour SMS — économise 5 chars (RDV <24h, année implicite)
+      const dateFRFull = formatDateFR(typeof booking.date === 'string' ? booking.date.slice(0, 10) : booking.date);
+      const dateFR = dateFRFull.replace(/\s+\d{4}$/, '');
 
       try {
-        // SMS for French phones
+        // SMS for French phones — message court (~95 chars, 1 SMS unit garanti)
+        // Format: "BarberClub Meylan - RDV demain Mardi 28 avril a 14:30. A bientot!"
         if (booking.phone && isFrenchPhone(booking.phone)) {
-          const message = toGSM(`BarberClub - Rappel\nRDV le ${dateFR} a ${timeFormatted}\n${salon.address}.\nA bientot!`);
+          const salonShort = salonId === 'meylan' ? 'Meylan' : 'Grenoble';
+          const message = toGSM(`BarberClub ${salonShort} - RDV ${dateFR} a ${timeFormatted}. A bientot!`);
           await queueNotification(booking.id, 'reminder_sms', {
             phone: booking.phone,
             message,
@@ -61,7 +70,7 @@ async function queueReminders() {
           });
         }
 
-        // Email as backup (always, if email exists)
+        // Email as backup (always, if email exists) — gratuit, on prend
         if (booking.email) {
           await queueNotification(booking.id, 'reminder_email', {
             email: booking.email,

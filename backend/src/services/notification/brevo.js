@@ -6,6 +6,7 @@ const {
   BREVO_CIRCUIT_COOLDOWN_MS,
   BREVO_REQUEST_TIMEOUT_MS,
   BREVO_CREDIT_LOW_THRESHOLD,
+  BREVO_CREDIT_CRITICAL_THRESHOLD,
 } = require('../../constants');
 const { alertCircuitOpen, alertCircuitClosed, alertBrevoCreditsLow } = require('../../utils/discord');
 const { formatPhoneInternational, htmlToText } = require('./helpers');
@@ -266,6 +267,31 @@ async function brevoSMS(phone, content, salonId = 'meylan') {
     throw new Error(`Brevo API key not configured for salon ${salonId}`);
   }
   const recipient = formatPhoneInternational(phone);
+
+  // Pre-send credit gate — block if last known balance is critical
+  // Avoid silent failures: better to throw and let queue mark failed than
+  // burn an API call that Brevo will reject silently
+  const known = latestCredits[salonId];
+  if (known && typeof known.remainingCredits === 'number'
+      && known.remainingCredits < BREVO_CREDIT_CRITICAL_THRESHOLD) {
+    logger.warn('Brevo SMS blocked — credits below critical threshold', {
+      salonId, remaining: known.remainingCredits, threshold: BREVO_CREDIT_CRITICAL_THRESHOLD,
+    });
+    throw new Error(`Brevo credits epuises (${known.remainingCredits}) pour ${salonId}`);
+  }
+
+  // Skip blacklisted numbers — Brevo already told us they fail permanently
+  try {
+    const bl = await db.query('SELECT 1 FROM sms_blacklist WHERE phone = $1', [recipient]);
+    if (bl.rows.length > 0) {
+      logger.info('Brevo SMS blocked — phone blacklisted', { recipient, salonId });
+      throw new Error(`Numero blackliste: ${recipient}`);
+    }
+  } catch (err) {
+    if (err.message.startsWith('Numero blackliste')) throw err;
+    // DB error: continue (don't block SMS on DB hiccup)
+    logger.debug('Blacklist check skipped', { error: err.message });
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), BREVO_REQUEST_TIMEOUT_MS);
   try {
