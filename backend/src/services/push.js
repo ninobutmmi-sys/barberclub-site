@@ -44,6 +44,17 @@ function salonPhoto(salonId) {
   return '/salons/devanture-meylan.webp';
 }
 
+// Format compact sans accents (cohérent avec le style des bodies push existants)
+// "2026-04-28" -> "lun. 28 avr."
+function formatDateShort(dateStr) {
+  if (!dateStr) return '';
+  const days = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+  const months = ['janv.', 'fevr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'aout', 'sept.', 'oct.', 'nov.', 'dec.'];
+  const d = new Date(String(dateStr).slice(0, 10) + 'T00:00:00');
+  if (isNaN(d.getTime())) return String(dateStr);
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
 /**
  * Send rich push notification to all subscribers of a salon (fire-and-forget)
  */
@@ -98,9 +109,11 @@ function notifyNewBooking(salonId, booking) {
   const service = booking.service_name || '';
   const date = booking.date || '';
 
+  const dateLabel = formatDateShort(date);
+  const whenWho = [dateLabel, time && `a ${time}`, barber && `avec ${barber}`].filter(Boolean).join(' ');
   const lines = [
     service ? `${clientName} - ${service}` : clientName,
-    barber ? `${time} avec ${barber}` : time,
+    whenWho,
   ].filter(Boolean);
 
   notifySalon(salonId, {
@@ -130,7 +143,7 @@ function notifyCancellation(salonId, booking) {
 
   notifySalon(salonId, {
     title: `Annulation - ${salonLabel}`,
-    body: `${clientName} a annule\n${date} a ${time}${barber ? ' avec ' + barber : ''}`,
+    body: `${clientName} a annule\n${formatDateShort(date)} a ${time}${barber ? ' avec ' + barber : ''}`,
     image: salonPhoto(salonId),
     tag: `cancel-${booking.id || Date.now()}`,
     vibrate: VIBRATE.warn,
@@ -154,7 +167,7 @@ function notifyReschedule(salonId, booking) {
 
   notifySalon(salonId, {
     title: `RDV deplace - ${salonLabel}`,
-    body: `${clientName} a deplace son RDV\nNouveau: ${date} a ${time}${barber ? ' avec ' + barber : ''}`,
+    body: `${clientName} a deplace son RDV\nNouveau: ${formatDateShort(date)} a ${time}${barber ? ' avec ' + barber : ''}`,
     image: barberPhoto(barber),
     tag: `reschedule-${booking.id || Date.now()}`,
     vibrate: VIBRATE.info,
