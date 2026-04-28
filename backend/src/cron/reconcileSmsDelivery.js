@@ -20,13 +20,12 @@ const {
 /**
  * Fetch Brevo SMS event statistics for a salon over a window.
  * Returns array of events with messageId + event type.
+ *
+ * NB: Brevo treats endDate as exclusive when startDate < endDate. To cover
+ * "now-Nh through now" reliably, the caller passes ranges and we hit each one.
  */
-async function fetchBrevoSmsEvents(salonId, startDateISO, endDateISO) {
-  const brevo = getBrevoConfig(salonId);
-  if (!brevo.apiKey) return [];
-
+async function fetchBrevoSmsEventsRange(salonId, brevo, startDateISO, endDateISO) {
   const events = [];
-  // Query each interesting event type — Brevo doesn't return all in one call
   const eventTypes = ['delivered', 'rejected', 'hardBounces', 'softBounces', 'blocked'];
 
   for (const evType of eventTypes) {
@@ -67,6 +66,22 @@ async function fetchBrevoSmsEvents(salonId, startDateISO, endDateISO) {
   }
 
   return events;
+}
+
+async function fetchBrevoSmsEvents(salonId, startDateISO, endDateISO) {
+  const brevo = getBrevoConfig(salonId);
+  if (!brevo.apiKey) return [];
+  // Brevo quirk: endDate is exclusive when startDate < endDate, so today's
+  // events are dropped from a multi-day range. We split into "historical"
+  // (start..end-1) and "today" (end..end) when they differ.
+  if (startDateISO === endDateISO) {
+    return fetchBrevoSmsEventsRange(salonId, brevo, startDateISO, endDateISO);
+  }
+  const yesterday = new Date(new Date(endDateISO + 'T00:00:00Z').getTime() - 24 * 3600 * 1000)
+    .toISOString().split('T')[0];
+  const historical = await fetchBrevoSmsEventsRange(salonId, brevo, startDateISO, yesterday);
+  const today = await fetchBrevoSmsEventsRange(salonId, brevo, endDateISO, endDateISO);
+  return historical.concat(today);
 }
 
 /**

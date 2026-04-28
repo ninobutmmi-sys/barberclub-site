@@ -19,10 +19,10 @@ const { Pool } = require('pg');
 
 const API_URL = process.env.API_URL || process.env.SITE_URL || '';
 const SECRET = process.env.BREVO_WEBHOOK_SECRET || '';
-// Valid SMS event names per Brevo API (probed):
-// delivered, sent, softBounce, hardBounce, blocked, error
-// (accepted/rejected/blacklisted/replied are NOT accepted by the create-webhook API)
-const EVENTS = ['delivered', 'sent', 'softBounce', 'hardBounce', 'blocked', 'error'];
+// Valid SMS event names per Brevo API (probed 2026-04-28):
+// delivered, sent, accepted, softBounce, hardBounce, rejected, blacklisted
+// (blocked, error, replied, unsubscribed, request are NOT accepted on SMS channel)
+const EVENTS = ['delivered', 'sent', 'accepted', 'softBounce', 'hardBounce', 'rejected', 'blacklisted'];
 
 const SALONS = {
   meylan: process.env.BREVO_API_KEY,
@@ -70,7 +70,7 @@ async function createWebhook(apiKey) {
     body: JSON.stringify({
       url: webhookUrl,
       type: 'transactional',
-      domain: 'sms', // NB: API uses "domain" not "channel" for SMS webhooks
+      channel: 'sms', // body field — silently ignored when set to "domain"
       events: EVENTS,
       description: 'BarberClub SMS delivery tracking',
     }),
@@ -105,16 +105,16 @@ async function setupForSalon(salonId, apiKey, db) {
     (w.url || '').includes('/api/webhooks/brevo/sms')
   );
 
-  // Clean up old/stale ones
+  // Clean up stale ones (wrong URL OR wrong channel — we only want SMS)
   for (const w of ours) {
-    if (w.url !== webhookUrl) {
-      console.log(`[${salonId}] Deleting stale webhook id=${w.id} url=${w.url}`);
+    if (w.url !== webhookUrl || w.channel !== 'sms') {
+      console.log(`[${salonId}] Deleting stale webhook id=${w.id} url=${w.url} channel=${w.channel}`);
       await deleteWebhook(apiKey, w.id);
     }
   }
 
-  // Check if our exact URL+events is already there
-  const existing = ours.find(w => w.url === webhookUrl);
+  // Check if our exact URL + sms channel is already there
+  const existing = ours.find(w => w.url === webhookUrl && w.channel === 'sms');
   let webhookId;
   if (existing) {
     console.log(`[${salonId}] Webhook already exists id=${existing.id}`);
