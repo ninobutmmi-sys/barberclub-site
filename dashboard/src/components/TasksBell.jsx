@@ -56,13 +56,14 @@ function dueColor(dateStr) {
 }
 
 /**
- * TasksBell — sidebar widget showing imminent tasks with inline check-off.
- * Rendered next to (and styled like) the notification bell.
+ * TasksBell — toolbar widget showing imminent tasks with inline check-off.
+ * Designed to slot into a page toolbar (e.g. Planning header) next to other
+ * icon buttons like refresh.
  *
- * @param {boolean} collapsed - true when sidebar is collapsed (icon-only)
- * @param {number}  overdueCount - count of overdue tasks (passed by Layout to avoid duplicate fetch)
+ * @param {string} variant      - "planning" (default) — styled like .plan-icon-btn
+ * @param {number} overdueCount - count of overdue tasks (passed by parent to avoid duplicate fetch)
  */
-export default function TasksBell({ collapsed = false, overdueCount = 0 }) {
+export default function TasksBell({ variant = 'planning', overdueCount = 0 }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
@@ -142,33 +143,48 @@ export default function TasksBell({ collapsed = false, overdueCount = 0 }) {
   }, [navigate]);
 
   const hasContent = grouped.totalShown > 0;
+  const DROPDOWN_W = 320;
 
-  // Compute dropdown position inline at render so it stays accurate even
-  // if the sidebar collapses while the dropdown is open (rect is fresh).
+  // Compute dropdown position inline at render. Aligns the dropdown's right edge
+  // to the button's right edge (so it doesn't overflow off-screen on narrow viewports).
   const rect = open ? wrapperRef.current?.getBoundingClientRect() : null;
   const pos = rect
-    ? collapsed
-      ? { top: rect.top, left: rect.right + 8 }
-      : { top: rect.bottom + 6, left: rect.left }
+    ? {
+        top: rect.bottom + 6,
+        left: Math.max(8, Math.min(rect.right - DROPDOWN_W, window.innerWidth - DROPDOWN_W - 8)),
+      }
     : { top: 0, left: 0 };
 
   return (
     <div ref={wrapperRef} style={{ position: 'relative', display: 'inline-flex' }}>
       <button
         type="button"
-        className={collapsed ? 'sidebar-icon-btn' : 'notif-bell-btn'}
+        className="plan-icon-btn"
         onClick={() => setOpen((v) => !v)}
         aria-label={overdueCount > 0 ? `Tâches (${overdueCount} en retard)` : 'Tâches'}
         aria-haspopup="dialog"
         aria-expanded={open}
-        title={collapsed ? 'Tâches' : undefined}
+        title={overdueCount > 0 ? `Tâches — ${overdueCount} en retard` : 'Tâches'}
         style={{ position: 'relative' }}
       >
-        <ChecklistIcon size={collapsed ? 18 : 20} />
+        <ChecklistIcon size={16} />
         {overdueCount > 0 && (
           <span
-            className={collapsed ? 'sidebar-icon-badge' : 'notif-badge'}
-            style={{ background: '#ef4444' }}
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: -4, right: -4,
+              minWidth: 16, height: 16,
+              padding: '0 4px',
+              borderRadius: 8,
+              background: '#ef4444',
+              color: '#fff',
+              fontSize: 9, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              lineHeight: 1,
+              border: '2px solid var(--bg)',
+              boxSizing: 'content-box',
+            }}
           >
             {overdueCount > 9 ? '9+' : overdueCount}
           </span>

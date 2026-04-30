@@ -20,8 +20,10 @@ import {
   useServices,
   useBlockedSlots,
   useGuestAssignments,
+  useTasksOverdueCount,
   keys,
 } from '../hooks/useApi';
+import TasksBell from '../components/TasksBell';
 import {
   format,
   addDays,
@@ -105,6 +107,8 @@ export default function Planning() {
   const servicesQuery = useServices();
   const blockedSlotsQuery = useBlockedSlots({ date: apiDateStr, view }, { refetchInterval: 60_000 });
   const guestAssignmentsQuery = useGuestAssignments();
+  const tasksOverdueQuery = useTasksOverdueCount();
+  const tasksOverdueCount = tasksOverdueQuery.data?.count ?? 0;
 
   const bookings = useMemo(() => {
     const bk = bookingsQuery.data;
@@ -581,6 +585,7 @@ export default function Planning() {
             <button className="plan-icon-btn" onClick={handleRefresh} disabled={refreshing} title="Actualiser">
               <RefreshIcon spinning={refreshing} />
             </button>
+            <TasksBell variant="planning" overdueCount={tasksOverdueCount} />
           </div>
 
           <div className="plan-controls">
