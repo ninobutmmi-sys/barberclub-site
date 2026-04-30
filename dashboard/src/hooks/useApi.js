@@ -42,6 +42,9 @@ export const keys = {
   productStats: ['productStats'],
   productSales: (params) => ['productSales', params],
   auditLog: (params) => ['auditLog', params],
+  tasks: (params) => ['tasks', params],
+  task: (id) => ['task', id],
+  tasksOverdueCount: ['tasksOverdueCount'],
 };
 
 // ---------- Barbers ----------
@@ -743,4 +746,79 @@ export function useSendSms() {
 
 export function useSendMailing() {
   return useMutation({ mutationFn: api.sendMailing });
+}
+
+// ---------- Tasks ----------
+export function useTasks(params, options) {
+  return useQuery({
+    queryKey: keys.tasks(params),
+    queryFn: () => api.getTasks(params),
+    staleTime: 15_000,
+    ...options,
+  });
+}
+
+export function useTask(id, options) {
+  return useQuery({
+    queryKey: keys.task(id),
+    queryFn: () => api.getTask(id),
+    enabled: !!id,
+    ...options,
+  });
+}
+
+export function useTasksOverdueCount(options) {
+  return useQuery({
+    queryKey: keys.tasksOverdueCount,
+    queryFn: api.getTasksOverdueCount,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    ...options,
+  });
+}
+
+function invalidateTasks(qc) {
+  qc.invalidateQueries({ queryKey: ['tasks'] });
+  qc.invalidateQueries({ queryKey: ['task'] });
+  qc.invalidateQueries({ queryKey: keys.tasksOverdueCount });
+}
+
+export function useCreateTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.createTask,
+    onSuccess: () => invalidateTasks(qc),
+  });
+}
+
+export function useUpdateTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => api.updateTask(id, data),
+    onSuccess: () => invalidateTasks(qc),
+  });
+}
+
+export function useDeleteTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteTask,
+    onSuccess: () => invalidateTasks(qc),
+  });
+}
+
+export function useCompleteTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, notes }) => api.completeTask(id, { notes }),
+    onSuccess: () => invalidateTasks(qc),
+  });
+}
+
+export function useUncompleteTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.uncompleteTask,
+    onSuccess: () => invalidateTasks(qc),
+  });
 }

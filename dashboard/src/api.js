@@ -407,3 +407,21 @@ export const createGiftCard = (body) =>
   request('/admin/products/gift-cards', { method: 'POST', body: JSON.stringify(body) });
 export const updateGiftCard = (id, body) =>
   request(`/admin/products/gift-cards/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+
+// ---- Admin: Tasks ----
+export const getTasks = (params) => {
+  const qs = params ? new URLSearchParams(params).toString() : '';
+  return request(`/admin/tasks${qs ? '?' + qs : ''}`);
+};
+export const getTask = (id) => request(`/admin/tasks/${id}`);
+export const createTask = (body) =>
+  request('/admin/tasks', { method: 'POST', body: JSON.stringify(body) });
+export const updateTask = (id, body) =>
+  request(`/admin/tasks/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+export const deleteTask = (id) =>
+  request(`/admin/tasks/${id}`, { method: 'DELETE' });
+export const completeTask = (id, body = {}) =>
+  request(`/admin/tasks/${id}/complete`, { method: 'POST', body: JSON.stringify(body) });
+export const uncompleteTask = (id) =>
+  request(`/admin/tasks/${id}/uncomplete`, { method: 'POST', body: JSON.stringify({}) });
+export const getTasksOverdueCount = () => request('/admin/tasks/overdue/count');

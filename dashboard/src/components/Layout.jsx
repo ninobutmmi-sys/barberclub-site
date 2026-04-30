@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useNotifications } from '../hooks/useNotifications';
-import { useWaitlistCount, useSystemHealth } from '../hooks/useApi';
+import { useWaitlistCount, useSystemHealth, useTasksOverdueCount } from '../hooks/useApi';
 import useMobile from '../hooks/useMobile';
 import useOffline from '../hooks/useOffline';
 import usePushNotifications from '../hooks/usePushNotifications';
@@ -61,6 +61,10 @@ const NAV_GROUPS = [
       {
         to: '/objectives', label: 'Objectifs',
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>,
+      },
+      {
+        to: '/tasks', label: 'Tâches', badgeTasks: true,
+        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
       },
     ],
   },
@@ -153,6 +157,7 @@ function useTheme() {
 // Items shown in the "Plus" drawer on mobile
 const DRAWER_NAV = [
   { to: '/objectives', label: 'Objectifs', icon: NAV.find(n => n.to === '/objectives').icon },
+  { to: '/tasks', label: 'Tâches', icon: NAV.find(n => n.to === '/tasks').icon, badgeTasks: true },
   { to: '/services', label: 'Prestations', icon: NAV.find(n => n.to === '/services').icon },
   { to: '/boutique', label: 'Boutique', icon: NAV.find(n => n.to === '/boutique').icon },
   { to: '/portfolio', label: 'Portfolio', icon: NAV.find(n => n.to === '/portfolio').icon },
@@ -173,6 +178,8 @@ export default function Layout() {
   const { hasNew, newCount, bookings, clientActions, markSeen } = useNotifications();
   const waitlistCountQuery = useWaitlistCount();
   const waitlistCount = waitlistCountQuery.data?.count ?? 0;
+  const tasksOverdueQuery = useTasksOverdueCount();
+  const tasksOverdueCount = tasksOverdueQuery.data?.count ?? 0;
   const push = usePushNotifications();
   const isOffline = useOffline();
   const healthQuery = useSystemHealth({ refetchInterval: 5 * 60 * 1000, staleTime: 4 * 60 * 1000 });
@@ -433,6 +440,15 @@ export default function Layout() {
                       {waitlistCount}
                     </span>
                   )}
+                  {item.badgeTasks && tasksOverdueCount > 0 && (
+                    <span style={{
+                      marginLeft: 'auto', background: '#ef4444', color: '#fff',
+                      fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 10,
+                      minWidth: 18, textAlign: 'center', lineHeight: '16px',
+                    }}>
+                      {tasksOverdueCount}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </div>
@@ -613,6 +629,11 @@ export default function Layout() {
                     {item.badge && waitlistCount > 0 && (
                       <span style={{ background: '#3b82f6', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 10 }}>
                         {waitlistCount}
+                      </span>
+                    )}
+                    {item.badgeTasks && tasksOverdueCount > 0 && (
+                      <span style={{ background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 10 }}>
+                        {tasksOverdueCount}
                       </span>
                     )}
                   </NavLink>

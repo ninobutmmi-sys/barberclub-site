@@ -49,6 +49,7 @@ const Boutique = lazy(() => import('./pages/Boutique'));
 const Portfolio = lazy(() => import('./pages/Portfolio'));
 const Objectives = lazy(() => import('./pages/Objectives'));
 const Waitlist = lazy(() => import('./pages/Waitlist'));
+const Tasks = lazy(() => import('./pages/Tasks'));
 const System = lazy(() => import('./pages/System'));
 const PageLoader = () => (
   <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e' }}>
@@ -96,6 +97,7 @@ function AppRoutes() {
         <Route path="history" element={<Suspense fallback={<PageLoader />}><History /></Suspense>} />
         <Route path="messages" element={<Suspense fallback={<PageLoader />}><Messages /></Suspense>} />
         <Route path="waitlist" element={<Suspense fallback={<PageLoader />}><Waitlist /></Suspense>} />
+        <Route path="tasks" element={<Suspense fallback={<PageLoader />}><Tasks /></Suspense>} />
         <Route path="system" element={<Suspense fallback={<PageLoader />}><System /></Suspense>} />
 
       </Route>
