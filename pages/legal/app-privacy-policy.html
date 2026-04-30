@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Privacy Policy - Barber Club mobile application">
+    <meta name="theme-color" content="#000000">
+    <meta name="robots" content="index, follow">
+    <title>Privacy Policy | Barber Club App</title>
+    <link rel="manifest" href="../../config/manifest.json">
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            line-height: 1.7;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            color: #fff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.2);
+        }
+
+        .back-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .logo {
+            height: 75px;
+            width: auto;
+        }
+
+        .header-spacer {
+            width: 40px;
+        }
+
+        .content {
+            padding: 100px 20px 60px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .intro {
+            font-size: 15px;
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 0 10px;
+        }
+
+        .section {
+            margin-bottom: 35px;
+            padding: 25px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .section p, .section li {
+            font-size: 14px;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 12px;
+        }
+
+        .section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .section li {
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .section li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .section a {
+            color: #fff;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .section strong {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 30px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin-top: 40px;
+        }
+
+        .footer-link {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: #fff;
+        }
+
+        .footer-link.active {
+            color: #fff;
+        }
+
+        @media (min-width: 768px) {
+            .content {
+                padding: 120px 40px 80px;
+            }
+
+            .page-title {
+                font-size: 42px;
+            }
+
+            .section {
+                padding: 30px;
+            }
+
+            .section p, .section li {
+                font-size: 15px;
+            }
+        }
+
+        .skip-to-content {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #fff;
+            color: #000;
+            padding: 8px 16px;
+            z-index: 10000;
+            font-size: 14px;
+            text-decoration: none;
+            transition: top 0.2s;
+        }
+        .skip-to-content:focus {
+            top: 0;
+        }
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    <header class="header">
+        <a href="../../" class="back-btn" onclick="if(history.length>1){history.back();return false}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="Barber Club" class="logo"></a>
+        <div class="header-spacer"></div>
+    </header>
+
+    <main class="content" id="main-content">
+        <h1 class="page-title">Privacy Policy</h1>
+        <p class="page-subtitle">Barber Club mobile application — Effective date: April 27, 2026</p>
+
+        <p class="intro">Barber Club respects your privacy. This Privacy Policy explains how we collect, use, and protect your information when you use our mobile application.</p>
+
+        <div class="section">
+            <h2 class="section-title">Data Controller / Contact</h2>
+            <ul>
+                <li><strong>Barber Club</strong></li>
+                <li><strong>Email:</strong> barberclotbey@gmail.com</li>
+                <li><strong>Country:</strong> France</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">1. Information We Collect</h2>
+            <p>Depending on how you use the app, we may collect account information such as your name, email address, phone number, and profile details. We may also process authentication and session data, push notification tokens, basic device or technical information, and QR-related data used for loyalty, rewards, and offer features.</p>
+            <p>We do not intentionally collect sensitive personal data such as health information, and we do not intentionally collect precise location, microphone data, contacts, or payment card information through the app.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">2. How We Use Your Information (and Legal Basis)</h2>
+            <p>We use your information to create and manage your account, provide the app's main features, operate loyalty and reward functions, send push notifications, maintain security, provide support, and comply with legal obligations.</p>
+            <p>Under the GDPR, our legal bases for processing this data are:</p>
+            <ul>
+                <li><strong>Contractual Necessity:</strong> To manage your bookings, appointments, and loyalty rewards.</li>
+                <li><strong>Consent:</strong> For sending push notifications and accessing your camera.</li>
+                <li><strong>Legitimate Interest:</strong> To maintain the security, stability, and functionality of our app.</li>
+            </ul>
+            <p>We do not sell your personal data.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">3. Permissions</h2>
+            <p>The app may request limited device permissions, including camera access for QR code scanning and notification permission for app-related updates and alerts. We only request permissions that are reasonably necessary for the app to function properly.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">4. Third-Party Services</h2>
+            <p>We may use trusted third-party services such as Firebase Cloud Messaging for push notifications and hosting or backend service providers to operate the app's servers, database, and related infrastructure. These providers may process limited personal or technical data only as needed to provide their services to us.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">5. Data Sharing</h2>
+            <p>We may share information with service providers that help us operate the app, when required by law or legal process, or when reasonably necessary to protect our rights, users, systems, or to prevent fraud or abuse. We do not sell personal information to third parties.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">6. Data Retention and Account Deletion</h2>
+            <p>We keep personal data only for as long as necessary to operate the app, provide services, maintain security, and meet legal obligations.</p>
+            <p>If you would like your account or personal data deleted, you can do so directly using the "Delete Account" button within the app settings, or by contacting us at <a href="mailto:barberclotbey@gmail.com">barberclotbey@gmail.com</a>.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">7. Firebase Cloud Messaging / Push Notifications</h2>
+            <p>We use Firebase Cloud Messaging, provided by Google Firebase, to send app-related push notifications such as appointment updates, loyalty rewards, offers, and important account notifications. To provide this service, we may process your device's push notification token, basic device information, and notification delivery data. Push notifications are only sent where permitted by your device settings, and you can disable them at any time through your device notification settings.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">8. Children's Privacy</h2>
+            <p>Barber Club is not intended for children under 15. If you are under 15, you should use the app only with the consent of a parent or legal guardian.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">9. Security</h2>
+            <p>We take reasonable technical and organizational measures to protect personal information against unauthorized access, loss, misuse, or disclosure. However, no method of transmission or storage is completely secure.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">10. Your GDPR Rights</h2>
+            <p>Because we operate in France and the European Union, you have specific rights regarding your personal data under the General Data Protection Regulation (GDPR):</p>
+            <ul>
+                <li><strong>Right to Access:</strong> You can request a copy of the data we hold about you.</li>
+                <li><strong>Right to Rectification:</strong> You can ask us to correct inaccurate data.</li>
+                <li><strong>Right to Erasure (Right to be Forgotten):</strong> You can request the total deletion of your data.</li>
+                <li><strong>Right to Restrict or Object:</strong> You can limit or object to how we process your data.</li>
+                <li><strong>Right to Data Portability:</strong> You can request your data in a structured, machine-readable format.</li>
+            </ul>
+            <p>To exercise these rights, contact us at <a href="mailto:barberclotbey@gmail.com">barberclotbey@gmail.com</a>. If you believe your data has been mishandled, you also have the right to lodge a complaint with the French Data Protection Authority (the <a href="https://www.cnil.fr" target="_blank" rel="noopener">CNIL</a>).</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">11. Changes to This Privacy Policy</h2>
+            <p>We may update this Privacy Policy from time to time. Any changes will be posted within the app or through another appropriate channel, and the updated version will become effective on the stated effective date.</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">12. Contact Us</h2>
+            <ul>
+                <li><strong>Barber Club</strong></li>
+                <li><strong>Email:</strong> <a href="mailto:barberclotbey@gmail.com">barberclotbey@gmail.com</a></li>
+                <li><strong>Country:</strong> France</li>
+            </ul>
+        </div>
+
+        <nav class="footer-links">
+            <a href="mentions-legales.html" class="footer-link">Mentions légales</a>
+            <a href="cgu.html" class="footer-link">CGU</a>
+            <a href="politique-confidentialite.html" class="footer-link">Confidentialité (site)</a>
+            <a href="app-privacy-policy.html" class="footer-link active">App Privacy</a>
+        </nav>
+    </main>
+<script src="../../assets/js/cookie-consent.js" defer></script>
+</body>
+</html>
