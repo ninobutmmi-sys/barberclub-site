@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import { useNotifications } from '../hooks/useNotifications';
 import { useWaitlistCount, useSystemHealth, useTasksOverdueCount } from '../hooks/useApi';
+import TasksBell from './TasksBell';
 import useMobile from '../hooks/useMobile';
 import useOffline from '../hooks/useOffline';
 import usePushNotifications from '../hooks/usePushNotifications';
@@ -274,6 +275,13 @@ export default function Layout() {
           </button>
         )}
 
+        {/* ---- Tasks + Notification bells (expanded) ---- */}
+        {!collapsed && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 16px' }}>
+            <TasksBell collapsed={false} overdueCount={tasksOverdueCount} />
+          </div>
+        )}
+
         {/* ---- Notification bell ---- */}
         {!collapsed && (
           <div className="notif-area" ref={expandedDropdownRef}>
@@ -360,6 +368,13 @@ export default function Layout() {
           >
             {(SALON_LABELS[salon] || salon).charAt(0)}
           </button>
+        )}
+
+        {/* Collapsed: tasks icon */}
+        {collapsed && (
+          <div className="sidebar-collapsed-bell">
+            <TasksBell collapsed={true} overdueCount={tasksOverdueCount} />
+          </div>
         )}
 
         {/* Collapsed: small bell icon */}
