@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nos Barbiers Grenoble | Équipe BarberClub - Coiffeurs Experts</title>
-<meta name="description" content="Rencontrez l'équipe de barbiers BarberClub Grenoble : Tom, Alan, Nathan, Clément. Coiffeurs experts en dégradés et barbe. Prenez RDV !">
+<meta name="description" content="Rencontrez l'équipe de barbiers BarberClub Grenoble : Tom, Alan, Nathan, Clément, Louay. Coiffeurs experts en dégradés et barbe. Prenez RDV !">
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
 <link rel="canonical" href="https://barberclub-grenoble.fr/pages/grenoble/barbers.html">
 <meta property="og:title" content="Nos Barbiers Grenoble | Équipe BarberClub">
-<meta property="og:description" content="Tom, Alan, Nathan et Clément, l'équipe BarberClub Grenoble. Coiffeurs experts en dégradés et barbe.">
+<meta property="og:description" content="Tom, Alan, Nathan, Clément et Louay, l'équipe BarberClub Grenoble. Coiffeurs experts en dégradés et barbe.">
 <meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/grenoble/salon-grenoble.jpg">
 <meta property="og:url" content="https://barberclub-grenoble.fr/pages/grenoble/barbers.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,15 +22,16 @@
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/barbers.css">
 <style>
-/* Grenoble overrides for 4-barber grid on large desktop */
+/* Grenoble overrides for 5-barber grid on large desktop */
 @media (min-width: 1024px) {
-  .barbers { gap: 20px; max-width: 1200px; }
-  .barber-card { max-width: 280px; }
-  .barber-name { font-size: 26px; }
+  .barbers { gap: 18px; max-width: 1320px; padding: 16px 32px 140px; }
+  .barber-card { max-width: 240px; }
+  .barber-name { font-size: 24px; }
+  .page.loaded .barber-card:nth-child(5) { transition-delay: 0.7s; }
 }
 </style>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BarberShop","name":"BarberClub Grenoble","url":"https://barberclub-grenoble.fr/pages/grenoble/barbers.html","employee":[{"@type":"Person","name":"Tom","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/tom.png"},{"@type":"Person","name":"Alan","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/alan.jpg"},{"@type":"Person","name":"Nathan","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/nathan.png"},{"@type":"Person","name":"Clément","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/clement.jpg"}]}
+{"@context":"https://schema.org","@type":"BarberShop","name":"BarberClub Grenoble","url":"https://barberclub-grenoble.fr/pages/grenoble/barbers.html","employee":[{"@type":"Person","name":"Tom","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/tom.png"},{"@type":"Person","name":"Alan","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/alan.jpg"},{"@type":"Person","name":"Nathan","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/nathan.png"},{"@type":"Person","name":"Clément","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/clement.jpg"},{"@type":"Person","name":"Louay","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/louay.jpg"}]}
 </script>
 </head>
 <body>
@@ -52,7 +53,7 @@
   <div class="page-header">
     <h1 class="page-title" data-split>Barbiers Grenoble</h1>
     <p class="page-subtitle">L'équipe BarberClub Grenoble</p>
-    <p class="page-intro">Quatre barbers passionnés t'accueillent au salon BarberClub Grenoble, rue Clôt Bey. Dégradés, fades, taille de barbe, chacun a sa spécialité pour te proposer un résultat sur mesure.</p>
+    <p class="page-intro">Cinq barbers passionnés t'accueillent au salon BarberClub Grenoble, rue Clôt Bey. Dégradés, fades, taille de barbe, chacun a sa spécialité pour te proposer un résultat sur mesure.</p>
   </div>
 
   <div class="barbers">
@@ -125,6 +126,22 @@
       <div class="barber-info">
         <div class="barber-details">
           <h2 class="barber-name">Clément</h2>
+          <p class="barber-role">Barbier</p>
+        </div>
+        <div class="barber-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </a>
+
+    <a href="../barbers/barber-louay.html" class="barber-card" data-tilt>
+      <div class="barber-media">
+        <img src="../../assets/images/barbers/louay.jpg" alt="Louay" loading="lazy">
+        <div class="barber-media-overlay"></div>
+      </div>
+      <div class="barber-info">
+        <div class="barber-details">
+          <h2 class="barber-name">Louay</h2>
           <p class="barber-role">Barbier</p>
         </div>
         <div class="barber-cta">
