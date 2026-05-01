@@ -25,6 +25,9 @@ assets/images/barbers/*.jpg
 # Cloudflare Wrangler cache
 .wrangler/
 
+# Git worktrees (isolated workspaces for feature dev)
+.worktrees/
+
 # Build artifacts
 dashboard/dist/
 dashboard-grenoble/dist/
