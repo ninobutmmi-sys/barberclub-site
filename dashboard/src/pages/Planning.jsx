@@ -760,15 +760,20 @@ export default function Planning() {
         />
       )}
 
-      {overrideBlock && (
-        <OverrideModal
-          block={overrideBlock}
-          barberName={barbers.find((b) => b.id === overrideBlock.barber_id)?.name || ''}
-          barberScheduleEnd={barberSchedules[overrideBlock.barber_id]?.[(() => { const js = new Date(overrideBlock.date).getDay(); return js === 0 ? 6 : js - 1; })()]?.end || '19:00'}
-          onSave={handleSaveOverride}
-          onClose={() => setOverrideBlock(null)}
-        />
-      )}
+      {overrideBlock && (() => {
+        const dow = (() => { const js = new Date(overrideBlock.date).getDay(); return js === 0 ? 6 : js - 1; })();
+        const sched = barberSchedules[overrideBlock.barber_id]?.[dow];
+        return (
+          <OverrideModal
+            block={overrideBlock}
+            barberName={barbers.find((b) => b.id === overrideBlock.barber_id)?.name || ''}
+            barberScheduleStart={sched?.start || '09:00'}
+            barberScheduleEnd={sched?.end || '19:00'}
+            onSave={handleSaveOverride}
+            onClose={() => setOverrideBlock(null)}
+          />
+        );
+      })()}
 
     </>
   );

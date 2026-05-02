@@ -47,7 +47,7 @@ const brevoSmsWebhookRoutes = require('./routes/webhooks/brevoSms');
 
 // Cron job imports
 const { queueReminders } = require('./cron/reminders');
-const { processQueue, cleanupOldNotifications, cleanupExpiredTokens } = require('./cron/retryNotifications');
+const { processQueue, cleanupOldNotifications, cleanupExpiredTokens, cleanupOldOverrides } = require('./cron/retryNotifications');
 const { processAutomationTriggers } = require('./cron/automationTriggers');
 const { dailyBackupSnapshot } = require('./cron/backup');
 const { reconcileSmsDelivery } = require('./cron/reconcileSmsDelivery');
@@ -60,6 +60,7 @@ const cronStatus = {
   queueReminders:        { label: 'SMS rappels 24h',    schedule: '*/30 * * * *', lastRun: null, status: 'idle', error: null },
   cleanupNotifications:  { label: 'Cleanup notifs 30j', schedule: '0 3 * * *',   lastRun: null, status: 'idle', error: null },
   cleanupExpiredTokens:  { label: 'Cleanup tokens',     schedule: '30 3 * * *',  lastRun: null, status: 'idle', error: null },
+  cleanupOldOverrides:   { label: 'Cleanup overrides',  schedule: '45 3 * * *',  lastRun: null, status: 'idle', error: null },
   automationTriggers:    { label: 'Triggers auto',      schedule: '*/10 * * * *', lastRun: null, status: 'idle', error: null },
   dailyBackup:           { label: 'Backup snapshot',    schedule: '0 4 * * *',   lastRun: null, status: 'idle', error: null },
   reconcileSmsDelivery:  { label: 'Reconcile SMS Brevo', schedule: '*/30 * * * *', lastRun: null, status: 'idle', error: null },
@@ -71,6 +72,7 @@ const CRON_LOCK_IDS = {
   queueReminders: 100002,
   cleanupNotifications: 100004,
   cleanupExpiredTokens: 100005,
+  cleanupOldOverrides: 100009,
   automationTriggers: 100006,
   dailyBackup: 100007,
   reconcileSmsDelivery: 100008,
@@ -397,6 +399,7 @@ if (config.nodeEnv === 'production') {
   cron.schedule('*/30 * * * *', trackCron('queueReminders', queueReminders));
   cron.schedule('0 3 * * *',    trackCron('cleanupNotifications', cleanupOldNotifications));
   cron.schedule('30 3 * * *',   trackCron('cleanupExpiredTokens', cleanupExpiredTokens));
+  cron.schedule('45 3 * * *',   trackCron('cleanupOldOverrides', cleanupOldOverrides));
   cron.schedule('*/10 * * * *', trackCron('automationTriggers', processAutomationTriggers));
   cron.schedule('0 4 * * *',    trackCron('dailyBackup', dailyBackupSnapshot));
   cron.schedule('*/30 * * * *', trackCron('reconcileSmsDelivery', reconcileSmsDelivery));

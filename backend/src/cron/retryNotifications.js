@@ -52,4 +52,23 @@ async function cleanupExpiredTokens() {
   }
 }
 
-module.exports = { processQueue, cleanupOldNotifications, cleanupExpiredTokens };
+/**
+ * Clean up old schedule_overrides (date passée depuis 30 jours).
+ * Évite l'accumulation indéfinie d'overrides anciens (cf bug Tom 02/05
+ * — override fantôme posé 12 jours avant qui restait en BDD).
+ * Runs once a day at 03:45
+ */
+async function cleanupOldOverrides() {
+  try {
+    const result = await db.query(
+      `DELETE FROM schedule_overrides WHERE date < CURRENT_DATE - INTERVAL '30 days'`
+    );
+    if (result.rowCount > 0) {
+      logger.info(`Cleaned up ${result.rowCount} old schedule overrides`);
+    }
+  } catch (error) {
+    logger.error('Failed to cleanup overrides', { error: error.message });
+  }
+}
+
+module.exports = { processQueue, cleanupOldNotifications, cleanupExpiredTokens, cleanupOldOverrides };
