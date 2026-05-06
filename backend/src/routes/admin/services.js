@@ -133,14 +133,23 @@ router.put('/:id',
         );
       }
 
-      // Update barber assignments if provided
+      // Update barber assignments if provided.
+      // Use UPSERT + targeted DELETE to preserve existing custom_duration values
+      // (otherwise per-barber duration overrides are silently wiped on every save).
       if (barber_ids !== undefined) {
-        await db.query('DELETE FROM barber_services WHERE service_id = $1', [id]);
         for (const barberId of barber_ids) {
           await db.query(
-            'INSERT INTO barber_services (barber_id, service_id) VALUES ($1, $2)',
+            'INSERT INTO barber_services (barber_id, service_id) VALUES ($1, $2) ON CONFLICT (barber_id, service_id) DO NOTHING',
             [barberId, id]
           );
+        }
+        if (barber_ids.length > 0) {
+          await db.query(
+            `DELETE FROM barber_services WHERE service_id = $1 AND barber_id <> ALL($2::uuid[])`,
+            [id, barber_ids]
+          );
+        } else {
+          await db.query('DELETE FROM barber_services WHERE service_id = $1', [id]);
         }
       }
 
