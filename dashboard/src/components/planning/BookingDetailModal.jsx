@@ -100,6 +100,7 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
   }, [editServiceId, services]);
 
   // Auto-adjust end time when start time changes (keep service duration)
+  // Priority: barber-specific custom_duration > duration_saturday (samedi) > duration (defaut)
   const prevStartRef = useRef(initTime);
   useEffect(() => {
     if (editTime === prevStartRef.current) return;
@@ -107,16 +108,17 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
     const svc = services.find((s) => s.id === editServiceId);
     if (!svc || !editTime) return;
     const [h, m] = editTime.split(':').map(Number);
-    const duration = svc.duration_saturday && editDate ? (() => {
-      const d = new Date(editDate + 'T00:00:00');
-      const dow = d.getDay();
-      return dow === 6 ? svc.duration_saturday : svc.duration;
-    })() : svc.duration;
+    const isSat = editDate ? new Date(editDate + 'T00:00:00').getDay() === 6 : false;
+    const barberLink = svc.barbers?.find((b) => b.id === editBarberId);
+    const customDur = barberLink?.custom_duration;
+    const duration = customDur != null
+      ? customDur
+      : (isSat && svc.duration_saturday) ? svc.duration_saturday : svc.duration;
     const endMin = h * 60 + m + duration;
     const endH = String(Math.floor(endMin / 60)).padStart(2, '0');
     const endM = String(endMin % 60).padStart(2, '0');
     setEditEndTime(`${endH}:${endM}`);
-  }, [editTime, editServiceId, editDate, services]);
+  }, [editTime, editServiceId, editDate, editBarberId, services]);
 
   // Dirty detection
   const isDirty = editDate !== bookingDateStr || editTime !== initTime || editEndTime !== initEndTime || editBarberId !== (booking.barber_id || '') || editServiceId !== (booking.service_id || '') || editColor !== initColor;

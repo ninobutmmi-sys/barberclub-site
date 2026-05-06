@@ -69,16 +69,22 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
     }
   }, [barberId, filteredServices]);
 
-  // Update duration + color when service or date changes
+  // Update duration + color when service, barber or date changes
+  // Priority: barber-specific custom_duration > duration_saturday (samedi) > duration (defaut)
   useEffect(() => {
     const svc = filteredServices.find((s) => s.id === serviceId);
     if (svc) {
       const d = new Date(date + 'T00:00:00');
       const isSaturday = d.getDay() === 6;
-      setDuration((isSaturday && svc.duration_saturday) ? svc.duration_saturday : svc.duration);
+      const barberLink = svc.barbers?.find((b) => b.id === barberId);
+      const customDur = barberLink?.custom_duration;
+      const computed = customDur != null
+        ? customDur
+        : (isSaturday && svc.duration_saturday) ? svc.duration_saturday : svc.duration;
+      setDuration(computed);
       setBookingColor(svc.color || FALLBACK_COLOR);
     }
-  }, [serviceId, filteredServices, date]);
+  }, [serviceId, filteredServices, date, barberId]);
 
   // Close search dropdown on click outside
   useEffect(() => {

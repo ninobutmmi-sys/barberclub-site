@@ -29,6 +29,46 @@ async function getBarberHomeSalon(barberId) {
 }
 
 /**
+ * Resolve effective service duration for (service, barber, date).
+ * Priority: barber_services.custom_duration > services.duration_saturday (samedi) > services.duration
+ * @param {object} params
+ * @param {object} [params.client] - DB client (for transactions)
+ * @param {string} params.serviceId
+ * @param {string|null} params.barberId - UUID or null/'any' (returns default duration)
+ * @param {string} params.date - YYYY-MM-DD
+ * @returns {Promise<number|null>} duration in minutes, or null if service not found
+ */
+async function resolveServiceDuration({ client, serviceId, barberId, date }) {
+  const queryFn = client ? client.query.bind(client) : db.query;
+
+  const svcResult = await queryFn(
+    'SELECT duration, duration_saturday FROM services WHERE id = $1 AND deleted_at IS NULL',
+    [serviceId]
+  );
+  if (svcResult.rows.length === 0) return null;
+
+  const dateObj = new Date(date + 'T00:00:00');
+  const jsDay = dateObj.getDay();
+  const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
+  const isSaturday = dayOfWeek === 5;
+  let duration = (isSaturday && svcResult.rows[0].duration_saturday)
+    ? svcResult.rows[0].duration_saturday
+    : svcResult.rows[0].duration;
+
+  if (barberId && barberId !== 'any') {
+    const customResult = await queryFn(
+      'SELECT custom_duration FROM barber_services WHERE barber_id = $1 AND service_id = $2 AND custom_duration IS NOT NULL',
+      [barberId, serviceId]
+    );
+    if (customResult.rows.length > 0) {
+      duration = customResult.rows[0].custom_duration;
+    }
+  }
+
+  return duration;
+}
+
+/**
  * Get available time slots for a barber on a specific date
  * @param {string} barberId - Barber UUID (or 'any' for all barbers)
  * @param {string} serviceId - Service UUID (to know duration)
@@ -493,7 +533,6 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
     if (!allBarbers.find(b => b.id === g.id)) allBarbers.push(g);
   }
 
-  const endTime = addMinutesToTime(startTime, duration);
   const dateObj = new Date(date + 'T00:00:00');
   const jsDay = dateObj.getDay();
   const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
@@ -513,7 +552,22 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
     restrictionsByBarber[r.barber_id].push(r);
   }
 
+  // Pre-fetch per-barber custom durations (covers all equivalent service IDs)
+  const customDurResult = await queryFn(
+    `SELECT barber_id, custom_duration FROM barber_services
+     WHERE service_id = ANY($1) AND custom_duration IS NOT NULL`,
+    [equivalentServiceIds]
+  );
+  const customDurMap = {};
+  for (const r of customDurResult.rows) {
+    customDurMap[r.barber_id] = r.custom_duration;
+  }
+
   for (const barber of allBarbers) {
+    // Per-barber effective duration (custom_duration overrides default)
+    const barberDuration = customDurMap[barber.id] || duration;
+    const barberEndTime = addMinutesToTime(startTime, barberDuration);
+
     // Check per-barber service restrictions (whitelist)
     const restrictions = restrictionsByBarber[barber.id];
     if (restrictions) {
@@ -523,17 +577,17 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
         const rStart = timeToMinutes(dayR.start_time.slice(0, 5));
         const rEnd = timeToMinutes(dayR.end_time.slice(0, 5));
         const slotStart = timeToMinutes(startTime);
-        const slotEnd = slotStart + duration;
+        const slotEnd = slotStart + barberDuration;
         if (slotStart < rStart || slotEnd > rEnd) continue;
       }
     }
 
     // Check if barber works at this time (schedule/overrides/guest assignments)
-    const worksAtTime = await barberWorksAtTime(barber.id, date, dayOfWeek, startTime, endTime, salonId);
+    const worksAtTime = await barberWorksAtTime(barber.id, date, dayOfWeek, startTime, barberEndTime, salonId);
     if (!worksAtTime) continue;
 
     // Check if this barber is available at this time (no conflicting bookings/blocks)
-    const available = await isSlotAvailable(barber.id, date, startTime, duration, dbClient);
+    const available = await isSlotAvailable(barber.id, date, startTime, barberDuration, dbClient);
     if (!available) continue;
 
     // Count their bookings for the day (load balancing)
@@ -551,7 +605,7 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
     const weightedCount = count - (priority * 0.5);
     if (weightedCount < fewestBookings) {
       fewestBookings = weightedCount;
-      bestBarber = barber;
+      bestBarber = { ...barber, effectiveDuration: barberDuration };
     }
   }
 
@@ -1183,4 +1237,5 @@ module.exports = {
   addMinutesToTime,
   validateBarberSlot,
   getMonthAvailabilitySummary,
+  resolveServiceDuration,
 };

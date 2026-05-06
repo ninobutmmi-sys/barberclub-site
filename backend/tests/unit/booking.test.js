@@ -539,6 +539,14 @@ describe('rescheduleBooking', () => {
       if (sql.includes('SELECT b.*') && sql.includes('FOR UPDATE')) {
         return { rows: booking ? [booking] : [] };
       }
+      // resolveServiceDuration — service lookup
+      if (sql.includes('FROM services WHERE id')) {
+        return { rows: [{ duration: 30, duration_saturday: null }] };
+      }
+      // resolveServiceDuration — per-barber custom duration override
+      if (sql.includes('FROM barber_services WHERE barber_id') && sql.includes('custom_duration')) {
+        return { rows: [] };
+      }
       // Guest assignments (validateBarberSlot)
       if (sql.includes('guest_assignments')) {
         return { rows: [] };

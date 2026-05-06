@@ -72,24 +72,29 @@ async function createBooking(data) {
       throw ApiError.badRequest('Prestation introuvable ou inactive');
     }
     const service = serviceResult.rows[0];
-    // Saturday-specific duration (dayOfWeek 5 = Saturday)
+    // dayOfWeek (0=Lundi … 5=Samedi … 6=Dimanche)
     const bookDateObj = new Date(data.date + 'T00:00:00');
     const bookJsDay = bookDateObj.getDay();
     const bookDayOfWeek = bookJsDay === 0 ? 6 : bookJsDay - 1;
-    const serviceDuration = (bookDayOfWeek === 5 && service.duration_saturday)
-      ? service.duration_saturday : service.duration;
-    // Check for per-barber custom duration override
-    let barberCustomDuration = null;
-    if (data.barber_id && data.barber_id !== 'any') {
-      const customDurResult = await client.query(
-        'SELECT custom_duration FROM barber_services WHERE barber_id = $1 AND service_id = $2 AND custom_duration IS NOT NULL',
-        [data.barber_id, data.service_id]
-      );
-      if (customDurResult.rows.length > 0) {
-        barberCustomDuration = customDurResult.rows[0].custom_duration;
+    // Resolve duration via central helper (custom_duration > duration_saturday > duration)
+    // For 'any' barber, this returns default duration; we recompute after barber resolution below.
+    let effectiveDuration = await availability.resolveServiceDuration({
+      client, serviceId: data.service_id, barberId: data.barber_id, date: data.date,
+    });
+    if (effectiveDuration === null) {
+      throw ApiError.badRequest('Prestation introuvable ou inactive');
+    }
+    // Admin override rules:
+    //  - duration_override === true → honor data.duration as-is (explicit override)
+    //  - else if data.duration > effectiveDuration → admin is extending, honor it
+    //  - else (data.duration ≤ effectiveDuration) → keep computed value
+    //    (prevents the dashboard from accidentally shortening Louay's 30-min cut to 20)
+    if (isAdmin && Number.isInteger(parseInt(data.duration, 10))) {
+      const passed = parseInt(data.duration, 10);
+      if (data.duration_override === true || passed > effectiveDuration) {
+        effectiveDuration = passed;
       }
     }
-    const effectiveDuration = parseInt(data.duration, 10) || barberCustomDuration || serviceDuration;
 
     // 1b. Check per-barber service restrictions (public bookings only)
     if (!isAdmin && data.barber_id && data.barber_id !== 'any') {
@@ -134,6 +139,12 @@ async function createBooking(data) {
       }
       barberId = best.id;
       barberName = best.name;
+      // findBestBarber returns the per-barber effective duration (custom_duration aware).
+      // If the chosen barber has a longer custom duration than the default we used to scan,
+      // re-validate the slot with the correct duration.
+      if (best.effectiveDuration && best.effectiveDuration !== effectiveDuration && !(isAdmin && data.duration_override === true)) {
+        effectiveDuration = best.effectiveDuration;
+      }
     } else {
       // Verify barber exists and offers this service
       const barberResult = await client.query(
@@ -590,19 +601,41 @@ async function cancelBooking(bookingId, cancelToken) {
     const salon = config.getSalonConfig(salonId);
     const bookingUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
 
-    // Match waitlist entries for same barber + date, optionally overlapping time
+    // Compute the actual freed slot duration (in minutes) — used to filter waitlist entries
+    // whose required service duration would not fit in the cancelled slot.
+    const startMin = parseInt(booking.start_time.slice(0, 2), 10) * 60 + parseInt(booking.start_time.slice(3, 5), 10);
+    const endMin = parseInt(booking.end_time.slice(0, 2), 10) * 60 + parseInt(booking.end_time.slice(3, 5), 10);
+    const freedDurationMin = endMin - startMin;
+
+    // Match waitlist entries for same barber + date + overlapping time, AND only those
+    // whose effective service duration fits within the freed slot.
+    // Effective duration = barber_services.custom_duration > services.duration_saturday (samedi) > services.duration
+    const bookDateObj = new Date(booking.date + 'T00:00:00');
+    const bookJsDay = bookDateObj.getDay();
+    const bookDayOfWeek = bookJsDay === 0 ? 6 : bookJsDay - 1;
+    const isSaturday = bookDayOfWeek === 5;
+
     const waitlistEntries = await db.query(
       `SELECT w.id, w.client_name, w.client_phone, w.preferred_date,
               w.preferred_time_start, w.preferred_time_end,
-              b.name as barber_name, s.name as service_name
+              b.name as barber_name, s.name as service_name,
+              COALESCE(
+                bs.custom_duration,
+                CASE WHEN $5::boolean AND s.duration_saturday IS NOT NULL THEN s.duration_saturday ELSE s.duration END
+              )::int AS required_duration
        FROM waitlist w
        JOIN barbers b ON w.barber_id = b.id
        JOIN services s ON w.service_id = s.id
+       LEFT JOIN barber_services bs ON bs.barber_id = w.barber_id AND bs.service_id = w.service_id
        WHERE w.barber_id = $1 AND w.preferred_date = $2 AND w.status = 'waiting'
          AND (w.preferred_time_start IS NULL OR w.preferred_time_start <= $3)
          AND (w.preferred_time_end IS NULL OR w.preferred_time_end >= $3)
+         AND COALESCE(
+           bs.custom_duration,
+           CASE WHEN $5::boolean AND s.duration_saturday IS NOT NULL THEN s.duration_saturday ELSE s.duration END
+         ) <= $4
        ORDER BY w.created_at ASC LIMIT 3`,
-      [booking.barber_id, booking.date, booking.start_time.slice(0, 5)]
+      [booking.barber_id, booking.date, booking.start_time.slice(0, 5), freedDurationMin, isSaturday]
     );
 
     // Format cancelled slot info for SMS
@@ -777,12 +810,13 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
       throw ApiError.badRequest(`Impossible de réserver plus de ${MAX_BOOKING_ADVANCE_MONTHS} mois à l'avance`);
     }
 
-    // 4. Calculate new end time (Saturday-specific duration)
-    const reschDateObj = new Date(newDate + 'T00:00:00');
-    const reschJsDay = reschDateObj.getDay();
-    const reschDayOfWeek = reschJsDay === 0 ? 6 : reschJsDay - 1;
-    const reschDuration = (reschDayOfWeek === 5 && booking.service_duration_saturday)
-      ? booking.service_duration_saturday : booking.service_duration;
+    // 4. Calculate new end time (custom_duration > duration_saturday > duration)
+    const reschDuration = await availability.resolveServiceDuration({
+      client, serviceId: booking.service_id, barberId: booking.barber_id, date: newDate,
+    });
+    if (reschDuration === null) {
+      throw ApiError.badRequest('Prestation introuvable');
+    }
     const newEndTime = availability.addMinutesToTime(newStartTime, reschDuration);
 
     // 5-6. Validate barber schedule + blocked slots for new date

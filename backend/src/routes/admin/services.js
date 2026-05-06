@@ -17,7 +17,7 @@ router.get('/', async (req, res, next) => {
     const result = await db.query(
       `SELECT s.id, s.name, s.description, s.price, s.duration, s.duration_saturday, s.is_active, s.admin_only, s.sort_order, s.color,
               COALESCE(
-                json_agg(json_build_object('id', b.id, 'name', b.name))
+                json_agg(json_build_object('id', b.id, 'name', b.name, 'custom_duration', bs.custom_duration))
                 FILTER (WHERE b.id IS NOT NULL), '[]'
               ) as barbers
        FROM services s
