@@ -68,10 +68,8 @@ async function queueReminders() {
             message,
             salonId,
           });
-        }
-
-        // Email as backup (always, if email exists) — gratuit, on prend
-        if (booking.email) {
+        } else if (booking.email) {
+          // Email reminder ONLY for international phones (no SMS possible)
           await queueNotification(booking.id, 'reminder_email', {
             email: booking.email,
             salonId,

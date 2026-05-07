@@ -11,7 +11,6 @@ const {
   MAX_BOOKING_ADVANCE_MONTHS,
   CANCELLATION_DEADLINE_HOURS,
   MIN_BOOKING_LEAD_MINUTES,
-  SMS_CONFIRMATION_THRESHOLD_HOURS,
   MAX_RECURRENCE_OCCURRENCES,
 } = require('../constants');
 
@@ -344,48 +343,16 @@ async function createBooking(data) {
         logger.info('Confirmation email sent directly', { bookingId: result.id });
       } catch (err) {
         logger.error('Direct confirmation email failed, queueing for retry', { bookingId: result.id, error: err.message });
-        try { await notification.queueNotification(result.id, 'confirmation_email'); } catch (qErr) {
+        try {
+          await notification.queueNotification(result.id, 'confirmation_email', {
+            email: bookingDetails.client_email, salonId,
+          });
+        } catch (qErr) {
           logger.error('Failed to queue confirmation email fallback', { bookingId: result.id, error: qErr.message });
         }
       }
     }
-
-    // 2. SMS confirmation if booking is within 24h
-    const smsNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-    const [smsY, smsM, smsD] = result.date.split('-').map(Number);
-    const [smsH, smsMn] = result.start_time.slice(0, 5).split(':').map(Number);
-    const smsBookingDateTime = new Date(smsY, smsM - 1, smsD, smsH, smsMn, 0);
-    const hoursUntilBooking = (smsBookingDateTime - smsNow) / (1000 * 60 * 60);
-
-    if (hoursUntilBooking > 0 && hoursUntilBooking <= SMS_CONFIRMATION_THRESHOLD_HOURS && bookingDetails.client_phone && notification.isFrenchPhone(bookingDetails.client_phone)) {
-      try {
-        await notification.sendConfirmationSMS({
-          booking_id: result.id,
-          cancel_token: result.cancel_token,
-          phone: bookingDetails.client_phone,
-          barber_name: bookingDetails.barber_name,
-          date: bookingDetails.date,
-          start_time: bookingDetails.start_time,
-          salon_id: salonId,
-        });
-        await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [result.id]);
-        logger.info('Confirmation SMS sent (booking within 24h)', { bookingId: result.id, hoursUntil: Math.round(hoursUntilBooking) });
-      } catch (err) {
-        logger.error('Direct confirmation SMS failed, queueing for retry', { bookingId: result.id, error: err.message });
-        const salonShort = salonId === 'meylan' ? 'Meylan' : 'Grenoble';
-        const dateFRFull = notification.formatDateFR(bookingDetails.date);
-        const dateFR = dateFRFull.replace(/\s+\d{4}$/, '');
-        const timeFmt = notification.formatTime(bookingDetails.start_time);
-        const smsMsg = notification.toGSM(`BarberClub ${salonShort} - RDV confirme ${dateFR} a ${timeFmt} avec ${bookingDetails.barber_name}. A bientot!`);
-        try {
-          await notification.queueNotification(result.id, 'confirmation_sms', {
-            phone: bookingDetails.client_phone, message: smsMsg, salonId,
-          });
-        } catch (qErr) {
-          logger.error('Failed to queue confirmation SMS', { bookingId: result.id, error: qErr.message });
-        }
-      }
-    }
+    // SMS confirmation <24h: removed — reminder cron (every 30min, 24h window) covers it.
   }
 
   // Push notification to dashboard (fire-and-forget) — merge bookingDetails

@@ -50,10 +50,22 @@ function getCircuit(salonId) {
   return brevoCircuits[salonId];
 }
 
+// keyDisabled cooldown: re-test the key every 5 min instead of blocking forever.
+// Brevo can return transient 401s (account checks, recharge in progress) — without
+// this, the in-memory flag stays true until server restart even after the key recovers.
+const KEY_DISABLED_COOLDOWN_MS = 5 * 60 * 1000;
+
 function isCircuitOpen(salonId = 'meylan') {
   const circuit = getCircuit(salonId);
-  // If key is disabled (401), block ALL calls until manually resolved
-  if (circuit.keyDisabled) return true;
+  if (circuit.keyDisabled) {
+    if (circuit.keyDisabledAt && Date.now() - new Date(circuit.keyDisabledAt).getTime() > KEY_DISABLED_COOLDOWN_MS) {
+      circuit.keyDisabled = false;
+      circuit.keyDisabledAt = null;
+      logger.info('Brevo keyDisabled flag reset (cooldown elapsed) — will retry', { salonId });
+      return false;
+    }
+    return true;
+  }
   if (circuit.failures < circuit.threshold) return false;
   if (!circuit.openedAt) return false;
   if (Date.now() - circuit.openedAt > circuit.cooldownMs) {
