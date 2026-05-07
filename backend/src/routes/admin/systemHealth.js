@@ -134,6 +134,7 @@ router.get('/health', async (req, res, next) => {
         brevo_sender: config.brevo?.senderEmail || null,
         brevo_sms_sender: config.brevo?.smsSender || null,
         brevo_status: (() => { try { return require('../../services/notification').getBrevoStatus(req.user?.salon_id); } catch { return null; } })(),
+        sms_provider: (() => { try { return require('../../services/notification').getSmsProviderStatus(req.user?.salon_id); } catch { return null; } })(),
         // 30-day health stats
         sms_sent_30d: smsSent30d,
         sms_failed_30d: smsFailed30d,

@@ -44,6 +44,7 @@ const objectivesRoutes = require('./routes/admin/objectives');
 const tasksRoutes = require('./routes/admin/tasks');
 const { publicRouter: eventAlertPublicRoutes, adminRouter: eventAlertAdminRoutes } = require('./routes/eventAlerts');
 const brevoSmsWebhookRoutes = require('./routes/webhooks/brevoSms');
+const twilioWebhookRoutes = require('./routes/webhooks/twilio');
 
 // Cron job imports
 const { queueReminders } = require('./cron/reminders');
@@ -125,10 +126,10 @@ function trackCron(key, fn) {
             alertCronFailure(label, cronFailureCounts[key], err.message);
             // Send SMS alert to owner (best-effort, don't crash if it fails)
             try {
-              const { brevoSMS } = require('./services/notification');
+              const { sendSMS } = require('./services/notification');
               const ownerPhone = config.salon.phone;
               if (ownerPhone) {
-                await brevoSMS(ownerPhone, msg, 'meylan');
+                await sendSMS(ownerPhone, msg, 'meylan');
               }
             } catch (alertErr) {
               logger.error('Failed to send cron alert SMS', { error: alertErr.message });
@@ -278,8 +279,9 @@ app.use('/api/event-alerts', eventAlertPublicRoutes);
 // Public campaign tracking (no auth)
 app.use('/api/track', campaignTrackRoutes);
 
-// Brevo SMS delivery webhook (no auth — token in URL)
+// SMS delivery webhooks (no auth — token in URL)
 app.use('/api/webhooks', brevoSmsWebhookRoutes);
+app.use('/api/webhooks', twilioWebhookRoutes);
 
 // ============================================
 // Short redirect URLs (for SMS links)
@@ -476,8 +478,8 @@ if (config.nodeEnv !== 'test') {
       }
       // Check Brevo API keys on startup
       try {
-        const { checkBrevoKeys } = require('./services/notification');
-        await checkBrevoKeys();
+        const { checkSmsProviderKeys } = require('./services/notification');
+        await checkSmsProviderKeys();
       } catch (err) {
         logger.error('Brevo key check failed on startup', { error: err.message });
       }

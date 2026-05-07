@@ -45,6 +45,13 @@ const SALONS = {
       senderName: process.env.BREVO_SENDER_NAME || 'BarberClub Meylan',
       smsSender: process.env.BREVO_SMS_SENDER || 'BARBERCLUB',
     },
+    twilio: {
+      accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+      authToken: process.env.TWILIO_AUTH_TOKEN || '',
+      smsSender: process.env.TWILIO_SMS_SENDER || 'BARBERCLUB',
+      statusCallbackUrl: process.env.TWILIO_STATUS_CALLBACK_URL || '',
+    },
+    smsProvider: (process.env.SMS_PROVIDER_MEYLAN || process.env.SMS_PROVIDER || 'brevo').toLowerCase(),
   },
   grenoble: {
     name: process.env.SALON_GRENOBLE_NAME || 'BarberClub Grenoble',
@@ -60,6 +67,14 @@ const SALONS = {
       senderName: process.env.BREVO_SENDER_NAME_GRENOBLE || 'BarberClub Grenoble',
       smsSender: process.env.BREVO_SMS_SENDER_GRENOBLE || 'BARBERCLUB',
     },
+    twilio: {
+      // Default to Meylan creds if Grenoble-specific not set (single Twilio account is fine)
+      accountSid: process.env.TWILIO_ACCOUNT_SID_GRENOBLE || process.env.TWILIO_ACCOUNT_SID || '',
+      authToken: process.env.TWILIO_AUTH_TOKEN_GRENOBLE || process.env.TWILIO_AUTH_TOKEN || '',
+      smsSender: process.env.TWILIO_SMS_SENDER_GRENOBLE || process.env.TWILIO_SMS_SENDER || 'BARBERCLUB',
+      statusCallbackUrl: process.env.TWILIO_STATUS_CALLBACK_URL || '',
+    },
+    smsProvider: (process.env.SMS_PROVIDER_GRENOBLE || process.env.SMS_PROVIDER || 'brevo').toLowerCase(),
   },
 };
 
@@ -88,6 +103,14 @@ module.exports = {
     senderName: process.env.BREVO_SENDER_NAME || 'BarberClub Meylan',
     smsSender: process.env.BREVO_SMS_SENDER || 'BARBERCLUB',
   },
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+    authToken: process.env.TWILIO_AUTH_TOKEN || '',
+    smsSender: process.env.TWILIO_SMS_SENDER || 'BARBERCLUB',
+    statusCallbackUrl: process.env.TWILIO_STATUS_CALLBACK_URL || '',
+  },
+  // Provider switch: 'twilio' (default once configured) or 'brevo' (legacy fallback)
+  smsProvider: (process.env.SMS_PROVIDER || 'brevo').toLowerCase(),
   siteUrl: process.env.SITE_URL || 'https://barberclub-grenoble.fr',
   apiUrl: process.env.API_URL || `http://localhost:${parseInt(process.env.PORT, 10) || 3000}`,
   salon: {

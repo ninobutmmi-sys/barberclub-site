@@ -1,7 +1,8 @@
 const db = require('../../config/database');
 const config = require('../../config/env');
 const logger = require('../../utils/logger');
-const { brevoEmail, brevoSMS, getBrevoConfig } = require('./brevo');
+const { brevoEmail, getBrevoConfig } = require('./brevo');
+const { sendSMS } = require('./sms-dispatch');
 const {
   toGSM,
   formatDateFR,
@@ -95,7 +96,7 @@ async function sendReminderSMS(data) {
 
   // Return the brevoSMS result so the queue processor can capture provider_message_id.
   // Note: queue.js marks reminder_sent on success — no need to UPDATE here.
-  return brevoSMS(data.phone, message, salonId);
+  return sendSMS(data.phone, message, salonId);
 }
 
 /**
@@ -298,7 +299,7 @@ async function sendReminderSMSDirect(data) {
 
   const message = toGSM(`BarberClub ${salonShort} - RDV ${dateFR} a ${timeFormatted}. A bientot!`);
 
-  await brevoSMS(data.phone, message, salonId);
+  await sendSMS(data.phone, message, salonId);
 }
 
 /**
@@ -315,7 +316,7 @@ async function sendConfirmationSMS(data) {
 
   const message = toGSM(`BarberClub ${salonShort} - RDV confirme ${dateFR} a ${timeFormatted} avec ${data.barber_name}. A bientot!`);
 
-  await brevoSMS(data.phone, message, salonId);
+  await sendSMS(data.phone, message, salonId);
   logger.info('Confirmation SMS sent', { bookingId: data.booking_id, phone: data.phone, salonId });
 }
 
@@ -372,7 +373,7 @@ async function sendReminderEmail(data) {
 async function sendWaitlistSMS(data) {
   const salonId = data.salon_id || 'meylan';
   if (!data.phone) return;
-  await brevoSMS(data.phone, data.message, salonId);
+  await sendSMS(data.phone, data.message, salonId);
   logger.info('Waitlist SMS sent', { phone: data.phone, salonId });
 }
 

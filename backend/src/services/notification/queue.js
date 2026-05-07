@@ -4,7 +4,7 @@ const {
   NOTIFICATION_RETRY_DELAYS,
   NOTIFICATION_BATCH_SIZE,
 } = require('../../constants');
-const { brevoSMS } = require('./brevo');
+const { sendSMS } = require('./sms-dispatch');
 const {
   sendConfirmationEmail,
   sendCancellationEmail,
@@ -165,7 +165,7 @@ async function sendNotification(notification) {
       }
       throw new Error(`Missing phone/message for ${type}`);
     }
-    const smsResult = await brevoSMS(notification.phone, notification.message, notification.salon_id || 'meylan');
+    const smsResult = await sendSMS(notification.phone, notification.message, notification.salon_id || 'meylan');
     // Post-send: mark reminder_sent on booking (confirmation_sms / reminder_sms)
     if ((type === 'reminder_sms' || type === 'confirmation_sms') && notification.booking_id) {
       await db.query('UPDATE bookings SET reminder_sent = true WHERE id = $1', [notification.booking_id]);
