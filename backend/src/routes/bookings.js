@@ -490,7 +490,7 @@ router.get('/bookings/:id/ics',
   async (req, res, next) => {
     try {
       const result = await db.query(
-        `SELECT b.id, b.date, b.start_time, b.end_time,
+        `SELECT b.id, b.date, b.start_time, b.end_time, b.salon_id,
                 s.name as service_name, br.name as barber_name
          FROM bookings b
          JOIN services s ON b.service_id = s.id
