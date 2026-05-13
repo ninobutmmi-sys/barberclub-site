@@ -1,6 +1,6 @@
 {
-  "name": "BarberClub Admin",
-  "short_name": "BC Admin",
+  "name": "BarberClub",
+  "short_name": "BarberClub",
   "description": "Dashboard d'administration BarberClub",
   "start_url": "/",
   "display": "standalone",

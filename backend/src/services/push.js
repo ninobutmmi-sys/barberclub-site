@@ -110,14 +110,14 @@ function notifyNewBooking(salonId, booking) {
   const date = booking.date || '';
 
   const dateLabel = formatDateShort(date);
-  const whenWho = [dateLabel, time && `a ${time}`, barber && `avec ${barber}`].filter(Boolean).join(' ');
+  const titleParts = [dateLabel, time].filter(Boolean).join(' ');
   const lines = [
     service ? `${clientName} - ${service}` : clientName,
-    whenWho,
+    [barber && `avec ${barber}`, salonLabel].filter(Boolean).join(' - '),
   ].filter(Boolean);
 
   notifySalon(salonId, {
-    title: `Nouveau RDV - ${salonLabel}`,
+    title: titleParts ? `${titleParts} - Nouveau RDV` : `Nouveau RDV - ${salonLabel}`,
     body: lines.join('\n'),
     image: barberPhoto(barber),
     tag: `booking-${booking.id || Date.now()}`,
@@ -141,9 +141,12 @@ function notifyCancellation(salonId, booking) {
   const barber = booking.barber_name || '';
   const date = booking.date || '';
 
+  const dateLabel = formatDateShort(date);
+  const titleParts = [dateLabel, time].filter(Boolean).join(' ');
+
   notifySalon(salonId, {
-    title: `Annulation - ${salonLabel}`,
-    body: `${clientName} a annule\n${formatDateShort(date)} a ${time}${barber ? ' avec ' + barber : ''}`,
+    title: titleParts ? `${titleParts} - Annulation` : `Annulation - ${salonLabel}`,
+    body: `${clientName} a annule${barber ? ' avec ' + barber : ''}\n${salonLabel}`,
     image: salonPhoto(salonId),
     tag: `cancel-${booking.id || Date.now()}`,
     vibrate: VIBRATE.warn,
@@ -165,9 +168,12 @@ function notifyReschedule(salonId, booking) {
   const barber = booking.barber_name || '';
   const date = booking.date || '';
 
+  const dateLabel = formatDateShort(date);
+  const titleParts = [dateLabel, time].filter(Boolean).join(' ');
+
   notifySalon(salonId, {
-    title: `RDV deplace - ${salonLabel}`,
-    body: `${clientName} a deplace son RDV\nNouveau: ${formatDateShort(date)} a ${time}${barber ? ' avec ' + barber : ''}`,
+    title: titleParts ? `${titleParts} - RDV deplace` : `RDV deplace - ${salonLabel}`,
+    body: `${clientName} a deplace son RDV${barber ? ' avec ' + barber : ''}\n${salonLabel}`,
     image: barberPhoto(barber),
     tag: `reschedule-${booking.id || Date.now()}`,
     vibrate: VIBRATE.info,
