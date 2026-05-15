@@ -160,37 +160,48 @@ export default function SystemHealth({ embedded } = {}) {
               <MiniStat label="En attente" value={notifs.pending} alert={notifs.pending > 5} />
               <MiniStat label="Coût SMS estimé" value={`${(notifs.sms_cost_estimate || 0).toFixed(2)} €`} />
             </div>
-            {notifs.brevo_sender && (
+            {(notifs.brevo_sender || notifs.twilio_sender) && (
               <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <span>Email: {notifs.brevo_sender}</span>
-                <span>SMS: {notifs.brevo_sms_sender}</span>
+                {notifs.brevo_sender && <span>Email (Brevo): {notifs.brevo_sender}</span>}
+                {notifs.twilio_sender && <span>SMS (Twilio): {notifs.twilio_sender}</span>}
               </div>
             )}
-            {notifs.brevo_status && (
+            {notifs.twilio_status && (
               <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
-                {Object.entries(notifs.brevo_status).map(([salon, s]) => {
-                  const credits = typeof s.smsCredits === 'number' ? s.smsCredits : null;
-                  const threshold = s.lowCreditThreshold ?? 50;
-                  const low = credits != null && credits < threshold;
-                  const color = credits == null ? 'var(--text-muted)' : low ? '#f59e0b' : '#10b981';
+                {Object.entries(notifs.twilio_status).map(([salon, s]) => {
+                  let label = 'Actif';
+                  let color = '#10b981';
+                  let borderColor = 'rgba(var(--overlay), 0.06)';
+                  if (!s.configured) {
+                    label = 'Non configuré';
+                    color = 'var(--text-muted)';
+                  } else if (s.authDisabled) {
+                    label = 'Auth désactivée';
+                    color = '#ef4444';
+                    borderColor = 'rgba(239,68,68,0.3)';
+                  } else if (s.circuitOpen) {
+                    label = 'Circuit ouvert';
+                    color = '#f59e0b';
+                    borderColor = 'rgba(245,158,11,0.3)';
+                  }
                   return (
                     <div key={salon} style={{
                       padding: '10px 12px',
                       borderRadius: 8,
                       background: 'rgba(var(--overlay), 0.02)',
-                      border: `1px solid ${low ? 'rgba(245,158,11,0.3)' : 'rgba(var(--overlay), 0.06)'}`,
+                      border: `1px solid ${borderColor}`,
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
                       <div>
                         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'var(--text-muted)' }}>
-                          Crédits SMS {salon}
+                          Twilio {salon}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                          {s.smsCreditsRecordedAt ? `MAJ ${timeAgo(s.smsCreditsRecordedAt)}` : 'Pas encore mesuré'}
+                          Sender: {s.sender || '—'}
                         </div>
                       </div>
-                      <div style={{ fontSize: 20, fontWeight: 700, color }}>
-                        {credits != null ? credits : '–'}
+                      <div style={{ fontSize: 12, fontWeight: 700, color }}>
+                        {label}
                       </div>
                     </div>
                   );
@@ -378,12 +389,22 @@ export default function SystemHealth({ embedded } = {}) {
           <a href="https://app.brevo.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 10, background: 'rgba(var(--overlay), 0.03)', border: '1px solid rgba(var(--overlay), 0.06)', textDecoration: 'none', color: 'var(--text)', fontSize: 13, fontWeight: 500, transition: 'background 0.2s' }}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
             <span style={{ flex: 1 }}>Brevo — Meylan</span>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Email + SMS</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Email</span>
           </a>
           <a href="https://app.brevo.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 10, background: 'rgba(var(--overlay), 0.03)', border: '1px solid rgba(var(--overlay), 0.06)', textDecoration: 'none', color: 'var(--text)', fontSize: 13, fontWeight: 500, transition: 'background 0.2s' }}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 7L2 7"/></svg>
             <span style={{ flex: 1 }}>Brevo — Grenoble</span>
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Email + SMS</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Email</span>
+          </a>
+          <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 10, background: 'rgba(var(--overlay), 0.03)', border: '1px solid rgba(var(--overlay), 0.06)', textDecoration: 'none', color: 'var(--text)', fontSize: 13, fontWeight: 500, transition: 'background 0.2s' }}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span style={{ flex: 1 }}>Twilio — Meylan</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>SMS</span>
+          </a>
+          <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 10, background: 'rgba(var(--overlay), 0.03)', border: '1px solid rgba(var(--overlay), 0.06)', textDecoration: 'none', color: 'var(--text)', fontSize: 13, fontWeight: 500, transition: 'background 0.2s' }}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span style={{ flex: 1 }}>Twilio — Grenoble</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>SMS</span>
           </a>
           <a href="https://railway.com/project/ae37a882-edb0-44f4-917c-ef185f77c394" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderRadius: 10, background: 'rgba(var(--overlay), 0.03)', border: '1px solid rgba(var(--overlay), 0.06)', textDecoration: 'none', color: 'var(--text)', fontSize: 13, fontWeight: 500, transition: 'background 0.2s' }}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>

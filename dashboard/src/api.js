@@ -347,6 +347,7 @@ export const getNotificationLogs = (params) => {
 };
 export const getNotificationStats = () => request('/admin/notifications/stats');
 export const getBrevoStatus = () => request('/admin/notifications/brevo-status');
+export const getTwilioStatus = () => request('/admin/notifications/twilio-status');
 export const purgeFailedNotifications = () => request('/admin/notifications/failed', { method: 'DELETE' });
 
 // ---- Admin: System Health ----

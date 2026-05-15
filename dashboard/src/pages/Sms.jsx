@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
 import { getClients, sendSms } from '../api';
 import useMobile from '../hooks/useMobile';
-import { useBrevoStatus, useNotificationLogs } from '../hooks/useApi';
+import { useTwilioStatus, useNotificationLogs } from '../hooks/useApi';
 
 // ============================================
-// SMS Page — Brevo integration (server-side)
+// SMS Page — Twilio integration (server-side)
 // ============================================
 
 const SMS_TEMPLATES = [
@@ -57,8 +57,8 @@ export default function Sms({ embedded } = {}) {
   const [searchResults, setSearchResults] = useState([]);
   const searchTimer = useRef(null);
 
-  // Brevo status
-  const { data: brevoStatus, isLoading: loadingStatus } = useBrevoStatus({
+  // Twilio status
+  const { data: twilioStatus, isLoading: loadingStatus } = useTwilioStatus({
     placeholderData: { configured: false },
   });
 
@@ -72,7 +72,7 @@ export default function Sms({ embedded } = {}) {
   const logsTotal = logsQuery.data?.total || 0;
   const logsLoading = logsQuery.isLoading;
 
-  const isConfigured = brevoStatus?.configured && brevoStatus?.connected !== false;
+  const isConfigured = twilioStatus?.configured && twilioStatus?.connected !== false;
   const charCount = message.length;
   const smsCount = Math.ceil(charCount / 160) || 1;
 
@@ -130,7 +130,7 @@ export default function Sms({ embedded } = {}) {
 
   async function handleSend() {
     if (!isConfigured) {
-      setResult({ error: 'Brevo non configure. Verifiez la configuration dans l\'onglet Parametres.' });
+      setResult({ error: 'Twilio non configure. Verifiez la configuration dans l\'onglet Parametres.' });
       return;
     }
 
@@ -202,22 +202,10 @@ export default function Sms({ embedded } = {}) {
         <div>
           <h2 className="page-title">SMS</h2>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            Envoi de SMS via Brevo
+            Envoi de SMS via Twilio
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {!loadingStatus && isConfigured && brevoStatus?.smsCredits != null && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(var(--overlay),0.04)', border: '1px solid rgba(var(--overlay),0.08)', borderRadius: 8 }}>
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Credits SMS</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: brevoStatus.smsCredits > 10 ? '#22c55e' : brevoStatus.smsCredits > 0 ? '#f59e0b' : '#ef4444' }}>
-                {brevoStatus.smsCredits}
-              </span>
-              <a href="https://app.brevo.com/billing/plan/sms" target="_blank" rel="noopener noreferrer"
-                style={{ fontSize: 11, fontWeight: 600, color: '#3b82f6', textDecoration: 'none', marginLeft: 4 }}>
-                Recharger
-              </a>
-            </div>
-          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {loadingStatus ? (
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Verification...</span>
@@ -228,7 +216,7 @@ export default function Sms({ embedded } = {}) {
                   background: isConfigured ? '#22c55e' : '#ef4444',
                 }} />
                 <span style={{ fontSize: 12, color: isConfigured ? '#22c55e' : '#ef4444' }}>
-                  {isConfigured ? 'Brevo connecte' : 'Non configure'}
+                  {isConfigured ? 'Twilio connecte' : (twilioStatus?.error || 'Non configure')}
                 </span>
               </>
             )}
@@ -539,7 +527,7 @@ export default function Sms({ embedded } = {}) {
                               {log.provider_message_id && (
                                 <button
                                   type="button"
-                                  title="Copier l'ID Brevo (a donner au support Brevo)"
+                                  title="Copier l'ID provider (Twilio SID ou Brevo message ID)"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     navigator.clipboard?.writeText(log.provider_message_id);
@@ -594,63 +582,41 @@ export default function Sms({ embedded } = {}) {
         {tab === 'settings' && (
           <div style={{ maxWidth: 520 }}>
             <div className="card">
-              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Configuration Brevo SMS</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Configuration Twilio SMS</h3>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 20 }}>
-                Les SMS sont envoyes via Brevo (configure cote serveur).
-                La cle API est stockee de maniere securisee dans le backend.
+                Les SMS sont envoyes via Twilio (configure cote serveur).
+                Les credentials sont stockes de maniere securisee dans le backend.
               </p>
 
-              {brevoStatus && (
+              {twilioStatus && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
                     <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Statut</span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: isConfigured ? '#22c55e' : '#ef4444' }}>
-                      {isConfigured ? 'Connecte' : brevoStatus.error || 'Non configure'}
+                      {isConfigured ? 'Connecte' : (twilioStatus.error || 'Non configure')}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
                     <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Expediteur SMS</span>
-                    <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.smsSender || '—'}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>{twilioStatus.smsSender || '—'}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
-                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Email expediteur</span>
-                    <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.senderEmail || '—'}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
-                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Nom expediteur</span>
-                    <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.senderName || '—'}</span>
-                  </div>
-                  {brevoStatus.accountEmail && (
+                  {twilioStatus.accountSidPreview && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
-                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Compte Brevo</span>
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.accountEmail}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Account SID</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'monospace' }}>{twilioStatus.accountSidPreview}</span>
                     </div>
                   )}
-                  {brevoStatus.plan && brevoStatus.plan !== 'unknown' && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
-                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Plan</span>
-                      <span style={{ fontSize: 12, fontWeight: 600 }}>{brevoStatus.plan}</span>
+                  {twilioStatus.authDisabled && (
+                    <div style={{ padding: '10px 14px', background: 'rgba(239,68,68,0.08)', borderRadius: 8, border: '1px solid rgba(239,68,68,0.3)' }}>
+                      <span style={{ fontSize: 12, color: '#ef4444' }}>
+                        Auth Twilio desactivee. Verifier credentials sur <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" style={{ color: '#ef4444', textDecoration: 'underline' }}>console.twilio.com</a>.
+                      </span>
                     </div>
                   )}
-                  {brevoStatus.smsCredits != null && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
-                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Credits SMS</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: brevoStatus.smsCredits > 10 ? '#22c55e' : brevoStatus.smsCredits > 0 ? '#f59e0b' : '#ef4444' }}>
-                          {brevoStatus.smsCredits}
-                        </span>
-                        <a href="https://app.brevo.com/billing/plan/sms" target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: 11, fontWeight: 600, color: '#000', background: '#3b82f6', padding: '4px 10px', borderRadius: 6, textDecoration: 'none' }}>
-                          Recharger
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                  {brevoStatus.emailCredits != null && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(var(--overlay),0.03)', borderRadius: 8, border: '1px solid rgba(var(--overlay),0.06)' }}>
-                      <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Credits Email</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: brevoStatus.emailCredits > 50 ? '#22c55e' : brevoStatus.emailCredits > 0 ? '#f59e0b' : '#ef4444' }}>
-                        {brevoStatus.emailCredits}
+                  {twilioStatus.circuitOpen && !twilioStatus.authDisabled && (
+                    <div style={{ padding: '10px 14px', background: 'rgba(245,158,11,0.08)', borderRadius: 8, border: '1px solid rgba(245,158,11,0.3)' }}>
+                      <span style={{ fontSize: 12, color: '#f59e0b' }}>
+                        Circuit breaker ouvert ({twilioStatus.failures} erreurs recentes). Recovery automatique.
                       </span>
                     </div>
                   )}
@@ -660,9 +626,9 @@ export default function Sms({ embedded } = {}) {
               <div style={{ padding: '14px 16px', background: 'rgba(var(--overlay),0.02)', border: '1px solid rgba(var(--overlay),0.06)', borderRadius: 8 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-secondary)', marginBottom: 8 }}>Configuration</div>
                 <p style={{ fontSize: 12, color: '#aaa', lineHeight: 1.8, margin: 0 }}>
-                  La configuration Brevo se fait via les variables d'environnement du serveur
-                  (<code style={{ color: '#3b82f6' }}>BREVO_API_KEY</code>, <code style={{ color: '#3b82f6' }}>BREVO_SMS_SENDER</code>).
-                  Contactez l'administrateur pour modifier ces parametres.
+                  La configuration Twilio se fait via les variables d'environnement du serveur
+                  (<code style={{ color: '#3b82f6' }}>TWILIO_ACCOUNT_SID_*</code>, <code style={{ color: '#3b82f6' }}>TWILIO_AUTH_TOKEN_*</code>, <code style={{ color: '#3b82f6' }}>TWILIO_SMS_SENDER_*</code>).
+                  Voir le compte sur <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6' }}>console.twilio.com</a>.
                 </p>
               </div>
             </div>

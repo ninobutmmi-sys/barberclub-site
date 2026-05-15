@@ -32,6 +32,7 @@ export const keys = {
   notificationLogs: (params) => ['notificationLogs', params],
   notificationStats: ['notificationStats'],
   brevoStatus: ['brevoStatus'],
+  twilioStatus: ['twilioStatus'],
   systemHealth: ['systemHealth'],
   waitlist: (params) => ['waitlist', params],
   waitlistCount: ['waitlistCount'],
@@ -492,6 +493,15 @@ export function useBrevoStatus(options) {
   return useQuery({
     queryKey: keys.brevoStatus,
     queryFn: api.getBrevoStatus,
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useTwilioStatus(options) {
+  return useQuery({
+    queryKey: keys.twilioStatus,
+    queryFn: api.getTwilioStatus,
     staleTime: 60_000,
     ...options,
   });

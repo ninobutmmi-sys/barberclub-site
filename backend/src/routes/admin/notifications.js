@@ -186,6 +186,49 @@ router.get('/brevo-status', async (req, res) => {
 });
 
 /**
+ * GET /api/admin/notifications/twilio-status
+ * Vérifie la configuration Twilio du salon courant
+ */
+router.get('/twilio-status', async (req, res) => {
+  const salonId = req.user.salon_id;
+  const salonConfig = config.getSalonConfig(salonId);
+  const twilio = salonConfig.twilio || {};
+  const configured = !!(twilio.accountSid && twilio.authToken);
+
+  // Statut runtime (circuit breaker, auth disabled) via le service notification
+  let runtime = {};
+  try {
+    runtime = require('../../services/notification').getTwilioStatus(salonId)[salonId] || {};
+  } catch {
+    runtime = {};
+  }
+
+  const statusData = {
+    configured,
+    smsSender: twilio.smsSender || null,
+    // Account SID partiellement masqué pour le UI (sécu)
+    accountSidPreview: twilio.accountSid
+      ? `${twilio.accountSid.slice(0, 6)}…${twilio.accountSid.slice(-4)}`
+      : null,
+    authDisabled: !!runtime.authDisabled,
+    authDisabledAt: runtime.authDisabledAt || null,
+    circuitOpen: !!runtime.circuitOpen,
+    failures: runtime.failures || 0,
+    connected: configured && !runtime.authDisabled && !runtime.circuitOpen,
+  };
+
+  if (!configured) {
+    statusData.error = 'Twilio non configuré pour ce salon';
+  } else if (runtime.authDisabled) {
+    statusData.error = 'Twilio auth désactivée — credentials invalides';
+  } else if (runtime.circuitOpen) {
+    statusData.error = 'Circuit breaker ouvert — trop d\'erreurs récentes';
+  }
+
+  res.json(statusData);
+});
+
+/**
  * POST /api/admin/notifications/retry-failed
  * Remet toutes les notifications échouées en file d'attente
  */
