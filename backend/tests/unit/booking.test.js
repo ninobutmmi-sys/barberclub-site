@@ -14,6 +14,8 @@ jest.mock('../../src/services/notification', () => mockNotification);
 jest.mock('../../src/config/env', () => mockEnv);
 jest.mock('../../src/services/push', () => ({
   notifyNewBooking: jest.fn(),
+  notifyCancellation: jest.fn(),
+  notifyReschedule: jest.fn(),
 }));
 jest.mock('../../src/utils/logger', () => ({
   info: jest.fn(),
@@ -478,6 +480,10 @@ describe('cancelBooking', () => {
 
     // Mock waitlist query to return a waiting entry
     mockDb.query.mockImplementation(async (sql) => {
+      // Slot-in-future guard (added to skip past-slot notifications)
+      if (sql.includes('AS ok')) {
+        return { rows: [{ ok: true }] };
+      }
       if (sql.includes('FROM waitlist')) {
         return {
           rows: [{
@@ -506,6 +512,41 @@ describe('cancelBooking', () => {
         phone: '+33600000002',
       })
     );
+  });
+
+  test('skips waitlist SMS when the freed slot is already in the past', async () => {
+    // Repro of bug: admin cancels a no-show booking after the slot has passed.
+    // The waitlist must NOT receive an SMS for a slot they can no longer take.
+    const booking = createFutureBooking();
+    setupCancelMocks(booking);
+
+    // Simulate the slot-in-future check returning false (slot is past)
+    mockDb.query.mockImplementation(async (sql) => {
+      if (sql.includes('AS ok')) {
+        return { rows: [{ ok: false }] };
+      }
+      if (sql.includes('FROM waitlist')) {
+        return {
+          rows: [{
+            id: 'wait-1',
+            client_name: 'Marie',
+            client_phone: '+33600000002',
+            barber_name: 'Lucas',
+            service_name: 'Coupe Homme',
+          }],
+        };
+      }
+      return { rows: [] };
+    });
+
+    await bookingService.cancelBooking('booking-1', 'cancel-tok-123');
+
+    // The waitlist matching SQL must not have been queried, and no SMS sent
+    const waitlistMatchCalls = mockDb.query.mock.calls.filter(
+      ([sql]) => sql.includes('FROM waitlist w')
+    );
+    expect(waitlistMatchCalls).toHaveLength(0);
+    expect(mockNotification.sendWaitlistSMS).not.toHaveBeenCalled();
   });
 
   test('cancelBooking uses Paris timezone for deadline check', async () => {

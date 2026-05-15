@@ -563,7 +563,20 @@ async function cancelBooking(bookingId, cancelToken) {
   }
 
   // Check waitlist — notify clients waiting for this barber/date/time
-  try {
+  // Skip entirely if the freed slot is already in the past (Paris time).
+  const slotStillFuture = await db.query(
+    `SELECT ($1::date > (NOW() AT TIME ZONE 'Europe/Paris')::date
+             OR ($1::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
+                 AND $2::time > (NOW() AT TIME ZONE 'Europe/Paris')::time)) AS ok`,
+    [booking.date, booking.start_time.slice(0, 5)]
+  ).catch(() => ({ rows: [{ ok: false }] }));
+
+  if (!slotStillFuture.rows[0]?.ok) {
+    logger.info('Waitlist notification skipped — freed slot is in the past', {
+      bookingId, date: booking.date, start_time: booking.start_time.slice(0, 5),
+    });
+  } else {
+   try {
     const salonId = booking.salon_id || 'meylan';
     const salon = config.getSalonConfig(salonId);
     const bookingUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
@@ -634,8 +647,9 @@ async function cancelBooking(bookingId, cancelToken) {
         } catch (_) { /* silent */ }
       }
     }
-  } catch (err) {
+   } catch (err) {
     logger.error('Failed to check waitlist after cancellation', { error: err.message });
+   }
   }
 
   // Notify dashboard (WebSocket + push) — client-initiated cancellation

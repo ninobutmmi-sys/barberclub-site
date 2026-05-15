@@ -629,46 +629,63 @@ router.delete('/:id',
         });
       }
 
-      // Notify waitlist clients if a slot opened up
+      // Notify waitlist clients if a slot opened up — but only if the slot is still in the future.
+      // Admin cancel has no 12h deadline, so it can free a slot already past (e.g. no-show cleanup).
+      // Without this guard, the waitlist would notify clients about a slot they can't take.
       if (bookingInfo) {
         try {
           const salon = config.getSalonConfig(salonId);
           const bookingUrl = `${config.siteUrl}${salon.bookingPath}/reserver.html`;
           const startTime = (bookingInfo.start_time || '').slice(0, 5);
-          const dateParts = (typeof bookingInfo.date === 'string' ? bookingInfo.date : bookingInfo.date.toISOString().slice(0, 10)).split('-');
+          const bookingDateStr = typeof bookingInfo.date === 'string'
+            ? bookingInfo.date.slice(0, 10)
+            : bookingInfo.date.toISOString().slice(0, 10);
+          const dateParts = bookingDateStr.split('-');
           const dateFormatted = `${dateParts[2]}/${dateParts[1]}`;
 
-          const waitlistEntries = await db.query(
-            `SELECT w.id, w.client_name, w.client_phone,
-                    b.name as barber_name, s.name as service_name
-             FROM waitlist w
-             JOIN barbers b ON w.barber_id = b.id
-             JOIN services s ON w.service_id = s.id
-             WHERE w.barber_id = $1 AND w.preferred_date = $2 AND w.status = 'waiting'
-               AND (w.preferred_time_start IS NULL OR w.preferred_time_start <= $3)
-               AND (w.preferred_time_end IS NULL OR w.preferred_time_end >= $3)
-             ORDER BY w.created_at ASC LIMIT 3`,
-            [bookingInfo.barber_id, bookingInfo.date, startTime]
+          const slotStillFuture = await db.query(
+            `SELECT ($1::date > (NOW() AT TIME ZONE 'Europe/Paris')::date
+                     OR ($1::date = (NOW() AT TIME ZONE 'Europe/Paris')::date
+                         AND $2::time > (NOW() AT TIME ZONE 'Europe/Paris')::time)) AS ok`,
+            [bookingDateStr, startTime]
           );
+          if (!slotStillFuture.rows[0]?.ok) {
+            logger.info('Waitlist notification skipped — freed slot is in the past', {
+              bookingId: req.params.id, date: bookingDateStr, start_time: startTime,
+            });
+          } else {
+            const waitlistEntries = await db.query(
+              `SELECT w.id, w.client_name, w.client_phone,
+                      b.name as barber_name, s.name as service_name
+               FROM waitlist w
+               JOIN barbers b ON w.barber_id = b.id
+               JOIN services s ON w.service_id = s.id
+               WHERE w.barber_id = $1 AND w.preferred_date = $2 AND w.status = 'waiting'
+                 AND (w.preferred_time_start IS NULL OR w.preferred_time_start <= $3)
+                 AND (w.preferred_time_end IS NULL OR w.preferred_time_end >= $3)
+               ORDER BY w.created_at ASC LIMIT 3`,
+              [bookingInfo.barber_id, bookingInfo.date, startTime]
+            );
 
-          for (const entry of waitlistEntries.rows) {
-            const firstName = (entry.client_name || '').split(/\s+/)[0];
-            let smsText = toGSM(`BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateFormatted} a ${startTime} avec ${entry.barber_name} pour ${entry.service_name}. Reservez vite au salon ou appelez-nous.`);
-            if (smsText.length > 155 && entry.service_name) {
-              const maxLen = entry.service_name.length - (smsText.length - 155);
-              if (maxLen > 3) {
-                smsText = toGSM(`BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateFormatted} a ${startTime} avec ${entry.barber_name} pour ${entry.service_name.slice(0, maxLen - 3)}.... Reservez vite au salon ou appelez-nous.`);
+            for (const entry of waitlistEntries.rows) {
+              const firstName = (entry.client_name || '').split(/\s+/)[0];
+              let smsText = toGSM(`BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateFormatted} a ${startTime} avec ${entry.barber_name} pour ${entry.service_name}. Reservez vite au salon ou appelez-nous.`);
+              if (smsText.length > 155 && entry.service_name) {
+                const maxLen = entry.service_name.length - (smsText.length - 155);
+                if (maxLen > 3) {
+                  smsText = toGSM(`BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateFormatted} a ${startTime} avec ${entry.barber_name} pour ${entry.service_name.slice(0, maxLen - 3)}.... Reservez vite au salon ou appelez-nous.`);
+                }
               }
+              sendWaitlistSMS({ phone: entry.client_phone, message: smsText, salon_id: salonId })
+                .then(() => db.query("UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1", [entry.id]))
+                .catch((err) => {
+                  logger.error('Direct waitlist SMS failed, queueing for retry', { waitlistId: entry.id, error: err.message });
+                  queueNotification(null, 'waitlist_sms', {
+                    phone: entry.client_phone, message: smsText, salonId,
+                    recipientName: entry.client_name,
+                  }).catch(() => {});
+                });
             }
-            sendWaitlistSMS({ phone: entry.client_phone, message: smsText, salon_id: salonId })
-              .then(() => db.query("UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1", [entry.id]))
-              .catch((err) => {
-                logger.error('Direct waitlist SMS failed, queueing for retry', { waitlistId: entry.id, error: err.message });
-                queueNotification(null, 'waitlist_sms', {
-                  phone: entry.client_phone, message: smsText, salonId,
-                  recipientName: entry.client_name,
-                }).catch(() => {});
-              });
           }
         } catch (err) {
           logger.error('Waitlist check failed after admin cancel', { error: err.message });

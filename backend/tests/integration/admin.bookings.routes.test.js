@@ -45,6 +45,8 @@ jest.mock('../../src/services/notification', () => ({
   sendRescheduleEmail: jest.fn().mockResolvedValue(),
   sendResetPasswordEmail: jest.fn().mockResolvedValue(),
   sendWaitlistSMS: jest.fn().mockResolvedValue(),
+  queueNotification: jest.fn().mockResolvedValue(),
+  toGSM: jest.fn((s) => s),
 }));
 
 // Disable rate limiting
@@ -548,6 +550,7 @@ describe('DELETE /api/admin/bookings/:id', () => {
       }],
     });
     db.query.mockResolvedValueOnce({ rows: [{ id: BOOKING_ID }] });
+    db.query.mockResolvedValueOnce({ rows: [{ ok: true }] }); // slot-in-future guard
     db.query.mockResolvedValueOnce({ rows: [] }); // waitlist
 
     await request(app)
@@ -570,6 +573,8 @@ describe('DELETE /api/admin/bookings/:id', () => {
       }],
     });
     db.query.mockResolvedValueOnce({ rows: [{ id: BOOKING_ID }] });
+    // Slot-in-future guard: the freed slot is still in the future
+    db.query.mockResolvedValueOnce({ rows: [{ ok: true }] });
     // Waitlist entries
     db.query.mockResolvedValueOnce({
       rows: [{
@@ -592,6 +597,28 @@ describe('DELETE /api/admin/bookings/:id', () => {
         salon_id: 'meylan',
       })
     );
+  });
+
+  it('skips waitlist SMS when the freed slot is already in the past', async () => {
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        barber_id: BARBER_ID, date: FUTURE_DATE, start_time: '10:00', price: 2700,
+        service_name: 'Coupe homme', barber_name: 'Lucas',
+        first_name: 'Jean', email: 'jean@test.fr',
+      }],
+    });
+    db.query.mockResolvedValueOnce({ rows: [{ id: BOOKING_ID }] });
+    // Slot-in-future guard returns false (slot is past — e.g. admin cancels a no-show)
+    db.query.mockResolvedValueOnce({ rows: [{ ok: false }] });
+    // Any further query mock — should NOT be hit
+    db.query.mockResolvedValue({ rows: [] });
+
+    await request(app)
+      .delete(`/api/admin/bookings/${BOOKING_ID}`);
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(notification.sendWaitlistSMS).not.toHaveBeenCalled();
   });
 
   it('validates booking id format', async () => {
