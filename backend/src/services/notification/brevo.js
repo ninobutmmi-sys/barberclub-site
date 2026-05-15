@@ -150,10 +150,9 @@ async function checkBrevoKeys() {
       });
       clearTimeout(timeout);
       if (response.status === 401) {
-        const circuit = getCircuit(salonId);
-        circuit.keyDisabled = true;
-        circuit.keyDisabledAt = new Date().toISOString();
-        logger.error(`STARTUP CHECK: Brevo key DISABLED for ${salonId} — emails/SMS will NOT work`, { salonId });
+        // Don't flip the circuit at boot — Brevo occasionally returns transient 401s on cold start.
+        // Real sends will trip the flag if the key is genuinely dead.
+        logger.warn(`STARTUP CHECK: Brevo returned 401 for ${salonId} — will retry on first real send`, { salonId });
       } else if (response.ok) {
         logger.info(`Brevo key OK for ${salonId}`);
       } else {
