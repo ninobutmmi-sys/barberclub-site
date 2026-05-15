@@ -46,10 +46,12 @@ const SALONS = {
       smsSender: process.env.BREVO_SMS_SENDER || 'BARBERCLUB',
     },
     twilio: {
-      accountSid: process.env.TWILIO_ACCOUNT_SID || '',
-      authToken: process.env.TWILIO_AUTH_TOKEN || '',
-      smsSender: process.env.TWILIO_SMS_SENDER || 'BARBERCLUB',
-      statusCallbackUrl: process.env.TWILIO_STATUS_CALLBACK_URL || '',
+      // Per-salon creds: chaque salon a son propre compte Twilio.
+      // Fallback sur les vars génériques pour rétrocompatibilité.
+      accountSid: process.env.TWILIO_ACCOUNT_SID_MEYLAN || process.env.TWILIO_ACCOUNT_SID || '',
+      authToken: process.env.TWILIO_AUTH_TOKEN_MEYLAN || process.env.TWILIO_AUTH_TOKEN || '',
+      smsSender: process.env.TWILIO_SMS_SENDER_MEYLAN || process.env.TWILIO_SMS_SENDER || 'BARBERCLUB',
+      statusCallbackUrl: process.env.TWILIO_STATUS_CALLBACK_URL_MEYLAN || process.env.TWILIO_STATUS_CALLBACK_URL || '',
     },
     smsProvider: (process.env.SMS_PROVIDER_MEYLAN || process.env.SMS_PROVIDER || 'brevo').toLowerCase(),
   },
@@ -68,11 +70,12 @@ const SALONS = {
       smsSender: process.env.BREVO_SMS_SENDER_GRENOBLE || 'BARBERCLUB',
     },
     twilio: {
-      // Default to Meylan creds if Grenoble-specific not set (single Twilio account is fine)
+      // Per-salon creds: chaque salon a son propre compte Twilio.
+      // Fallback sur les vars génériques pour rétrocompatibilité.
       accountSid: process.env.TWILIO_ACCOUNT_SID_GRENOBLE || process.env.TWILIO_ACCOUNT_SID || '',
       authToken: process.env.TWILIO_AUTH_TOKEN_GRENOBLE || process.env.TWILIO_AUTH_TOKEN || '',
       smsSender: process.env.TWILIO_SMS_SENDER_GRENOBLE || process.env.TWILIO_SMS_SENDER || 'BARBERCLUB',
-      statusCallbackUrl: process.env.TWILIO_STATUS_CALLBACK_URL || '',
+      statusCallbackUrl: process.env.TWILIO_STATUS_CALLBACK_URL_GRENOBLE || process.env.TWILIO_STATUS_CALLBACK_URL || '',
     },
     smsProvider: (process.env.SMS_PROVIDER_GRENOBLE || process.env.SMS_PROVIDER || 'brevo').toLowerCase(),
   },
