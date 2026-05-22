@@ -162,8 +162,23 @@ router.get('/services', publicLimiter,
         [barber_id]
       );
       const barberHomeSalon = barberCheck.rows[0]?.salon_id || salonId;
-      // Use the barber's home salon services (guest keeps their own tarifs)
-      const serviceSalonId = barberHomeSalon !== salonId ? barberHomeSalon : salonId;
+      // Prefer host-salon services if the (guest) barber is assigned to any —
+      // allows per-salon pricing/durations (e.g. Louay au Meylan le samedi).
+      // Fallback to home salon if no host-salon assignment exists.
+      let serviceSalonId = salonId;
+      if (barberHomeSalon !== salonId) {
+        const hostHasServices = await db.query(
+          `SELECT 1 FROM barber_services bs
+           JOIN services s ON bs.service_id = s.id
+           WHERE bs.barber_id = $1 AND s.salon_id = $2
+             AND s.is_active = true AND s.deleted_at IS NULL
+           LIMIT 1`,
+          [barber_id, salonId]
+        );
+        if (hostHasServices.rows.length === 0) {
+          serviceSalonId = barberHomeSalon;
+        }
+      }
 
       queryText = `
         SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color,
