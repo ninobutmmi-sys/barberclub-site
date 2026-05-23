@@ -30,6 +30,9 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
   const [time, setTime] = useState(initialTime || '09:00');
   const selectedService = filteredServices.find((s) => s.id === serviceId) || filteredServices[0];
   const [duration, setDuration] = useState(selectedService?.duration || 30);
+  // True quand l'admin a modifié manuellement la durée — déclenche duration_override
+  // côté backend pour bypasser le filet de sécurité anti-shortening (cf. booking.js).
+  const [durationManuallySet, setDurationManuallySet] = useState(false);
   const [bookingColor, setBookingColor] = useState('');
   const [firstName, setFirstName] = useState(initialFirstName || '');
   const [lastName, setLastName] = useState(initialLastName || '');
@@ -82,6 +85,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
         ? customDur
         : (isSaturday && svc.duration_saturday) ? svc.duration_saturday : svc.duration;
       setDuration(computed);
+      setDurationManuallySet(false);
       setBookingColor(svc.color || FALLBACK_COLOR);
     }
   }, [serviceId, filteredServices, date, barberId]);
@@ -153,6 +157,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
         barber_id: barberId, service_id: serviceId, date, start_time: time,
         duration, first_name: firstName, last_name: lastName, phone: phone.replace(/\s/g, ''), email: email || undefined,
         color: bookingColor || undefined,
+        ...(durationManuallySet ? { duration_override: true } : {}),
       };
 
       if (repeatEnabled) {
@@ -312,9 +317,9 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
               <div className="bk-field">
                 <label>Durée</label>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <input className="input" type="number" value={Math.floor(duration / 60)} onChange={(e) => setDuration((parseInt(e.target.value) || 0) * 60 + (duration % 60))} min="0" max="12" style={{ width: 60, textAlign: 'center' }} />
+                  <input className="input" type="number" value={Math.floor(duration / 60)} onChange={(e) => { setDuration((parseInt(e.target.value) || 0) * 60 + (duration % 60)); setDurationManuallySet(true); }} min="0" max="12" style={{ width: 60, textAlign: 'center' }} />
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>h</span>
-                  <input className="input" type="number" value={duration % 60} onChange={(e) => setDuration(Math.floor(duration / 60) * 60 + (parseInt(e.target.value) || 0))} min="0" max="55" step="5" style={{ width: 60, textAlign: 'center' }} />
+                  <input className="input" type="number" value={duration % 60} onChange={(e) => { setDuration(Math.floor(duration / 60) * 60 + (parseInt(e.target.value) || 0)); setDurationManuallySet(true); }} min="0" max="55" step="5" style={{ width: 60, textAlign: 'center' }} />
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>min</span>
                 </div>
               </div>
