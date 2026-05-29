@@ -452,58 +452,174 @@ router.post('/:id/sale',
       const { id } = req.params;
       const { quantity, payment_method, sold_by, client_id, booking_id } = req.body;
 
-      // Get product and check availability
-      const productResult = await db.query(
-        'SELECT id, name, sell_price, stock_quantity, is_active FROM products WHERE id = $1 AND salon_id = $2',
-        [id, salonId]
-      );
-
-      if (productResult.rows.length === 0) {
-        throw ApiError.notFound('Produit introuvable');
-      }
-
-      const product = productResult.rows[0];
-
-      if (!product.is_active) {
-        throw ApiError.badRequest('Ce produit est desactive');
-      }
-
-      if (product.stock_quantity < quantity) {
-        throw ApiError.badRequest(
-          `Stock insuffisant (disponible: ${product.stock_quantity}, demande: ${quantity})`
+      const sale = await db.transaction(async (client) => {
+        // Lock the product row to serialize concurrent stock decrements
+        // (sale + stock-movement can race on the same product)
+        const productResult = await client.query(
+          'SELECT id, name, sell_price, stock_quantity, is_active FROM products WHERE id = $1 AND salon_id = $2 FOR UPDATE',
+          [id, salonId]
         );
-      }
 
-      const unit_price = product.sell_price;
-      const total_price = unit_price * quantity;
+        if (productResult.rows.length === 0) {
+          throw ApiError.notFound('Produit introuvable');
+        }
 
-      // Decrease stock
-      await db.query(
-        'UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2',
-        [quantity, id]
-      );
+        const product = productResult.rows[0];
 
-      // Create sale record
-      const saleResult = await db.query(
-        `INSERT INTO product_sales (product_id, quantity, unit_price, total_price, payment_method, sold_by, client_id, booking_id, sold_at, salon_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9)
-         RETURNING *`,
-        [id, quantity, unit_price, total_price, payment_method, sold_by, client_id || null, booking_id || null, salonId]
-      );
+        if (!product.is_active) {
+          throw ApiError.badRequest('Ce produit est desactive');
+        }
+
+        if (product.stock_quantity < quantity) {
+          throw ApiError.badRequest(
+            `Stock insuffisant (disponible: ${product.stock_quantity}, demande: ${quantity})`
+          );
+        }
+
+        const unit_price = product.sell_price;
+        const total_price = unit_price * quantity;
+
+        // Decrease stock
+        await client.query(
+          'UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2',
+          [quantity, id]
+        );
+
+        // Create sale record
+        const saleResult = await client.query(
+          `INSERT INTO product_sales (product_id, quantity, unit_price, total_price, payment_method, sold_by, client_id, booking_id, sold_at, salon_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9)
+           RETURNING *`,
+          [id, quantity, unit_price, total_price, payment_method, sold_by, client_id || null, booking_id || null, salonId]
+        );
+
+        return {
+          ...saleResult.rows[0],
+          product_name: product.name,
+          new_stock_quantity: product.stock_quantity - quantity,
+        };
+      });
 
       logger.info('Product sale recorded', {
         product_id: id,
-        product_name: product.name,
+        product_name: sale.product_name,
         quantity,
-        total_price,
+        total_price: sale.total_price,
       });
 
       // Return sale with updated stock info
-      res.status(201).json({
-        ...saleResult.rows[0],
-        product_name: product.name,
-        new_stock_quantity: product.stock_quantity - quantity,
+      res.status(201).json(sale);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// POST /api/admin/products/:id/stock-movement — Retrait de stock SANS CA
+// Consommation interne (cire pour coiffer), perte/casse, correction inventaire.
+// Décrémente le stock mais ne crée PAS de vente (n'impacte pas le CA).
+// ============================================
+router.post('/:id/stock-movement',
+  [
+    param('id').matches(uuidRegex),
+    body('quantity').isInt({ min: 1 }).withMessage('Quantite requise (min 1)'),
+    body('reason').isIn(['internal_use', 'loss', 'inventory']).withMessage('Motif invalide'),
+    body('note').optional({ values: 'falsy' }).trim().isLength({ max: 500 }),
+    body('performed_by').optional({ values: 'falsy' }).matches(uuidRegex),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const { id } = req.params;
+      const { quantity, reason, note, performed_by } = req.body;
+
+      const result = await db.transaction(async (client) => {
+        // Lock the product row to prevent concurrent stock races (sale + removal)
+        const productResult = await client.query(
+          'SELECT id, name, stock_quantity, is_active FROM products WHERE id = $1 AND salon_id = $2 FOR UPDATE',
+          [id, salonId]
+        );
+
+        if (productResult.rows.length === 0) {
+          throw ApiError.notFound('Produit introuvable');
+        }
+
+        const product = productResult.rows[0];
+
+        if (product.stock_quantity < quantity) {
+          throw ApiError.badRequest(
+            `Stock insuffisant (disponible: ${product.stock_quantity}, demande: ${quantity})`
+          );
+        }
+
+        // Ensure the barber (if provided) belongs to this salon — multi-tenant isolation
+        if (performed_by) {
+          const barberCheck = await client.query(
+            'SELECT id FROM barbers WHERE id = $1 AND salon_id = $2',
+            [performed_by, salonId]
+          );
+          if (barberCheck.rows.length === 0) {
+            throw ApiError.badRequest('Barber introuvable dans ce salon');
+          }
+        }
+
+        // Decrease stock (no product_sale → no revenue impact)
+        await client.query(
+          'UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2',
+          [quantity, id]
+        );
+
+        // Record the movement for traceability / history
+        const movementResult = await client.query(
+          `INSERT INTO stock_movements (product_id, salon_id, quantity, reason, note, performed_by)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING *`,
+          [id, salonId, quantity, reason, note || null, performed_by || null]
+        );
+
+        return {
+          ...movementResult.rows[0],
+          product_name: product.name,
+          new_stock_quantity: product.stock_quantity - quantity,
+        };
       });
+
+      logger.info('Stock movement recorded', {
+        product_id: id,
+        product_name: result.product_name,
+        quantity,
+        reason,
+      });
+
+      res.status(201).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// GET /api/admin/products/:id/stock-movements — Historique des retraits
+// ============================================
+router.get('/:id/stock-movements',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const result = await db.query(
+        `SELECT sm.id, sm.quantity, sm.reason, sm.note, sm.created_at,
+                b.name as performed_by_name
+         FROM stock_movements sm
+         LEFT JOIN barbers b ON sm.performed_by = b.id
+         WHERE sm.product_id = $1 AND sm.salon_id = $2
+         ORDER BY sm.created_at DESC
+         LIMIT 50`,
+        [req.params.id, salonId]
+      );
+      res.json(result.rows);
     } catch (error) {
       next(error);
     }

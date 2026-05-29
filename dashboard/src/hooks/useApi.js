@@ -713,6 +713,28 @@ export function useRecordSale() {
   });
 }
 
+export function useStockMovements(productId, options) {
+  return useQuery({
+    queryKey: ['stockMovements', productId],
+    queryFn: () => api.getStockMovements(productId),
+    enabled: !!productId,
+    staleTime: 30_000,
+    ...options,
+  });
+}
+
+export function useRemoveStock() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => api.removeStock(id, data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['products'] });
+      qc.invalidateQueries({ queryKey: keys.productStats });
+      qc.invalidateQueries({ queryKey: ['stockMovements', id] });
+    },
+  });
+}
+
 // ---------- Gift Cards ----------
 export function useGiftCards(options) {
   return useQuery({

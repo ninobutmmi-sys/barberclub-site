@@ -7,7 +7,8 @@ import {
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
-  useRecordSale,
+  useRemoveStock,
+  useStockMovements,
   useGiftCards,
   useCreateGiftCard,
   useUpdateGiftCard,
@@ -54,6 +55,15 @@ const PAYMENT_METHODS = [
   { value: 'other', label: 'Autre' },
 ];
 
+// Motifs de retrait de stock (sans impact CA — la vente passe par le RDV)
+const STOCK_REASONS = [
+  { value: 'internal_use', label: 'Usage interne' },
+  { value: 'loss', label: 'Perte / casse' },
+  { value: 'inventory', label: 'Correction inventaire' },
+];
+
+const STOCK_REASON_LABELS = Object.fromEntries(STOCK_REASONS.map(r => [r.value, r.label]));
+
 const KPI_ACCENTS = {
   blue:  { color: '#3b82f6' },
   green: { color: '#22c55e' },
@@ -73,7 +83,7 @@ export default function Boutique() {
   const barbers = allBarbers.filter(b => b.is_active);
   const [search, setSearch] = useState('');
   const [productModal, setProductModal] = useState(null);
-  const [saleModal, setSaleModal] = useState(null);
+  const [stockModal, setStockModal] = useState(null);
   const [giftCardModal, setGiftCardModal] = useState(false);
 
   const grouped = useMemo(() => {
@@ -262,7 +272,7 @@ export default function Boutique() {
                       product={product}
                       categoryColor={catColor}
                       onEdit={() => setProductModal(product)}
-                      onSell={() => setSaleModal(product)}
+                      onRemoveStock={() => setStockModal(product)}
                       isMobile={isMobile}
                     />
                   ))}
@@ -273,11 +283,11 @@ export default function Boutique() {
         )}
       </div>
 
-      {saleModal && (
-        <SaleModal
-          product={saleModal}
+      {stockModal && (
+        <StockRemovalModal
+          product={stockModal}
           barbers={barbers}
-          onClose={() => setSaleModal(null)}
+          onClose={() => setStockModal(null)}
         />
       )}
       {productModal && (
@@ -337,7 +347,7 @@ function KpiCard({ label, value, subtitle, accent = 'blue', icon }) {
 // Product Card
 // ============================================
 
-function ProductCard({ product, categoryColor, onEdit, onSell, isMobile }) {
+function ProductCard({ product, categoryColor, onEdit, onRemoveStock, isMobile }) {
   const stock = getStockStatus(product.stock_quantity, product.alert_threshold);
   const threshold = product.alert_threshold || 5;
   const barFill = Math.min(100, (product.stock_quantity / (threshold * 4)) * 100);
@@ -470,80 +480,72 @@ function ProductCard({ product, categoryColor, onEdit, onSell, isMobile }) {
         )}
       </div>
 
-      {/* Sell button or internal badge */}
-      {product.sellable === false ? (
-        <div style={{
-          width: '100%', padding: '7px 0',
-          background: 'rgba(var(--overlay),0.04)',
-          border: '1px solid rgba(var(--overlay),0.06)',
+      {/* Retrait de stock (sans CA — la vente passe par le modal du RDV) */}
+      <button
+        onClick={onRemoveStock}
+        disabled={product.stock_quantity <= 0}
+        style={{
+          width: '100%', padding: '8px 0',
+          background: `${categoryColor}12`,
+          border: `1px solid ${categoryColor}20`,
           borderRadius: 8,
-          color: 'var(--text-muted)', fontSize: 11, fontWeight: 600,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-          letterSpacing: '0.03em',
-        }}>
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
-            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0022 16z" />
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-            <line x1="12" y1="22.08" x2="12" y2="12" />
-          </svg>
-          Stock interne
-        </div>
-      ) : (
-        <button
-          onClick={onSell}
-          style={{
-            width: '100%', padding: '8px 0',
-            background: `${categoryColor}12`,
-            border: `1px solid ${categoryColor}20`,
-            borderRadius: 8, cursor: 'pointer',
-            color: categoryColor, fontSize: 12, fontWeight: 700,
-            fontFamily: 'var(--font)',
-            transition: 'all 0.15s',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = `${categoryColor}22`;
-            e.currentTarget.style.borderColor = `${categoryColor}35`;
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = `${categoryColor}12`;
-            e.currentTarget.style.borderColor = `${categoryColor}20`;
-          }}
-        >
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <path d="M16 10a4 4 0 01-8 0" />
-          </svg>
-          Vendre
-        </button>
-      )}
+          cursor: product.stock_quantity <= 0 ? 'not-allowed' : 'pointer',
+          opacity: product.stock_quantity <= 0 ? 0.4 : 1,
+          color: categoryColor, fontSize: 12, fontWeight: 700,
+          fontFamily: 'var(--font)',
+          transition: 'all 0.15s',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+        }}
+        onMouseEnter={e => {
+          if (product.stock_quantity <= 0) return;
+          e.currentTarget.style.background = `${categoryColor}22`;
+          e.currentTarget.style.borderColor = `${categoryColor}35`;
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = `${categoryColor}12`;
+          e.currentTarget.style.borderColor = `${categoryColor}20`;
+        }}
+        title="Retirer du stock (consommation interne, perte, inventaire) — n'impacte pas le CA"
+      >
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0022 16z" />
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+          <line x1="12" y1="22.08" x2="12" y2="12" />
+          <line x1="22" y1="2" x2="16" y2="8" />
+        </svg>
+        Retirer du stock
+      </button>
     </div>
   );
 }
 
 // ============================================
-// Sale Modal
+// Stock Removal Modal — retrait de stock SANS impact CA
+// (la vente réelle aux clients passe par le modal du RDV)
 // ============================================
 
-function SaleModal({ product, barbers, onClose }) {
-  const recordSale = useRecordSale();
+function StockRemovalModal({ product, barbers, onClose }) {
+  const removeStock = useRemoveStock();
+  const { data: movements = [], isLoading: loadingMovements } = useStockMovements(product.id);
   const [qty, setQty] = useState(1);
-  const [method, setMethod] = useState('cb');
+  const [reason, setReason] = useState('internal_use');
   const [barberId, setBarberId] = useState(barbers[0]?.id || '');
+  const [note, setNote] = useState('');
   const [error, setError] = useState('');
-  const total = (product.sell_price || 0) * qty;
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    if (!barberId) { setError('Selectionnez un barber'); return; }
     if (qty > product.stock_quantity) { setError('Stock insuffisant'); return; }
     try {
-      await recordSale.mutateAsync({
+      await removeStock.mutateAsync({
         id: product.id,
-        data: { quantity: qty, payment_method: method, sold_by: barberId },
+        data: {
+          quantity: qty,
+          reason,
+          performed_by: barberId || undefined,
+          note: note.trim() || undefined,
+        },
       });
       onClose();
     } catch (err) {
@@ -553,9 +555,9 @@ function SaleModal({ product, barbers, onClose }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 440 }}>
         <div className="modal-header">
-          <h3 className="modal-title">Vendre : {product.name}</h3>
+          <h3 className="modal-title">Retirer du stock : {product.name}</h3>
           <button className="btn-ghost" onClick={onClose}>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
@@ -564,9 +566,19 @@ function SaleModal({ product, barbers, onClose }) {
           <div className="modal-body">
             {error && <div className="login-error" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
 
+            <div style={{
+              fontSize: 12, color: 'var(--text-muted)', marginBottom: 16,
+              padding: '8px 12px', borderRadius: 8,
+              background: 'rgba(var(--overlay),0.03)',
+              border: '1px solid rgba(var(--overlay),0.06)',
+            }}>
+              Ce retrait décrémente le stock sans compter dans le CA.
+              Pour une vente à un client, ajoutez le produit depuis le rendez-vous.
+            </div>
+
             {/* Quantity stepper */}
             <div className="form-group">
-              <label className="label">Quantite</label>
+              <label className="label">Quantite a retirer</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <button type="button" onClick={() => setQty(q => Math.max(1, q - 1))}
                   style={{
@@ -598,23 +610,23 @@ function SaleModal({ product, barbers, onClose }) {
                   +
                 </button>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  / {product.stock_quantity} dispo
+                  / {product.stock_quantity} en stock
                 </span>
               </div>
             </div>
 
-            {/* Payment method */}
+            {/* Reason */}
             <div className="form-group">
-              <label className="label">Paiement</label>
+              <label className="label">Motif</label>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {PAYMENT_METHODS.map(m => (
+                {STOCK_REASONS.map(r => (
                   <button
-                    key={m.value}
+                    key={r.value}
                     type="button"
-                    className={`btn btn-sm ${method === m.value ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setMethod(m.value)}
+                    className={`btn btn-sm ${reason === r.value ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setReason(r.value)}
                   >
-                    {m.label}
+                    {r.label}
                   </button>
                 ))}
               </div>
@@ -622,8 +634,15 @@ function SaleModal({ product, barbers, onClose }) {
 
             {/* Barber */}
             <div className="form-group">
-              <label className="label">Vendu par</label>
+              <label className="label">Par (optionnel)</label>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${!barberId ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => setBarberId('')}
+                >
+                  —
+                </button>
                 {barbers.map(b => (
                   <button
                     key={b.id}
@@ -637,26 +656,55 @@ function SaleModal({ product, barbers, onClose }) {
               </div>
             </div>
 
-            {/* Total */}
-            <div style={{
-              marginTop: 8, padding: '16px 18px',
-              background: 'linear-gradient(135deg, rgba(var(--overlay),0.04), rgba(var(--overlay),0.02))',
-              borderRadius: 12, border: '1px solid rgba(var(--overlay),0.06)',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            }}>
-              <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontWeight: 500 }}>Total</span>
-              <span style={{
-                fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800,
-              }}>
-                {formatPrice(total)}
-              </span>
+            {/* Note */}
+            <div className="form-group">
+              <label className="label">Note (optionnel)</label>
+              <input className="input" value={note} maxLength={500}
+                onChange={e => setNote(e.target.value)}
+                placeholder="Ex: cire utilisee pour coiffer un client" />
+            </div>
+
+            {/* History */}
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="label">Derniers retraits</label>
+              {loadingMovements ? (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement...</div>
+              ) : movements.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Aucun retrait enregistre</div>
+              ) : (
+                <div style={{
+                  display: 'flex', flexDirection: 'column', gap: 6,
+                  maxHeight: 160, overflowY: 'auto',
+                }}>
+                  {movements.map(m => (
+                    <div key={m.id} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      gap: 8, padding: '6px 10px', borderRadius: 8,
+                      background: 'rgba(var(--overlay),0.03)',
+                      border: '1px solid rgba(var(--overlay),0.05)',
+                      fontSize: 12,
+                    }}>
+                      <span style={{ color: 'var(--text-secondary)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <strong style={{ color: 'var(--text)' }}>−{m.quantity}</strong>
+                        {' · '}{STOCK_REASON_LABELS[m.reason] || m.reason}
+                        {m.performed_by_name ? ` · ${m.performed_by_name}` : ''}
+                        {m.note ? ` · ${m.note}` : ''}
+                      </span>
+                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        {new Date(m.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Annuler</button>
-            <button type="submit" className="btn btn-primary btn-sm" disabled={recordSale.isPending}>
-              {recordSale.isPending ? 'Enregistrement...' : 'Confirmer la vente'}
+            <button type="submit" className="btn btn-primary btn-sm"
+              disabled={removeStock.isPending || product.stock_quantity <= 0}>
+              {removeStock.isPending ? 'Retrait...' : 'Confirmer le retrait'}
             </button>
           </div>
         </form>
