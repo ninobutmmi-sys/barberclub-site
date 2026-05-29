@@ -821,7 +821,7 @@ function ProductModal({ product, onClose }) {
                   onClick={() => setSellable(!sellable)}
                 />
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                  {sellable ? 'Oui — visible en vente' : 'Non — stock interne uniquement'}
+                  {sellable ? 'Oui — proposable a la vente sur un RDV' : 'Non — stock interne uniquement'}
                 </span>
               </div>
             </div>

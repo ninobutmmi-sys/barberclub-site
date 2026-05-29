@@ -48,6 +48,7 @@ export default function ProductPicker({ booking, barberId }) {
 
   const filteredProducts = products.filter((p) => {
     if (!p.is_active || p.stock_quantity <= 0 || !p.sell_price) return false;
+    if (p.sellable === false) return false; // stock interne uniquement — pas vendable au client
     if (!search) return true;
     const q = search.toLowerCase();
     return p.name.toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
