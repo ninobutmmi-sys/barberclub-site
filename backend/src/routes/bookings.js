@@ -30,7 +30,6 @@ router.get('/barbers', publicLimiter,
       `SELECT id, name, role, photo_url, FALSE as is_guest
        FROM barbers
        WHERE is_active = true AND deleted_at IS NULL AND salon_id = $1
-         AND (contract_end IS NULL OR contract_end >= CURRENT_DATE)
        ORDER BY sort_order`,
       [salonId]
     );

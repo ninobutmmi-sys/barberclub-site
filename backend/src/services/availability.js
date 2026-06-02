@@ -220,19 +220,6 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
 async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = {}) {
   const salonId = options.salonId || 'meylan';
 
-  // CDD / saisonnier : barber réservable uniquement dans sa fenêtre de contrat.
-  // contract_start/end sont des DATE (renvoyées en string 'YYYY-MM-DD' → comparaison ISO sûre).
-  const contractRes = await db.query(
-    'SELECT contract_start, contract_end FROM barbers WHERE id = $1',
-    [barberId]
-  );
-  if (contractRes.rows.length > 0) {
-    const { contract_start, contract_end } = contractRes.rows[0];
-    if ((contract_start && date < contract_start) || (contract_end && date > contract_end)) {
-      return [];
-    }
-  }
-
   // Check guest assignment for this barber on this date
   const guestAssignment = await getGuestAssignment(barberId, date);
 
@@ -690,18 +677,6 @@ async function validateBarberSlot(dbClient, barberId, date, startTime, endTime, 
   const dateObj = new Date(date + 'T00:00:00');
   const jsDay = dateObj.getDay();
   const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
-
-  // CDD / saisonnier : refuse toute réservation hors fenêtre de contrat (garde-fou serveur).
-  const contractCheck = await dbClient.query(
-    'SELECT contract_start, contract_end FROM barbers WHERE id = $1',
-    [barberId]
-  );
-  if (contractCheck.rows.length > 0) {
-    const { contract_start, contract_end } = contractCheck.rows[0];
-    if ((contract_start && date < contract_start) || (contract_end && date > contract_end)) {
-      throw ApiError.badRequest('Ce barber ne travaille pas à cette date');
-    }
-  }
 
   // Check guest assignment first
   const gaResult = await dbClient.query(
