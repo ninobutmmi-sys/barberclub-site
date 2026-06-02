@@ -21,7 +21,7 @@ router.get('/', async (req, res, next) => {
     const salonId = req.user.salon_id;
     // Resident barbers
     const result = await db.query(
-      `SELECT id, name, role, photo_url, email, is_active, sort_order, salon_id, FALSE as is_guest
+      `SELECT id, name, role, photo_url, email, is_active, sort_order, salon_id, contract_start, contract_end, FALSE as is_guest
        FROM barbers WHERE deleted_at IS NULL AND salon_id = $1
        ORDER BY sort_order`,
       [salonId]
@@ -83,12 +83,14 @@ router.post('/',
     body('schedules.*.end_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/),
     body('service_ids').optional().isArray(),
     body('service_ids.*').optional().matches(uuidRegex).withMessage('UUID service invalide'),
+    body('contract_start').optional({ values: 'falsy' }).matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de début invalide'),
+    body('contract_end').optional({ values: 'falsy' }).matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de fin invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const { name, role, email, photo_url, schedules, service_ids } = req.body;
+      const { name, role, email, photo_url, schedules, service_ids, contract_start, contract_end } = req.body;
 
       // Auto-generate email if not provided: name-slug@barberclub-{salonId}.fr
       let barberEmail = email;
@@ -126,10 +128,10 @@ router.post('/',
         await client.query('BEGIN');
 
         const barberResult = await client.query(
-          `INSERT INTO barbers (name, role, photo_url, email, password_hash, is_active, sort_order, salon_id)
-           VALUES ($1, $2, $3, $4, $5, false, $6, $7)
-           RETURNING id, name, role, photo_url, email, is_active, sort_order, salon_id`,
-          [name, role || null, photo_url || null, barberEmail, passwordHash, nextSortOrder, salonId]
+          `INSERT INTO barbers (name, role, photo_url, email, password_hash, is_active, sort_order, salon_id, contract_start, contract_end)
+           VALUES ($1, $2, $3, $4, $5, false, $6, $7, $8, $9)
+           RETURNING id, name, role, photo_url, email, is_active, sort_order, salon_id, contract_start, contract_end`,
+          [name, role || null, photo_url || null, barberEmail, passwordHash, nextSortOrder, salonId, contract_start || null, contract_end || null]
         );
         const barber = barberResult.rows[0];
 
@@ -264,12 +266,14 @@ router.put('/:id',
     body('role').optional().trim().isLength({ max: 200 }),
     body('photo_url').optional().trim(),
     body('is_active').optional().isBoolean(),
+    body('contract_start').optional({ nullable: true }).matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de début invalide'),
+    body('contract_end').optional({ nullable: true }).matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de fin invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { name, role, photo_url, is_active } = req.body;
+      const { name, role, photo_url, is_active, contract_start, contract_end } = req.body;
 
       const fields = [];
       const values = [];
@@ -279,6 +283,8 @@ router.put('/:id',
       if (role !== undefined) { fields.push(`role = $${paramIndex++}`); values.push(role); }
       if (photo_url !== undefined) { fields.push(`photo_url = $${paramIndex++}`); values.push(photo_url); }
       if (is_active !== undefined) { fields.push(`is_active = $${paramIndex++}`); values.push(is_active); }
+      if (contract_start !== undefined) { fields.push(`contract_start = $${paramIndex++}`); values.push(contract_start || null); }
+      if (contract_end !== undefined) { fields.push(`contract_end = $${paramIndex++}`); values.push(contract_end || null); }
 
       if (fields.length === 0) {
         throw ApiError.badRequest('Aucune donnée à mettre à jour');
@@ -288,7 +294,7 @@ router.put('/:id',
       const result = await db.query(
         `UPDATE barbers SET ${fields.join(', ')}
          WHERE id = $${paramIndex} AND salon_id = $${paramIndex + 1} AND deleted_at IS NULL
-         RETURNING id, name, role, photo_url, email, is_active, sort_order`,
+         RETURNING id, name, role, photo_url, email, is_active, sort_order, contract_start, contract_end`,
         values
       );
 

@@ -182,6 +182,11 @@ export default function Barbers() {
                         Invite
                       </span>
                     )}
+                    {b.contract_end && (
+                      <span style={{ fontSize: 10, fontWeight: 600, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', padding: '1px 8px', borderRadius: 10 }}>
+                        CDD → {b.contract_end.slice(8, 10)}/{b.contract_end.slice(5, 7)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -535,6 +540,8 @@ function CreateBarberModal({ onClose }) {
   const [role, setRole] = useState('Barber');
   const [email, setEmail] = useState('');
   const [emailManual, setEmailManual] = useState(false);
+  const [contractStart, setContractStart] = useState('');
+  const [contractEnd, setContractEnd] = useState('');
   const [photoPreview, setPhotoPreview] = useState(null);
   const [schedules, setSchedules] = useState(
     DAYS.map((_, i) => ({ day_of_week: i, is_working: i < 6, start_time: '09:00', end_time: '19:00' }))
@@ -585,6 +592,8 @@ function CreateBarberModal({ onClose }) {
         photo_url: photoPreview || undefined,
         schedules,
         service_ids: [...selectedServices],
+        contract_start: contractStart || undefined,
+        contract_end: contractEnd || undefined,
       });
       onClose();
     } catch (err) {
@@ -737,6 +746,22 @@ function CreateBarberModal({ onClose }) {
               onChange={(e) => { setEmail(e.target.value); setEmailManual(true); }}
               placeholder="Auto-genere a partir du nom"
             />
+          </div>
+
+          {/* Contrat (CDD / saisonnier) */}
+          <div className="create-section-label" style={{ marginTop: 20 }}>Contrat (optionnel — CDD / saisonnier)</div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="label">Début</label>
+              <input className="input" type="date" value={contractStart} onChange={(e) => setContractStart(e.target.value)} />
+            </div>
+            <div className="form-group" style={{ flex: 1 }}>
+              <label className="label">Fin</label>
+              <input className="input" type="date" value={contractEnd} onChange={(e) => setContractEnd(e.target.value)} />
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: -4, marginBottom: 4 }}>
+            Laisser vide pour un barber permanent. Sinon, réservable uniquement entre ces dates.
           </div>
 
           {/* Horaires */}
