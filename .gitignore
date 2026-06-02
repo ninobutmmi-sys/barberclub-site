@@ -13,10 +13,9 @@ Thumbs.db
 # Logs
 *.log
 
-# Large media files (served by Cloudflare, not needed in repo)
-assets/videos/
-# NB: les images salon/barbers (5 Mo) SONT versionnées — leur perte (incident
-# iCloud 2026-05) avait cassé le site après un déploiement depuis un disque incomplet.
+# Médias du site : VERSIONNÉS dans git (images salon/barbers + vidéos/réalisations).
+# Leur perte — gitignorés + incident iCloud 2026-05 — avait cassé le site (2 fois)
+# après des déploiements depuis un disque incomplet. On les garde dans git.
 
 # Cloudflare Wrangler cache
 .wrangler/
