@@ -1,0 +1,3335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NINO × BARBERCLUB</title>
+<meta name="description" content="Pitch privé, alternance 2026.">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow">
+<meta name="theme-color" content="#000000">
+<link rel="icon" type="image/png" href="../../assets/icons/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'Orbitron';
+  src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-display: swap;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOKENS
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --bg: #000;
+  --bg-elev: #08070a;
+  --bg-card: #0e0d11;
+  --text: #fafaf9;
+  --text-dim: #a8a29e;
+  --text-muted: #57534e;
+  --border: rgba(255,255,255,0.08);
+  --border-hi: rgba(255,255,255,0.18);
+  --accent: #ffffff;
+  --accent-dim: rgba(255,255,255,0.6);
+  --gold: #ffffff;
+  --gold-dim: rgba(255,255,255,0.4);
+  --danger: #8b1d1d;
+
+  --font-display: 'Orbitron', 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+
+  --max: 1280px;
+  --gutter: clamp(20px, 5vw, 80px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESET
+   ═══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
+html, body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+body { min-height: 100vh; min-height: 100dvh; }
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
+::selection { background: #fff; color: #000; }
+
+/* ═══════════════════════════════════════════════════════════════
+   CUSTOM CURSOR
+   ═══════════════════════════════════════════════════════════════ */
+@media (pointer: fine) {
+  body { cursor: none; }
+  .cursor-dot {
+    position: fixed; top: 0; left: 0;
+    width: 6px; height: 6px;
+    background: #fff; border-radius: 50%;
+    pointer-events: none; z-index: 10001;
+    mix-blend-mode: difference;
+    transform: translate(-50%, -50%);
+    will-change: transform;
+  }
+  .cursor-ring {
+    position: fixed; top: 0; left: 0;
+    width: 40px; height: 40px;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 50%; pointer-events: none; z-index: 10001;
+    mix-blend-mode: difference;
+    transition: width 0.35s var(--ease), height 0.35s var(--ease), border-color 0.3s;
+    transform: translate(-50%, -50%);
+    will-change: transform;
+  }
+  .cursor-ring.hover { width: 72px; height: 72px; border-color: rgba(255,255,255,0.9); }
+}
+@media (pointer: coarse) { .cursor-dot, .cursor-ring { display: none !important; } }
+
+/* ═══════════════════════════════════════════════════════════════
+   GRAIN OVERLAY
+   ═══════════════════════════════════════════════════════════════ */
+.grain {
+  position: fixed; inset: 0; z-index: 9000; pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px;
+  mix-blend-mode: overlay;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL CURSOR ORB (ambient glow follow)
+   ═══════════════════════════════════════════════════════════════ */
+.cursor-orb {
+  position: fixed;
+  top: 0; left: 0;
+  width: 600px; height: 600px;
+  margin-left: -300px; margin-top: -300px;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(circle,
+    rgba(255,255,255,0.055) 0%,
+    rgba(255,255,255,0.025) 25%,
+    rgba(255,255,255,0.008) 45%,
+    transparent 65%);
+  mix-blend-mode: screen;
+  transition: opacity 0.6s ease;
+  will-change: transform;
+}
+@media (pointer: coarse) { .cursor-orb { display: none; } }
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLL PROGRESS BAR
+   ═══════════════════════════════════════════════════════════════ */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: #fff;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  z-index: 10002;
+  pointer-events: none;
+  box-shadow: 0 0 18px rgba(255,255,255,0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CURSOR SPOTLIGHT (hero only)
+   ═══════════════════════════════════════════════════════════════ */
+.spotlight {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  opacity: 0; transition: opacity 0.8s ease;
+  background: radial-gradient(600px circle at var(--mx, 50%) var(--my, 30%),
+    rgba(255,255,255,0.08) 0%,
+    rgba(255,255,255,0.03) 25%,
+    transparent 55%);
+  z-index: 1;
+}
+.hero:hover .spotlight { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════════
+   BIG ROMAN NUMERAL (chapter watermark)
+   ═══════════════════════════════════════════════════════════════ */
+.big-roman {
+  position: absolute;
+  top: 50%; right: clamp(-30px, -4vw, -10px);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(180px, 32vw, 440px);
+  line-height: 0.85;
+  letter-spacing: -0.05em;
+  color: rgba(255,255,255,0.022);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  white-space: nowrap;
+  transform: translateY(calc(-50% + var(--parallax, 0px)));
+  will-change: transform;
+  transition: color 0.6s;
+}
+section:hover .big-roman { color: rgba(255,255,255,0.04); }
+#engagements { overflow: visible; }
+#engagements .big-roman { top: 120px; transform: translateY(var(--parallax, 0px)); }
+
+/* LETTER REVEAL sur H2 */
+.h2-reveal { display: inline-block; }
+.h2-reveal .char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(30px) rotateX(-40deg);
+  filter: blur(8px);
+  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease), filter 0.8s var(--ease);
+}
+.h2-reveal.in .char {
+  opacity: 1;
+  transform: translateY(0) rotateX(0);
+  filter: blur(0);
+}
+.h2-reveal .char.space { width: 0.3em; }
+
+/* LINE DRAW SEPARATORS */
+.line-draw {
+  position: relative;
+  display: block;
+  height: 1px;
+  background: transparent;
+  overflow: hidden;
+  margin: 48px 0;
+}
+.line-draw::before {
+  content: "";
+  position: absolute; left: 0; top: 0;
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transition: width 1.4s var(--ease);
+}
+.line-draw.in::before { width: 100%; }
+section > .container { position: relative; z-index: 2; }
+
+/* ═══════════════════════════════════════════════════════════════
+   HERO WATERMARK (couronne BarberClub)
+   ═══════════════════════════════════════════════════════════════ */
+.hero-watermark {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+.hero-watermark img {
+  width: clamp(400px, 55vw, 900px);
+  height: auto;
+  opacity: 0.04;
+  filter: invert(1) brightness(2);
+  animation: drift 30s ease-in-out infinite;
+}
+@keyframes drift {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2%) scale(1.03); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PITCH HEADER (logo BarberClub + badge)
+   ═══════════════════════════════════════════════════════════════ */
+.pitch-header {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 20px clamp(20px, 5vw, 80px);
+  display: flex; justify-content: space-between; align-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+  mix-blend-mode: difference;
+}
+.pitch-header.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.pitch-header .logo {
+  display: flex; align-items: center; gap: 14px;
+}
+.pitch-header .logo img {
+  height: 38px; width: auto;
+  opacity: 0.95;
+}
+.pitch-header .badge {
+  font-family: var(--font-body);
+  font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 8px 14px;
+  border: 1px solid var(--border-hi);
+  border-radius: 999px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; gap: 10px;
+}
+.pitch-header .badge .pulse-dot {
+  width: 6px; height: 6px;
+  background: #fff; border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255,255,255,0.6);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@media (max-width: 680px) {
+  .pitch-header .logo img { height: 30px; }
+  .pitch-header .badge { font-size: 9px; padding: 6px 10px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INTRO CINEMATIC
+   ═══════════════════════════════════════════════════════════════ */
+.intro {
+  position: fixed; inset: 0; z-index: 9998;
+  background: #000;
+  display: grid; place-items: center;
+  overflow: hidden;
+  transition: opacity 0.9s var(--ease), visibility 0.9s;
+}
+.intro.done { opacity: 0; visibility: hidden; pointer-events: none; }
+.intro-core {
+  text-align: center;
+  will-change: transform, filter;
+  animation: introZoom 3.4s var(--ease) forwards;
+}
+.intro-line {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(38px, 9vw, 120px);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 0 80px rgba(255,255,255,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 2vw, 32px);
+  flex-wrap: nowrap;
+}
+.intro-line .letter {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(16px);
+  animation: introLetter 0.6s var(--ease) forwards;
+}
+.intro-line .cross {
+  display: inline-block;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 300;
+  font-style: italic;
+  font-size: 1.1em;
+  color: #fff;
+  line-height: 1;
+  opacity: 0;
+  transform: rotate(-20deg) scale(0.3);
+  animation: introCross 0.9s var(--ease) 0.1s forwards;
+  text-shadow: 0 0 50px rgba(255,255,255,0.95), 0 0 20px rgba(255,255,255,0.8);
+  will-change: transform, opacity;
+}
+.intro-sub {
+  margin-top: 24px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(13px, 1.4vw, 18px);
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  opacity: 0;
+  animation: introFade 0.7s var(--ease) 2.2s forwards;
+}
+@keyframes introLetter {
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+@keyframes introCross {
+  0% { opacity: 0; transform: rotate(-20deg) scale(0.3); }
+  50% { opacity: 1; transform: rotate(180deg) scale(1.2); }
+  100% { opacity: 1; transform: rotate(180deg) scale(1); }
+}
+@keyframes introFade { to { opacity: 1; } }
+@keyframes introZoom {
+  0%, 80% { transform: scale(1); filter: blur(0); opacity: 1; }
+  100% { transform: scale(1.25); filter: blur(4px); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LAYOUT
+   ═══════════════════════════════════════════════════════════════ */
+.container {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+section { position: relative; padding: clamp(80px, 12vw, 180px) 0; overflow: hidden; }
+section + section { border-top: 1px solid var(--border); }
+
+.section-label {
+  display: inline-flex; align-items: center; gap: 14px;
+  font-family: var(--font-body);
+  font-size: 12px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 40px;
+}
+.section-label::before {
+  content: ""; width: 32px; height: 1px; background: var(--text-dim);
+}
+.chapter {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(14px, 1.3vw, 16px);
+  color: var(--text);
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+  display: block;
+}
+h1, h2, h3 { line-height: 1.05; letter-spacing: -0.02em; }
+h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(32px, 5.5vw, 80px);
+  margin-bottom: 48px;
+}
+h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(20px, 2.2vw, 32px);
+  margin-bottom: 16px;
+}
+p { font-size: clamp(15px, 1.1vw, 18px); line-height: 1.7; color: var(--text-dim); }
+p strong, p b { color: var(--text); font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════════════
+   REVEAL
+   ═══════════════════════════════════════════════════════════════ */
+.reveal { opacity: 0; transform: translateY(40px); transition: opacity 1s var(--ease), transform 1s var(--ease); }
+.reveal.in { opacity: 1; transform: translateY(0); }
+.reveal-stagger > * { opacity: 0; transform: translateY(30px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
+.reveal-stagger.in > * { opacity: 1; transform: translateY(0); }
+.reveal-stagger.in > *:nth-child(1) { transition-delay: 0s; }
+.reveal-stagger.in > *:nth-child(2) { transition-delay: 0.08s; }
+.reveal-stagger.in > *:nth-child(3) { transition-delay: 0.16s; }
+.reveal-stagger.in > *:nth-child(4) { transition-delay: 0.24s; }
+.reveal-stagger.in > *:nth-child(5) { transition-delay: 0.32s; }
+.reveal-stagger.in > *:nth-child(6) { transition-delay: 0.4s; }
+.reveal-stagger.in > *:nth-child(7) { transition-delay: 0.48s; }
+.reveal-stagger.in > *:nth-child(8) { transition-delay: 0.56s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important; transition-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .intro { display: none; }
+  .reveal, .reveal-stagger > * { opacity: 1; transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HERO
+   ═══════════════════════════════════════════════════════════════ */
+.hero {
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column; justify-content: center;
+  padding-top: clamp(120px, 15vw, 200px);
+  padding-bottom: clamp(80px, 12vw, 140px);
+  border-top: 0 !important;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.hero-video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 1.6s var(--ease);
+  pointer-events: none;
+  filter: saturate(0.65) contrast(1.08) brightness(0.52);
+  will-change: opacity, transform;
+}
+.hero-video.ready { opacity: 1; }
+.hero-video-tint {
+  position: absolute; inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.45) 35%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.95) 100%),
+    radial-gradient(ellipse 90% 70% at 50% 50%, transparent 0%, rgba(0,0,0,0.35) 70%, rgba(0,0,0,0.85) 100%);
+  mix-blend-mode: multiply;
+}
+.hero::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(255,255,255,0.045) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 80% at 80% 70%, rgba(255,255,255,0.025) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 2;
+}
+.hero .container { position: relative; z-index: 3; }
+.hero-watermark { z-index: 2; }
+.spotlight { z-index: 2; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-video { display: none; }
+}
+.hero-pretitle {
+  font-family: var(--font-body);
+  font-size: 12px; letter-spacing: 0.4em; text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 32px;
+}
+.hero-pretitle .dot { display: inline-block; width: 6px; height: 6px; background: #fff; border-radius: 50%; margin: 0 12px 2px; vertical-align: middle; animation: pulse 2.4s ease-in-out infinite; box-shadow: 0 0 12px rgba(255,255,255,0.7); }
+@keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.7); } }
+.hero-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(52px, 10vw, 130px);
+  line-height: 0.9;
+  letter-spacing: -0.025em;
+  margin-bottom: 56px;
+  color: #fff;
+  text-shadow: 0 0 80px rgba(255,255,255,0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05em;
+  max-width: 100%;
+}
+.hero-title .line-1,
+.hero-title .line-2 {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: clip;
+}
+.hero-title .line-2 {
+  color: rgba(255,255,255,0.95);
+  align-self: flex-end;
+  text-align: right;
+}
+.hero-title .slash {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--text-dim);
+  font-size: 0.38em;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  line-height: 1;
+  animation: slashSway 5s ease-in-out infinite;
+  text-shadow: 0 0 40px rgba(255,255,255,0.7), 0 0 16px rgba(255,255,255,0.5);
+  margin: 0.08em 0;
+}
+.hero-title .slash::before,
+.hero-title .slash::after {
+  content: ""; display: block; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-hi), transparent);
+  width: clamp(60px, 10vw, 180px);
+  margin: 0 20px;
+}
+@keyframes slashSway {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(20deg) scale(1.15); }
+}
+@media (max-width: 900px) {
+  .hero-title { font-size: clamp(44px, 13vw, 80px); gap: 0.08em; }
+  .hero-title .line-2 { align-self: flex-start; text-align: left; }
+  .hero-title .slash { align-self: flex-start; }
+  .hero-title .slash::before,
+  .hero-title .slash::after { width: 30px; margin: 0 10px; }
+}
+.hero-body {
+  max-width: 780px;
+  font-family: var(--font-serif);
+  font-size: clamp(18px, 1.8vw, 28px);
+  line-height: 1.45;
+  color: var(--text);
+  font-weight: 400;
+  margin-bottom: 40px;
+}
+.hero-body em { font-style: italic; color: var(--accent-dim); }
+.hero-sub {
+  max-width: 620px;
+  font-family: var(--font-body);
+  font-size: clamp(13px, 1vw, 16px);
+  line-height: 1.6;
+  color: var(--text-muted);
+  border-left: 1px solid var(--border-hi);
+  padding-left: 24px;
+}
+.hero-meta {
+  margin-top: auto;
+  padding-top: 64px;
+  display: flex; justify-content: space-between; align-items: flex-end;
+  font-family: var(--font-body);
+  font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--text-muted);
+  flex-wrap: wrap; gap: 24px;
+}
+.hero-meta-item { display: flex; flex-direction: column; gap: 4px; }
+.hero-meta-item .val { color: var(--text); letter-spacing: 0.05em; font-size: 13px; }
+.scroll-hint {
+  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  font-family: var(--font-body);
+  font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--text-muted);
+  animation: scrollNudge 2.6s ease-in-out infinite;
+}
+@keyframes scrollNudge { 0%,100% { transform: translate(-50%, 0); opacity: 0.6; } 50% { transform: translate(-50%, 8px); opacity: 1; } }
+
+/* ═══════════════════════════════════════════════════════════════
+   MARQUEE INVENTAIRE (deux lanes)
+   ═══════════════════════════════════════════════════════════════ */
+.marquee {
+  padding: 36px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-elev);
+}
+.marquee.serif {
+  padding: 24px 0;
+  background: #050505;
+  border-top: 0;
+  border-bottom: 1px solid var(--border);
+}
+.marquee-track {
+  display: flex; gap: 80px;
+  white-space: nowrap;
+  animation: marqueeScroll 50s linear infinite;
+  will-change: transform;
+}
+.marquee.serif .marquee-track {
+  animation: marqueeScrollRev 70s linear infinite;
+  gap: 64px;
+}
+.marquee-item {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(20px, 3vw, 42px);
+  letter-spacing: 0.02em;
+  color: var(--text);
+  display: inline-flex; align-items: center; gap: 80px;
+  text-transform: uppercase;
+}
+.marquee-item::after {
+  content: "✕";
+  font-family: var(--font-serif); font-weight: 300;
+  font-size: 0.6em;
+  color: var(--text-muted);
+}
+.marquee.serif .marquee-item {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(14px, 1.8vw, 22px);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--text-dim);
+  gap: 64px;
+}
+.marquee.serif .marquee-item::after {
+  content: "·";
+  font-size: 1.2em;
+  color: var(--text-muted);
+}
+@keyframes marqueeScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes marqueeScrollRev {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+.marquee:hover .marquee-track { animation-play-state: paused; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PREUVES
+   ═══════════════════════════════════════════════════════════════ */
+.proofs-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
+.proof {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 40px;
+  overflow: hidden;
+  transition: border-color 0.6s var(--ease), transform 0.6s var(--ease), box-shadow 0.6s var(--ease);
+  min-height: 340px;
+  display: flex; flex-direction: column;
+  transform-style: preserve-3d;
+  isolation: isolate;
+}
+.proof:hover {
+  border-color: transparent;
+  box-shadow: 0 40px 100px -20px rgba(255,255,255,0.1), 0 0 0 1px rgba(255,255,255,0.18);
+}
+/* Spotlight suivant le curseur dans la card */
+.proof::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(500px circle at var(--px, 50%) var(--py, 50%), rgba(255,255,255,0.07), transparent 55%);
+  opacity: 0; transition: opacity 0.5s;
+  pointer-events: none;
+  z-index: 0;
+}
+.proof:hover::after { opacity: 1; }
+/* Border glow rotatif au survol */
+.proof::before {
+  content: "";
+  position: absolute; inset: -1px;
+  border-radius: 2px;
+  padding: 1px;
+  background: conic-gradient(from var(--angle, 0deg),
+    transparent 0deg,
+    transparent 80deg,
+    rgba(255,255,255,0.6) 100deg,
+    rgba(255,255,255,0.2) 130deg,
+    transparent 160deg,
+    transparent 360deg);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+  z-index: 1;
+  animation: rotateBorder 4s linear infinite;
+}
+.proof:hover::before { opacity: 1; }
+@keyframes rotateBorder {
+  to { --angle: 360deg; }
+}
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+.proof > * { position: relative; z-index: 2; }
+.proof::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  opacity: 0; transition: opacity 0.5s;
+}
+.proof:hover::before { opacity: 1; }
+.proof-num {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 14px; color: var(--text); letter-spacing: 0.1em;
+  margin-bottom: 20px;
+}
+.proof-title {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(22px, 2.4vw, 32px);
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+  line-height: 1.1;
+}
+.proof-desc { font-size: 15px; line-height: 1.6; color: var(--text-dim); margin-bottom: 24px; flex: 1; }
+.proof-tag {
+  display: inline-flex; align-items: center; gap: 10px;
+  align-self: flex-start;
+  padding: 8px 16px;
+  border: 1px solid var(--border-hi);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text);
+}
+.proof-tag .dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; }
+.proof.span-8 { grid-column: span 8; }
+.proof.span-4 { grid-column: span 4; }
+.proof.span-6 { grid-column: span 6; }
+.proof.span-12 { grid-column: span 12; }
+.proof.tall { min-height: 440px; }
+.proof-image {
+  margin: 24px -40px -40px;
+  height: 220px;
+  background: linear-gradient(135deg, #0c0b0f 0%, #18161b 100%);
+  border-top: 1px solid var(--border);
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.proof-image img {
+  width: 100%; height: 100%; object-fit: cover;
+  filter: grayscale(0.2) brightness(0.85) contrast(1.05);
+  transition: filter 0.6s var(--ease), transform 0.8s var(--ease);
+}
+.proof:hover .proof-image img { filter: grayscale(0) brightness(1) contrast(1.1); transform: scale(1.04); }
+.proof-image::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 0%, transparent 40%, rgba(0,0,0,0.4) 100%);
+  pointer-events: none;
+}
+.proof-image .placeholder {
+  font-family: var(--font-body);
+  font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  position: relative; z-index: 1;
+}
+.proof-image .placeholder span { display: block; font-size: 8px; margin-top: 6px; opacity: 0.6; }
+.proof-image .caption {
+  position: absolute; bottom: 16px; left: 20px; z-index: 2;
+  font-family: var(--font-body);
+  font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: rgba(255,255,255,0.85);
+  display: flex; align-items: center; gap: 10px;
+}
+.proof-image .caption::before {
+  content: ""; width: 20px; height: 1px; background: #fff;
+}
+
+/* HORS CADRE · sous-section */
+.proof-divider {
+  margin: 72px 0 48px;
+  display: flex; align-items: center; gap: 24px;
+  flex-wrap: wrap;
+}
+.proof-divider .line { flex: 1; min-width: 40px; height: 1px; background: var(--border-hi); }
+.proof-divider .label {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: clamp(18px, 2vw, 28px);
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+.proof-divider .label em { color: var(--text-muted); font-style: italic; font-weight: 400; }
+
+.proof.hors-cadre {
+  background: linear-gradient(180deg, #050505 0%, var(--bg-card) 100%);
+  min-height: 380px;
+}
+.proof.hors-cadre .proof-num {
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.proof.hors-cadre .for-whom {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 10px;
+}
+.proof.hors-cadre .for-whom::before {
+  content: "Pour";
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 12px;
+  text-transform: none; letter-spacing: 0;
+  color: var(--text-muted);
+}
+.proof.hors-cadre .for-whom strong {
+  color: var(--text); font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SPLIT · AVEC/SANS MOI
+   ═══════════════════════════════════════════════════════════════ */
+.split {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+.split-col { padding: clamp(40px, 5vw, 72px); background: var(--bg); position: relative; }
+.split-col.without { background: #050505; }
+.split-col.with { background: var(--bg-card); }
+.split-head {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(28px, 4vw, 56px);
+  letter-spacing: -0.02em;
+  margin-bottom: 40px;
+  line-height: 1;
+}
+.split-col.without .split-head { color: var(--text-muted); }
+.split-col.with .split-head { color: var(--text); position: relative; display: inline-block; }
+.split-col.with .split-head::after {
+  content: ""; position: absolute; bottom: -8px; left: 0;
+  height: 2px; width: 40%; background: #fff;
+}
+.split-list { list-style: none; }
+.split-list li {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: clamp(14px, 1.05vw, 17px);
+  line-height: 1.55;
+  display: flex; gap: 16px;
+}
+.split-list li:last-child { border-bottom: 0; }
+.split-col.without .split-list li { color: var(--text-muted); }
+.split-col.without .split-list li::before { content: "×"; color: var(--danger); flex-shrink: 0; font-weight: 700; }
+.split-col.with .split-list li { color: var(--text-dim); }
+.split-col.with .split-list li::before { content: "+"; color: #fff; flex-shrink: 0; font-weight: 700; font-family: var(--font-display); }
+
+/* ═══════════════════════════════════════════════════════════════
+   CASQUETTES
+   ═══════════════════════════════════════════════════════════════ */
+.hats-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+  background: var(--border); border: 1px solid var(--border);
+}
+.hat { padding: 48px 32px; background: var(--bg); min-height: 380px; display: flex; flex-direction: column; transition: background 0.5s; }
+.hat:hover { background: var(--bg-card); }
+.hat-num {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 13px; color: var(--text-muted); letter-spacing: 0.1em; margin-bottom: 32px;
+}
+.hat-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 1.8vw, 26px); margin-bottom: 20px; letter-spacing: -0.01em; }
+.hat-desc { font-size: 14px; line-height: 1.6; color: var(--text-dim); margin-bottom: 28px; flex: 1; }
+.hat-stack { display: flex; flex-wrap: wrap; gap: 8px; }
+.hat-stack span {
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 6px 10px; border: 1px solid var(--border-hi); border-radius: 2px;
+  color: var(--text-dim);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COUT REEL XXL
+   ═══════════════════════════════════════════════════════════════ */
+.cost-hero {
+  text-align: center; padding: clamp(40px, 8vw, 120px) 0;
+  border: 1px solid var(--border); border-radius: 2px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 70%), var(--bg-card);
+  margin-bottom: 72px;
+  position: relative;
+}
+.cost-pre {
+  font-family: var(--font-body);
+  font-size: 11px; letter-spacing: 0.35em; text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 32px;
+}
+.cost-amount {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(64px, 14vw, 180px);
+  line-height: 0.88; letter-spacing: -0.04em;
+  margin-bottom: 24px;
+  white-space: nowrap;
+  overflow: visible;
+  position: relative;
+  background: linear-gradient(105deg,
+    #fff 0%,
+    #fff 40%,
+    rgba(255,255,255,0.4) 50%,
+    #fff 60%,
+    #fff 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: costShine 6s ease-in-out infinite;
+  filter: drop-shadow(0 0 60px rgba(255,255,255,0.12));
+}
+@keyframes costShine {
+  0%, 100% { background-position: 200% 50%; }
+  50% { background-position: -50% 50%; }
+}
+.cost-amount::after {
+  content: "";
+  position: absolute;
+  inset: -20% -5%;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.08) 0%, transparent 60%);
+  z-index: -1;
+  pointer-events: none;
+  animation: breathe 5s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+.cost-amount .unit { font-family: var(--font-serif); font-weight: 300; font-style: italic; font-size: 0.4em; color: rgba(255,255,255,0.7); margin-left: 0.08em; }
+.cost-amount .slash-year { font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 0.28em; color: var(--text-muted); margin-left: 0.05em; }
+.cost-kicker {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: clamp(16px, 1.6vw, 24px);
+  color: var(--text-dim);
+  max-width: 720px; margin: 0 auto;
+  line-height: 1.5;
+}
+.cost-kicker strong { color: var(--text); font-style: normal; font-weight: 600; }
+
+.cost-table {
+  display: grid; grid-template-columns: 1fr auto;
+  border: 1px solid var(--border); border-radius: 2px;
+  background: var(--bg-elev);
+}
+.cost-row { display: contents; }
+.cost-row > * {
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-size: clamp(14px, 1.05vw, 17px);
+}
+.cost-row:last-child > * { border-bottom: 0; }
+.cost-row .label { color: var(--text-dim); }
+.cost-row .amount { color: var(--text); text-align: right; font-family: var(--font-display); font-weight: 800; letter-spacing: 0.02em; }
+.cost-row.total > * { background: rgba(255,255,255,0.03); color: var(--text); font-size: clamp(16px, 1.3vw, 22px); padding: 32px; }
+.cost-row.total .label { font-family: var(--font-display); font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+.cost-row.neg .amount { color: #fff; font-style: italic; }
+.cost-row.total .amount { color: #fff; font-size: clamp(22px, 2vw, 32px); }
+
+.cost-sources {
+  margin-top: 32px;
+  font-family: var(--font-body);
+  font-size: 11px; letter-spacing: 0.1em;
+  color: var(--text-muted); line-height: 1.8;
+}
+.cost-sources a {
+  color: var(--text-dim); text-decoration: underline;
+  text-decoration-color: rgba(255,255,255,0.15);
+  text-underline-offset: 0.2em;
+  transition: color 0.3s, text-decoration-color 0.3s;
+}
+.cost-sources a:hover { color: var(--text); text-decoration-color: #fff; }
+
+/* VEILLE NOTICE */
+.veille-notice {
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 10px 18px;
+  border: 1px solid var(--border-hi);
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 32px;
+  background: rgba(255,255,255,0.03);
+}
+.veille-notice .pulse {
+  width: 8px; height: 8px;
+  background: #fff; border-radius: 50%;
+  box-shadow: 0 0 12px rgba(255,255,255,0.7);
+  animation: pulseWhite 2s ease-in-out infinite;
+}
+@keyframes pulseWhite { 0%,100% { opacity: 1; box-shadow: 0 0 12px rgba(255,255,255,0.7); } 50% { opacity: 0.4; box-shadow: 0 0 4px rgba(255,255,255,0.3); } }
+
+/* AIDES GRID */
+.aides-wrap { margin-top: 80px; }
+.aides-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 40px; flex-wrap: wrap; gap: 16px; }
+.aides-head h3 {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(20px, 2vw, 28px);
+  margin: 0;
+}
+.aides-head .sub {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: clamp(13px, 1vw, 16px);
+  color: var(--text-muted);
+}
+.aides-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px;
+  background: var(--border); border: 1px solid var(--border);
+}
+.aide {
+  padding: 40px 32px;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  min-height: 220px;
+  position: relative;
+}
+.aide-num {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 13px; color: var(--text-muted);
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+}
+.aide-title {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(15px, 1.3vw, 19px);
+  letter-spacing: -0.01em;
+  margin-bottom: 12px;
+  line-height: 1.25;
+}
+.aide-value {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(22px, 2.2vw, 30px);
+  color: #fff;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 24px rgba(255,255,255,0.2);
+}
+.aide-desc {
+  font-size: 13px; line-height: 1.6; color: var(--text-dim); flex: 1;
+}
+
+/* NET SALAIRE CALLOUT */
+.net-callout {
+  margin-top: 64px;
+  padding: 40px;
+  border: 1px dashed var(--border-hi);
+  border-radius: 2px;
+  background: var(--bg-elev);
+  display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center;
+}
+.net-callout .icon {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 48px; color: var(--text-muted);
+}
+.net-callout .label {
+  font-family: var(--font-body);
+  font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 8px;
+}
+.net-callout .value {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(24px, 2.5vw, 36px);
+  color: var(--text);
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+.net-callout .hint {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 13px; color: var(--text-dim); line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MARKET COMPARE — presta externe vs Nino
+   ═══════════════════════════════════════════════════════════════ */
+.market-compare {
+  margin-top: 80px;
+  border: 1px solid var(--border-hi);
+  background: linear-gradient(180deg, var(--bg-elev) 0%, var(--bg-card) 100%);
+}
+.market-head {
+  padding: 32px 40px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: baseline;
+  flex-wrap: wrap; gap: 16px;
+}
+.market-head h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(22px, 3vw, 36px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.market-head .sub {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.market-row {
+  display: grid;
+  grid-template-columns: 1fr 180px 180px;
+  padding: 20px 40px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  font-family: var(--font-body);
+}
+.market-row:last-of-type { border-bottom: 0; }
+.market-row .poste {
+  font-size: 15px;
+  color: var(--text);
+}
+.market-row .poste .sub {
+  font-size: 12px; color: var(--text-muted);
+  font-family: var(--font-serif); font-style: italic;
+  display: block; margin-top: 4px;
+}
+.market-row .price {
+  text-align: right;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.market-row .nino {
+  color: #6ee7b7;
+  font-size: 13px;
+  text-align: right;
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.market-row.total {
+  background: rgba(255,255,255,0.03);
+  padding-top: 32px; padding-bottom: 32px;
+  border-top: 2px solid var(--border-hi);
+}
+.market-row.total .poste {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.market-row.total .price {
+  font-size: 22px;
+  color: var(--text-dim);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255,255,255,0.3);
+}
+.market-row.total .nino {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: #6ee7b7;
+  text-transform: none;
+}
+.market-kicker {
+  padding: 24px 40px 32px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+@media (max-width: 680px) {
+  .market-head, .market-row, .market-kicker { padding-left: 20px; padding-right: 20px; }
+  .market-row { grid-template-columns: 1fr 100px; row-gap: 8px; }
+  .market-row .nino { grid-column: 2; font-size: 11px; }
+  .market-row .poste { grid-column: 1 / -1; }
+  .market-row.total .price, .market-row.total .nino { font-size: 18px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VISION PULL QUOTE
+   ═══════════════════════════════════════════════════════════════ */
+.quote-full {
+  text-align: center;
+  padding: clamp(80px, 15vw, 200px) var(--gutter);
+}
+.quote-full blockquote {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(32px, 6vw, 88px);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  max-width: 1100px; margin: 0 auto;
+}
+.quote-full blockquote::before,
+.quote-full blockquote::after {
+  font-family: var(--font-serif);
+  font-size: 1.4em;
+  color: var(--text-muted);
+  line-height: 0;
+  vertical-align: -0.4em;
+}
+.quote-full blockquote::before { content: "« "; }
+.quote-full blockquote::after { content: " »"; }
+.quote-full em { font-style: normal; color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; }
+.quote-attribution {
+  margin-top: 40px;
+  font-family: var(--font-body);
+  font-size: 12px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.vision-cards {
+  margin-top: 80px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+  background: var(--border); border: 1px solid var(--border);
+}
+.vision-card { padding: 32px 24px; background: var(--bg); text-align: center; }
+.vision-card .v { font-family: var(--font-display); font-weight: 800; font-size: clamp(28px, 3vw, 48px); color: #fff; margin-bottom: 8px; line-height: 1; }
+.vision-card .l { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════════════════════
+   ROADMAP
+   ═══════════════════════════════════════════════════════════════ */
+.roadmap {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+}
+.road {
+  padding: 32px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  min-height: 260px;
+  display: flex; flex-direction: column;
+  transition: border-color 0.5s, background 0.5s;
+}
+.road:hover { border-color: var(--border-hi); background: #131116; }
+.road-num { font-family: var(--font-serif); font-style: italic; font-size: 14px; color: var(--text-muted); margin-bottom: 24px; }
+.road-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(16px, 1.3vw, 20px); margin-bottom: 16px; line-height: 1.2; letter-spacing: -0.01em; }
+.road-desc { font-size: 13px; line-height: 1.55; color: var(--text-dim); flex: 1; }
+
+/* ═══════════════════════════════════════════════════════════════
+   ENGAGEMENTS
+   ═══════════════════════════════════════════════════════════════ */
+.engage-wrap { display: grid; grid-template-columns: 1fr 1.5fr; gap: clamp(40px, 8vw, 120px); }
+.engage-side { position: sticky; top: 80px; align-self: start; }
+.engage-side h2 { margin-bottom: 24px; }
+.engage-side p { font-size: 15px; line-height: 1.7; }
+.engage-list {
+  list-style: none;
+  border-top: 1px solid var(--border);
+}
+.engage-list li {
+  padding: 28px 0;
+  border-bottom: 1px solid var(--border);
+  display: grid; grid-template-columns: 48px 1fr; gap: 24px;
+  align-items: baseline;
+}
+.engage-num {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 14px; color: var(--text-muted); letter-spacing: 0.08em;
+}
+.engage-text {
+  font-family: var(--font-serif);
+  font-size: clamp(17px, 1.5vw, 22px);
+  line-height: 1.4;
+  color: var(--text);
+}
+.engage-text em { font-style: italic; color: var(--text-dim); display: block; margin-top: 8px; font-size: 0.75em; font-family: var(--font-body); }
+
+.proof-quote {
+  margin-top: 56px;
+  padding: 32px;
+  border-left: 2px solid #fff;
+  background: var(--bg-card);
+  font-family: var(--font-serif); font-style: italic;
+  font-size: clamp(15px, 1.2vw, 18px);
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+.proof-quote strong { color: var(--text); font-style: normal; font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════════════
+   CONTRAT
+   ═══════════════════════════════════════════════════════════════ */
+.contract-intro { max-width: 780px; margin-bottom: 64px; }
+.contract-intro p { font-size: clamp(16px, 1.25vw, 20px); line-height: 1.7; }
+.contract-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+.contract-opt { padding: 48px 32px; background: var(--bg); min-height: 260px; display: flex; flex-direction: column; }
+.contract-opt .tag {
+  align-self: flex-start;
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+  padding: 6px 12px; border: 1px solid var(--border-hi); border-radius: 2px;
+}
+.contract-opt .num { font-family: var(--font-serif); font-style: italic; font-size: 72px; line-height: 1; color: var(--text-muted); margin-bottom: 20px; }
+.contract-opt h3 { font-size: clamp(18px, 1.6vw, 24px); margin-bottom: 16px; }
+.contract-opt p { font-size: 14px; line-height: 1.6; }
+
+.contract-kicker {
+  margin-top: 48px;
+  font-family: var(--font-serif); font-style: italic;
+  font-size: clamp(15px, 1.3vw, 20px);
+  color: var(--text-dim);
+  text-align: center;
+  max-width: 720px; margin-left: auto; margin-right: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MON HISTOIRE
+   ═══════════════════════════════════════════════════════════════ */
+.story {
+  padding: clamp(100px, 18vw, 240px) var(--gutter);
+  background: radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.04) 0%, transparent 60%), #030303;
+}
+.story-inner { max-width: 1000px; margin: 0 auto; }
+.story-hook {
+  font-family: var(--font-serif); font-style: italic;
+  font-weight: 400;
+  font-size: clamp(40px, 8vw, 120px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 64px;
+}
+.story-hook::before { content: "« "; color: var(--text-muted); }
+.story-hook::after { content: " »"; color: var(--text-muted); }
+.story-body {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(18px, 1.8vw, 26px);
+  line-height: 1.55;
+  color: var(--text-dim);
+  max-width: 780px;
+}
+.story-body p + p { margin-top: 28px; }
+.story-body em { font-style: italic; color: var(--text); }
+.story-sig {
+  margin-top: 80px;
+  display: flex; align-items: center; gap: 24px;
+  font-family: var(--font-body);
+  font-size: 12px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.story-sig .line { flex: 1; height: 1px; background: var(--border-hi); max-width: 200px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   TIMELINE
+   ═══════════════════════════════════════════════════════════════ */
+.timeline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--border); border: 1px solid var(--border);
+  position: relative;
+}
+.tl-step { padding: 48px 32px; background: var(--bg); min-height: 360px; display: flex; flex-direction: column; position: relative; min-width: 0; }
+.tl-step .year {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(40px, 5.5vw, 72px);
+  line-height: 0.9; letter-spacing: -0.03em;
+  color: var(--text);
+  margin-bottom: 12px;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.tl-step .phase {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: 15px; color: var(--text-muted);
+  margin-bottom: 32px;
+  letter-spacing: 0.04em;
+}
+.tl-step .body { font-size: 15px; line-height: 1.6; color: var(--text-dim); }
+.tl-step .tag-period {
+  position: absolute; top: 48px; right: 32px;
+  font-family: var(--font-body);
+  font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 6px 10px; border: 1px solid var(--border-hi); border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CLOSING
+   ═══════════════════════════════════════════════════════════════ */
+.closing {
+  padding: clamp(100px, 15vw, 200px) 0 clamp(80px, 10vw, 120px);
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,0.05) 0%, transparent 70%);
+}
+.closing-quote {
+  font-family: var(--font-serif); font-style: italic;
+  font-size: clamp(24px, 4.5vw, 56px);
+  line-height: 1.2; letter-spacing: -0.015em;
+  max-width: 1100px; margin: 0 auto 72px;
+  color: var(--text);
+}
+.closing-quote em { font-style: normal; color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; }
+.closing-cta { display: inline-flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 16px;
+  padding: 22px 36px;
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 13px; letter-spacing: 0.25em; text-transform: uppercase;
+  border: 1px solid var(--border-hi);
+  background: var(--bg-card);
+  color: var(--text);
+  transition: background 0.4s var(--ease), color 0.4s var(--ease), border-color 0.4s var(--ease), box-shadow 0.4s var(--ease);
+  position: relative;
+  overflow: hidden;
+  will-change: transform;
+}
+.btn::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(110deg, transparent 0%, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%, transparent 100%);
+  background-size: 200% 100%;
+  transition: opacity 0.4s;
+  opacity: 0;
+  pointer-events: none;
+  animation: btnShine 3s ease-in-out infinite;
+}
+.btn:hover::before { opacity: 1; }
+@keyframes btnShine {
+  0%, 100% { background-position: 200% 50%; }
+  50% { background-position: -100% 50%; }
+}
+.btn:hover {
+  background: #fff; color: #000; border-color: #fff;
+  box-shadow: 0 20px 60px -10px rgba(255,255,255,0.35), 0 0 0 1px rgba(255,255,255,0.9);
+}
+.btn .arrow { transition: transform 0.4s var(--ease); position: relative; z-index: 1; }
+.btn:hover .arrow { transform: translateX(6px); }
+
+.btn.primary {
+  background: #fff; color: #000; border-color: #fff;
+  box-shadow: 0 20px 60px -10px rgba(255,255,255,0.3), 0 0 0 1px rgba(255,255,255,0.9);
+  animation: primaryPulse 3s ease-in-out infinite;
+}
+@keyframes primaryPulse {
+  0%, 100% { box-shadow: 0 20px 60px -10px rgba(255,255,255,0.3), 0 0 0 1px rgba(255,255,255,0.9); }
+  50% { box-shadow: 0 30px 80px -10px rgba(255,255,255,0.55), 0 0 0 3px rgba(255,255,255,0.2); }
+}
+.btn.primary:hover {
+  background: transparent; color: #fff; border-color: #fff;
+  animation: none;
+}
+
+.footer {
+  padding: 48px var(--gutter);
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-body);
+  font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--text-muted);
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-sig { font-family: var(--font-serif); font-style: italic; font-size: 13px; letter-spacing: 0.05em; text-transform: none; color: var(--text-dim); }
+
+/* ═══════════════════════════════════════════════════════════════
+   STATS — 3 MOIS EN CHIFFRES
+   ═══════════════════════════════════════════════════════════════ */
+.stats {
+  padding: clamp(80px, 12vw, 140px) 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.stats::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.025) 0%, transparent 70%);
+  pointer-events: none;
+}
+.stats .stats-head {
+  text-align: center;
+  margin-bottom: clamp(48px, 6vw, 80px);
+  position: relative;
+  z-index: 1;
+}
+.stats .stats-head .chapter { display: inline-block; margin-bottom: 16px; }
+.stats .stats-head .section-label { display: block; margin-bottom: 24px; }
+.stats .stats-head h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(32px, 5.5vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+.stat-item {
+  padding: 36px 24px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  background: var(--bg-elev);
+  transition: background 0.5s var(--ease);
+}
+.stat-item:hover { background: var(--bg-card); }
+.stat-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1;
+  color: var(--text);
+  margin-bottom: 12px;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  display: block;
+}
+.stat-value .unit {
+  font-size: 0.5em;
+  color: var(--text-dim);
+  margin-left: 4px;
+  font-weight: 400;
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+.stat-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.stat-kicker {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: none;
+  color: var(--text-dim);
+  font-style: italic;
+  font-family: var(--font-serif);
+  margin-top: 6px;
+}
+@media (max-width: 1024px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-item { padding: 24px 12px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HERO PHOTO + STORY PHOTO
+   ═══════════════════════════════════════════════════════════════ */
+.hero-photo {
+  position: absolute;
+  right: clamp(-40px, -2vw, 0px);
+  bottom: 0;
+  width: clamp(220px, 28vw, 440px);
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.92;
+  transform: translateY(0);
+  animation: heroPhotoRise 1.8s var(--ease) both;
+  filter: drop-shadow(0 30px 80px rgba(0,0,0,0.6)) drop-shadow(0 0 60px rgba(255,255,255,0.06));
+}
+.hero-photo img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+@keyframes heroPhotoRise {
+  0% { opacity: 0; transform: translateY(50px); }
+  100% { opacity: 0.92; transform: translateY(0); }
+}
+@media (max-width: 900px) {
+  .hero-photo {
+    width: 200px;
+    right: -20px;
+    opacity: 0.85;
+  }
+}
+@media (max-width: 560px) {
+  .hero-photo { display: none; }
+}
+
+.story-photo {
+  display: block;
+  width: clamp(120px, 14vw, 180px);
+  margin: 0 auto 32px;
+  filter: drop-shadow(0 20px 50px rgba(0,0,0,0.5));
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+}
+.story-photo.reveal.in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.story-photo img { width: 100%; height: auto; display: block; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PRINT / PDF DOWNLOAD BUTTON
+   ═══════════════════════════════════════════════════════════════ */
+.pdf-fab {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: rgba(14, 13, 17, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-hi);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.3s var(--ease), color 0.3s var(--ease), transform 0.3s var(--ease), opacity 0.3s var(--ease);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+.pdf-fab.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.pdf-fab:hover { background: #fff; color: #000; }
+.pdf-fab svg { width: 14px; height: 14px; }
+@media (max-width: 680px) {
+  .pdf-fab { padding: 12px 16px; font-size: 9px; bottom: 16px; right: 16px; }
+  .pdf-fab svg { width: 12px; height: 12px; }
+  .pdf-fab span { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .proofs-grid { grid-template-columns: repeat(6, 1fr); }
+  .proof.span-8, .proof.span-4, .proof.span-6 { grid-column: span 6; }
+  .hats-grid { grid-template-columns: repeat(2, 1fr); }
+  .roadmap { grid-template-columns: repeat(2, 1fr); }
+  .vision-cards { grid-template-columns: repeat(2, 1fr); }
+  .contract-opts { grid-template-columns: 1fr; }
+  .timeline { grid-template-columns: 1fr; }
+  .engage-wrap { grid-template-columns: 1fr; gap: 40px; }
+  .engage-side { position: static; }
+}
+@media (max-width: 680px) {
+  .split { grid-template-columns: 1fr; }
+  .hats-grid { grid-template-columns: 1fr; }
+  .roadmap { grid-template-columns: 1fr; }
+  .vision-cards { grid-template-columns: repeat(2, 1fr); }
+  .proofs-grid { grid-template-columns: 1fr; }
+  .proof.span-8, .proof.span-4, .proof.span-6 { grid-column: 1 / -1; }
+  .cost-table { grid-template-columns: 1fr; }
+  .cost-row .amount { text-align: left; border-top: 0 !important; padding-top: 0 !important; padding-bottom: 24px; }
+  .cost-row .label { border-bottom: 0; padding-bottom: 12px; }
+  .hero-meta { font-size: 10px; }
+  .btn { padding: 20px 28px; font-size: 11px; }
+  .aides-grid { grid-template-columns: 1fr; }
+  .net-callout { grid-template-columns: 1fr; gap: 16px; }
+  .net-callout .icon { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   KPIs ENGAGÉS — ce que je m'engage à livrer, chiffré
+   ═══════════════════════════════════════════════════════════════ */
+.kpis {
+  padding: clamp(100px, 14vw, 180px) 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(110,231,183,0.04) 0%, transparent 60%),
+    var(--bg-elev);
+}
+.kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  max-width: var(--max);
+  margin: 64px auto 0;
+  padding: 0 var(--gutter);
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+.kpi {
+  padding: 40px 32px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  position: relative;
+  transition: background 0.4s var(--ease);
+}
+.kpi:hover { background: var(--bg-elev); }
+.kpi-period {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #6ee7b7;
+  margin-bottom: 16px;
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid rgba(110,231,183,0.3);
+}
+.kpi-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-value .unit {
+  font-size: 0.5em;
+  color: var(--text-dim);
+  margin-left: 2px;
+  font-weight: 400;
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+.kpi-label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 10px;
+  letter-spacing: -0.005em;
+}
+.kpi-context {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.kpi-pact {
+  max-width: 900px;
+  margin: 80px auto 0;
+  padding: 32px 40px;
+  border: 1px solid var(--border-hi);
+  background: rgba(110,231,183,0.03);
+  text-align: center;
+}
+.kpi-pact .label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #6ee7b7;
+  margin-bottom: 16px;
+}
+.kpi-pact p {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(16px, 1.6vw, 20px);
+  line-height: 1.55;
+  color: var(--text);
+}
+.kpi-pact strong { font-style: normal; color: var(--text); }
+@media (max-width: 1024px) { .kpis-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .kpis-grid { grid-template-columns: 1fr; } }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOIS 1 CONCRET — Jour 1 · Semaine 1 · Mois 1
+   ═══════════════════════════════════════════════════════════════ */
+.month-one {
+  padding: clamp(100px, 14vw, 180px) 0;
+  position: relative;
+}
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: var(--max);
+  margin: 56px auto 0;
+  padding: 0 var(--gutter);
+}
+.month-col {
+  padding: 40px 32px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  position: relative;
+}
+.month-col::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--text) 0%, transparent 100%);
+  opacity: 0.4;
+}
+.month-col .tag {
+  font-family: var(--font-body);
+  font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.month-col .period {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(24px, 3.5vw, 38px);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 32px;
+  color: var(--text);
+}
+.month-col ul {
+  list-style: none;
+  padding: 0;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.month-col li {
+  padding-left: 24px;
+  position: relative;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+.month-col li::before {
+  content: "";
+  position: absolute; left: 0; top: 10px;
+  width: 10px; height: 1px;
+  background: var(--text);
+}
+.month-col li strong { color: var(--text); font-weight: 600; }
+@media (max-width: 900px) { .month-grid { grid-template-columns: 1fr; } }
+
+/* ═══════════════════════════════════════════════════════════════
+   DEADLINE — décision claire dans closing
+   ═══════════════════════════════════════════════════════════════ */
+.deadline {
+  max-width: 720px;
+  margin: 0 auto 56px;
+  padding: 28px 40px;
+  border: 1px solid var(--border-hi);
+  background: rgba(139,29,29,0.12);
+  text-align: center;
+  position: relative;
+}
+.deadline::before {
+  content: "";
+  position: absolute; top: -1px; left: 20%; right: 20%;
+  height: 2px;
+  background: var(--danger);
+}
+.deadline .tag {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #f87171;
+  margin-bottom: 14px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.deadline .tag .pulse-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #f87171;
+  box-shadow: 0 0 12px rgba(248,113,113,0.7);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+.deadline p {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(16px, 1.6vw, 20px);
+  line-height: 1.55;
+  color: var(--text);
+}
+.deadline strong { font-style: normal; color: var(--text); }
+@media (max-width: 680px) { .deadline { padding: 20px 24px; } }
+
+/* ═══════════════════════════════════════════════════════════════
+   PRINT / PDF — force all reveals visible, strip decorations
+   ═══════════════════════════════════════════════════════════════ */
+@media print {
+  html, body { background: #000 !important; color: #fff !important; }
+  .cursor-dot, .cursor-ring, .cursor-orb,
+  .pdf-fab, #intro,
+  .marquee, .hero-video, .hero-video-tint,
+  .scroll-hint, .spotlight { display: none !important; }
+
+  .reveal, .reveal-stagger > *, .story-photo, .char {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .hero { min-height: auto !important; padding: 40px 0 !important; page-break-after: always; }
+  .hero-photo { position: static !important; width: 180px !important; margin: 24px auto 0 !important; animation: none !important; opacity: 1 !important; transform: none !important; display: block; }
+
+  section { page-break-inside: avoid; padding: 32px 0 !important; }
+  #cout, #preuves { page-break-before: auto; }
+  .big-roman { display: none !important; }
+
+  h1, h2, h3, blockquote { color: #fff !important; }
+  a { color: #fff !important; text-decoration: underline; }
+
+  .btn { border: 1px solid #fff !important; color: #fff !important; background: transparent !important; box-shadow: none !important; animation: none !important; }
+  .btn .arrow { display: none; }
+
+  .stats, .cost-hero, .cost-table, .net-callout { page-break-inside: avoid; }
+
+  /* Force all proof images to render */
+  img { filter: none !important; opacity: 1 !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GALLERIE INTERSTITIELLE (devantures + packaging)
+   ═══════════════════════════════════════════════════════════════ */
+.gallerie {
+  position: relative;
+  padding: clamp(120px, 14vw, 200px) 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255,255,255,0.04) 0%, transparent 60%),
+    #050507;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.gallerie::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse at center, black 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 75%);
+  pointer-events: none;
+}
+.gallerie .container { position: relative; z-index: 2; }
+.gallerie-intro {
+  max-width: 900px;
+  margin: 0 auto clamp(60px, 8vw, 120px);
+  text-align: center;
+}
+.gallerie-intro .section-label {
+  color: var(--text-dim);
+  font-size: 11px; letter-spacing: 0.4em; text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.gallerie-intro h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(42px, 7vw, 86px);
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  color: #fff;
+  margin-bottom: 32px;
+}
+.gallerie-intro h2 em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text-dim);
+  letter-spacing: -0.01em;
+}
+.gallerie-intro p {
+  font-size: clamp(15px, 1.2vw, 19px);
+  line-height: 1.7;
+  color: var(--text-dim);
+  max-width: 640px;
+  margin: 0 auto;
+}
+.gallerie-intro p em { font-family: var(--font-serif); color: var(--text); font-style: italic; }
+
+/* --- 3 ADRESSES (devantures) --- */
+.adresses-label {
+  display: flex; align-items: center; gap: 16px;
+  font-family: var(--font-body);
+  font-size: 11px; letter-spacing: 0.4em; text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+.adresses-label::before,
+.adresses-label::after {
+  content: ""; flex: 1; height: 1px; background: var(--border);
+}
+.adresses {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 2vw, 32px);
+  margin-bottom: clamp(100px, 10vw, 160px);
+}
+.adresse {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #0a0a0c;
+  transition: transform 0.8s var(--ease), border-color 0.6s ease;
+  will-change: transform;
+}
+.adresse:hover {
+  border-color: var(--border-hi);
+  transform: translateY(-6px);
+}
+.adresse img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  filter: saturate(0.75) contrast(1.05) brightness(0.75);
+  transition: transform 1.4s var(--ease), filter 0.8s ease;
+  will-change: transform;
+}
+.adresse:hover img {
+  transform: scale(1.04);
+  filter: saturate(0.9) contrast(1.08) brightness(0.9);
+}
+.adresse::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 0%, transparent 45%, rgba(0,0,0,0.85) 100%);
+  pointer-events: none;
+}
+.adresse-meta {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: clamp(24px, 3vw, 40px);
+  z-index: 2;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.adresse-num {
+  font-family: var(--font-display);
+  font-size: 10px; letter-spacing: 0.4em;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+}
+.adresse-city {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(26px, 3vw, 40px);
+  letter-spacing: -0.01em;
+  color: #fff;
+  line-height: 1;
+}
+.adresse-tag {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(13px, 1vw, 15px);
+  color: var(--text-dim);
+}
+.adresse-tag.live::before {
+  content: ""; display: inline-block;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #fff; margin-right: 8px; vertical-align: middle;
+  animation: pulse 2.4s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(255,255,255,0.6);
+}
+@media (max-width: 900px) {
+  .adresses { grid-template-columns: 1fr; gap: 16px; }
+  .adresse { aspect-ratio: 16 / 10; }
+}
+
+/* --- BENTO PACKAGING GRID --- */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-auto-rows: 180px;
+  gap: clamp(10px, 1vw, 18px);
+}
+.bento-item {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #0a0a0c;
+  transition: transform 0.6s var(--ease), border-color 0.4s ease;
+}
+.bento-item:hover { border-color: var(--border-hi); transform: translateY(-4px); }
+.bento-item img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 1.2s var(--ease), filter 0.6s;
+  filter: saturate(0.88) contrast(1.05);
+}
+.bento-item.contain img { object-fit: contain; padding: 16%; filter: none; }
+.bento-item:hover img { transform: scale(1.05); }
+.bento-item::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.75) 100%);
+  pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
+}
+.bento-item:hover::after { opacity: 1; }
+.bento-label {
+  position: absolute;
+  bottom: 14px; left: 16px; right: 16px;
+  font-family: var(--font-body);
+  font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: rgba(255,255,255,0.82);
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.4s ease, transform 0.4s var(--ease);
+}
+.bento-item:hover .bento-label { opacity: 1; transform: translateY(0); }
+.bento-quote {
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #0e0d11 0%, #060609 100%);
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--text-dim);
+  font-size: clamp(15px, 1.3vw, 21px);
+  line-height: 1.35;
+  text-align: center;
+  border-color: var(--border-hi);
+}
+.bento-quote strong { color: var(--text); font-style: normal; font-family: var(--font-display); font-weight: 800; letter-spacing: 0.02em; }
+.bento-item.bento-quote::after { display: none; }
+
+/* Bento layout (desktop) */
+.bento .b-onair { grid-column: span 3; grid-row: span 2; }
+.bento .b-affiche { grid-column: span 3; grid-row: span 2; }
+.bento .b-louay { grid-column: span 2; grid-row: span 2; }
+.bento .b-huile1 { grid-column: span 2; grid-row: span 1; }
+.bento .b-huile2 { grid-column: span 2; grid-row: span 1; }
+.bento .b-quote { grid-column: span 2; grid-row: span 1; }
+.bento .b-cire { grid-column: span 2; grid-row: span 1; }
+
+@media (max-width: 1100px) {
+  .bento { grid-template-columns: repeat(4, 1fr); grid-auto-rows: 160px; }
+  .bento .b-onair, .bento .b-affiche { grid-column: span 4; grid-row: span 2; }
+  .bento .b-louay { grid-column: span 2; grid-row: span 2; }
+  .bento .b-huile1, .bento .b-huile2, .bento .b-cire, .bento .b-quote { grid-column: span 2; grid-row: span 1; }
+}
+@media (max-width: 640px) {
+  .bento { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 140px; }
+  .bento > * { grid-column: span 2 !important; grid-row: span 2 !important; }
+  .bento .b-huile1, .bento .b-huile2, .bento .b-cire, .bento .b-quote { grid-row: span 1 !important; }
+  .bento-label { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-dot" aria-hidden="true"></div>
+<div class="cursor-ring" aria-hidden="true"></div>
+<div class="cursor-orb" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="scroll-progress" aria-hidden="true"></div>
+
+<button class="pdf-fab" id="pdfFab" type="button" aria-label="Télécharger le pitch en PDF" data-hoverable>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    <polyline points="7 10 12 15 17 10"></polyline>
+    <line x1="12" y1="15" x2="12" y2="3"></line>
+  </svg>
+  <span>Télécharger PDF</span>
+</button>
+
+<header class="pitch-header" id="pitchHeader">
+  <div class="logo">
+    <img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" />
+  </div>
+  <div class="badge"><span class="pulse-dot"></span>PITCH PRIVÉ · NINO DALIBEY</div>
+</header>
+
+<!-- INTRO CINEMATIC -->
+<div class="intro" id="intro" role="presentation" aria-hidden="true">
+  <div class="intro-core">
+    <div class="intro-line" id="introLine">
+      <span class="word" data-word="NINO"></span>
+      <span class="cross">×</span>
+      <span class="word" data-word="BARBERCLUB"></span>
+    </div>
+    <div class="intro-sub">un pitch pour Julien &amp; Lucas</div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <video class="hero-video" id="heroVideo" autoplay muted loop playsinline preload="metadata" poster="../../assets/images/pitch/hero-poster.jpg?v=3" aria-hidden="true">
+    <source src="../../assets/videos/pitch/hero-trailer.mp4" type="video/mp4">
+  </video>
+  <div class="hero-video-tint" aria-hidden="true"></div>
+  <div class="hero-watermark" aria-hidden="true"><img src="../../assets/images/common/couronne.png" alt=""></div>
+  <div class="hero-photo" aria-hidden="true"><img src="../../assets/images/pitch/nino-portrait.webp?v=3" alt="Nino Dalibey" loading="eager"></div>
+  <div class="spotlight" aria-hidden="true"></div>
+  <div class="container">
+    <div class="hero-pretitle reveal">PITCH PRIVÉ<span class="dot"></span>ALTERNANCE 2026<span class="dot"></span>PRÉSENTATION EN PRÉSENTIEL</div>
+    <h1 class="hero-title reveal"><span class="line-1">NINO</span><span class="slash">×</span><span class="line-2">BARBERCLUB</span></h1>
+    <p class="hero-body reveal">
+      Julien, Lucas. Vous avez pris un stagiaire en création digitale. Vous avez récupéré <em>un site, un logiciel de réservation, une identité, des vidéos, et un profil qui a ses propres outils.</em>
+    </p>
+    <p class="hero-sub reveal">
+      Certains d'entre vous savent déjà ce qu'on peut construire ensemble. Ce site est là pour que l'autre moitié le voie noir sur blanc.
+    </p>
+
+    <div class="hero-meta reveal">
+      <div class="hero-meta-item"><span>Destinataires</span><span class="val">Julien &amp; Lucas</span></div>
+      <div class="hero-meta-item"><span>Deadline</span><span class="val">Avril 2026</span></div>
+      <div class="hero-meta-item"><span>Durée de lecture</span><span class="val">6 min</span></div>
+      <div class="hero-meta-item"><span>Version</span><span class="val">v1.0</span></div>
+    </div>
+  </div>
+  <div class="scroll-hint">scroll ↓</div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span class="marquee-item">Site BarberClub</span>
+    <span class="marquee-item">Logiciel de réservation</span>
+    <span class="marquee-item">Dashboard data</span>
+    <span class="marquee-item">Identité visuelle</span>
+    <span class="marquee-item">Trailers barbers</span>
+    <span class="marquee-item">La Maison du Regard</span>
+    <span class="marquee-item">Stories Instagram</span>
+    <span class="marquee-item">PLV signalétique</span>
+    <span class="marquee-item">DiamondRiver</span>
+    <span class="marquee-item">Étiquettes parfum</span>
+    <span class="marquee-item">Shooting &amp; DA</span>
+    <span class="marquee-item">Formation Barbier</span>
+    <span class="marquee-item">Com Voiron</span>
+    <span class="marquee-item">Site BarberClub</span>
+    <span class="marquee-item">Logiciel de réservation</span>
+    <span class="marquee-item">Dashboard data</span>
+    <span class="marquee-item">Identité visuelle</span>
+    <span class="marquee-item">Trailers barbers</span>
+    <span class="marquee-item">La Maison du Regard</span>
+    <span class="marquee-item">Stories Instagram</span>
+    <span class="marquee-item">PLV signalétique</span>
+    <span class="marquee-item">DiamondRiver</span>
+    <span class="marquee-item">Étiquettes parfum</span>
+    <span class="marquee-item">Shooting &amp; DA</span>
+    <span class="marquee-item">Formation Barbier</span>
+    <span class="marquee-item">Com Voiron</span>
+  </div>
+</div>
+<div class="marquee serif" aria-hidden="true">
+  <div class="marquee-track">
+    <span class="marquee-item">trois mois · zéro rémunération · livrables en production</span>
+    <span class="marquee-item">quatre sites livrés · trois pour vos projets perso</span>
+    <span class="marquee-item">sans prestataire · sans sous-traitant · un seul profil</span>
+    <span class="marquee-item">conçu, designé, développé, déployé</span>
+    <span class="marquee-item">budget agence à cinq chiffres · livré gratuitement</span>
+    <span class="marquee-item">trois mois · zéro rémunération · livrables en production</span>
+    <span class="marquee-item">quatre sites livrés · trois pour vos projets perso</span>
+    <span class="marquee-item">sans prestataire · sans sous-traitant · un seul profil</span>
+    <span class="marquee-item">conçu, designé, développé, déployé</span>
+    <span class="marquee-item">budget agence à cinq chiffres · livré gratuitement</span>
+  </div>
+</div>
+
+<!-- STATS · 3 MOIS EN CHIFFRES -->
+<section class="stats" id="stats">
+  <div class="stats-head">
+    <span class="chapter reveal">Interlude</span>
+    <div class="section-label reveal">TROIS MOIS · MESURÉS</div>
+    <h2 class="reveal">Les chiffres<br><span style="color:var(--text-muted);font-style:italic;font-family:var(--font-serif);font-weight:400;">avant les mots.</span></h2>
+  </div>
+  <div class="stats-grid reveal-stagger" id="statsGrid">
+    <div class="stat-item">
+      <div class="stat-value"><span data-count="3">0</span></div>
+      <div class="stat-label">Mois · stage</div>
+      <div class="stat-kicker">sans rémunération</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value"><span data-count="4">0</span></div>
+      <div class="stat-label">Sites livrés</div>
+      <div class="stat-kicker">production, sans presta</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value"><span data-count="20">0</span><span class="unit">k€</span></div>
+      <div class="stat-label">Valeur livrée</div>
+      <div class="stat-kicker">budget agence estimé</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value"><span data-count="0">0</span><span class="unit">€</span></div>
+      <div class="stat-label">Facturés</div>
+      <div class="stat-kicker">zéro devis, zéro frais</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value"><span data-count="6">0</span></div>
+      <div class="stat-label">Trailers vidéo</div>
+      <div class="stat-kicker">matos IUT gratuit</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value"><span data-count="1">0</span></div>
+      <div class="stat-label">Profil</div>
+      <div class="stat-kicker">quatre casquettes</div>
+    </div>
+  </div>
+</section>
+
+<!-- I. LES PREUVES -->
+<section id="preuves">
+  <div class="big-roman" aria-hidden="true">I</div>
+  <div class="container">
+    <span class="chapter reveal">Chapitre I</span>
+    <div class="section-label reveal">CE QUE J'AI DÉJÀ LIVRÉ</div>
+    <h2 class="reveal">Les preuves.<br><span style="color:var(--text-muted);font-style:italic;font-family:var(--font-serif);font-weight:400;">Pas des promesses.</span></h2>
+
+    <div class="proofs-grid reveal-stagger">
+      <article class="proof span-8 tall" data-hoverable>
+        <div class="proof-num">01 · 2026</div>
+        <h3 class="proof-title">Le site BarberClub from scratch</h3>
+        <p class="proof-desc">Design, développement, intégrations, SEO, PWA, carte interactive, transitions cinématiques. Fini l'héritage de l'ancien prestataire. Code propriétaire, cohérent, évolutif.</p>
+        <span class="proof-tag"><span class="dot"></span>En production</span>
+        <div class="proof-image" aria-label="jeune-homme-affale-sur-un-sofa">
+          <img src="../../assets/images/pitch/site-grenoble-landing.webp?v=3" alt="Capture du site BarberClub Grenoble — section Hero" loading="lazy">
+          <div class="caption">BARBERCLUB-GRENOBLE.FR · CAPTURE LIVE</div>
+        </div>
+      </article>
+
+      <article class="proof span-4 tall" data-hoverable>
+        <div class="proof-num">02 · 2026</div>
+        <h3 class="proof-title">Logiciel de réservation</h3>
+        <p class="proof-desc">Remplace Timify (−400 €/mois). Dashboard data sur-mesure, édition autonome, code et données propriétaires.</p>
+        <span class="proof-tag"><span class="dot"></span>Déployé</span>
+        <div class="proof-image">
+          <img src="../../assets/images/pitch/mockup-site-barberclub.webp?v=3" alt="" loading="lazy" />
+          <div class="caption">DASHBOARD · 2 SALONS</div>
+        </div>
+      </article>
+
+      <article class="proof span-4" data-hoverable>
+        <div class="proof-num">03 · 2026</div>
+        <h3 class="proof-title">Identité visuelle</h3>
+        <p class="proof-desc">Logos, visuels salon, stories barbers, t-shirts, étiquettes parfum &amp; huile de barbe, PLV, signalétique.</p>
+        <span class="proof-tag">Livré</span>
+        <div class="proof-image">
+          <img src="../../assets/images/pitch/packaging-onair.webp?v=3" alt="" loading="lazy" />
+          <div class="caption">COLLAB ON AIR × BARBERCLUB</div>
+        </div>
+      </article>
+
+      <article class="proof span-4" data-hoverable>
+        <div class="proof-num">04 · 2026</div>
+        <h3 class="proof-title">Photo &amp; direction artistique</h3>
+        <p class="proof-desc">Shooting barbers, DA studio, cohérence visuelle sur les trois salons. Les 3 salons ont la même âme — pas par accident.</p>
+        <span class="proof-tag">En continu</span>
+        <div class="proof-image">
+          <img src="../../assets/images/pitch/shoot-louay.webp?v=3" alt="" loading="lazy" />
+          <div class="caption">SHOOT LOUAY · GRENOBLE</div>
+        </div>
+      </article>
+
+      <article class="proof span-4" data-hoverable>
+        <div class="proof-num">05 · 2026</div>
+        <h3 class="proof-title">Vidéo &amp; événementiel</h3>
+        <p class="proof-desc">Trailers d'annonce nouveaux barbers, conférences, affiches — matériel vidéo pro gratuit via l'IUT, fin des prestas externes.</p>
+        <span class="proof-tag">Actif</span>
+        <div class="proof-image">
+          <img src="../../assets/images/pitch/affiche-wiikard.webp?v=3" alt="" loading="lazy" />
+          <div class="caption">AFFICHE CONF WIIKARD × BC</div>
+        </div>
+      </article>
+
+      <article class="proof span-12" data-hoverable>
+        <div class="proof-num">06 · 2026</div>
+        <h3 class="proof-title">Com de l'ouverture Voiron</h3>
+        <p class="proof-desc">Le prochain chapitre est déjà en préparation : DA, teasing, lancement. L'ouverture du troisième salon se fera avec la cohérence visuelle prévue, pas sans.</p>
+        <span class="proof-tag"><span class="dot"></span>En cours</span>
+        <div class="proof-image">
+          <img src="../../assets/images/salons/Voiron/salon-voiron-facade.webp" alt="" loading="lazy" />
+          <div class="caption">VOIRON · DEVANTURE · TEASING EN COURS</div>
+        </div>
+      </article>
+    </div>
+
+    <div class="proof-divider reveal">
+      <div class="line"></div>
+      <div class="label">Et <em>en dehors</em> du cadre BarberClub.</div>
+      <div class="line"></div>
+    </div>
+
+    <p class="reveal" style="max-width:780px;margin:0 0 40px;font-size:clamp(15px,1.15vw,18px);line-height:1.7;color:var(--text-dim);">
+      Vous m'avez fait confiance avec votre boîte. Vous m'avez aussi fait confiance avec <strong style="color:var(--text);">vos projets personnels et ceux de vos proches</strong>. Trois sites livrés, en dehors du stage, pour votre entourage direct.
+    </p>
+
+    <div class="proofs-grid reveal-stagger">
+      <article class="proof span-4 hors-cadre" data-hoverable>
+        <div class="proof-num">07 · HORS-CADRE</div>
+        <h3 class="proof-title">La Maison du Regard</h3>
+        <p class="proof-desc">Site complet pour le salon de pose de cils : prise de rendez-vous, galerie, présentation des prestations. Déployé, en production.</p>
+        <span class="proof-tag">Livré</span>
+        <div class="for-whom"><strong>LUCAS</strong> · copine (salon pose de cils)</div>
+        <div class="proof-image">
+          <img src="../../assets/images/pitch/maison-regard.webp?v=3" alt="" loading="lazy" />
+          <div class="caption">LA MAISON DU REGARD</div>
+        </div>
+      </article>
+
+      <article class="proof span-4 hors-cadre" data-hoverable>
+        <div class="proof-num">08 · HORS-CADRE</div>
+        <h3 class="proof-title">DiamondDriver</h3>
+        <p class="proof-desc">Site pour la société de location de voitures avec chauffeur, marché mariages premium. Design luxe, réservation, flotte. Déployé.</p>
+        <span class="proof-tag">Livré</span>
+        <div class="for-whom"><strong>JULIEN</strong> · activité parallèle VTC mariage</div>
+        <div class="proof-image">
+          <img src="../../assets/images/pitch/diamond-driver.webp?v=3" alt="" loading="lazy" />
+          <div class="caption">DIAMOND DRIVER</div>
+        </div>
+      </article>
+
+      <article class="proof span-4 hors-cadre" data-hoverable>
+        <div class="proof-num">09 · HORS-CADRE</div>
+        <h3 class="proof-title">Formation Barbier</h3>
+        <p class="proof-desc">Site du centre de formation barbier : programme, inscriptions, landing pédagogique. Vitrine métier pour attirer les futurs élèves.</p>
+        <span class="proof-tag">Livré</span>
+        <div class="for-whom"><strong>JULIEN</strong> · centre de formation</div>
+        <div class="proof-image">
+          <img src="../../assets/images/pitch/formation-barber.webp?v=3" alt="" loading="lazy" />
+          <div class="caption">FORMATION BARBIER</div>
+        </div>
+      </article>
+    </div>
+
+    <p class="proof-quote reveal" style="margin-top:80px;max-width:900px;">
+      Vous avez investi <strong>0 €</strong> en rémunération pendant trois mois. Vous avez reçu <strong>l'équivalent d'un budget agence à cinq chiffres</strong>, plus un studio créatif intégré. <strong>Plus trois sites livrés hors-stage pour vos projets personnels et ceux de vos proches.</strong> Valeur combinée estimée à <strong>plus de 25 000 €</strong>.
+    </p>
+  </div>
+</section>
+
+<!-- INTERSTITIEL · GALLERIE -->
+<section id="gallerie" class="gallerie">
+  <div class="container">
+    <div class="gallerie-intro reveal">
+      <div class="section-label">LA MATIÈRE</div>
+      <h2>Un univers,<br><em>partout.</em></h2>
+      <p>Le digital n'est qu'une face. L'autre, c'est <em>la matière</em> — devantures, étiquettes, affiches, packaging, shooting. Ce qu'on voit, ce qu'on touche, <em>ce qui reste</em>.</p>
+    </div>
+
+    <div class="adresses-label reveal">TROIS ADRESSES · UNE ÂME</div>
+
+    <div class="adresses reveal-stagger">
+      <article class="adresse" data-hoverable>
+        <img src="../../assets/images/pitch/devanture-meylan.webp?v=3" alt="Devanture BarberClub Meylan" loading="lazy" />
+        <div class="adresse-meta">
+          <span class="adresse-num">N° 01</span>
+          <span class="adresse-city">MEYLAN</span>
+          <span class="adresse-tag live">Ouvert · 2 barbers</span>
+        </div>
+      </article>
+      <article class="adresse" data-hoverable>
+        <img src="../../assets/images/pitch/devanture-grenoble.webp?v=3" alt="Devanture BarberClub Grenoble" loading="lazy" />
+        <div class="adresse-meta">
+          <span class="adresse-num">N° 02</span>
+          <span class="adresse-city">GRENOBLE</span>
+          <span class="adresse-tag live">Ouvert · 4 barbers</span>
+        </div>
+      </article>
+      <article class="adresse" data-hoverable>
+        <img src="../../assets/images/pitch/devanture-voiron.webp?v=3" alt="Devanture BarberClub Voiron" loading="lazy" />
+        <div class="adresse-meta">
+          <span class="adresse-num">N° 03</span>
+          <span class="adresse-city">VOIRON</span>
+          <span class="adresse-tag">Bientôt · DA en cours</span>
+        </div>
+      </article>
+    </div>
+
+    <div class="adresses-label reveal" style="margin-top:40px;">CE QU'ON TOUCHE</div>
+
+    <div class="bento reveal-stagger">
+      <article class="bento-item b-onair" data-hoverable>
+        <img src="../../assets/images/pitch/packaging-onair.webp?v=3" alt="Collaboration On Air × BarberClub" loading="lazy" />
+        <div class="bento-label">ON AIR × BARBERCLUB · COLLAB</div>
+      </article>
+      <article class="bento-item b-affiche" data-hoverable>
+        <img src="../../assets/images/pitch/affiche-wiikard.webp?v=3" alt="Affiche conférence Wiikard" loading="lazy" />
+        <div class="bento-label">AFFICHE · CONF WIIKARD</div>
+      </article>
+      <article class="bento-item b-louay" data-hoverable>
+        <img src="../../assets/images/pitch/shoot-louay.webp?v=3" alt="Photo shoot barber Louay" loading="lazy" />
+        <div class="bento-label">SHOOT LOUAY · GRENOBLE</div>
+      </article>
+      <article class="bento-item b-huile1 contain" data-hoverable>
+        <img src="../../assets/images/pitch/etiquette-huile-vanille.webp?v=3" alt="Étiquette huile de barbe vanille" loading="lazy" />
+        <div class="bento-label">HUILE BARBE · VANILLE</div>
+      </article>
+      <article class="bento-item b-huile2 contain" data-hoverable>
+        <img src="../../assets/images/pitch/etiquette-huile-cerise.webp?v=3" alt="Étiquette huile de barbe cerise" loading="lazy" />
+        <div class="bento-label">HUILE BARBE · CERISE</div>
+      </article>
+      <article class="bento-item b-quote bento-quote">
+        Un <strong>salon</strong>, c'est aussi ce qu'on emporte chez soi.
+      </article>
+      <article class="bento-item b-cire contain" data-hoverable>
+        <img src="../../assets/images/pitch/produit-cire.webp?v=3" alt="Cire coiffante BarberClub" loading="lazy" />
+        <div class="bento-label">CIRE · PACKAGING</div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- II. AVEC / SANS MOI -->
+<section id="scenarios">
+  <div class="big-roman" aria-hidden="true">II</div>
+  <div class="container">
+    <span class="chapter reveal">Chapitre II</span>
+    <div class="section-label reveal">DEUX FUTURS POSSIBLES</div>
+    <h2 class="reveal">Avec moi.<br><span style="color:var(--text-muted);font-style:italic;font-family:var(--font-serif);font-weight:400;">Sans moi.</span></h2>
+
+    <div class="split reveal">
+      <div class="split-col without">
+        <div class="split-head">Sans moi.</div>
+        <ul class="split-list">
+          <li>Logiciel sans maintenance ni auteur. Bug = galère, évolution = impossible sans recoder.</li>
+          <li><strong style="color:var(--text);">DiamondRiver, La Maison du Regard, Formation Barbier</strong> : plus de maintenance ni d'évolutions. Chaque bug = un presta à trouver, un devis à valider.</li>
+          <li><strong style="color:var(--text);">Développement de la formation barbier de Julien</strong> (visuels, site, com) à l'arrêt. L'élan retombe.</li>
+          <li>Com qui ralentit, externalisée, avec délais et coûts à la pièce.</li>
+          <li>Voiron lancé sans DA intégrée : le salon ouvre sans la cohérence visuelle prévue.</li>
+          <li>Retour aux prestataires payés (vidéo, design, dev) : explosion du budget.</li>
+          <li>Plus de rapidité de livraison. Aujourd'hui : stories et visuels sortis dans la foulée.</li>
+          <li>Perte d'un profil qui veut rester longtemps et faire grandir la boîte.</li>
+          <li>Perte de la rigolade au quotidien. C'est pas le critère n°1, mais l'équipe c'est aussi ça.</li>
+        </ul>
+      </div>
+      <div class="split-col with">
+        <div class="split-head">Avec moi.</div>
+        <ul class="split-list">
+          <li>Logiciel vivant, évolutions continues, dette technique maîtrisée.</li>
+          <li><strong style="color:var(--text);">Maintenance continue sur DiamondRiver, La Maison du Regard, Formation Barbier</strong> : un seul contact pour tous vos sites.</li>
+          <li><strong style="color:var(--text);">Matériel vidéo pro loué gratuitement à mon IUT</strong> : caméra, micro, lumière, fond. Fin du budget presta vidéo.</li>
+          <li>Dashboard data pour piloter les 3 salons en temps réel.</li>
+          <li>Contenus récurrents (reels, stories, trailers) livrés avec matos pro.</li>
+          <li>Ouverture Voiron + 2 ans Grenoble + com continue pilotés en interne.</li>
+          <li>Rapidité : stories livrées dans la foulée, demandes traitées en direct.</li>
+          <li>Un profil qui se projette sur 3 ans et plus, pas un passage.</li>
+          <li>Une équipe qui se renforce autour d'un objectif commun, pas une collection de prestataires.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- III. 4 CASQUETTES -->
+<section id="casquettes">
+  <div class="big-roman" aria-hidden="true">III</div>
+  <div class="container">
+    <span class="chapter reveal">Chapitre III</span>
+    <div class="section-label reveal">CE QUE VOUS GAGNEZ</div>
+    <h2 class="reveal">Quatre casquettes.<br><span style="color:var(--text-muted);font-style:italic;font-family:var(--font-serif);font-weight:400;">Un seul salaire.</span></h2>
+
+    <div class="hats-grid reveal">
+      <div class="hat">
+        <div class="hat-num">I.</div>
+        <h3 class="hat-title">Créatif</h3>
+        <p class="hat-desc"><strong style="color:var(--text);">Vous arrêtez</strong> de payer un studio à la prestation pour vos visuels, stories et PLV. <strong style="color:var(--text);">Vous livrez</strong> une identité cohérente sur les trois salons — en continu, sans devis.</p>
+        <div class="hat-stack"><span>Figma</span><span>Photoshop</span><span>Illustrator</span></div>
+      </div>
+      <div class="hat">
+        <div class="hat-num">II.</div>
+        <h3 class="hat-title">Vidéaste</h3>
+        <p class="hat-desc"><strong style="color:var(--text);">Vous ne payez plus</strong> 500-1500 € par trailer. <strong style="color:var(--text);">Vous publiez</strong> un reel par semaine, tourné et monté en interne, avec du matos pro prêté gratuitement par l'IUT.</p>
+        <div class="hat-stack"><span>Premiere</span><span>After Effects</span><span>DaVinci</span><span>+ matos IUT</span></div>
+      </div>
+      <div class="hat">
+        <div class="hat-num">III.</div>
+        <h3 class="hat-title">Dev &amp; produit</h3>
+        <p class="hat-desc"><strong style="color:var(--text);">Vous gardez</strong> la main sur le logiciel que 99 % des salons n'ont pas. <strong style="color:var(--text);">Vous évoluez</strong> sans devis externe et sans dépendance à un prestataire qui disparaît.</p>
+        <div class="hat-stack"><span>Next.js</span><span>React</span><span>Node</span><span>PostgreSQL</span></div>
+      </div>
+      <div class="hat">
+        <div class="hat-num">IV.</div>
+        <h3 class="hat-title">Opé &amp; admin</h3>
+        <p class="hat-desc"><strong style="color:var(--text);">Vous gagnez</strong> une présence physique entre les trois salons : accueil, tenue, compta courante. Pas juste un profil derrière un écran — un bras supplémentaire au quotidien.</p>
+        <div class="hat-stack"><span>Présence</span><span>Claude</span><span>Notion</span></div>
+      </div>
+    </div>
+
+    <p class="proof-quote reveal" style="margin-top:64px;max-width:900px;">
+      Un prestataire externe ne couvre <strong>qu'une case</strong>, et facture chacune séparément.
+    </p>
+  </div>
+</section>
+
+<!-- IV. COUT REEL -->
+<section id="cout">
+  <div class="big-roman" aria-hidden="true">IV</div>
+  <div class="container">
+    <span class="chapter reveal">Chapitre IV</span>
+    <div class="section-label reveal">L'ARGUMENT MASSUE</div>
+    <h2 class="reveal">Ce que ça va<br>réellement vous coûter.</h2>
+
+    <div class="veille-notice reveal"><span class="pulse"></span>Veille chiffrée · Avril 2026 · Sources officielles</div>
+
+    <div class="cost-hero reveal">
+      <div class="cost-pre">COÛT NET EMPLOYEUR · MENSUALISÉ</div>
+      <div class="cost-amount">
+        <span data-count="1071">0</span>
+        <span class="unit">€</span>
+        <span class="slash-year">/mois</span>
+      </div>
+      <p class="cost-kicker">
+        Soit <strong>≈ 12 857 €/an</strong> pour un profil qui couvre <em>création, vidéo, dev, produit et opérationnel</em>.<br>
+        Aucun prestataire externe ne vous livre ça pour ce prix.
+      </p>
+    </div>
+
+    <div class="cost-table reveal">
+      <div class="cost-row">
+        <div class="label">Salaire brut annuel<br><span style="font-size:12px;color:var(--text-muted);">BUT3, 3<sup>e</sup> année · 67 % SMIC · âge 18-20 · SMIC 2026 = 1 823,03 € brut/mois</span></div>
+        <div class="amount">14 657 €</div>
+      </div>
+      <div class="cost-row">
+        <div class="label">Charges patronales légales<br><span style="font-size:12px;color:var(--text-muted);">Intégralement prises en charge par l'État. TPE &lt; 11 salariés, métier artisanal barbier</span></div>
+        <div class="amount">~ 0 €</div>
+      </div>
+      <div class="cost-row">
+        <div class="label">Accidents du travail / maladies pro<br><span style="font-size:12px;color:var(--text-muted);">Seule cotisation restante (~1-2 % du brut)</span></div>
+        <div class="amount">~ 200 €</div>
+      </div>
+      <div class="cost-row neg">
+        <div class="label">Aide exceptionnelle ASP<br><span style="font-size:12px;color:var(--text-muted);">Décret n° 2026-168 du 6 mars 2026 · BUT3 niveau 6 · TPE &lt; 250 · versement mensuel</span></div>
+        <div class="amount">− 2 000 €</div>
+      </div>
+      <div class="cost-row total">
+        <div class="label">Coût net employeur année 1</div>
+        <div class="amount">≈ 12 857 €</div>
+      </div>
+    </div>
+
+    <!-- AIDES DÉTAILLÉES -->
+    <div class="aides-wrap reveal">
+      <div class="aides-head">
+        <h3>Les quatre dispositifs<br>qui rendent ce prix possible.</h3>
+        <div class="sub">Décret 6 mars 2026 · régime TPE artisanale · OPCO</div>
+      </div>
+
+      <div class="aides-grid">
+        <div class="aide">
+          <div class="aide-num">Dispositif I</div>
+          <div class="aide-title">Aide exceptionnelle employeur</div>
+          <div class="aide-value">2 000 €</div>
+          <p class="aide-desc">Décret n° 2026-168 du 6 mars 2026, contrats à partir du 8 mars 2026 et débutant avant le 1<sup>er</sup> janvier 2027. Versée mensuellement par l'ASP. Niveau 6 (BUT3) · entreprise &lt; 250 salariés. Niveau 7 (Master) = également 2 000 €.</p>
+        </div>
+        <div class="aide">
+          <div class="aide-num">Dispositif II</div>
+          <div class="aide-title">Exonération des cotisations patronales</div>
+          <div class="aide-value">~ 100 %</div>
+          <p class="aide-desc">Régime TPE artisanale maintenu en 2026. Entreprises &lt; 11 salariés exerçant un métier artisanal (barbier inscrit à la CMA) : l'État prend en charge la totalité des cotisations patronales d'origine légale et conventionnelle. Seule exception : AT/MP (≈ 1-2 % du brut).</p>
+        </div>
+        <div class="aide">
+          <div class="aide-num">Dispositif III</div>
+          <div class="aide-title">Exonération des cotisations salariales</div>
+          <div class="aide-value">≤ 50 % SMIC</div>
+          <p class="aide-desc">Depuis le 1<sup>er</sup> mars 2025, la part de rémunération ≤ 911,51 €/mois est exonérée de cotisations salariales + CSG/CRDS. Au-dessus, régime classique. Moins d'impact côté employeur mais augmente le net de l'apprenti.</p>
+        </div>
+        <div class="aide">
+          <div class="aide-num">Dispositif IV</div>
+          <div class="aide-title">Prise en charge formation</div>
+          <div class="aide-value">100 % OPCO</div>
+          <p class="aide-desc">Les frais de formation au CFA/IUT sont intégralement couverts par l'OPCO de branche (coiffure/artisanat), selon le NPEC négocié. Zéro coût de formation pour BarberClub. Bonus : taxe d'apprentissage (0,68 % de la masse salariale déjà payée) fléchable vers l'IUT.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- NET DE L'APPRENTI -->
+    <div class="net-callout reveal">
+      <div class="icon">⸺</div>
+      <div>
+        <div class="label">Ce que Nino touche (transparence totale)</div>
+        <div class="value">≈ 1 153 € net/mois · sur 1 221 € brut</div>
+        <div class="hint">
+          La part sous 911 €/mois est 100 % exonérée (cotisations + CSG/CRDS). Au-dessus, régime salarié classique. Pas d'impôt sur le revenu jusqu'au SMIC annuel.
+          Ce que ça me dit : je peux me loger, vivre, me projeter. Ce que ça vous dit : vous ne payez pas un stagiaire, vous investissez dans quelqu'un qui en a besoin pour construire.
+        </div>
+      </div>
+    </div>
+
+    <!-- MARKET COMPARE -->
+    <div class="market-compare reveal">
+      <div class="market-head">
+        <h3>Si vous alliez<br>sur le marché.</h3>
+        <div class="sub">Prix 2026, prestataires séparés, facturation à l'acte</div>
+      </div>
+      <div class="market-row">
+        <div class="poste">Refonte site vitrine barbershop<span class="sub">Agence digitale · maintenance 200-500 €/mois exclue</span></div>
+        <div class="price">3 000 – 8 000 €</div>
+        <div class="nino">inclus</div>
+      </div>
+      <div class="market-row">
+        <div class="poste">Logiciel de réservation SaaS<span class="sub">Planity 69 €/mois · Madyis 119 €/mois · Treatwell 29-49 € + 35 % commission</span></div>
+        <div class="price">828 – 4 200 €/an</div>
+        <div class="nino">propriétaire</div>
+      </div>
+      <div class="market-row">
+        <div class="poste">Dashboard analytics sur-mesure<span class="sub">Dev indépendant · 5 000 – 20 000 €</span></div>
+        <div class="price">5 000 – 20 000 €</div>
+        <div class="nino">inclus</div>
+      </div>
+      <div class="market-row">
+        <div class="poste">Community management mensuel<span class="sub">Stories, posts, planning éditorial · 400-800 €/mois</span></div>
+        <div class="price">4 800 – 9 600 €/an</div>
+        <div class="nino">inclus</div>
+      </div>
+      <div class="market-row">
+        <div class="poste">Trailer vidéo barber<span class="sub">Vidéaste freelance · 500-1 500 € par trailer · 6 barbers = 3 000-9 000 €</span></div>
+        <div class="price">3 000 – 9 000 €</div>
+        <div class="nino">inclus</div>
+      </div>
+      <div class="market-row">
+        <div class="poste">Identité, PLV, étiquettes, stories<span class="sub">Studio DA · forfait annuel entreprise</span></div>
+        <div class="price">3 000 – 6 000 €/an</div>
+        <div class="nino">inclus</div>
+      </div>
+      <div class="market-row total">
+        <div class="poste">Total année 1 · marché</div>
+        <div class="price">19 628 – 56 800 €</div>
+        <div class="nino">12 857 €</div>
+      </div>
+      <p class="market-kicker">
+        Et encore — ce tableau additionne des prestataires <strong style="color:var(--text);">qui ne se parlent pas</strong>. Pas de DA partagée, pas de backlog unique, pas de présence physique en salon. Un seul profil livre les six lignes — et dort encore chez ses parents.
+      </p>
+    </div>
+
+    <p class="cost-sources reveal" style="margin-top:56px;">
+      Sources vérifiées avril 2026 :
+      <a href="https://www.info.gouv.fr/actualite/le-smic-revalorise-au-1er-janvier-2026" target="_blank" rel="noopener">info.gouv.fr (SMIC 2026)</a> ·
+      <a href="https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000053634597" target="_blank" rel="noopener">Légifrance (décret 2026-168)</a> ·
+      <a href="https://entreprendre.service-public.gouv.fr/vosdroits/F23556" target="_blank" rel="noopener">service-public.gouv.fr (aides apprentissage)</a> ·
+      <a href="https://www.economie.gouv.fr/entreprises/embauche-dun-apprenti-vous-avez-droit-des-aides" target="_blank" rel="noopener">économie.gouv.fr</a> ·
+      <a href="https://www.legisocial.fr/reperes-sociaux/remuneration-contrat-alternance-apprentissage-2026.html" target="_blank" rel="noopener">LégiSocial (grille 2026)</a> ·
+      <a href="https://www.akto.fr/recrutement-apprentissage-alternance-aides-2026/" target="_blank" rel="noopener">AKTO</a> ·
+      <a href="https://formation.lefebvre-dalloz.fr/actualite/aides-lapprentissage-regime-applicable-compter-du-8-mars-2026" target="_blank" rel="noopener">Lefebvre Dalloz</a>.
+      <br>
+      Tous les chiffres sont à jour du décret du 6 mars 2026 et de l'harmonisation des cotisations apprentis du 1<sup>er</sup> mars 2025. À faire confirmer par votre expert-comptable, le cadre légal est clair.
+    </p>
+  </div>
+</section>
+
+<!-- V. VISION -->
+<section id="vision">
+  <div class="big-roman" aria-hidden="true">V</div>
+  <div class="container">
+    <span class="chapter reveal">Chapitre V</span>
+    <div class="section-label reveal">MA VISION</div>
+  </div>
+
+  <div class="quote-full reveal">
+    <blockquote>
+      Il manque juste <em>le chemin</em> pour passer de 3 salons à 15.
+    </blockquote>
+    <div class="quote-attribution">BarberClub, franchise nationale</div>
+  </div>
+
+  <div class="container">
+    <div style="max-width:900px;margin:0 auto;" class="reveal">
+      <p style="font-size:clamp(16px,1.3vw,20px);line-height:1.7;">
+        Vous avez déjà <strong>une identité reconnaissable</strong>, <strong>un logiciel de réservation propriétaire</strong> (ce que 99 % des salons n'ont pas), <strong>une DA cohérente sur trois salons</strong>, et <strong>une méthode qui s'exporte</strong>.
+      </p>
+      <p style="font-size:clamp(16px,1.3vw,20px);line-height:1.7;margin-top:24px;">
+        Ce chemin, il est digital : un logiciel qui scale, une DA qui se décline, une com qui se réplique, un studio créatif interne. C'est exactement ce que je construis avec vous depuis trois mois. <em style="color:var(--text);font-style:normal;">BarberClub franchise nationale, ce n'est pas une hypothèse. C'est la trajectoire naturelle si on garde l'équipe qui a la main sur les outils.</em>
+      </p>
+    </div>
+
+    <div class="vision-cards reveal">
+      <div class="vision-card"><div class="v">3</div><div class="l">Salons aujourd'hui</div></div>
+      <div class="vision-card"><div class="v">15</div><div class="l">Salons demain</div></div>
+      <div class="vision-card"><div class="v">1</div><div class="l">Logiciel propriétaire</div></div>
+      <div class="vision-card"><div class="v">1</div><div class="l">Studio interne</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- VI. ROADMAP -->
+<section id="roadmap">
+  <div class="big-roman" aria-hidden="true">VI</div>
+  <div class="container">
+    <span class="chapter reveal">Chapitre VI</span>
+    <div class="section-label reveal">CE QUE JE VEUX LANCER EN PREMIER</div>
+    <h2 class="reveal">Ma roadmap.</h2>
+
+    <div class="roadmap reveal-stagger">
+      <div class="road">
+        <div class="road-num">N° 1</div>
+        <div class="road-title">Carte de fidélité digitale</div>
+        <p class="road-desc">Intégrée au logiciel : points, relances auto, rétention.</p>
+      </div>
+      <div class="road">
+        <div class="road-num">N° 2</div>
+        <div class="road-title">Live 24 h · 2 ans Grenoble</div>
+        <p class="road-desc">Captation multi-cam matos IUT, diffusion réseaux, presse locale.</p>
+      </div>
+      <div class="road">
+        <div class="road-num">N° 3</div>
+        <div class="road-title">Ouverture Voiron clé en main</div>
+        <p class="road-desc">Identité, teasing, lancement, retombées. De A à Z.</p>
+      </div>
+      <div class="road">
+        <div class="road-num">N° 4</div>
+        <div class="road-title">Dashboard performance</div>
+        <p class="road-desc">CA, réservations, barbers stars, produits phares, par salon.</p>
+      </div>
+      <div class="road">
+        <div class="road-num">N° 5</div>
+        <div class="road-title">Boutique en ligne</div>
+        <p class="road-desc">Parfums, merch, produits salon. À terme, quand la demande est là.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VII. ENGAGEMENTS -->
+<section id="engagements">
+  <div class="big-roman" aria-hidden="true">VII</div>
+  <div class="container">
+    <span class="chapter reveal">Chapitre VII</span>
+    <div class="section-label reveal">MES ENGAGEMENTS</div>
+
+    <div class="engage-wrap">
+      <div class="engage-side reveal">
+        <h2>Ce que j'accepte,<br><span style="color:var(--text-muted);font-style:italic;font-family:var(--font-serif);font-weight:400;">sans négocier.</span></h2>
+        <p>Pas une liste de conditions. Une liste d'engagements. Ce que je mets sur la table avant même la signature.</p>
+      </div>
+
+      <ol class="engage-list reveal-stagger">
+        <li><span class="engage-num">I.</span><span class="engage-text">Rotation libre Meylan / Grenoble / Voiron selon les besoins.</span></li>
+        <li><span class="engage-num">II.</span><span class="engage-text">Weekends et jours fériés disponibles.</span></li>
+        <li><span class="engage-num">III.</span><span class="engage-text">Pas de vacances posées de septembre à l'été suivant.</span></li>
+        <li><span class="engage-num">IV.</span><span class="engage-text">Disponible dès le 26 juin 2026.</span></li>
+        <li><span class="engage-num">V.</span><span class="engage-text">Je lâche mon job étudiant pour être 100 % BarberClub.</span></li>
+        <li><span class="engage-num">VI.</span><span class="engage-text">Missions élargies : accueil, tenue de salon, tâches opé au besoin.</span></li>
+        <li><span class="engage-num">VII.</span><span class="engage-text">Dispo à n'importe quelle heure, même hors temps de travail.<em>C'est déjà le cas aujourd'hui.</em></span></li>
+      </ol>
+    </div>
+
+    <div class="proof-quote reveal">
+      <strong>Preuves.</strong> Pendant le stage, j'ai bossé le site sur mon temps perso, et j'ai fait des sessions de montage vidéo de 19 h (retour salon) à 2 h du matin. C'est <strong>documenté</strong>, pas promis.
+    </div>
+  </div>
+</section>
+
+<!-- VII bis. KPIs ENGAGÉS -->
+<section id="kpis" class="kpis">
+  <div class="container">
+    <span class="chapter reveal">Chapitre VII bis</span>
+    <div class="section-label reveal">CE QUE JE M'ENGAGE À LIVRER · MESURÉ</div>
+    <h2 class="reveal">Mes chiffres.<br><span style="color:var(--text-muted);font-style:italic;font-family:var(--font-serif);font-weight:400;">Pas vos espoirs.</span></h2>
+    <p class="reveal" style="max-width:760px;margin-top:28px;font-size:16px;line-height:1.65;color:var(--text-dim);">
+      Un pitch sans KPI, c'est une brochure. Voici ce que je m'engage à livrer dans les douze premiers mois, mesurable par vous depuis le dashboard. Chaque ligne est un <em>pacte</em>, pas une promesse.
+    </p>
+  </div>
+
+  <div class="kpis-grid reveal-stagger">
+    <div class="kpi">
+      <span class="kpi-period">M+12 · Grenoble + Meylan</span>
+      <div class="kpi-value">+100 <span class="unit">avis</span></div>
+      <div class="kpi-label">Avis Google net sur 12 mois</div>
+      <div class="kpi-context">QR sticker miroir + SMS post-coupe déjà actif + posts GBP hebdo. La Barberia fait +5 en 2 jours — on rattrape.</div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-period">M+6 → M+12</span>
+      <div class="kpi-value">−30 <span class="unit">%</span></div>
+      <div class="kpi-label">Taux de no-show</div>
+      <div class="kpi-context">Dépôt symbolique Stripe 5 € + rappel SMS déjà en place. Impact mesuré industrie : 60-80 %, je vise conservateur.</div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-period">M+12 · 3 salons</span>
+      <div class="kpi-value">+15 <span class="unit">%</span></div>
+      <div class="kpi-label">CA digital (réservations en ligne)</div>
+      <div class="kpi-context">48 % des RDV salon sont online en 2026 (vs 32 % en 2024). Rattraper la moyenne française sur les 3 salons.</div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-period">Hebdomadaire · permanent</span>
+      <div class="kpi-value">1 <span class="unit">post · 1 reel</span></div>
+      <div class="kpi-label">Cadence contenu par salon</div>
+      <div class="kpi-context">GBP stale à J+30 = perte visibilité locale confirmée. 1 post/semaine + 1 reel/semaine = signal freshness maintenu.</div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-period">M+3</span>
+      <div class="kpi-value">100 <span class="unit">%</span></div>
+      <div class="kpi-label">Carte fidélité digitale opérationnelle</div>
+      <div class="kpi-context">Wallet Apple/Google, zéro app à télécharger. Industrie : +25 % clients récurrents avec programme fidélité.</div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-period">M+9 · Voiron</span>
+      <div class="kpi-value">J0</div>
+      <div class="kpi-label">Voiron livrée clé en main à l'ouverture</div>
+      <div class="kpi-context">Identité, site, teasing, trailer d'ouverture, GBP optimisée, intégration dashboard. Livrable : avant le ruban.</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="kpi-pact reveal">
+      <div class="label">⸺ Clause de sortie ⸺</div>
+      <p>
+        Si à <strong>M+6</strong> trois de ces KPIs ne sont pas en trajectoire, je m'engage à <strong>réviser le cadre contractuel à vos conditions</strong>. Aucun pitch sérieux ne peut être unilatéral — celui-ci non plus.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- VIII. CONTRAT -->
+<section id="contrat">
+  <div class="big-roman" aria-hidden="true">VIII</div>
+  <div class="container">
+    <span class="chapter reveal">Chapitre VIII</span>
+    <div class="section-label reveal">LA SOLUTION CONTRACTUELLE</div>
+    <h2 class="reveal">Lever l'objection<br><span style="color:var(--text-muted);font-style:italic;font-family:var(--font-serif);font-weight:400;">avant qu'elle soit prononcée.</span></h2>
+
+    <div class="contract-intro reveal">
+      <p>Je comprends le cadre : Lucas gère Meylan, Julien porte l'ensemble. Un contrat Meylan seul créerait un déséquilibre puisque je bosse sur les trois salons. Trois options possibles, à choisir ensemble.</p>
+    </div>
+
+    <div class="contract-opts reveal">
+      <div class="contract-opt">
+        <span class="tag">Option A</span>
+        <div class="num">I</div>
+        <h3>Contrat via la holding</h3>
+        <p>Quand elle sera opérationnelle. Logique, propre, aligné avec la structure que vous construisez.</p>
+      </div>
+      <div class="contract-opt">
+        <span class="tag">Option B</span>
+        <div class="num">II</div>
+        <h3>Entité + mise à disposition</h3>
+        <p>Contrat via une des entités avec mise à disposition sur les autres salons, en attendant.</p>
+      </div>
+      <div class="contract-opt">
+        <span class="tag">Option C</span>
+        <div class="num">III</div>
+        <h3>Contrat solidaire</h3>
+        <p>Meylan + Grenoble le temps que la structure cible soit prête. Répartition transparente.</p>
+      </div>
+    </div>
+
+    <p class="contract-kicker reveal">
+      Dans tous les cas, la répartition de mon temps entre les salons est <strong style="color:var(--text);">transparente et facturable en interne</strong>. Zéro ambiguïté pour Lucas, zéro risque pour Julien. L'objectif : que le cadre juridique ne soit plus un sujet qui bloque.
+    </p>
+  </div>
+</section>
+
+<!-- VIII bis. MOIS 1 CONCRET -->
+<section id="mois-un" class="month-one">
+  <div class="container">
+    <span class="chapter reveal">Chapitre VIII bis</span>
+    <div class="section-label reveal">L'EXÉCUTION · PAS LA VISION</div>
+    <h2 class="reveal">Ce que je livre<br><span style="color:var(--text-muted);font-style:italic;font-family:var(--font-serif);font-weight:400;">avant même octobre.</span></h2>
+    <p class="reveal" style="max-width:760px;margin-top:28px;font-size:16px;line-height:1.65;color:var(--text-dim);">
+      La vision sur trois ans, c'est beau. L'exécution des trente premiers jours, c'est ce qui vous dit si vous avez pris le bon profil. Voici ce que vous tenez en main au bout de quatre semaines.
+    </p>
+  </div>
+
+  <div class="month-grid reveal-stagger">
+    <div class="month-col">
+      <div class="tag">⸺ Immédiat</div>
+      <div class="period">Jour 1</div>
+      <ul>
+        <li><strong>Audit complet GBP</strong> des deux fiches : photos, Q&amp;A IA auto-générées, horaires, posts stale.</li>
+        <li><strong>Backup intégral BDD + exports</strong> pour sécuriser avant toute modif.</li>
+        <li><strong>Récupération des accès</strong> Brevo, Railway, Cloudflare, Google Business, Planity (si besoin).</li>
+        <li><strong>Premier post GBP</strong> sur chacune des deux fiches — signal freshness relancé.</li>
+      </ul>
+    </div>
+    <div class="month-col">
+      <div class="tag">⸺ Court terme</div>
+      <div class="period">Semaine 1</div>
+      <ul>
+        <li><strong>Premier reel Burst Fade</strong> (coupe #1 en France 2026), tourné en salon, publié Instagram + TikTok.</li>
+        <li><strong>QR stickers avis</strong> commandés et posés sur les miroirs des deux salons (budget ~15 €).</li>
+        <li><strong>Schema HairSalon JSON-LD</strong> revu sur les pages salon pour indexation AI Overviews.</li>
+        <li><strong>Dashboard weekly review</strong> : KPIs M+0 établis, photo de départ pour mesurer le M+12.</li>
+      </ul>
+    </div>
+    <div class="month-col">
+      <div class="tag">⸺ Consolidation</div>
+      <div class="period">Mois 1</div>
+      <ul>
+        <li><strong>Carte fidélité digitale Wallet</strong> : intégrée au dashboard, pass Apple/Google, déploiement test Meylan.</li>
+        <li><strong>Trailer présentation Louay</strong> monté et publié (le nouveau barber annoncé en mai mérite un lancement).</li>
+        <li><strong>Pipeline com Voiron</strong> démarré : moodboard, naming, première itération d'identité.</li>
+        <li><strong>Page dédiée "Coupes tendance 2026"</strong> avec 5 coupes SEO-optimisées (Burst Fade, French Crop, etc).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- IX. HISTOIRE -->
+<section id="histoire" class="story">
+  <div class="story-inner">
+    <span class="chapter reveal" style="color:var(--text-muted);">Chapitre IX · Mon histoire</span>
+    <div class="story-photo reveal"><img src="../../assets/images/pitch/nino-portrait.webp?v=3" alt="Nino Dalibey" loading="lazy"></div>
+    <div class="story-hook reveal">
+      Je suis heureux quand je vais au travail.
+    </div>
+    <div class="story-body reveal">
+      <p>Ça peut sembler naïf, mais à 20 ans et à la recherche d'une alternance, <em>c'est rare.</em></p>
+      <p>Cette alternance, pour moi, ce n'est pas une case à cocher sur un CV. C'est le point de départ d'une vie que je veux construire sérieusement : un appartement, une stabilité, un métier que j'aime, une équipe avec qui j'ai envie de grandir.</p>
+      <p><em>Je ne suis pas de passage. Je m'installe.</em></p>
+    </div>
+    <div class="story-sig reveal">
+      <div class="line"></div>
+      <span>Nino Dalibey · Avril 2026</span>
+      <div class="line"></div>
+    </div>
+  </div>
+</section>
+
+<!-- X. TIMELINE 3 ANS -->
+<section id="timeline-section">
+  <div class="big-roman" aria-hidden="true">X</div>
+  <div class="container">
+    <span class="chapter reveal">Chapitre X</span>
+    <div class="section-label reveal">LA VISION SUR 3 ANS</div>
+    <h2 class="reveal">Trois ans,<br><span style="color:var(--text-muted);font-style:italic;font-family:var(--font-serif);font-weight:400;">puis au-delà.</span></h2>
+
+    <div class="timeline reveal">
+      <div class="tl-step">
+        <span class="tag-period">An 1</span>
+        <div class="year">2026<span style="font-size:0.5em;color:var(--text-muted);">→27</span></div>
+        <div class="phase">Alternance BUT3</div>
+        <div class="body">Septembre 2026 → été 2027. Je prends la main sur le logiciel, la com récurrente, et l'ouverture Voiron. 6 mois pour livrer les bases, 12 mois pour stabiliser la machine.</div>
+      </div>
+      <div class="tl-step">
+        <span class="tag-period">An 2 &amp; 3</span>
+        <div class="year">2027<span style="font-size:0.5em;color:var(--text-muted);">→29</span></div>
+        <div class="phase">Master · poursuite directe</div>
+        <div class="body">Master en alternance dans la même boîte, même rôle, périmètre élargi. Dashboard performance, carte fidélité digitale, boutique en ligne, équipe com/digital à structurer autour.</div>
+      </div>
+      <div class="tl-step">
+        <span class="tag-period">Après</span>
+        <div class="year">2029<span style="font-size:0.5em;color:var(--text-muted);">→</span></div>
+        <div class="phase">Partenariat</div>
+        <div class="body">Je continue avec vous. Pas une alternance, <em style="color:var(--text);font-style:normal;">un partenariat</em>. Un profil qui porte la verticale digital/créatif pendant que BarberClub devient une franchise nationale.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CLOSING -->
+<section class="closing" id="closing">
+  <div class="container">
+    <blockquote class="closing-quote reveal">
+      Vous avez vu ce que j'ai fait en <em>trois mois</em>, sans rémunération, sans cadre.<br>
+      Imaginez ce qu'on peut construire en <em>trois ans</em>, avec un contrat et un vrai rôle.
+    </blockquote>
+
+    <div class="deadline reveal">
+      <div class="tag"><span class="pulse-dot"></span>Une décision, une fenêtre</div>
+      <p>
+        Démarrage IUT : <strong>28 juin 2026</strong>. Pour que le contrat soit prêt à cette date, la <strong>décision doit être prise avant le 15 mai 2026</strong>. Au-delà, le cycle alternance se referme jusqu'en septembre 2027 — soit quinze mois de plus à subir les concurrents qui, eux, n'attendent pas.
+      </p>
+    </div>
+
+    <div class="closing-cta reveal">
+      <a href="sms:&body=Salut%20Julien%2C%20j%27ai%20lu%20le%20pitch%20de%20Nino%20-%20on%20en%20parle%20%3F" class="btn primary" data-hoverable>
+        SMS À JULIEN
+        <span class="arrow">→</span>
+      </a>
+      <a href="mailto:barberclubmeylan@gmail.com?subject=Alternance%20Nino%20-%20on%20en%20parle&amp;body=Julien%2C%20Lucas%20-%20" class="btn" data-hoverable>
+        MAIL BARBERCLUB
+        <span class="arrow">→</span>
+      </a>
+      <button type="button" id="pdfFabBottom" class="btn" data-hoverable>
+        TÉLÉCHARGER PDF
+        <span class="arrow">↓</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div>NINO DALIBEY × BARBERCLUB · v1.0</div>
+  <div class="footer-sig">Conçu, designé, développé, déployé en une soirée.</div>
+  <div>Avril 2026 · Pitch privé</div>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+
+  // Hero video fade-in when ready
+  var heroVid = document.getElementById('heroVideo');
+  if (heroVid) {
+    var revealVid = function() { heroVid.classList.add('ready'); };
+    if (heroVid.readyState >= 2) revealVid();
+    else heroVid.addEventListener('loadeddata', revealVid, { once: true });
+    heroVid.addEventListener('error', function() { heroVid.style.display = 'none'; }, { once: true });
+  }
+
+  // Easter egg
+  console.log('%csalut julien', 'font-family: "Orbitron", sans-serif; font-weight: 800; font-size: 42px; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.4); padding: 20px;');
+  console.log('%cTu as ouvert l\'inspecteur. Bienvenue dans les coulisses.', 'font-family: Georgia, serif; font-style: italic; font-size: 14px; color: #a8a29e;');
+  console.log('%cSi tu lis ça, Lucas avait raison.', 'font-family: Georgia, serif; font-style: italic; font-size: 12px; color: #78716c;');
+
+  // INTRO letter-by-letter typing (safe DOM creation, no innerHTML)
+  var words = document.querySelectorAll('#introLine .word');
+  words.forEach(function(el, wordIdx) {
+    var word = el.dataset.word || '';
+    while (el.firstChild) el.removeChild(el.firstChild);
+    for (var i = 0; i < word.length; i++) {
+      var letter = document.createElement('span');
+      letter.className = 'letter';
+      var delay = (wordIdx * word.length * 0.04) + (i * 0.05) + 0.2;
+      letter.style.animationDelay = delay.toFixed(3) + 's';
+      letter.textContent = word[i];
+      el.appendChild(letter);
+    }
+  });
+
+  // Dismiss intro (skip via ?skip=1 for screenshots/dev)
+  var intro = document.getElementById('intro');
+  var skipNow = /[?&]skip=1\b/.test(window.location.search);
+  setTimeout(function() { intro.classList.add('done'); }, skipNow ? 0 : 3400);
+  var skipIntro = function() { if (!intro.classList.contains('done')) intro.classList.add('done'); };
+  intro.addEventListener('click', skipIntro);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape' || e.key === ' ') skipIntro(); }, { once: true });
+
+  // Custom cursor + ambient orb
+  var dot = document.querySelector('.cursor-dot');
+  var ring = document.querySelector('.cursor-ring');
+  var orb = document.querySelector('.cursor-orb');
+  if (dot && ring && window.matchMedia('(pointer: fine)').matches) {
+    var ringX = 0, ringY = 0, orbX = 0, orbY = 0, tgtX = 0, tgtY = 0;
+    window.addEventListener('pointermove', function(e) {
+      tgtX = e.clientX; tgtY = e.clientY;
+      dot.style.transform = 'translate(' + tgtX + 'px, ' + tgtY + 'px) translate(-50%, -50%)';
+    });
+    var animate = function() {
+      ringX += (tgtX - ringX) * 0.18;
+      ringY += (tgtY - ringY) * 0.18;
+      ring.style.transform = 'translate(' + ringX + 'px, ' + ringY + 'px) translate(-50%, -50%)';
+      if (orb) {
+        orbX += (tgtX - orbX) * 0.08;
+        orbY += (tgtY - orbY) * 0.08;
+        orb.style.transform = 'translate(' + orbX + 'px, ' + orbY + 'px)';
+      }
+      requestAnimationFrame(animate);
+    };
+    animate();
+    document.querySelectorAll('a, button, [data-hoverable], .proof, .hat, .contract-opt, .road, .marquee-item').forEach(function(el) {
+      el.addEventListener('pointerenter', function() { ring.classList.add('hover'); });
+      el.addEventListener('pointerleave', function() { ring.classList.remove('hover'); });
+    });
+  }
+
+  // Magnetic buttons (attract toward cursor)
+  if (window.matchMedia('(pointer: fine)').matches) {
+    document.querySelectorAll('.btn').forEach(function(btn) {
+      btn.addEventListener('pointermove', function(e) {
+        var r = btn.getBoundingClientRect();
+        var dx = e.clientX - (r.left + r.width / 2);
+        var dy = e.clientY - (r.top + r.height / 2);
+        btn.style.transform = 'translate(' + (dx * 0.18).toFixed(2) + 'px, ' + (dy * 0.28).toFixed(2) + 'px)';
+      });
+      btn.addEventListener('pointerleave', function() {
+        btn.style.transform = '';
+        btn.style.transition = 'transform 0.5s var(--ease)';
+        setTimeout(function() { btn.style.transition = ''; }, 500);
+      });
+    });
+  }
+
+  // H2 letter-reveal split chars
+  document.querySelectorAll('h2').forEach(function(h2) {
+    if (h2.dataset.split) return;
+    h2.dataset.split = 'true';
+    var wrap = function(node) {
+      if (node.nodeType === 3) {
+        var text = node.textContent;
+        var frag = document.createDocumentFragment();
+        for (var i = 0; i < text.length; i++) {
+          var s = document.createElement('span');
+          s.className = 'char' + (text[i] === ' ' ? ' space' : '');
+          s.textContent = text[i];
+          frag.appendChild(s);
+        }
+        node.parentNode.replaceChild(frag, node);
+      } else if (node.nodeType === 1) {
+        var children = Array.from(node.childNodes);
+        children.forEach(wrap);
+      }
+    };
+    Array.from(h2.childNodes).forEach(wrap);
+    h2.classList.add('h2-reveal');
+    // Staggered char animations via inline style
+    h2.querySelectorAll('.char').forEach(function(c, i) {
+      c.style.transitionDelay = (i * 18) + 'ms';
+    });
+  });
+
+  // Parallax on big-roman numerals
+  var bigRomans = document.querySelectorAll('.big-roman');
+  if (bigRomans.length && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+    var updateParallax = function() {
+      bigRomans.forEach(function(r) {
+        var rect = r.parentElement.getBoundingClientRect();
+        var winH = window.innerHeight;
+        var visible = (winH / 2) - (rect.top + rect.height / 2);
+        var offset = visible * 0.08;
+        r.style.setProperty('--parallax', offset.toFixed(1) + 'px');
+      });
+    };
+    window.addEventListener('scroll', updateParallax, { passive: true });
+    updateParallax();
+  }
+
+  // Reveal on scroll
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -10% 0px' });
+  document.querySelectorAll('.reveal, .reveal-stagger').forEach(function(el) { observer.observe(el); });
+
+  // Scroll progress bar + sticky pitch header visibility
+  var progress = document.querySelector('.scroll-progress');
+  var pitchHeader = document.getElementById('pitchHeader');
+  var heroEl = document.getElementById('hero');
+  if (progress || pitchHeader) {
+    var updateProgress = function() {
+      var h = document.documentElement;
+      if (progress) {
+        var scrolled = h.scrollTop / (h.scrollHeight - h.clientHeight);
+        progress.style.transform = 'scaleX(' + Math.min(Math.max(scrolled, 0), 1) + ')';
+      }
+      if (pitchHeader && heroEl) {
+        var heroBottom = heroEl.offsetTop + heroEl.offsetHeight - 120;
+        if (h.scrollTop > heroBottom) pitchHeader.classList.add('visible');
+        else pitchHeader.classList.remove('visible');
+      }
+      var fab = document.getElementById('pdfFab');
+      if (fab && heroEl) {
+        var showAt = heroEl.offsetTop + heroEl.offsetHeight * 0.5;
+        if (h.scrollTop > showAt) fab.classList.add('visible');
+        else fab.classList.remove('visible');
+      }
+    };
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    updateProgress();
+  }
+
+  // Hero cursor spotlight
+  var hero = document.getElementById('hero');
+  var spotlight = hero && hero.querySelector('.spotlight');
+  if (hero && spotlight && window.matchMedia('(pointer: fine)').matches) {
+    hero.addEventListener('pointermove', function(e) {
+      var r = hero.getBoundingClientRect();
+      var x = ((e.clientX - r.left) / r.width) * 100;
+      var y = ((e.clientY - r.top) / r.height) * 100;
+      spotlight.style.setProperty('--mx', x + '%');
+      spotlight.style.setProperty('--my', y + '%');
+    });
+  }
+
+  // Card tilt (subtle 3D perspective)
+  if (window.matchMedia('(pointer: fine)').matches) {
+    document.querySelectorAll('.proof, .hat, .contract-opt, .road').forEach(function(card) {
+      card.addEventListener('pointermove', function(e) {
+        var r = card.getBoundingClientRect();
+        var px = ((e.clientX - r.left) / r.width) * 100;
+        var py = ((e.clientY - r.top) / r.height) * 100;
+        card.style.setProperty('--px', px + '%');
+        card.style.setProperty('--py', py + '%');
+        var rx = ((py - 50) / 50) * -3;
+        var ry = ((px - 50) / 50) * 3;
+        card.style.transform = 'perspective(1000px) rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) translateY(-2px)';
+      });
+      card.addEventListener('pointerleave', function() {
+        card.style.transform = '';
+      });
+    });
+  }
+
+  // PDF / Print buttons
+  var triggerPrint = function() {
+    // Force all reveals to "in" state before print (IntersectionObserver won't fire for off-screen sections)
+    document.querySelectorAll('.reveal, .reveal-stagger, .story-photo').forEach(function(el) { el.classList.add('in'); });
+    // Let the browser paint, then print
+    requestAnimationFrame(function() { setTimeout(function() { window.print(); }, 50); });
+  };
+  var pdfFab = document.getElementById('pdfFab');
+  var pdfFabBottom = document.getElementById('pdfFabBottom');
+  if (pdfFab) pdfFab.addEventListener('click', triggerPrint);
+  if (pdfFabBottom) pdfFabBottom.addEventListener('click', triggerPrint);
+
+  // Countup
+  var countEls = document.querySelectorAll('[data-count]');
+  var countObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (!entry.isIntersecting) return;
+      var el = entry.target;
+      var target = parseInt(el.dataset.count, 10);
+      var duration = 1800;
+      var start = performance.now();
+      var ease = function(t) { return 1 - Math.pow(1 - t, 4); };
+      var tick = function(now) {
+        var t = Math.min((now - start) / duration, 1);
+        var v = Math.floor(ease(t) * target);
+        el.textContent = v.toLocaleString('fr-FR').replace(/,/g, ' ');
+        if (t < 1) requestAnimationFrame(tick);
+        else el.textContent = target.toLocaleString('fr-FR').replace(/,/g, ' ');
+      };
+      requestAnimationFrame(tick);
+      countObserver.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+  countEls.forEach(function(el) { countObserver.observe(el); });
+
+})();
+</script>
+</body>
+</html>
