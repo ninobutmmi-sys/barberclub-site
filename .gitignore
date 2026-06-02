@@ -15,12 +15,8 @@ Thumbs.db
 
 # Large media files (served by Cloudflare, not needed in repo)
 assets/videos/
-assets/images/salons/
-assets/images/barbers/*.png
-assets/images/barbers/*.jpg
-
-# Keep common images (logo, favicon, couronne) — small files
-# !assets/images/common/
+# NB: les images salon/barbers (5 Mo) SONT versionnées — leur perte (incident
+# iCloud 2026-05) avait cassé le site après un déploiement depuis un disque incomplet.
 
 # Cloudflare Wrangler cache
 .wrangler/
