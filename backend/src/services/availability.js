@@ -839,6 +839,20 @@ async function getMonthAvailabilitySummary(serviceId, year, month, barberId, sal
   }
   if (barberIds.length === 0) return {};
 
+  // Contract windows (CDD/saisonnier) — { barber_id: { start, end } }, dates en string ISO
+  const contractMap = {};
+  const contractsResult = await db.query(
+    'SELECT id, contract_start, contract_end FROM barbers WHERE id = ANY($1)',
+    [barberIds]
+  );
+  for (const row of contractsResult.rows) {
+    contractMap[row.id] = { start: row.contract_start, end: row.contract_end };
+  }
+  const outsideContract = (bId, dateStr) => {
+    const c = contractMap[bId];
+    return !!c && ((c.start && dateStr < c.start) || (c.end && dateStr > c.end));
+  };
+
   // Date range for the month
   const firstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`;
   const lastDayNum = new Date(year, month + 1, 0).getDate();
@@ -960,6 +974,13 @@ async function getMonthAvailabilitySummary(serviceId, year, month, barberId, sal
     // Pre-fetch data for alternative barbers too
     const altIds = altBarbers.map(b => b.id);
     if (altIds.length > 0) {
+      const altContracts = await db.query(
+        'SELECT id, contract_start, contract_end FROM barbers WHERE id = ANY($1)',
+        [altIds]
+      );
+      for (const row of altContracts.rows) {
+        contractMap[row.id] = { start: row.contract_start, end: row.contract_end };
+      }
       const altSched = await db.query(
         `SELECT barber_id, day_of_week, start_time, end_time, is_working, break_start, break_end
          FROM schedules WHERE barber_id = ANY($1) AND salon_id = $2`,
@@ -1045,6 +1066,8 @@ async function getMonthAvailabilitySummary(serviceId, year, month, barberId, sal
     let totalSlots = 0;
 
     for (const bId of barberIds) {
+      // CDD/saisonnier : hors fenêtre de contrat → pas de dispo ce jour
+      if (outsideContract(bId, dateStr)) continue;
       // Per-barber service restrictions (whitelist)
       const barberRestrictions = svcRestrictionsMap[bId];
       let restrictionWindow = null;
@@ -1072,6 +1095,7 @@ async function getMonthAvailabilitySummary(serviceId, year, month, barberId, sal
     if (entry.status === 'full' && includeAlternatives && specificBarber && altBarbers.length > 0) {
       const alternatives = [];
       for (const alt of altBarbers) {
+        if (outsideContract(alt.id, dateStr)) continue;
         // Per-barber restriction for alternative barber
         const altRestrictions = svcRestrictionsMap[alt.id];
         let altRestrictionWindow = null;

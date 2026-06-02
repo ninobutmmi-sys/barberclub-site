@@ -1084,8 +1084,12 @@
             const dow = jsDay === 0 ? 6 : jsDay - 1; // Convert to 0=Monday
             const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
 
+            // CDD/saisonnier : hors fenêtre de contrat = jour off (grisé)
+            const outsideContract = (b) => (b.contract_start && dateStr < b.contract_start) || (b.contract_end && dateStr > b.contract_end);
+
             if (state.selectedBarber.id === 'any') {
                 return state.barbers.length === 0 || state.barbers.every(b => {
+                    if (outsideContract(b)) return true;
                     if (b.is_guest) {
                         return !(b.guest_dates || []).includes(dateStr);
                     }
@@ -1097,6 +1101,7 @@
             } else {
                 const barber = state.barbers.find(b => b.id === state.selectedBarber.id);
                 if (!barber) return true;
+                if (outsideContract(barber)) return true;
                 if (barber.is_guest) {
                     return !(barber.guest_dates || []).includes(dateStr);
                 }
