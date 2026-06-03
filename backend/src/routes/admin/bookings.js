@@ -586,7 +586,7 @@ router.delete('/:id',
       // Fetch booking info before deleting (needed for notify + waitlist)
       let bookingInfo = null;
       const infoResult = await db.query(
-        `SELECT b.barber_id, b.date, b.start_time, b.price,
+        `SELECT b.barber_id, b.date, b.start_time, b.end_time, b.price,
                 s.name as service_name, br.name as barber_name,
                 c.first_name, c.email
          FROM bookings b
@@ -654,17 +654,30 @@ router.delete('/:id',
               bookingId: req.params.id, date: bookingDateStr, start_time: startTime,
             });
           } else {
+            // Durée réelle du créneau libéré → ne notifier QUE ceux dont la prestation y rentre.
+            // (sinon ex: créneau Coupe Études 20 min libéré → on notifiait des clients Coupe Homme 30 min)
+            const endTime = (bookingInfo.end_time || '').slice(0, 5);
+            const fStart = parseInt(startTime.slice(0, 2), 10) * 60 + parseInt(startTime.slice(3, 5), 10);
+            const fEnd = parseInt(endTime.slice(0, 2), 10) * 60 + parseInt(endTime.slice(3, 5), 10);
+            const freedDurationMin = fEnd - fStart;
+            const wlDateObj = new Date(bookingDateStr + 'T00:00:00');
+            const wlIsSaturday = (wlDateObj.getDay() === 0 ? 6 : wlDateObj.getDay() - 1) === 5;
             const waitlistEntries = await db.query(
               `SELECT w.id, w.client_name, w.client_phone,
                       b.name as barber_name, s.name as service_name
                FROM waitlist w
                JOIN barbers b ON w.barber_id = b.id
                JOIN services s ON w.service_id = s.id
+               LEFT JOIN barber_services bs ON bs.barber_id = w.barber_id AND bs.service_id = w.service_id
                WHERE w.barber_id = $1 AND w.preferred_date = $2 AND w.status = 'waiting'
                  AND (w.preferred_time_start IS NULL OR w.preferred_time_start <= $3)
                  AND (w.preferred_time_end IS NULL OR w.preferred_time_end >= $3)
+                 AND COALESCE(
+                   bs.custom_duration,
+                   CASE WHEN $5::boolean AND s.duration_saturday IS NOT NULL THEN s.duration_saturday ELSE s.duration END
+                 ) <= $4
                ORDER BY w.created_at ASC LIMIT 3`,
-              [bookingInfo.barber_id, bookingInfo.date, startTime]
+              [bookingInfo.barber_id, bookingInfo.date, startTime, freedDurationMin, wlIsSaturday]
             );
 
             for (const entry of waitlistEntries.rows) {
