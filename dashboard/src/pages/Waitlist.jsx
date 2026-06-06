@@ -6,6 +6,7 @@ import {
 } from '../hooks/useApi';
 import CreateBookingModal from '../components/planning/CreateBookingModal';
 import { formatPhoneWithFlag } from '../utils/phone';
+import { getClients } from '../api';
 
 // ---- Icons ----
 const IconPlus = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
@@ -427,6 +428,35 @@ function AddWaitlistModal({ barbers, services, onClose }) {
   const mutation = useAddToWaitlist();
   const saving = mutation.isPending;
 
+  // Autocomplétion : recherche dans la base clients en tapant le nom (debounce 300ms)
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggest, setShowSuggest] = useState(false);
+  const skipSearch = useRef(false);
+  const searchTimer = useRef();
+
+  useEffect(() => {
+    if (skipSearch.current) { skipSearch.current = false; return; }
+    const term = clientName.trim();
+    if (term.length < 2) { setSuggestions([]); setShowSuggest(false); return; }
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const data = await getClients({ search: term, limit: 5 });
+        setSuggestions(data.clients || []);
+        setShowSuggest(true);
+      } catch { /* ignore */ }
+    }, 300);
+    return () => clearTimeout(searchTimer.current);
+  }, [clientName]);
+
+  const pickClient = (c) => {
+    skipSearch.current = true;
+    setClientName(`${c.first_name || ''} ${c.last_name || ''}`.trim());
+    if (c.phone) setClientPhone(c.phone);
+    setShowSuggest(false);
+    setSuggestions([]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -457,9 +487,34 @@ function AddWaitlistModal({ barbers, services, onClose }) {
           <div className="modal-body">
             {error && <div className="login-error" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
             <div className="input-row">
-              <div className="form-group">
+              <div className="form-group" style={{ position: 'relative' }}>
                 <label className="label">Nom du client</label>
-                <input className="input" value={clientName} onChange={(e) => setClientName(e.target.value)} required />
+                <input
+                  className="input"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggest(true)}
+                  onBlur={() => setTimeout(() => setShowSuggest(false), 150)}
+                  autoComplete="off"
+                  placeholder="Rechercher ou saisir..."
+                  required
+                />
+                {showSuggest && suggestions.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: 4, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', maxHeight: 240, overflowY: 'auto' }}>
+                    {suggestions.map((c) => (
+                      <div
+                        key={c.id}
+                        onMouseDown={(e) => { e.preventDefault(); pickClient(c); }}
+                        style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{c.first_name} {c.last_name}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{c.phone}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="form-group">
                 <label className="label">Téléphone</label>
