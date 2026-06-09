@@ -46,6 +46,7 @@ const History = lazy(() => import('./pages/History'));
 const FauxPlans = lazy(() => import('./pages/FauxPlans'));
 const Messages = lazy(() => import('./pages/Messages'));
 const Boutique = lazy(() => import('./pages/Boutique'));
+const Oney = lazy(() => import('./pages/Oney'));
 const Objectives = lazy(() => import('./pages/Objectives'));
 const Waitlist = lazy(() => import('./pages/Waitlist'));
 const Tasks = lazy(() => import('./pages/Tasks'));
@@ -87,6 +88,7 @@ function AppRoutes() {
         <Route path="planning" element={<Suspense fallback={<PageLoader />}><Planning /></Suspense>} />
         <Route path="services" element={<Suspense fallback={<PageLoader />}><Services /></Suspense>} />
         <Route path="boutique" element={<Suspense fallback={<PageLoader />}><Boutique /></Suspense>} />
+        <Route path="oney" element={<Suspense fallback={<PageLoader />}><Oney /></Suspense>} />
         <Route path="objectives" element={<Suspense fallback={<PageLoader />}><Objectives /></Suspense>} />
         <Route path="barbers" element={<Suspense fallback={<PageLoader />}><Barbers /></Suspense>} />
         <Route path="clients" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
