@@ -132,7 +132,7 @@ export default function Boutique() {
       )}
 
       <div className="page-header">
-        <h2 className="page-title">Boutique</h2>
+        <h2 className="page-title">Stock</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
             className="btn btn-secondary btn-sm"
