@@ -912,7 +912,9 @@
 
             for (const b of state.barbers) {
                 const initial = b.name.charAt(0).toUpperCase();
-                const photoSrc = b.photo_url ? `../../assets/images${b.photo_url}` : '';
+                const photoSrc = b.photo_url
+                    ? (/^(data:|https?:)/.test(b.photo_url) ? b.photo_url : `../../assets/images${b.photo_url}`)
+                    : '';
                 const avatarContent = photoSrc
                     ? `<img loading="lazy" src="${esc(photoSrc)}" alt="${esc(b.name)}" onerror="this.parentElement.innerHTML='<span class=barber-avatar-placeholder>${esc(initial)}</span>'">`
                     : `<span class="barber-avatar-placeholder">${esc(initial)}</span>`;
