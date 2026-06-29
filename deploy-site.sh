@@ -1,6 +1,6 @@
 #!/bin/bash
 # Deploy site vitrine sur Cloudflare Pages
-# IMPORTANT: exclut backend/, .claude/, .env et tout fichier sensible
+# IMPORTANT: exclut backend/, .claude/, .env, docs/ (pitch privé) et tout fichier sensible
 
 set -e
 
@@ -11,12 +11,18 @@ echo "📦 Copie des fichiers site (sans backend ni secrets)..."
 rsync -a \
   --exclude='backend' \
   --exclude='.claude' \
+  --exclude='.superpowers' \
+  --exclude='.wrangler' \
+  --exclude='.github' \
   --exclude='CLAUDE.md' \
   --exclude='.git' \
   --exclude='.env*' \
   --exclude='node_modules' \
   --exclude='dashboard' \
   --exclude='tests' \
+  --exclude='docs' \
+  --exclude='mockups' \
+  --exclude='.DS_Store' \
   --exclude='playwright.config.js' \
   --exclude='deploy-site.sh' \
   . "$DEPLOY_DIR/"

@@ -300,6 +300,45 @@ body.loaded .page-title .letter { opacity: 1; transform: translateY(0); }
     margin-left: 1px;
 }
 
+/* Offre du mardi — badge sur la carte Coupe + Barbe */
+.tarif-offer-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 5px 11px;
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 8.5px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+}
+.tarif-offer-tag svg {
+    width: 11px;
+    height: 11px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+}
+.tarif-offer-price {
+    margin-top: 5px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+}
+.tarif-offer-price s {
+    color: rgba(255, 255, 255, 0.3);
+    margin-right: 5px;
+}
+
 /* Reduced tarifs */
 .tarif-category-group.reduced .tarif-card {
     background: rgba(255, 255, 255, 0.025);

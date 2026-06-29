@@ -407,6 +407,98 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: #000; color:
 }
 
 /* ════════════════════════════════════════════
+   OFFRE DU MARDI — Barbe offerte
+════════════════════════════════════════════ */
+.mardi-section { margin-bottom: 40px; }
+
+.mardi-card {
+    position: relative; display: flex; flex-direction: column; align-items: center;
+    text-align: center; border-radius: 20px; overflow: hidden;
+    padding: 40px 28px 30px; text-decoration: none; color: inherit; cursor: pointer;
+    background: linear-gradient(160deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 60%);
+    border: 1px solid rgba(255,255,255,0.09);
+    backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+    transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+/* Holographic border — same motion as gift card for cohesion */
+.mardi-card::before {
+    content: ''; position: absolute; inset: -1px; border-radius: 20px; z-index: 0;
+    background: linear-gradient(135deg,
+        rgba(255,255,255,0.16), transparent 30%,
+        rgba(255,255,255,0.05) 55%, transparent 80%, rgba(255,255,255,0.12));
+    background-size: 300% 300%;
+    animation: holoShift 8s ease-in-out infinite;
+    pointer-events: none;
+}
+.mardi-card:active { transform: scale(0.98); }
+.mardi-card > * { position: relative; z-index: 1; }
+/* Background photo + darkening veil for legibility */
+.mardi-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; border-radius: 20px; }
+.mardi-bg img {
+    width: 100%; height: 100%; object-fit: cover; object-position: center 35%;
+    opacity: 0.55; filter: grayscale(0.25) brightness(0.72);
+    transform: scale(1.04);
+}
+.mardi-bg::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(12,10,9,0.55) 0%, rgba(12,10,9,0.72) 55%, rgba(12,10,9,0.92) 100%);
+}
+/* Soft glow behind the headline */
+.mardi-glow {
+    position: absolute; top: 32%; left: 50%; transform: translate(-50%,-50%);
+    width: 280px; height: 180px; border-radius: 50%; z-index: 0;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.mardi-badge {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 8px 18px; border-radius: 100px; margin-bottom: 22px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 8px;
+    letter-spacing: 3.5px; text-transform: uppercase; color: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.mardi-badge .dot {
+    width: 5px; height: 5px; border-radius: 50%; background: #fff;
+    animation: dotPulse 2s ease-in-out infinite;
+}
+
+.mardi-headline {
+    font-family: 'Orbitron', sans-serif; font-weight: 800;
+    font-size: clamp(38px, 11vw, 60px); line-height: 0.92; letter-spacing: -1px;
+    text-transform: uppercase; color: #fff;
+    text-shadow: 0 0 60px rgba(255,255,255,0.14), 0 4px 24px rgba(0,0,0,0.5);
+    margin-bottom: 16px;
+}
+
+.mardi-sub {
+    font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.45);
+    letter-spacing: 0.02em; line-height: 1.5; max-width: 280px; margin-bottom: 24px;
+}
+
+.mardi-price { display: inline-flex; align-items: baseline; gap: 14px; margin-bottom: 26px; }
+.mardi-price-old {
+    font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 22px;
+    color: rgba(255,255,255,0.3); text-decoration: line-through; text-decoration-thickness: 2px;
+}
+.mardi-price-arrow { color: rgba(255,255,255,0.25); font-size: 16px; }
+.mardi-price-new {
+    font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 34px;
+    color: #fff; letter-spacing: -1px; text-shadow: 0 0 30px rgba(255,255,255,0.18);
+}
+
+.mardi-cta { margin-bottom: 18px; }
+
+.mardi-foot {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(255,255,255,0.22);
+}
+@media (hover: hover) and (pointer: fine) {
+    .mardi-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.18); box-shadow: 0 16px 48px rgba(0,0,0,0.3); }
+}
+
+/* ════════════════════════════════════════════
    REFERRAL CARD
 ════════════════════════════════════════════ */
 .referral-section { margin-bottom: 40px; }
@@ -680,6 +772,30 @@ a:focus-visible, button:focus-visible { outline: 2px solid rgba(255,255,255,0.5)
     </div>
 
     <!-- ════════════════════════════════════════
+         OFFRE DU MARDI — Barbe offerte
+    ════════════════════════════════════════ -->
+    <div class="mardi-section rv">
+        <h2 class="section-title">Chaque mardi</h2>
+        <a href="reserver.html" class="mardi-card" aria-label="Offre du mardi : barbe offerte avec la coupe homme, de 9h à 13h. Réserver.">
+            <span class="mardi-bg" aria-hidden="true"><img src="../../assets/images/salons/grenoble/chaise-grenoble.jpg?v=3" alt="" loading="lazy"></span>
+            <span class="mardi-glow" aria-hidden="true"></span>
+            <span class="mardi-badge"><span class="dot"></span> Mardi · 9h&nbsp;–&nbsp;13h</span>
+            <span class="mardi-headline">Barbe<br>offerte</span>
+            <span class="mardi-sub">avec ta coupe homme, chaque mardi matin au salon de Grenoble.</span>
+            <span class="mardi-price" aria-label="30 euros, offert à 20 euros le mardi">
+                <s class="mardi-price-old">30€</s>
+                <span class="mardi-price-arrow" aria-hidden="true">→</span>
+                <span class="mardi-price-new">20€</span>
+            </span>
+            <span class="mystery-cta mardi-cta">
+                Réserver mon mardi
+                <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </span>
+            <span class="mardi-foot">Salon Grenoble · centre-ville</span>
+        </a>
+    </div>
+
+    <!-- ════════════════════════════════════════
          CARTE CADEAU
     ════════════════════════════════════════ -->
     <div class="gift-section rv">
@@ -701,6 +817,10 @@ a:focus-visible, button:focus-visible { outline: 2px solid rgba(255,255,255,0.5)
     <div class="conds-section rv">
         <h2 class="section-title">Conditions</h2>
         <div class="conds-card">
+            <div class="cond-row">
+                <div class="cond-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                <div class="cond-text">Barbe offerte le mardi de 9h à 13h, salon de Grenoble</div>
+            </div>
             <div class="cond-row">
                 <div class="cond-icon"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
                 <div class="cond-text">Non cumulable avec d'autres offres</div>
