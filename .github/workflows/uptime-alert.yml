@@ -1,0 +1,85 @@
+name: uptime-alert
+
+# Surveillance externe de l'API BarberClub.
+# Tourne sur l'infra GitHub (indépendante de Railway) -> détecte les pannes
+# même quand Railway est totalement down. Envoie 1 SMS à la chute et 1 à la reprise.
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # toutes les ~5 min (GitHub peut retarder de qq min)
+  workflow_dispatch:          # bouton "Run workflow" pour tester à la main
+
+concurrency:
+  group: uptime-alert
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  HEALTH_URL: https://api.barberclub-grenoble.fr/api/health
+  ALERT_PHONE: '33782237983'        # 07 82 23 79 83 au format international
+  SMS_SENDER: BARBERCLUB
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      # Mémoire d'état entre les runs (up/down) pour n'alerter qu'aux transitions
+      - name: Restaurer l'état précédent
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: uptime-state-${{ github.run_id }}
+          restore-keys: |
+            uptime-state-
+
+      - name: Sonder /api/health (3 essais, down seulement si les 3 échouent)
+        id: probe
+        run: |
+          mkdir -p state
+          prev=up
+          [ -f state/status ] && prev=$(cat state/status)
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+
+          ok=0
+          for i in 1 2 3; do
+            body=$(curl -s -m 15 "$HEALTH_URL" 2>/dev/null || true)
+            code=$(curl -s -m 15 -o /dev/null -w '%{http_code}' "$HEALTH_URL" 2>/dev/null || echo 000)
+            if [ "$code" = "200" ] && printf '%s' "$body" | grep -q '"status":"ok"'; then
+              ok=$((ok+1))
+            fi
+            [ "$i" -lt 3 ] && sleep 20
+          done
+
+          if [ "$ok" -ge 1 ]; then cur=up; else cur=down; fi
+          echo "cur=$cur" >> "$GITHUB_OUTPUT"
+          echo "$cur" > state/status
+          echo "État: précédent=$prev, actuel=$cur (checks OK: $ok/3)"
+
+      - name: SMS si CHUTE (up -> down)
+        if: steps.probe.outputs.cur == 'down' && steps.probe.outputs.prev != 'down'
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: |
+          curl -s -m 20 -X POST 'https://api.brevo.com/v3/transactionalSMS/sms' \
+            -H "api-key: $BREVO_API_KEY" \
+            -H 'Content-Type: application/json' \
+            -d "{\"sender\":\"$SMS_SENDER\",\"recipient\":\"$ALERT_PHONE\",\"content\":\"ALERTE BarberClub: l'API ne repond plus (health KO). Reservation + dashboard possiblement HS. Verifie Railway.\",\"type\":\"transactional\"}"
+
+      - name: SMS si REPRISE (down -> up)
+        if: steps.probe.outputs.cur == 'up' && steps.probe.outputs.prev == 'down'
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: |
+          curl -s -m 20 -X POST 'https://api.brevo.com/v3/transactionalSMS/sms' \
+            -H "api-key: $BREVO_API_KEY" \
+            -H 'Content-Type: application/json' \
+            -d "{\"sender\":\"$SMS_SENDER\",\"recipient\":\"$ALERT_PHONE\",\"content\":\"BarberClub: l'API est de nouveau operationnelle.\",\"type\":\"transactional\"}"
+
+      - name: Sauver l'état pour le prochain run
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: uptime-state-${{ github.run_id }}
