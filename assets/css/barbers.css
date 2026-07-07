@@ -112,6 +112,61 @@
   background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4);
 }
 
+/* ═══ CARTE « PROCHAINEMENT » (nouveau barbier) ═══ */
+.barber-card--soon { cursor: default; }
+@media (pointer: fine) { .barber-card--soon { cursor: none; } }
+
+.barber-card--soon .barber-media img {
+  filter: grayscale(0.15) contrast(1.04) brightness(0.98);
+}
+/* aura pulsée */
+.barber-card--soon::after {
+  content: ''; position: absolute; inset: 0; z-index: 6;
+  border-radius: 16px; pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+  animation: soonAura 3.6s ease-in-out infinite;
+}
+@keyframes soonAura {
+  0%,100% { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10), 0 0 0 0 rgba(255,255,255,0); }
+  50%     { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.32), 0 0 28px -6px rgba(255,255,255,0.28); }
+}
+/* balayage lumineux diagonal */
+.barber-card--soon .barber-media::before {
+  content: ''; position: absolute; inset: -20%; z-index: 4; pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.10) 47%, rgba(255,255,255,0.30) 50%, rgba(255,255,255,0.10) 53%, transparent 62%);
+  transform: translateX(-130%);
+  animation: soonSheen 5s ease-in-out infinite;
+}
+@keyframes soonSheen {
+  0%, 58%   { transform: translateX(-130%); }
+  86%, 100% { transform: translateX(130%); }
+}
+/* badge Prochainement */
+.soon-badge {
+  position: absolute; top: 12px; left: 12px; z-index: 7;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: 100px;
+  background: rgba(10,10,10,0.5);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.18);
+  font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #fff;
+}
+.soon-badge .dot {
+  width: 6px; height: 6px; border-radius: 50%; background: #fff;
+  animation: soonPulse 1.9s ease-out infinite;
+}
+@keyframes soonPulse {
+  0%       { box-shadow: 0 0 0 0 rgba(255,255,255,0.55); }
+  70%,100% { box-shadow: 0 0 0 7px rgba(255,255,255,0); }
+}
+/* pastille "sablier" qui flotte */
+.barber-card--soon .barber-cta { animation: soonBob 3s ease-in-out infinite; }
+@keyframes soonBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+/* micro-retour au tap */
+.barber-card--soon:active { transform: scale(0.97) !important; }
+.barber-card--soon.tapped .soon-badge { animation: soonNudge 0.5s ease; }
+@keyframes soonNudge { 0%,100% { transform: none; } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
 /* ═══ BOTTOM NAV ═══ */
 .bottom-nav {
   position: fixed; bottom: 12px; left: 12px; right: 12px; z-index: 50;
@@ -168,6 +223,11 @@
 @media (prefers-reduced-motion: reduce) {
   .page-title .letter, .page-subtitle, .page-intro, .barber-card, .bottom-nav, .back-btn { opacity: 1; transform: none; }
   body { cursor: auto; }
+  .barber-card--soon::after,
+  .barber-card--soon .barber-media::before,
+  .soon-badge .dot,
+  .barber-card--soon .barber-cta { animation: none !important; }
+  .barber-card--soon::after { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22); }
 }
 
 /* ═══ LARGE DESKTOP — Cinematic Filmstrip (shared) ═══ */

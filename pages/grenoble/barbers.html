@@ -22,12 +22,14 @@
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/barbers.css">
 <style>
-/* Grenoble overrides for 5-barber grid on large desktop */
+/* Grenoble — grille 7 cartes (5 barbers + 2 « prochainement ») */
+.page.loaded .barber-card:nth-child(5) { transition-delay: 0.7s; }
+.page.loaded .barber-card:nth-child(6) { transition-delay: 0.8s; }
+.page.loaded .barber-card:nth-child(7) { transition-delay: 0.9s; }
 @media (min-width: 1024px) {
-  .barbers { gap: 18px; max-width: 1320px; padding: 16px 32px 140px; }
-  .barber-card { max-width: 240px; }
-  .barber-name { font-size: 24px; }
-  .page.loaded .barber-card:nth-child(5) { transition-delay: 0.7s; }
+  .barbers { gap: 16px; max-width: 1560px; padding: 16px 28px 140px; }
+  .barber-card { max-width: 210px; height: 52vh; }
+  .barber-name { font-size: 22px; }
 }
 </style>
 <script type="application/ld+json">
@@ -53,7 +55,7 @@
   <div class="page-header">
     <h1 class="page-title" data-split>Barbiers Grenoble</h1>
     <p class="page-subtitle">L'équipe BarberClub Grenoble</p>
-    <p class="page-intro">Cinq barbers passionnés t'accueillent au salon BarberClub Grenoble, rue Clôt Bey. Dégradés, fades, taille de barbe, chacun a sa spécialité pour te proposer un résultat sur mesure.</p>
+    <p class="page-intro">Cinq barbers passionnés t'accueillent au salon BarberClub Grenoble, rue Clôt Bey. Dégradés, fades, taille de barbe, chacun a sa spécialité pour te proposer un résultat sur mesure. Et bientôt, deux nouveaux visages rejoignent l'équipe…</p>
   </div>
 
   <div class="barbers">
@@ -150,6 +152,46 @@
       </div>
     </a>
 
+    <div class="barber-card barber-card--soon" data-tilt data-soon role="img" aria-label="Eddine, nouveau barbier — arrive prochainement au salon de Grenoble">
+      <span class="soon-badge"><span class="dot" aria-hidden="true"></span>Prochainement</span>
+      <div class="barber-media">
+        <picture>
+          <source srcset="../../assets/images/barbers/barber-soon.webp?v=1" type="image/webp">
+          <img src="../../assets/images/barbers/barber-soon.jpg?v=1" alt="Fauteuil de barbier mystère annonçant l'arrivée d'Eddine" loading="lazy">
+        </picture>
+        <div class="barber-media-overlay"></div>
+      </div>
+      <div class="barber-info">
+        <div class="barber-details">
+          <h2 class="barber-name">Eddine</h2>
+          <p class="barber-role">Nouveau barbier · Bientôt</p>
+        </div>
+        <div class="barber-cta" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="barber-card barber-card--soon" data-tilt data-soon role="img" aria-label="Durel, nouveau barbier — arrive prochainement au salon de Grenoble">
+      <span class="soon-badge"><span class="dot" aria-hidden="true"></span>Prochainement</span>
+      <div class="barber-media">
+        <picture>
+          <source srcset="../../assets/images/barbers/barber-soon.webp?v=1" type="image/webp">
+          <img src="../../assets/images/barbers/barber-soon.jpg?v=1" alt="Fauteuil de barbier mystère annonçant l'arrivée de Durel" loading="lazy">
+        </picture>
+        <div class="barber-media-overlay"></div>
+      </div>
+      <div class="barber-info">
+        <div class="barber-details">
+          <h2 class="barber-name">Durel</h2>
+          <p class="barber-role">Nouveau barbier · Bientôt</p>
+        </div>
+        <div class="barber-cta" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <nav class="bottom-nav">
@@ -219,6 +261,16 @@
       card.addEventListener('mouseleave', () => { card.style.transform = ''; });
     });
   }
+
+  /* Cartes "prochainement" — feedback au clic/tap (pas de navigation) */
+  document.querySelectorAll('[data-soon]').forEach(card => {
+    card.addEventListener('click', () => {
+      if (prefersReduced) return;
+      card.classList.remove('tapped');
+      void card.offsetWidth; /* reflow pour rejouer l'anim */
+      card.classList.add('tapped');
+    });
+  });
 
   /* Custom cursor */
   if (!isTouch) {

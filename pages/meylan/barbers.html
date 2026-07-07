@@ -44,7 +44,7 @@
   <div class="page-header">
     <h1 class="page-title" data-split>Barbiers Meylan</h1>
     <p class="page-subtitle">L'équipe BarberClub Meylan</p>
-    <p class="page-intro">Lucas et Julien, co-fondateurs de BarberClub, t'accueillent au salon de Meylan. Deux barbers complémentaires qui maîtrisent aussi bien les dégradés que les soins barbe premium.</p>
+    <p class="page-intro">Lucas et Julien, co-fondateurs de BarberClub, t'accueillent au salon de Meylan. Deux barbers complémentaires qui maîtrisent aussi bien les dégradés que les soins barbe premium. Et bientôt, un nouveau visage rejoint l'équipe…</p>
   </div>
 
   <div class="barbers">
@@ -83,6 +83,26 @@
         </div>
       </div>
     </a>
+
+    <div class="barber-card barber-card--soon" data-tilt data-soon role="img" aria-label="Alex, nouveau barbier — arrive prochainement au salon de Meylan">
+      <span class="soon-badge"><span class="dot" aria-hidden="true"></span>Prochainement</span>
+      <div class="barber-media">
+        <picture>
+          <source srcset="../../assets/images/barbers/alexandre.webp?v=1" type="image/webp">
+          <img src="../../assets/images/barbers/alexandre.jpg?v=1" alt="Fauteuil de barbier mystère annonçant l'arrivée d'Alex" loading="lazy">
+        </picture>
+        <div class="barber-media-overlay"></div>
+      </div>
+      <div class="barber-info">
+        <div class="barber-details">
+          <h2 class="barber-name">Alex</h2>
+          <p class="barber-role">Nouveau barbier · Bientôt</p>
+        </div>
+        <div class="barber-cta" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+        </div>
+      </div>
+    </div>
 
   </div>
 
@@ -153,6 +173,16 @@
       card.addEventListener('mouseleave', () => { card.style.transform = ''; });
     });
   }
+
+  /* Carte "prochainement" — feedback au clic/tap (pas de navigation) */
+  document.querySelectorAll('[data-soon]').forEach(card => {
+    card.addEventListener('click', () => {
+      if (prefersReduced) return;
+      card.classList.remove('tapped');
+      void card.offsetWidth; /* reflow pour rejouer l'anim */
+      card.classList.add('tapped');
+    });
+  });
 
   /* Custom cursor */
   if (!isTouch) {
