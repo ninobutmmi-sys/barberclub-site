@@ -228,7 +228,7 @@ html, body {
    ═══════════════════════════════════════ */
 .salon {
   flex: 1; position: relative;
-  min-height: 50vh; min-height: 50dvh;
+  min-height: 0;
   overflow: hidden; display: flex; align-items: flex-end;
   text-decoration: none; color: #fff;
 }
@@ -342,7 +342,7 @@ html, body {
 @keyframes shimmer {
   0% { left: -60%; } 35% { left: 120%; } 100% { left: 120%; }
 }
-@media (min-width: 768px) { .salon-title { font-size: 60px; } }
+@media (min-width: 768px) { .salon-title { font-size: clamp(38px, 3.4vw, 54px); } }
 
 /* Address (desktop only) */
 .salon-address { display: none; }
@@ -543,8 +543,8 @@ html, body {
   .salons:hover .salon { flex: 1; }
   .salons .salon:hover { flex: 1.24; }
 
-  /* 2. Larger title on desktop */
-  .salon-title { font-size: 72px; }
+  /* 2. Titre desktop — dimensionné pour 3 colonnes (une seule ligne) */
+  .salon-title { font-size: clamp(38px, 3.4vw, 54px); white-space: nowrap; }
 
   /* 3. Wider CTA */
   .salon-cta { padding: 16px 48px; font-size: 13px; }
@@ -610,56 +610,59 @@ html, body {
   pointer-events: none;
 }
 
-.salon-teaser {
-  position: relative;
-  min-height: 12vh; min-height: 12dvh;
-  overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  pointer-events: none;
+/* ═══════════════════════════════════════
+   3ᵉ SALON — PROCHAINEMENT (panneau mystère, non cliquable)
+   ═══════════════════════════════════════ */
+.salon-mystere .salon-bg {
+  background-image: url('assets/images/salons/salon-nouveau.webp?v=2');
+  background-position: center;
+  filter: brightness(0.95) contrast(1.05);
+  animation-name: kenBurns2;
 }
-.salon-teaser .teaser-bg {
-  position: absolute; top: -20px; left: -20px; right: -20px; bottom: -20px;
-  background-image: url('assets/images/salons/Voiron/salon-voiron-facade.webp');
-  background-size: cover; background-position: center 30%;
-  filter: brightness(0.3) saturate(0.5);
-  will-change: transform;
-  animation: kenBurns3 30s ease-in-out infinite alternate;
+/* mobile : panneau plus fin que Grenoble/Meylan (devanture à droite, texte à gauche) */
+@media (max-width: 767px) {
+  .salon-mystere { flex: 0.62; }
+  /* image remontée : l'enseigne "BARBER CLUB" sort du cadre → devanture mystère uniquement */
+  .salon-mystere .salon-bg { background-size: auto 130%; background-position: 62% 62%; }
 }
-@keyframes kenBurns3 {
-  0%   { transform: scale(1) translate(0, 0); }
-  100% { transform: scale(1.06) translate(-0.5%, -0.3%); }
-}
-.salon-teaser .teaser-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 100%);
-  pointer-events: none; z-index: 2;
-}
-.salon-teaser .teaser-content {
-  position: relative; z-index: 10;
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  opacity: 0;
-  transition: opacity 0.8s ease 1.2s;
-}
-.landing.visible .salon-teaser .teaser-content { opacity: 1; }
-.teaser-text {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px; font-weight: 800;
-  color: rgba(255,255,255,0.35);
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-}
-.teaser-sub {
-  font-size: 7px;
-  color: rgba(255,255,255,0.12);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-/* Desktop: teaser reste en dessous (scroll to discover) */
+/* desktop : colonne étroite → cadrer sur la devanture + enseigne bien dans le cadre */
 @media (min-width: 768px) {
-  .salon-teaser {
-    min-height: 15vh; min-height: 15dvh;
-  }
+  /* zoom pour créer de la marge → l'enseigne sort du cadre, devanture mystère uniquement */
+  .salon-mystere .salon-bg { background-size: auto 145%; background-position: 60% 60%; }
+}
+/* halo pulsé derrière le "?" néon */
+.salon-mystere::before {
+  content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: radial-gradient(circle at 50% 40%, rgba(150,200,255,0.16), transparent 46%);
+  mix-blend-mode: screen;
+  animation: teaserGlow 4s ease-in-out infinite;
+}
+@keyframes teaserGlow { 0%,100% { opacity: 0.4; } 50% { opacity: 0.9; } }
+/* balayage lumineux diagonal */
+.mystere-sheen {
+  position: absolute; inset: -20% -10%; z-index: 3; pointer-events: none;
+  background: linear-gradient(115deg, transparent 42%, rgba(255,255,255,0.05) 49%, rgba(255,255,255,0.13) 50%, rgba(255,255,255,0.05) 51%, transparent 58%);
+  transform: translateX(-120%);
+  animation: teaserSheen 6.5s ease-in-out infinite;
+}
+@keyframes teaserSheen {
+  0%, 55%   { transform: translateX(-120%); }
+  88%, 100% { transform: translateX(120%); }
+}
+/* "PROCHAINEMENT" est long → une seule ligne, taille pilotée pour tenir dans une colonne */
+.salon-mystere .salon-title {
+  font-size: clamp(20px, 2.6vw, 30px) !important;
+  letter-spacing: 0; white-space: nowrap;
+  text-shadow: 0 0 24px rgba(140,195,255,0.35);
+}
+@media (max-width: 767px) { .salon-mystere .salon-title { font-size: 32px !important; } }
+.salon-mystere .salon-content { padding-left: 18px; padding-right: 18px; }
+.salon-mystere .salon-location { color: rgba(200,225,255,0.6); }
+.landing.visible .salon-mystere .salon-content {
+  opacity: 1; transform: translateY(0); transition-delay: 0.7s;
+}
+.landing.visible .salon-mystere .salon-location {
+  opacity: 1; transform: translateY(0); transition-delay: 1.1s;
 }
 
 /* ═══════════════════════════════════════
@@ -922,7 +925,6 @@ html, body {
    MOBILE
    ═══════════════════════════════════════ */
 @media (max-width: 767px) {
-  html, body { overflow-y: auto; }
   .salon-cta { font-size: 11px; padding: 14px 22px; }
   .salon-title { font-size: 34px; }
 }
@@ -934,9 +936,9 @@ html, body {
   *, *::before, *::after {
     animation-duration: 0.01ms !important; animation-delay: 0s !important; transition-duration: 0.01ms !important;
   }
-  .salon-bg, .teaser-bg { animation: none !important; }
+  .salon-bg { animation: none !important; }
   .salon-title .letter, .salon-location, .salon-cta, .salon-content, .salon-address { opacity: 1; transform: none; }
-  .teaser-content { opacity: 1 !important; }
+  .mystere-sheen, .salon-mystere::before { animation: none !important; }
   .separator-line { opacity: 1; transform: none; }
   .separator-secondary .separator-line { opacity: 1; transform: none; }
   .cursor-dot, .cursor-ring { display: none; }
@@ -959,7 +961,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
 @media (prefers-color-scheme: light) {
   .salon-bg { filter: brightness(1.25) contrast(1.05); }
   /* Teaser stays dark in light mode — intentional mystery effect */
-  .salon-teaser .teaser-bg { filter: brightness(0.3) saturate(0.5); }
+  .salon-mystere .salon-bg { filter: brightness(0.92) contrast(1.05); }
   .salon-overlay { background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.85) 100%) !important; }
   .salon-name { text-shadow: 0 2px 12px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.3); }
   .salon-address, .salon-location { text-shadow: 0 1px 8px rgba(0,0,0,0.6); }
@@ -1039,25 +1041,21 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       </div>
     </a>
 
-    <a href="https://www.instagram.com/barberclub_grenoble/"
-       target="_blank"
-       rel="noopener noreferrer"
-       class="hiring-badge"
-       aria-label="Nous recrutons — Contactez-nous sur Instagram">
-      <span class="hiring-pulse" aria-hidden="true"></span>
-      <span class="hiring-text">
-        <span class="hiring-main">Nous recrutons</span>
-        <span class="hiring-sub">Contactez-nous sur Instagram</span>
-      </span>
-      <svg class="hiring-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-      </svg>
-      <svg class="hiring-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M9 6l6 6-6 6"/>
-      </svg>
-    </a>
+    <div class="separator" aria-hidden="true">
+      <div class="separator-line"></div>
+      <div class="separator-glow"></div>
+    </div>
+
+    <!-- ═══════ 3ᵉ SALON — PROCHAINEMENT (non cliquable) ═══════ -->
+    <div class="salon salon-mystere" role="img" aria-label="Troisième salon BarberClub — ouverture prochaine">
+      <div class="salon-bg"></div>
+      <div class="salon-overlay"></div>
+      <div class="mystere-sheen" aria-hidden="true"></div>
+      <div class="salon-content">
+        <h2 class="salon-title" data-split>Prochainement</h2>
+        <p class="salon-location">Ouverture prochaine</p>
+      </div>
+    </div>
 
   </main>
 
@@ -1347,6 +1345,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       window.location.href = '/mon-compte';
     });
   }
+
 })();
 </script>
 <script src="assets/js/cookie-consent.js" defer></script>
