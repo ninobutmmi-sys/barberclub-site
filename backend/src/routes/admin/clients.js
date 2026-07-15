@@ -136,6 +136,61 @@ router.get('/',
 );
 
 // ============================================
+// POST /api/admin/clients — Create a client (walk-in / waitlist without prior booking)
+// ============================================
+router.post('/',
+  [
+    body('first_name').trim().notEmpty().withMessage('Prénom requis').isLength({ max: 100 }),
+    body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
+    body('phone').optional({ values: 'falsy' }).trim().matches(/^(?:0|\+33)[1-9]\d{8}$/).withMessage('Numéro de téléphone invalide'),
+    body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('notes').optional().trim().isLength({ max: 2000 }),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const { first_name, last_name, email, notes } = req.body;
+
+      // Normaliser le téléphone en +33 (comme le PUT et la réservation publique)
+      let phone = null;
+      if (req.body.phone) {
+        phone = req.body.phone.startsWith('0') ? '+33' + req.body.phone.slice(1) : req.body.phone;
+        const existing = await db.query(
+          'SELECT id FROM clients WHERE phone = $1 AND deleted_at IS NULL',
+          [phone]
+        );
+        if (existing.rows.length > 0) {
+          throw ApiError.conflict('Ce numéro de téléphone appartient déjà à un client');
+        }
+      }
+
+      const result = await db.query(
+        `INSERT INTO clients (first_name, last_name, phone, email, notes)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, first_name, last_name, phone, email, notes, has_account, created_at`,
+        [first_name, last_name, phone, email || null, notes || null]
+      );
+      const client = result.rows[0];
+
+      // Rattacher au salon courant (pour campagnes / recherche par salon)
+      await db.query(
+        'INSERT INTO client_salons (client_id, salon_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [client.id, salonId]
+      );
+
+      logAudit(req, 'create', 'client', client.id, { first_name, last_name, phone });
+      res.status(201).json(client);
+    } catch (error) {
+      if (error.code === '23505') {
+        return next(ApiError.conflict('Ce numéro de téléphone appartient déjà à un client'));
+      }
+      next(error);
+    }
+  }
+);
+
+// ============================================
 // GET /api/admin/clients/inactive — Regular clients with no visit in 45+ days
 // ============================================
 router.get('/inactive', async (req, res, next) => {

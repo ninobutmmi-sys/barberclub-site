@@ -340,6 +340,14 @@ export function useInactiveClients(options) {
   });
 }
 
+export function useCreateClient() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.createClient,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
+  });
+}
+
 export function useUpdateClient() {
   const qc = useQueryClient();
   return useMutation({

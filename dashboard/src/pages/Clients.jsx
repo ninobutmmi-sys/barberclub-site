@@ -4,7 +4,7 @@ import { getClients, getAccountStats } from '../api';
 import { exportToCSV } from '../utils/csv';
 import useMobile from '../hooks/useMobile';
 import { formatPhoneWithFlag } from '../utils/phone';
-import { useClients, useAccountStats } from '../hooks/useApi';
+import { useClients, useAccountStats, useCreateClient } from '../hooks/useApi';
 import { formatPrice, formatDateFR } from '../utils/format';
 
 const PAGE_SIZE = 20;
@@ -16,6 +16,7 @@ export default function Clients() {
   const [sort, setSort] = useState('last_visit');
   const [tab, setTab] = useState('all');
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [showCreate, setShowCreate] = useState(false);
   const debounceRef = useRef(null);
 
   // Debounced search
@@ -68,16 +69,25 @@ export default function Clients() {
           <h2 className="page-title">Clients</h2>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{total} {tab === 'accounts' ? 'comptes' : 'clients'}</p>
         </div>
-        {!isMobile && (
-          <button className="btn btn-secondary" onClick={handleExportCSV} disabled={!clients.length}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {!isMobile && (
+            <button className="btn btn-secondary" onClick={handleExportCSV} disabled={!clients.length}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Exporter CSV
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            Exporter CSV
+            {isMobile ? 'Ajouter' : 'Ajouter un client'}
           </button>
-        )}
+        </div>
       </div>
 
       <div className="page-body">
@@ -312,6 +322,94 @@ export default function Clients() {
           </div>
         )}
       </div>
+
+      {showCreate && (
+        <CreateClientModal
+          onClose={() => setShowCreate(false)}
+          onCreated={(client) => { setShowCreate(false); navigate(`/clients/${client.id}`); }}
+        />
+      )}
     </>
+  );
+}
+
+function CreateClientModal({ onClose, onCreated }) {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState('');
+  const createClient = useCreateClient();
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    const body = { first_name: firstName.trim(), last_name: lastName.trim() };
+    if (phone.trim()) body.phone = phone.trim();
+    if (email.trim()) body.email = email.trim();
+    if (notes.trim()) body.notes = notes.trim();
+    try {
+      const client = await createClient.mutateAsync(body);
+      onCreated(client);
+    } catch (err) {
+      setError(err?.message || 'Erreur lors de la création du client');
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+        <div className="modal-header">
+          <h3 className="modal-title">Nouveau client</h3>
+          <button className="btn-ghost" onClick={onClose}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            {error && <div className="login-error" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
+
+            <div className="input-row">
+              <div className="form-group">
+                <label className="label">Prénom</label>
+                <input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required autoFocus />
+              </div>
+              <div className="form-group">
+                <label className="label">Nom</label>
+                <input className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="label">Téléphone (optionnel)</label>
+              <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="06 12 34 56 78" />
+            </div>
+
+            <div className="form-group">
+              <label className="label">Email (optionnel)</label>
+              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@exemple.fr" />
+            </div>
+
+            <div className="form-group">
+              <label className="label">Notes (optionnel)</label>
+              <textarea
+                className="input"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+                style={{ resize: 'vertical', minHeight: 48, fontFamily: 'inherit' }}
+              />
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Annuler</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={createClient.isPending}>
+              {createClient.isPending ? 'Création...' : 'Créer'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

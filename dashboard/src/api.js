@@ -244,6 +244,8 @@ export const getClients = (params, signal) => {
 };
 export const getClient = (id) => request(`/admin/clients/${id}`);
 export const getInactiveClients = () => request('/admin/clients/inactive');
+export const createClient = (body) =>
+  request('/admin/clients', { method: 'POST', body: JSON.stringify(body) });
 export const updateClient = (id, body) =>
   request(`/admin/clients/${id}`, { method: 'PUT', body: JSON.stringify(body) });
 export const deleteClient = (id) =>
