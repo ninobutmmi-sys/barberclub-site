@@ -150,6 +150,13 @@ function RevenueChart({ data, prevData }) {
   const [selected, setSelected] = useState(null);
   const isMobile = useMobile();
 
+  // Répartition par barber du jour sélectionné (réutilise /analytics/barbers avec from===to)
+  const selectedPeriod = selected !== null && data && data[selected] ? data[selected].period : null;
+  const { data: dayBarberData, isLoading: dayBarberLoading } = useBarberStats(
+    { from: selectedPeriod, to: selectedPeriod },
+    { enabled: !!selectedPeriod }
+  );
+
   if (!data || data.length === 0) {
     return <div className="empty-state">Aucune donnee de revenu</div>;
   }
@@ -385,6 +392,51 @@ function RevenueChart({ data, prevData }) {
           </button>
         </div>
       )}
+
+      {/* Répartition par barber du jour sélectionné */}
+      {selected !== null && data[selected] && (() => {
+        const total = values[selected] || 0;
+        const barbers = (dayBarberData?.barbers || [])
+          .filter(b => (b.name || '').toLowerCase() !== 'admin' && (parseInt(b.revenue) || 0) > 0)
+          .sort((a, b) => (parseInt(b.revenue) || 0) - (parseInt(a.revenue) || 0));
+        return (
+          <div style={{
+            marginTop: 10, padding: '14px 18px',
+            background: 'rgba(var(--overlay),0.02)',
+            border: '1px solid rgba(var(--overlay),0.06)',
+            borderRadius: 10,
+          }}>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+              Répartition par barbier
+            </div>
+            {dayBarberLoading ? (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement…</div>
+            ) : barbers.length === 0 ? (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Aucun CA attribué à un barbier ce jour-là.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {barbers.map((b, i) => {
+                  const rev = parseInt(b.revenue) || 0;
+                  const pct = total > 0 ? Math.round((rev / total) * 100) : 0;
+                  return (
+                    <div key={i}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800, color: '#60a5fa' }}>{formatPriceInt(rev)}</span>
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{b.booking_count || 0} RDV</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', minWidth: 34, textAlign: 'right' }}>{pct}%</span>
+                      </div>
+                      <div style={{ height: 5, borderRadius: 3, background: 'rgba(var(--overlay),0.06)', overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: 'rgba(59,130,246,0.7)', transition: 'width 0.4s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
