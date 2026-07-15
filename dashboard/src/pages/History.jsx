@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useMobile from '../hooks/useMobile';
 import { useBookingsHistory, useBarbers, useAuditLog, useDailyPayments, useProductSales } from '../hooks/useApi';
@@ -329,14 +329,61 @@ function AuditTab({ isMobile }) {
 
 const METHOD_LABELS = { cb: 'CB', cash: 'Espèces', lydia: 'Lydia', other: 'Autre' };
 
+// Réconciliation TPE : trouve le sous-ensemble de RDV dont la somme est la plus proche
+// du montant cible (subset-sum, DP en centimes). Lecture seule — ne modifie aucune donnée.
+function computeTpeSplit(amounts, targetCents) {
+  const n = amounts.length;
+  const total = amounts.reduce((s, a) => s + a, 0);
+  if (n === 0 || targetCents <= 0) return { sum: 0, chosen: new Set(), total };
+  if (targetCents >= total) return { sum: total, chosen: new Set(amounts.map((_, i) => i)), total };
+
+  const reach = new Uint8Array(total + 1);
+  reach[0] = 1;
+  const parentItem = new Int32Array(total + 1).fill(-1);
+  const prevSum = new Int32Array(total + 1).fill(-1);
+  for (let idx = 0; idx < n; idx++) {
+    const w = amounts[idx];
+    for (let s = total; s >= w; s--) {
+      if (reach[s - w] && !reach[s]) {
+        reach[s] = 1;
+        parentItem[s] = idx;
+        prevSum[s] = s - w;
+      }
+    }
+  }
+  // Somme atteignable la plus proche de la cible (à égalité, on privilégie <= cible)
+  let best = 0, bestDiff = Infinity;
+  for (let s = 0; s <= total; s++) {
+    if (!reach[s]) continue;
+    const d = Math.abs(s - targetCents);
+    if (d < bestDiff || (d === bestDiff && s <= targetCents)) { bestDiff = d; best = s; }
+  }
+  const chosen = new Set();
+  let s = best;
+  while (s > 0) { chosen.add(parentItem[s]); s = prevSum[s]; }
+  return { sum: best, chosen, total };
+}
+
 function CaisseTab({ isMobile }) {
   const [date, setDate] = useState(toLocalDateStr);
+  const [tpe1Input, setTpe1Input] = useState('');
 
   const { data: bookingData, isLoading: loadingBookings } = useBookingsHistory(
     { from: date, to: date, limit: 200, sort: 'date', order: 'asc' },
     { enabled: true }
   );
   const { data: productData, isLoading: loadingProducts } = useProductSales({ from: date, to: date });
+
+  // Réinitialise le champ TPE quand on change de jour
+  useEffect(() => { setTpe1Input(''); }, [date]);
+
+  const tpeTarget = Math.round((parseFloat(String(tpe1Input).replace(',', '.')) || 0) * 100);
+  const tpeSplit = useMemo(() => {
+    const amounts = (bookingData?.bookings || [])
+      .filter(b => b.status === 'completed' || b.status === 'confirmed')
+      .map(b => b.price || 0);
+    return computeTpeSplit(amounts, tpeTarget);
+  }, [bookingData, tpeTarget]);
 
   const loading = loadingBookings || loadingProducts;
 
@@ -487,6 +534,80 @@ function CaisseTab({ isMobile }) {
               </div>
             </div>
           </div>
+
+          {/* Réconciliation TPE (lecture seule — ne modifie rien) */}
+          {completedBookings.length > 0 && (
+            <div style={{
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)', padding: '18px 20px', marginBottom: 24,
+              borderLeft: '3px solid #3b82f6',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)' }}>
+                  Ventilation TPE (réconciliation Z)
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Prestations · lecture seule</div>
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 14px', lineHeight: 1.4 }}>
+                Saisis le total du TPE 1 : la combinaison de RDV la plus proche s'affiche, le reste va sur le TPE 2. Aucune donnée n'est modifiée.
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: tpeTarget > 0 ? 16 : 0 }}>
+                <label className="label" style={{ margin: 0 }} htmlFor="tpe1amount">Montant TPE 1</label>
+                <div style={{ position: 'relative', width: 140 }}>
+                  <input
+                    id="tpe1amount"
+                    className="input"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="510"
+                    value={tpe1Input}
+                    onChange={e => setTpe1Input(e.target.value)}
+                    style={{ paddingRight: 26 }}
+                  />
+                  <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 14 }}>€</span>
+                </div>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>sur {formatPrice(tpeSplit.total)} au total</span>
+              </div>
+
+              {tpeTarget > 0 && (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 8, padding: '12px 14px' }}>
+                      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#60a5fa', fontWeight: 700, marginBottom: 4 }}>TPE 1</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800 }}>{formatPrice(tpeSplit.sum)}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{tpeSplit.chosen.size} RDV</div>
+                    </div>
+                    <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px' }}>
+                      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700, marginBottom: 4 }}>TPE 2 (reste)</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800 }}>{formatPrice(tpeSplit.total - tpeSplit.sum)}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{completedBookings.length - tpeSplit.chosen.size} RDV</div>
+                    </div>
+                  </div>
+
+                  {tpeSplit.sum !== tpeTarget && (
+                    <div style={{ fontSize: 12, color: '#f59e0b', marginBottom: 12 }}>
+                      Montant exact impossible avec ces RDV — combinaison la plus proche : {formatPrice(tpeSplit.sum)} (écart {formatPrice(Math.abs(tpeSplit.sum - tpeTarget))}).
+                    </div>
+                  )}
+
+                  <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 700, marginBottom: 8 }}>
+                    RDV sur le TPE 1
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {completedBookings.map((b, i) => tpeSplit.chosen.has(i) ? (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, padding: '6px 10px', background: 'rgba(59,130,246,0.05)', borderRadius: 6 }}>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, minWidth: 42 }}>{b.start_time?.slice(0, 5) || '—'}</span>
+                        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.service_name}</span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 12, display: isMobile ? 'none' : 'block' }}>{`${b.client_first_name || ''} ${b.client_last_name || ''}`.trim() || '—'}</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>{formatPrice(b.price || 0)}</span>
+                      </div>
+                    ) : null)}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Transaction list */}
           {transactions.length === 0 ? (
