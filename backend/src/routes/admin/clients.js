@@ -5,6 +5,7 @@ const { handleValidation } = require('../../middleware/validate');
 const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
 const { logAudit } = require('../../middleware/auditLog');
+const { PHONE_REGEX } = require('../../constants');
 
 const router = Router();
 const photoBodyParser = express.json({ limit: '500kb' });
@@ -142,7 +143,7 @@ router.post('/',
   [
     body('first_name').trim().notEmpty().withMessage('Prénom requis').isLength({ max: 100 }),
     body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
-    body('phone').optional({ values: 'falsy' }).trim().matches(/^(?:0|\+33)[1-9]\d{8}$/).withMessage('Numéro de téléphone invalide'),
+    body('phone').optional({ values: 'falsy' }).trim().matches(PHONE_REGEX).withMessage('Numéro de téléphone invalide'),
     body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
     body('notes').optional().trim().isLength({ max: 2000 }),
   ],
@@ -306,7 +307,7 @@ router.put('/:id',
     body('first_name').optional().trim().notEmpty().isLength({ max: 100 }),
     body('last_name').optional().trim().notEmpty().isLength({ max: 100 }),
     body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
-    body('phone').optional().trim().matches(/^(?:0|\+33)[1-9]\d{8}$/).withMessage('Numéro de téléphone invalide'),
+    body('phone').optional().trim().matches(PHONE_REGEX).withMessage('Numéro de téléphone invalide'),
   ],
   handleValidation,
   async (req, res, next) => {

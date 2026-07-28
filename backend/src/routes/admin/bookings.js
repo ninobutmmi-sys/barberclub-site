@@ -10,6 +10,7 @@ const db = require('../../config/database');
 const { logAudit } = require('../../middleware/auditLog');
 const ws = require('../../services/websocket');
 const { getParisTodayISO } = require('../../utils/date');
+const { PHONE_REGEX } = require('../../constants');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -224,9 +225,10 @@ router.post('/',
     body('start_time').matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure invalide'),
     body('first_name').trim().notEmpty().withMessage('Prénom requis').isLength({ max: 100 }),
     body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
+    body('client_id').optional({ values: 'falsy' }).matches(uuidRegex).withMessage('Client invalide'),
     body('phone').optional({ values: 'falsy' }).trim()
       .customSanitizer(v => v ? v.replace(/\s/g, '') : '')
-      .custom(v => !v || /^(\+33|0)[1-9]\d{8}$/.test(v)).withMessage('Numéro invalide'),
+      .custom(v => !v || PHONE_REGEX.test(v)).withMessage('Numéro invalide'),
     body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
     body('duration').optional().isInt({ min: 5, max: 720 }).toInt(),
     body('color').optional({ values: 'falsy' }).matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide'),

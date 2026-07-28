@@ -11,6 +11,12 @@ module.exports = {
   LOCKOUT_MINUTES: 15,
   RESET_TOKEN_EXPIRY_MS: 60 * 60 * 1000, // 1 hour
 
+  // --- Validation ---
+  // Formats acceptés : +33XXXXXXXXX, 0XXXXXXXXX, ou international E.164 (indicatif != 33).
+  // Source unique — les routes admin divergeaient et rejetaient les numéros étrangers
+  // pourtant acceptés à la réservation publique.
+  PHONE_REGEX: /^(\+33[1-9]\d{8}|\+(?!33)\d{7,14}|0[1-9]\d{8})$/,
+
   // --- Booking rules ---
   MAX_BOOKING_ADVANCE_MONTHS: 6,
   CANCELLATION_DEADLINE_HOURS: 12,

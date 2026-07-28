@@ -156,6 +156,10 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
       const payload = {
         barber_id: barberId, service_id: serviceId, date, start_time: time,
         duration, first_name: firstName, last_name: lastName, phone: phone.replace(/\s/g, ''), email: email || undefined,
+        // Fiche existante choisie dans la recherche : on l'identifie explicitement.
+        // Sans ça, le back re-cherche par téléphone/email et crée un doublon dès que
+        // la fiche n'en a pas (ou en a un inexploitable).
+        client_id: selectedClient?.id || undefined,
         color: bookingColor || undefined,
         ...(durationManuallySet ? { duration_override: true } : {}),
       };

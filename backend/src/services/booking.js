@@ -159,6 +159,22 @@ async function createBooking(data) {
       barberName = barberResult.rows[0].name;
     }
 
+    // 2b. Le barber doit exercer dans le salon du RDV ce jour-là (résident ou invité).
+    // Sans ce garde-fou, un RDV peut atterrir sur un barber d'un autre salon : il
+    // n'apparaît alors dans aucun planning (la vue est filtrée par salon_id) tout en
+    // bloquant le créneau côté disponibilité (qui, lui, ignore le salon à dessein).
+    const salonCheck = await client.query(
+      `SELECT 1 FROM barbers b
+        WHERE b.id = $1
+          AND (b.salon_id = $2
+               OR EXISTS (SELECT 1 FROM guest_assignments g
+                           WHERE g.barber_id = b.id AND g.date = $3 AND g.host_salon_id = $2))`,
+      [barberId, salonId, data.date]
+    );
+    if (salonCheck.rows.length === 0) {
+      throw ApiError.badRequest(`${barberName} ne travaille pas dans ce salon ce jour-là`);
+    }
+
     // 3. Calculate end time (use admin-provided duration if set, else service default)
     const endTime = availability.addMinutesToTime(data.start_time, effectiveDuration);
 
@@ -196,12 +212,44 @@ async function createBooking(data) {
       { isAdmin }
     );
     if (!slotFree) {
+      // Côté admin, nommer le RDV qui bloque. Un conflit peut venir d'un RDV absent du
+      // planning affiché (autre salon, fiche client supprimée) : sans ce détail, l'erreur
+      // laisse croire à une réservation concurrente en cours et n'est pas diagnosticable.
+      if (isAdmin) {
+        const conflict = await client.query(
+          `SELECT b.start_time, b.end_time, b.salon_id,
+                  NULLIF(TRIM(COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, '')), '') AS client_name
+             FROM bookings b
+             LEFT JOIN clients c ON c.id = b.client_id
+            WHERE b.barber_id = $1 AND b.date = $2
+              AND b.status != 'cancelled' AND b.deleted_at IS NULL
+              AND b.start_time < $3 AND b.end_time > $4
+            ORDER BY b.start_time LIMIT 1`,
+          [barberId, data.date, endTime, data.start_time]
+        );
+        if (conflict.rows.length > 0) {
+          const c0 = conflict.rows[0];
+          const autreSalon = c0.salon_id && c0.salon_id !== salonId ? ` — salon ${c0.salon_id}` : '';
+          throw ApiError.conflict(
+            `Créneau déjà occupé : ${String(c0.start_time).slice(0, 5)}-${String(c0.end_time).slice(0, 5)} ` +
+            `${c0.client_name || 'client inconnu'}${autreSalon}`
+          );
+        }
+      }
       throw ApiError.conflict('Ce créneau vient d\'être pris par un autre client. Veuillez en choisir un autre.');
     }
 
-    // 5. Find or create client — prioritize phone (unique primary identifier)
+    // 5. Find or create client — client_id explicite d'abord (l'admin a choisi une fiche
+    // existante), puis téléphone, puis email. Sans aucun des trois on crée forcément un
+    // doublon : c'est ce qui arrivait quand le téléphone d'une fiche était inutilisable.
     let clientResult = { rows: [] };
-    if (data.phone) {
+    if (data.client_id) {
+      clientResult = await client.query(
+        'SELECT id FROM clients WHERE id = $1 AND deleted_at IS NULL LIMIT 1',
+        [data.client_id]
+      );
+    }
+    if (clientResult.rows.length === 0 && data.phone) {
       clientResult = await client.query(
         'SELECT id FROM clients WHERE phone = $1 AND deleted_at IS NULL LIMIT 1',
         [data.phone]

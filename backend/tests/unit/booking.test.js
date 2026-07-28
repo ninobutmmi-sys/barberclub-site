@@ -52,6 +52,11 @@ describe('createBooking', () => {
       if (sql.includes('SELECT b.id, b.name FROM barbers') && sql.includes('barber_services')) {
         return { rows: [{ id: BARBER_ID, name: 'Lucas' }] };
       }
+      // Garde-fou salon — le barber exerce bien dans le salon du RDV.
+      // À placer avant le cas guest_assignments : la requête référence les deux tables.
+      if (sql.includes('FROM barbers b') && sql.includes('guest_assignments')) {
+        return { rows: [{ exists: 1 }] };
+      }
       // Guest assignment check (validateBarberSlot)
       if (sql.includes('guest_assignments')) {
         return { rows: [] };
@@ -268,6 +273,34 @@ describe('createBooking', () => {
     });
 
     expect(result.id).toBe('booking-new-1');
+  });
+
+  test('refuse un RDV sur un barber qui n\'exerce pas dans ce salon', async () => {
+    // Régression : des RDV importés se sont retrouvés sur un barber d'un autre salon.
+    // Invisibles dans le planning (filtré par salon_id) mais bloquants côté disponibilité.
+    const mockClient = mockDb.setupTransaction();
+    setupCreateMocks(mockClient);
+
+    const base = mockClient.query.getMockImplementation();
+    mockClient.query.mockImplementation(async (sql, params) => {
+      // Ni résident du salon, ni invité ce jour-là
+      if (sql.includes('FROM barbers b') && sql.includes('guest_assignments')) {
+        return { rows: [] };
+      }
+      return base(sql, params);
+    });
+
+    await expect(bookingService.createBooking({
+      barber_id: BARBER_ID,
+      service_id: SERVICE_ID,
+      date: '2026-03-01',
+      start_time: '10:00',
+      first_name: 'Jean',
+      last_name: 'Dupont',
+      phone: '+33600000001',
+      source: 'manual',
+      salon_id: 'grenoble',
+    })).rejects.toThrow(/ne travaille pas dans ce salon/);
   });
 
   test('handles duplicate phone constraint (23505 error)', async () => {

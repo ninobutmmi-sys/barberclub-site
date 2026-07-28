@@ -32,11 +32,28 @@ function formatTime(timeStr) {
 }
 
 /**
+ * Rattrape les mobiles français amputés de leur 0 initial.
+ *
+ * L'import Timify a stocké des `+6XXXXXXXX` / `+7XXXXXXXX` là où il fallait
+ * `+336XXXXXXXX` / `+337XXXXXXXX` : en E.164 ce n'est pas la France, donc Brevo et
+ * Twilio rejettent l'envoi et ces clients ne reçoivent jamais leurs SMS.
+ *
+ * Le rattrapage se fait ici, à l'envoi, plutôt qu'en base : les corrections écrites
+ * dans `clients.phone` ne persistent pas (cf. incident du 2026-07-28).
+ *
+ * Sûr : un vrai numéro en +6X/+7X compte au moins 10 chiffres après le « + »
+ * (+61 Australie, +7 Russie…). On ne touche qu'aux 9 chiffres exactement.
+ */
+function repairTruncatedFrenchMobile(cleaned) {
+  return /^\+[67]\d{8}$/.test(cleaned) ? '+33' + cleaned.slice(1) : cleaned;
+}
+
+/**
  * Check if a phone number is French (+33 or 0X format)
  */
 function isFrenchPhone(phone) {
   if (!phone) return false;
-  const cleaned = phone.replace(/[\s.-]/g, '');
+  const cleaned = repairTruncatedFrenchMobile(phone.replace(/[\s.-]/g, ''));
   return /^(\+33|0033|0)[1-9]\d{8}$/.test(cleaned);
 }
 
@@ -48,7 +65,7 @@ function formatPhoneInternational(phone) {
   if (!cleaned.startsWith('+')) {
     cleaned = '+' + cleaned;
   }
-  return cleaned;
+  return repairTruncatedFrenchMobile(cleaned);
 }
 
 function escapeHtml(str) {
