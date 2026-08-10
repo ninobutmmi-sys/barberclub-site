@@ -36,4 +36,8 @@ jobs:
           JWT_REFRESH_SECRET: ci-dummy-refresh-secret-not-used-by-unit-tests
 
       - name: Build dashboard
-        run: cd dashboard && npm ci && npm run build
+        # --legacy-peer-deps : eslint-plugin-react plafonne son peer eslint à ^9.7
+        # et 7.37.5 est sa dernière version publiée, alors que le dashboard est en
+        # eslint ^10. Sans ce flag, npm ci refuse d'installer. Ça ne concerne que
+        # l'outillage de lint — le build Vite et le code livré n'y touchent pas.
+        run: cd dashboard && npm ci --legacy-peer-deps && npm run build
