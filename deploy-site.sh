@@ -1,6 +1,7 @@
 #!/bin/bash
 # Deploy site vitrine sur Cloudflare Pages
-# IMPORTANT: exclut backend/, .claude/, .env, docs/ (pitch privé) et tout fichier sensible
+# IMPORTANT: exclut backend/, .claude/, .env, docs/ (pitch privé), sources/ (masters
+# non optimisés, ex. le PNG 5,8 Mo dont sort salon-voiron-nuit.webp) et tout fichier sensible
 
 set -e
 
@@ -22,6 +23,7 @@ rsync -a \
   --exclude='tests' \
   --exclude='docs' \
   --exclude='mockups' \
+  --exclude='sources' \
   --exclude='.DS_Store' \
   --exclude='playwright.config.js' \
   --exclude='deploy-site.sh' \
