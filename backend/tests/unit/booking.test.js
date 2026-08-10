@@ -31,6 +31,19 @@ const BARBER_ID = 'b0000000-0000-0000-0000-000000000001';
 const SERVICE_ID = 'a0000000-0000-0000-0000-000000000001';
 const CLIENT_ID = 'c0000000-0000-0000-0000-000000000001';
 
+/**
+ * Date à J+n au format YYYY-MM-DD.
+ * Ne jamais écrire de date en dur dans ces tests : createBooking rejette avec
+ * « Impossible de réserver dans le passé », donc une date figée finit par
+ * pourrir le test le jour où elle devient passée (c'est ce qui rendait la CI
+ * rouge). n doit rester sous MAX_BOOKING_ADVANCE_MONTHS (6 mois).
+ */
+function daysFromNow(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 beforeEach(() => {
   mockDb.resetMocks();
   jest.clearAllMocks();
@@ -143,7 +156,7 @@ describe('createBooking', () => {
         return {
           rows: [{
             id: 'booking-new-1',
-            date: '2026-04-10',
+            date: daysFromNow(30),
             start_time: '10:00:00',
             client_email: 'test@test.com',
             client_first_name: 'Jean',
@@ -165,7 +178,7 @@ describe('createBooking', () => {
       return { rows: [] };
     });
 
-    const futureDate = '2026-04-10';
+    const futureDate = daysFromNow(30);
     const result = await bookingService.createBooking({
       barber_id: BARBER_ID,
       service_id: SERVICE_ID,
@@ -314,7 +327,7 @@ describe('createBooking', () => {
       bookingService.createBooking({
         barber_id: BARBER_ID,
         service_id: SERVICE_ID,
-        date: '2026-04-10',
+        date: daysFromNow(30),
         start_time: '10:00',
         first_name: 'Jean',
         last_name: 'Dupont',
@@ -335,7 +348,7 @@ describe('createBooking', () => {
       bookingService.createBooking({
         barber_id: BARBER_ID,
         service_id: SERVICE_ID,
-        date: '2026-04-10',
+        date: daysFromNow(30),
         start_time: '10:00',
         first_name: 'Jean',
         last_name: 'Dupont',
@@ -354,7 +367,7 @@ describe('createBooking', () => {
         return {
           rows: [{
             id: 'booking-new-1',
-            date: '2026-04-10',
+            date: daysFromNow(30),
             start_time: '10:00:00',
             client_email: 'test@test.com',
             client_first_name: 'Jean',
@@ -375,7 +388,7 @@ describe('createBooking', () => {
     await bookingService.createBooking({
       barber_id: BARBER_ID,
       service_id: SERVICE_ID,
-      date: '2026-04-10',
+      date: daysFromNow(30),
       start_time: '10:00',
       first_name: 'Jean',
       last_name: 'Dupont',
@@ -836,7 +849,7 @@ describe('getBookingDetails', () => {
     mockDb.query.mockResolvedValue({
       rows: [{
         id: 'booking-1',
-        date: '2026-04-10',
+        date: daysFromNow(30),
         start_time: '10:00:00',
         end_time: '10:30:00',
         service_name: 'Coupe Homme',

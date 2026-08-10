@@ -26,6 +26,14 @@ jobs:
         run: cd backend && npm run test:unit
         env:
           NODE_ENV: test
+          # src/config/env.js fait process.exit(1) si ces trois variables manquent.
+          # Certains tests unitaires chargent des routes qui require() ce module,
+          # ce qui faisait échouer la CI alors qu'elle passait en local (grâce au
+          # backend/.env). Valeurs bidon : aucun test unitaire n'ouvre de connexion
+          # ni ne signe de vrai jeton, tout est mocké (tests/unit/helpers/).
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          JWT_SECRET: ci-dummy-jwt-secret-not-used-by-unit-tests
+          JWT_REFRESH_SECRET: ci-dummy-refresh-secret-not-used-by-unit-tests
 
       - name: Build dashboard
         run: cd dashboard && npm ci && npm run build

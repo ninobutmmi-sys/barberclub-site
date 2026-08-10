@@ -94,7 +94,11 @@ describe('queueReminders', () => {
     );
   });
 
-  test('marks reminder_sent BEFORE queuing (prevents duplicates)', async () => {
+  // Ces deux tests remplacent d'anciens tests qui vérifiaient un marquage
+  // `reminder_sent` avant/après mise en file. Ce mécanisme n'existe plus dans
+  // cron/reminders.js : la déduplication se fait uniquement par le NOT EXISTS
+  // sur notification_queue, dans la requête de sélection.
+  test('déduplique via notification_queue, sans toucher à reminder_sent', async () => {
     mockDb.query.mockImplementation(async (sql) => {
       if (sql.includes('SELECT b.id')) {
         return {
@@ -108,57 +112,52 @@ describe('queueReminders', () => {
           }],
         };
       }
-      if (sql.includes('UPDATE bookings SET reminder_sent = true')) {
-        return { rowCount: 1 };
-      }
       return { rows: [], rowCount: 0 };
     });
 
     await queueReminders();
 
-    // reminder_sent should be marked
-    const markCall = mockDb.query.mock.calls.find((c) =>
-      c[0].includes('UPDATE bookings SET reminder_sent = true')
-    );
-    expect(markCall).toBeTruthy();
+    const selectSql = mockDb.query.mock.calls[0][0];
+    expect(selectSql).toContain('NOT EXISTS');
+    expect(selectSql).toContain('notification_queue');
+    expect(selectSql).toContain('reminder_sms');
+    expect(selectSql).toContain('reminder_email');
 
-    // Then queued
+    // Aucune écriture sur reminder_sent : le cron ne s'en sert plus.
+    const reminderSentWrite = mockDb.query.mock.calls.find((c) =>
+      c[0].includes('UPDATE bookings SET reminder_sent')
+    );
+    expect(reminderSentWrite).toBeUndefined();
+
     expect(mockNotification.queueNotification).toHaveBeenCalledTimes(1);
   });
 
-  test('reverts reminder_sent on queue failure', async () => {
+  test('bascule sur un email de rappel pour un numéro non français', async () => {
     mockDb.query.mockImplementation(async (sql) => {
       if (sql.includes('SELECT b.id')) {
         return {
           rows: [{
-            id: 'booking-fail',
+            id: 'booking-intl',
             date: '2026-03-05',
             start_time: '10:00:00',
-            cancel_token: 'tok-fail',
-            salon_id: 'meylan',
-            phone: '+33600000001',
+            cancel_token: 'tok-intl',
+            salon_id: 'grenoble',
+            phone: '+41791234567', // Suisse — pas de SMS possible
+            email: 'client@example.ch',
           }],
         };
-      }
-      if (sql.includes('UPDATE bookings SET reminder_sent = true')) {
-        return { rowCount: 1 };
-      }
-      if (sql.includes('UPDATE bookings SET reminder_sent = false')) {
-        return { rowCount: 1 };
       }
       return { rows: [], rowCount: 0 };
     });
 
-    // Make queueNotification fail
-    mockNotification.queueNotification.mockRejectedValueOnce(new Error('Queue error'));
-
     await queueReminders();
 
-    // Should have reverted reminder_sent
-    const revertCall = mockDb.query.mock.calls.find((c) =>
-      c[0].includes('UPDATE bookings SET reminder_sent = false')
+    expect(mockNotification.queueNotification).toHaveBeenCalledTimes(1);
+    expect(mockNotification.queueNotification).toHaveBeenCalledWith(
+      'booking-intl',
+      'reminder_email',
+      expect.objectContaining({ email: 'client@example.ch', salonId: 'grenoble' })
     );
-    expect(revertCall).toBeTruthy();
   });
 
   test('handles no bookings gracefully', async () => {
