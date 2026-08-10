@@ -32,12 +32,29 @@ mkdir -p "$DEPLOY_DIR/backend"
 echo "# blocked" > "$DEPLOY_DIR/backend/.env"
 
 echo "🚀 Déploiement sur Cloudflare Pages..."
-CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:?'CLOUDFLARE_API_TOKEN non défini. Exporter la variable avant de lancer le script.'}" \
-CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:?'CLOUDFLARE_ACCOUNT_ID non défini.'}" \
-npx wrangler pages deploy "$DEPLOY_DIR" \
-  --project-name barberclub-site \
-  --branch production \
-  --commit-dirty=true
+# Deux modes d'authentification :
+#  - CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID exportés (CI, machine sans login) ;
+#  - sinon, la session OAuth de `wrangler login` (cas d'une machine de dev déjà
+#    connectée). Avant, le script exigeait le token et refusait de tourner alors
+#    que wrangler était parfaitement authentifié.
+if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+  CLOUDFLARE_API_TOKEN="$CLOUDFLARE_API_TOKEN" \
+  CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:?'CLOUDFLARE_ACCOUNT_ID non défini (requis avec CLOUDFLARE_API_TOKEN).'}" \
+  npx wrangler pages deploy "$DEPLOY_DIR" \
+    --project-name barberclub-site \
+    --branch production \
+    --commit-dirty=true
+else
+  echo "   (pas de CLOUDFLARE_API_TOKEN — utilisation de la session wrangler login)"
+  npx wrangler whoami > /dev/null 2>&1 || {
+    echo "❌ Ni CLOUDFLARE_API_TOKEN exporté, ni session wrangler. Lance 'npx wrangler login'." >&2
+    exit 1
+  }
+  npx wrangler pages deploy "$DEPLOY_DIR" \
+    --project-name barberclub-site \
+    --branch production \
+    --commit-dirty=true
+fi
 
 echo "✅ Déployé ! Vérification .env bloqué..."
 STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://barberclub-site.pages.dev/backend/.env")
