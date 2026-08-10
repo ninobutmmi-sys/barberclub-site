@@ -971,10 +971,36 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
   /* Teaser stays dark in light mode — intentional mystery effect */
   .salon-mystere .salon-bg { filter: brightness(0.92) contrast(1.05); }
   .salon-overlay { background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.85) 100%) !important; }
-  .salon-name { text-shadow: 0 2px 12px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.3); }
+  /* .salon-name n'existe pas dans le balisage — la classe est .salon-title.
+     Cette ombre ne s'appliquait donc à rien depuis le début. */
+  .salon-title { text-shadow: 0 2px 12px rgba(0,0,0,0.7), 0 0 40px rgba(0,0,0,0.3); }
   .salon-address, .salon-location { text-shadow: 0 1px 8px rgba(0,0,0,0.6); }
   .salon-cta a { box-shadow: 0 2px 16px rgba(0,0,0,0.3); }
   .header-logo img { filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); }
+}
+
+/* ═══════════════════════════════════════
+   LISIBILITÉ MOBILE — à garder en dernier
+   ═══════════════════════════════════════
+   Depuis que Voiron occupe un tiers plein, chaque panneau a raccourci et le
+   titre est remonté au milieu de la photo, là où le voile ne valait plus que
+   0.15 : « GRENOBLE » tombait sur le mur blanc du salon et se lisait à peine,
+   avec le logo juste au-dessus qui ajoutait à la confusion.
+
+   Ce bloc doit rester APRÈS celui de prefers-color-scheme: light — à
+   spécificité égale c'est l'ordre qui tranche, et le voile clair est en
+   !important, d'où le !important ici. Sans ça, rien ne s'applique en thème
+   clair, qui est justement le cas où le problème se voit le plus. */
+@media (max-width: 767px) {
+  .salon-overlay {
+    background: linear-gradient(0deg,
+      rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.66) 32%,
+      rgba(0,0,0,0.38) 58%, rgba(0,0,0,0.16) 80%, rgba(0,0,0,0.22) 100%) !important;
+  }
+  .salon-title { text-shadow: 0 2px 14px rgba(0,0,0,0.8), 0 0 46px rgba(0,0,0,0.5); }
+  .salon-address, .salon-location { text-shadow: 0 1px 8px rgba(0,0,0,0.9); }
+  /* Le logo se détache lui aussi des photos claires */
+  .logo-wrap { filter: drop-shadow(0 2px 16px rgba(0,0,0,0.9)); }
 }
 </style>
 </head>
