@@ -289,9 +289,34 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .redacted.scrambling::before { animation: sheen 0.8s ease-out; }
 @keyframes sheen { to { transform: translateX(130%); } }
 
-.file-foot { padding: 16px 22px; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.28); font-size: 11.5px; line-height: 1.65; color: rgba(255,255,255,0.34); }
-.denied { display: block; margin-top: 10px; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(var(--cold), 0.8); opacity: 0; transform: translateY(-3px); transition: opacity 0.35s ease, transform 0.35s ease; }
+/* Le message d'accès refusé vit sous la carte. Le conteneur garde sa hauteur
+   en permanence pour que l'apparition ne pousse pas le contenu qui suit. */
+.denied-slot { min-height: 30px; padding: 10px 4px 0; text-align: center; }
+.denied { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(var(--cold), 0.8); opacity: 0; transform: translateY(-3px); transition: opacity 0.35s ease, transform 0.35s ease; }
 .denied.show { opacity: 1; transform: none; }
+
+/* ════════ GRILLE TARIFAIRE ════════ */
+.price-card {
+    padding: 26px 24px 22px; border: 1px solid var(--line); border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+    backdrop-filter: blur(34px); -webkit-backdrop-filter: blur(34px);
+    box-shadow: 0 24px 70px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.price-list { list-style: none; }
+.price-list li {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.045);
+}
+.price-list li:last-child { border-bottom: none; }
+.price-name { font-size: 13.5px; font-weight: 400; color: rgba(255,255,255,0.82); }
+/* Ligne de conduite façon carte : elle absorbe l'espace restant, donc les prix
+   restent alignés à droite quelle que soit la longueur du libellé. */
+.price-dots { flex: 1; min-width: 12px; height: 1px; align-self: center; background-image: radial-gradient(circle, rgba(255,255,255,0.22) 1px, transparent 1px); background-size: 5px 1px; background-repeat: repeat-x; }
+.price-amount { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 0.01em; color: #fff; white-space: nowrap; }
+
+.price-group { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.09); }
+.price-group-label { display: block; margin-bottom: 6px; font-size: 9.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(var(--cold), 0.65); }
+.price-note { margin-top: 20px; font-size: 11px; line-height: 1.6; color: rgba(255,255,255,0.3); }
 
 /* ════════ ALERTE ════════ */
 .alert-card {
@@ -474,15 +499,39 @@ a:focus-visible, button:focus-visible, input:focus-visible {
             </div>
             <div class="row">
                 <span class="row-key">Tarifs</span>
-                <span class="row-val">
-                    <button type="button" class="redacted" data-reveal="██ € — ██ €" aria-label="Grille tarifaire non communiquée">███ ██ ████</button>
-                    <small>Propres à Voiron, différents de Meylan</small>
-                </span>
+                <span class="row-val">Grille propre à Voiron<small>Annoncée plus bas</small></span>
             </div>
-            <div class="file-foot">
-                Trois lignes restent caviardées tant que rien n'est signé. Elles s'ouvriront ici même, sans annonce.
-                <span class="denied" id="denied">Accès refusé — le dossier n'est pas encore déclassifié</span>
+        </div>
+        <p class="denied-slot"><span class="denied" id="denied">Accès refusé — le dossier n'est pas encore déclassifié</span></p>
+
+        <!-- ════════ LA GRILLE ════════ -->
+        <div class="sec-head rv">
+            <span class="sec-kicker">Annoncé aujourd'hui</span>
+            <h2 class="sec-title">La grille de Voiron</h2>
+        </div>
+
+        <div class="price-card rv">
+            <ul class="price-list">
+                <li><span class="price-name">Coupe homme</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">25&nbsp;€</span></li>
+                <li><span class="price-name">Coupe + traçage barbe</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">30&nbsp;€</span></li>
+                <li><span class="price-name">Coupe + barbe</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">35&nbsp;€</span></li>
+                <li><span class="price-name">Coupe + barbe + soin complet</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">45&nbsp;€</span></li>
+                <li><span class="price-name">Barbe uniquement</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">20&nbsp;€</span></li>
+                <li><span class="price-name">Barbe + soin du visage</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">25&nbsp;€</span></li>
+                <li><span class="price-name">Coupe étudiant</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">20&nbsp;€</span></li>
+                <li><span class="price-name">Coupe enfant</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">20&nbsp;€</span></li>
+            </ul>
+
+            <div class="price-group">
+                <span class="price-group-label">Tarif partenaire</span>
+                <ul class="price-list">
+                    <li><span class="price-name">Coupe</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">20&nbsp;€</span></li>
+                    <li><span class="price-name">Coupe + traçage barbe</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">25&nbsp;€</span></li>
+                    <li><span class="price-name">Coupe + barbe</span><span class="price-dots" aria-hidden="true"></span><span class="price-amount">30&nbsp;€</span></li>
+                </ul>
             </div>
+
+            <p class="price-note">Grille d'ouverture, susceptible d'évoluer d'ici octobre.</p>
         </div>
 
         <!-- ════════ ALERTE ════════ -->
