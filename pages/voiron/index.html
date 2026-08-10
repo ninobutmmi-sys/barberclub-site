@@ -10,7 +10,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Voiron — Ouverture octobre 2026 | BarberClub">
 <meta property="og:description" content="Le troisième salon. Dossier partiellement déclassifié.">
-<meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/salon-voiron-facade.webp">
+<meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/salon-voiron-nuit.webp">
 <meta property="og:url" content="https://barberclub-grenoble.fr/pages/voiron/">
 <meta property="og:locale" content="fr_FR">
 <script type="application/ld+json">
@@ -96,7 +96,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .back-btn:hover { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.24); }
 .back-btn:active { transform: scale(0.95); }
 .back-btn svg { width: 19px; height: 19px; }
-.header-brand { display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none; }
+/* min-height 44px : cible tactile, le lien logo tombait a 33px. */
+.header-brand { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 44px; text-decoration: none; }
 .header-crown { width: 14px; height: auto; opacity: 0.32; animation: crownFloat 5s ease-in-out infinite; }
 .logo { height: 24px; width: auto; display: block; }
 .header-spacer { width: 44px; flex-shrink: 0; }
@@ -115,8 +116,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 }
 .hero-bg {
     position: absolute; inset: -8%; z-index: -3;
-    background: url('../../assets/images/salons/Voiron/salon-voiron-facade.webp') center 44%/cover no-repeat;
-    filter: blur(20px) brightness(0.26) saturate(0.5) contrast(1.15);
+    background: url('../../assets/images/salons/Voiron/salon-voiron-nuit.webp') center 34%/cover no-repeat;
+    filter: blur(13px) brightness(0.52) saturate(0.7) contrast(1.05);
     animation: kenBurns 26s ease-in-out infinite alternate;
     will-change: transform;
 }
@@ -133,8 +134,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 /* La bande qui balaie et rend nette une tranche de la façade */
 .hero-slit {
     position: absolute; left: 0; right: 0; height: 24%; z-index: -1;
-    background: url('../../assets/images/salons/Voiron/salon-voiron-facade.webp') center 44%/cover no-repeat;
-    filter: brightness(0.68) saturate(0.85) contrast(1.08);
+    background: url('../../assets/images/salons/Voiron/salon-voiron-nuit.webp') center 34%/cover no-repeat;
+    filter: brightness(1) saturate(0.95) contrast(1.04);
     -webkit-mask-image: linear-gradient(180deg, transparent, #000 24%, #000 76%, transparent);
             mask-image: linear-gradient(180deg, transparent, #000 24%, #000 76%, transparent);
     animation: slitSweep 15s cubic-bezier(0.55, 0, 0.45, 1) infinite;
@@ -269,7 +270,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 
 .redacted {
     position: relative; display: inline-flex; align-items: center;
-    min-height: 32px; padding: 5px 12px;
+    min-height: 44px; padding: 5px 14px;   /* cible tactile */
     border: 1px solid rgba(255,255,255,0.07); border-radius: 4px;
     background: #0a0a0b;
     box-shadow: inset 0 0 0 1px rgba(0,0,0,0.6), inset 0 1px 7px rgba(0,0,0,0.9);
@@ -295,28 +296,51 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .denied { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(var(--cold), 0.8); opacity: 0; transform: translateY(-3px); transition: opacity 0.35s ease, transform 0.35s ease; }
 .denied.show { opacity: 1; transform: none; }
 
-/* ════════ GRILLE TARIFAIRE ════════ */
-.price-card {
-    padding: 26px 24px 22px; border: 1px solid var(--line); border-radius: 22px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-    backdrop-filter: blur(34px); -webkit-backdrop-filter: blur(34px);
-    box-shadow: 0 24px 70px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+/* ════════ TARIFS — même système de cartes que pages/*/prestations.html ════════ */
+.tarif-group { margin-top: 30px; }
+.tarif-group:first-of-type { margin-top: 0; }
+.category-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.category-icon {
+    width: 38px; height: 38px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 11px; box-shadow: 0 0 12px rgba(255,255,255,0.04);
 }
-.price-list { list-style: none; }
-.price-list li {
-    display: flex; align-items: baseline; gap: 10px;
-    padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.045);
-}
-.price-list li:last-child { border-bottom: none; }
-.price-name { font-size: 13.5px; font-weight: 400; color: rgba(255,255,255,0.82); }
-/* Ligne de conduite façon carte : elle absorbe l'espace restant, donc les prix
-   restent alignés à droite quelle que soit la longueur du libellé. */
-.price-dots { flex: 1; min-width: 12px; height: 1px; align-self: center; background-image: radial-gradient(circle, rgba(255,255,255,0.22) 1px, transparent 1px); background-size: 5px 1px; background-repeat: repeat-x; }
-.price-amount { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 0.01em; color: #fff; white-space: nowrap; }
+.category-icon svg { width: 18px; height: 18px; opacity: 0.7; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.category-title { font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.7); }
+.category-line { flex: 1; height: 1px; background: linear-gradient(to right, rgba(255,255,255,0.15), transparent); }
 
-.price-group { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.09); }
-.price-group-label { display: block; margin-bottom: 6px; font-size: 9.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(var(--cold), 0.65); }
-.price-note { margin-top: 20px; font-size: 11px; line-height: 1.6; color: rgba(255,255,255,0.3); }
+.tarif-cards { display: flex; flex-direction: column; gap: 12px; }
+.tarif-card {
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 18px 20px; border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.35), 0 8px 32px rgba(0,0,0,0.35);
+    transition: border-color 0.35s ease, background 0.35s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1);
+}
+@media (hover: hover) and (pointer: fine) {
+    .tarif-card:hover { border-color: rgba(255,255,255,0.18); transform: translateY(-2px); }
+}
+.tarif-card-info { min-width: 0; }
+.tarif-card-name { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 4px; line-height: 1.3; letter-spacing: 0.01em; }
+.tarif-card-desc { font-size: 12px; color: rgba(255,255,255,0.45); margin-bottom: 8px; line-height: 1.35; }
+.tarif-card-duration {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; color: rgba(255,255,255,0.3);
+    padding: 3px 8px; border-radius: 20px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+}
+.tarif-card-duration svg { width: 10px; height: 10px; opacity: 0.5; stroke: currentColor; fill: none; stroke-width: 2; }
+.tarif-card-price {
+    font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 800;
+    color: #fff; white-space: nowrap; letter-spacing: -0.02em; line-height: 1;
+    text-shadow: 0 0 15px rgba(255,255,255,0.12);
+}
+.tarif-card-price .euro { font-size: 0.5em; margin-left: 1px; opacity: 0.55; }
+.price-note { margin-top: 22px; font-size: 11px; line-height: 1.6; color: rgba(255,255,255,0.3); text-align: center; }
 
 /* ════════ ALERTE ════════ */
 .alert-card {
@@ -424,6 +448,234 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 
 <body>
 <div class="grain" aria-hidden="true"></div>
+<div class="cursor-dot" aria-hidden="true"></div>
+<div class="cursor-ring" aria-hidden="true"></div>
+<a href="#dossier" class="skip-to-content">Aller au contenu principal</a>
+
+<header class="header">
+    <a href="../../" class="back-btn" aria-label="Retour à l'accueil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </a>
+    <a href="../../" class="header-brand" aria-label="BarberClub, accueil">
+        <img src="../../assets/images/common/couronne.png" alt="" class="header-crown" aria-hidden="true">
+        <img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo">
+    </a>
+    <div class="header-spacer"></div>
+</header>
+
+<main>
+    <!-- ════════ HERO ════════ -->
+    <section class="hero">
+        <div class="hero-bg" aria-hidden="true"></div>
+        <div class="hero-veil" aria-hidden="true"></div>
+        <div class="hero-slit" aria-hidden="true"></div>
+        <div class="particles" aria-hidden="true"></div>
+
+        <div class="hero-inner">
+            <img src="../../assets/images/common/couronne.png" alt="" class="hero-crown" aria-hidden="true">
+            <span class="stamp"><span class="dot" aria-hidden="true"></span> Dossier non public</span>
+            <h1 class="hero-title" data-split>Voiron</h1>
+            <p class="hero-sub">
+                Le <strong>troisième BarberClub</strong> ouvre en <strong>octobre 2026</strong>.
+                Les travaux sont en cours, le reste n'est pas encore communicable.
+            </p>
+        </div>
+
+        <a href="#dossier" class="scroll-cue" aria-label="Aller au dossier">
+            Le dossier
+            <span class="scroll-cue-line" aria-hidden="true"></span>
+        </a>
+    </section>
+
+    <div class="sep" aria-hidden="true"></div>
+
+    <div class="wrap">
+        <!-- ════════ DOSSIER ════════ -->
+        <div class="sec-head rv" id="dossier">
+            <span class="sec-kicker">Partiellement déclassifié</span>
+            <h2 class="sec-title">Ce qu'on peut dire</h2>
+        </div>
+
+        <div class="file rv">
+            <div class="row">
+                <span class="row-key">Ville</span>
+                <span class="row-val">Voiron<small>Isère · à 25 min de Grenoble</small></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Ouverture</span>
+                <span class="row-val">Octobre 2026<small>Date exacte pas encore arrêtée</small></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Adresse</span>
+                <span class="row-val">
+                    <button type="button" class="redacted" data-reveal="RUE ███████" aria-label="Adresse non communiquée">████ ██████████</button>
+                </span>
+            </div>
+            <div class="row">
+                <span class="row-key">Équipe</span>
+                <span class="row-val">
+                    <button type="button" class="redacted" data-reveal="██ BARBIERS" aria-label="Composition de l'équipe non communiquée">███████████</button>
+                </span>
+            </div>
+            <div class="row">
+                <span class="row-key">Prestations</span>
+                <span class="row-val">La carte de Meylan<small>Coupe, barbe, soins — même catalogue</small></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Tarifs</span>
+                <span class="row-val">Grille propre à Voiron<small>Annoncée plus bas</small></span>
+            </div>
+        </div>
+        <p class="denied-slot"><span class="denied" id="denied">Accès refusé — le dossier n'est pas encore déclassifié</span></p>
+
+        <!-- ════════ LA GRILLE ════════ -->
+        <div class="sec-head rv">
+            <span class="sec-kicker">Annoncé aujourd'hui</span>
+            <h2 class="sec-title">La grille de Voiron</h2>
+        </div>
+
+        <div class="rv">
+            <div class="tarif-group">
+                <div class="category-header">
+                    <span class="category-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></span>
+                    <h3 class="category-title">Coupes</h3>
+                    <span class="category-line" aria-hidden="true"></span>
+                </div>
+                <div class="tarif-cards">
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe Homme</div>
+                            <div class="tarif-card-desc">Shampooing, coupe, coiffage + parfumage luxe</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">25<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Traçage Barbe</div>
+                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage + traçage et soin barbe + parfumage luxe</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">30<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Barbe</div>
+                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage + traçage et taillage barbe + parfumage luxe</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">35<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Barbe + Soin Complet</div>
+                            <div class="tarif-card-desc">Coupe, shampooing massage, coiffage + barbe complète + serviette chaude + soin visage + parfumage luxe</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 40 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">45<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tarif-group">
+                <div class="category-header">
+                    <span class="category-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.7s6 6 6 10a6 6 0 0 1-12 0c0-4 6-10 6-10z"/></svg></span>
+                    <h3 class="category-title">Barbe &amp; Soins</h3>
+                    <span class="category-line" aria-hidden="true"></span>
+                </div>
+                <div class="tarif-cards">
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Barbe Uniquement</div>
+                            <div class="tarif-card-desc">Traçage, taillage et huile mangue + parfumage luxe</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 20 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Soin Visage + Barbe</div>
+                            <div class="tarif-card-desc">Taillage et traçage barbe + huile mangue + serviette chaude + vapozone et crème hydratante + parfumage luxe</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">25<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tarif-group">
+                <div class="category-header">
+                    <span class="category-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 12 4.8H4.8V12l8.6 8.6a2 2 0 0 0 2.8 0l4.4-4.4a2 2 0 0 0 0-2.8z"/><circle cx="8.5" cy="8.5" r="1.2"/></svg></span>
+                    <h3 class="category-title">Tarifs Réduits</h3>
+                    <span class="category-line" aria-hidden="true"></span>
+                </div>
+                <div class="tarif-cards">
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe Étudiante</div>
+                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage, sur présentation de la carte</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe Enfant</div>
+                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage — moins de 12 ans</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 20 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe Partenaire</div>
+                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage, comité d'entreprise</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 20 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Traçage Partenaire</div>
+                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage + traçage et soin barbe + parfumage luxe, comité d'entreprise</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 20 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">25<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                    <div class="tarif-card">
+                        <div class="tarif-card-info">
+                            <div class="tarif-card-name">Coupe + Barbe Partenaire</div>
+                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage + traçage et taillage barbe, comité d'entreprise</div>
+                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
+                        </div>
+                        <div class="tarif-card-price-wrap">
+                            <span class="tarif-card-price">30<span class="euro">&euro;</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="price-note">Grille d'ouverture, susceptible d'évoluer d'ici octobre.</p>
+        </div>
 <div class="cursor-dot" aria-hidden="true"></div>
 <div class="cursor-ring" aria-hidden="true"></div>
 <a href="#dossier" class="skip-to-content">Aller au contenu principal</a>
