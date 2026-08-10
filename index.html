@@ -1002,6 +1002,24 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
   /* Le logo se détache lui aussi des photos claires */
   .logo-wrap { filter: drop-shadow(0 2px 16px rgba(0,0,0,0.9)); }
 }
+
+/* ═══════════════════════════════════════
+   ÉCRANS COURTS — le titre passait SOUS le logo
+   ═══════════════════════════════════════
+   Safari mobile ne laisse que ~600px de hauteur utile une fois ses barres
+   déduites. Divisée par trois panneaux, ça fait 200px chacun : le contenu
+   étant collé en bas, le titre du premier panneau remontait à 48px, alors
+   que l'en-tête descend à 129px. On lisait « GREN[BARBER] ».
+   On compacte l'en-tête et le contenu pour que le titre passe dessous. */
+@media (max-width: 767px) and (max-height: 900px) {
+  .header { padding: 10px 20px 14px; }
+  .logo { height: 32px; }
+  .crown { width: 12px; }
+  .salon-title { font-size: 27px; }
+  .salon-content { padding: 14px 20px; padding-bottom: max(14px, env(safe-area-inset-bottom)); gap: 2px; }
+  .salon-location { margin-bottom: 6px; }
+  .salon-cta { padding: 11px 18px; font-size: 10px; }
+}
 </style>
 </head>
 <body>
