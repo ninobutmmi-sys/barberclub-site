@@ -619,12 +619,10 @@ html, body {
   filter: brightness(0.95) contrast(1.05);
   animation-name: kenBurns2;
 }
-/* mobile : panneau plus fin que Grenoble/Meylan (devanture à droite, texte à gauche) */
-@media (max-width: 767px) {
-  .salon-mystere { flex: 0.62; }
-  /* image remontée : l'enseigne "BARBER CLUB" sort du cadre → devanture mystère uniquement */
-  .salon-mystere .salon-bg { background-size: auto 130%; background-position: 62% 62%; }
-}
+/* mobile : même hauteur que Grenoble et Meylan (flex: 1 hérité de .salon).
+   Le panneau ayant désormais le même format que les deux autres, il reprend
+   aussi leur cadrage (cover/center) — l'ancien zoom 130% à 62% avait été réglé
+   pour un bandeau fin et laissait une grande zone vide en haut à gauche. */
 /* desktop : colonne étroite → cadrer sur la devanture + enseigne bien dans le cadre */
 @media (min-width: 768px) {
   /* zoom pour créer de la marge → l'enseigne sort du cadre, devanture mystère uniquement */
@@ -1046,13 +1044,13 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
     </div>
 
     <!-- ═══════ 3ᵉ SALON — VOIRON (non cliquable) ═══════ -->
-    <div class="salon salon-mystere" role="img" aria-label="BarberClub Voiron — ouverture prochaine">
+    <div class="salon salon-mystere" role="img" aria-label="BarberClub Voiron — ouverture en octobre">
       <div class="salon-bg"></div>
       <div class="salon-overlay"></div>
       <div class="mystere-sheen" aria-hidden="true"></div>
       <div class="salon-content">
         <h2 class="salon-title" data-split>Voiron</h2>
-        <p class="salon-location">Ouverture prochaine</p>
+        <p class="salon-location">Ouverture en octobre</p>
       </div>
     </div>
 
