@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voiron — Ouverture octobre 2026 | BarberClub</title>
+<meta name="description" content="Un troisième BarberClub ouvre à Voiron en octobre 2026. Le dossier n'est pas encore public : laissez votre email pour être prévenu le jour de l'ouverture.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://barberclub-grenoble.fr/pages/voiron/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Voiron — Ouverture octobre 2026 | BarberClub">
+<meta property="og:description" content="Le troisième salon. Dossier partiellement déclassifié.">
+<meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/salon-voiron-facade.webp">
+<meta property="og:url" content="https://barberclub-grenoble.fr/pages/voiron/">
+<meta property="og:locale" content="fr_FR">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+{"@type":"ListItem","position":1,"name":"Accueil","item":"https://barberclub-grenoble.fr/"},
+{"@type":"ListItem","position":2,"name":"Voiron","item":"https://barberclub-grenoble.fr/pages/voiron/"}
+]}
+</script>
+<link rel="manifest" href="../../config/manifest.json">
+<link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+<link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face {
+    font-family: 'Orbitron';
+    src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+    font-weight: 800;
+    font-display: swap;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --bg: #000;
+    --ink: #fff;
+    /* Accent froid, repris du halo du panneau mystère de la landing */
+    --cold: 168, 205, 255;
+    --line: rgba(255,255,255,0.09);
+    --muted: rgba(255,255,255,0.34);
+    --faint: rgba(255,255,255,0.20);
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Grain — même recette que les autres pages du site */
+.grain {
+    position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px;
+}
+
+.skip-to-content {
+    position: absolute; left: -9999px; top: 0; z-index: 10000;
+    padding: 12px 20px; background: #fff; color: #000; font-size: 13px; font-weight: 600;
+}
+.skip-to-content:focus { left: 12px; top: 12px; }
+
+a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid rgba(var(--cold), 0.85);
+    outline-offset: 3px;
+    border-radius: 6px;
+}
+
+/* ════════════════════════════════════════
+   HEADER
+════════════════════════════════════════ */
+.header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.85), transparent);
+    border-bottom: 1px solid transparent;
+    transition: background 0.35s ease, border-color 0.35s ease;
+}
+/* Sans fond opaque une fois défilé, le logo et la flèche se posaient sur les
+   lignes du dossier et devenaient illisibles. */
+.header.stuck {
+    background: rgba(0,0,0,0.78);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-bottom-color: rgba(255,255,255,0.07);
+}
+.back-btn {
+    width: 44px; height: 44px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; color: #fff; text-decoration: none;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    transition: background 0.25s ease, border-color 0.25s ease;
+}
+.back-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.22); }
+.back-btn:active { transform: scale(0.95); }
+.back-btn svg { width: 19px; height: 19px; }
+.logo { height: 26px; width: auto; display: block; }
+.header-spacer { width: 44px; flex-shrink: 0; }
+
+/* ════════════════════════════════════════
+   HERO — la photo qui a fuité
+════════════════════════════════════════ */
+.leak {
+    position: relative;
+    min-height: 66vh; min-height: 66dvh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 100px 20px 36px;
+    overflow: hidden;
+    isolation: isolate;
+}
+.leak-photo {
+    position: absolute; inset: -6%;
+    background: url('../../assets/images/salons/Voiron/salon-voiron-facade.webp') center 42%/cover no-repeat;
+    /* Le cœur du parti pris : la façade est là, mais illisible. */
+    filter: blur(18px) brightness(0.30) saturate(0.55) contrast(1.15);
+    transform: scale(1.06);
+    z-index: -3;
+}
+.leak-vignette {
+    position: absolute; inset: 0; z-index: -2;
+    background:
+        radial-gradient(ellipse 120% 80% at 50% 35%, transparent 20%, rgba(0,0,0,0.55) 70%, #000 100%),
+        linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 30%, rgba(0,0,0,0.85) 88%, #000 100%);
+}
+/* La bande qui balaie et « rend net » une tranche de la photo */
+.leak-slit {
+    position: absolute; left: 0; right: 0; height: 26%; z-index: -1;
+    background: url('../../assets/images/salons/Voiron/salon-voiron-facade.webp') center 42%/cover no-repeat;
+    background-attachment: local;
+    filter: brightness(0.62) saturate(0.8) contrast(1.1);
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 22%, #000 78%, transparent);
+            mask-image: linear-gradient(180deg, transparent, #000 22%, #000 78%, transparent);
+    opacity: 0.85;
+    animation: slitSweep 13s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+}
+@keyframes slitSweep {
+    0%, 8%    { top: -30%; opacity: 0; }
+    18%       { opacity: 0.9; }
+    50%       { top: 38%; opacity: 0.9; }
+    82%       { opacity: 0; }
+    100%      { top: 104%; opacity: 0; }
+}
+/* Fin liseré lumineux en tête de bande */
+.leak-slit::after {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(var(--cold), 0.55), transparent);
+}
+
+.leak-inner { position: relative; width: 100%; max-width: 620px; margin: 0 auto; }
+
+.stamp {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 13px; margin-bottom: 22px;
+    border: 1px solid rgba(var(--cold), 0.30);
+    border-radius: 100px;
+    background: rgba(var(--cold), 0.06);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    font-size: 9.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(var(--cold), 0.92);
+}
+.stamp .dot {
+    width: 5px; height: 5px; border-radius: 50%; background: rgb(var(--cold));
+    animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+.leak-title {
+    font-family: 'Orbitron', sans-serif; font-weight: 800;
+    font-size: clamp(52px, 17vw, 116px);
+    line-height: 0.9; letter-spacing: 0.01em;
+    text-shadow: 0 0 60px rgba(var(--cold), 0.30);
+}
+.leak-sub {
+    margin-top: 16px;
+    font-size: 13px; font-weight: 400; line-height: 1.65; color: rgba(255,255,255,0.62);
+    max-width: 42ch;
+}
+.leak-sub strong { color: #fff; font-weight: 600; }
+
+/* ════════════════════════════════════════
+   DOSSIER — ce qui est lisible, ce qui ne l'est pas
+════════════════════════════════════════ */
+.wrap { max-width: 620px; margin: 0 auto; padding: 0 20px 90px; }
+
+.section-label {
+    display: flex; align-items: center; gap: 12px;
+    margin: 54px 0 18px;
+    font-size: 9.5px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--faint);
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+.file {
+    border: 1px solid var(--line); border-radius: 20px;
+    background: rgba(255,255,255,0.035);
+    backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    overflow: hidden;
+}
+.row {
+    display: grid; grid-template-columns: 34% 1fr; align-items: center; gap: 14px;
+    padding: 17px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.055);
+}
+.row:last-child { border-bottom: none; }
+.row-key {
+    font-size: 9.5px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--muted);
+}
+.row-val { font-size: 14.5px; font-weight: 500; color: #fff; }
+.row-val small { display: block; margin-top: 3px; font-size: 11.5px; font-weight: 400; color: rgba(255,255,255,0.42); }
+
+/* Les lignes caviardées. Bouton : elles réagissent au clic/focus. */
+.redacted {
+    position: relative; display: inline-flex; align-items: center;
+    min-height: 32px; padding: 5px 11px;
+    border: 1px solid rgba(255,255,255,0.07); border-radius: 4px;
+    /* Barre de caviardage : bloc sombre, pas champ de saisie. Les glyphes █
+       restent à peine perceptibles et donnent la texture du marqueur. */
+    background: #0b0b0c;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.6), inset 0 1px 6px rgba(0,0,0,0.9);
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    font-size: 13px; font-weight: 500; letter-spacing: 0.02em;
+    color: rgba(255,255,255,0.13); cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    overflow: hidden;
+}
+.redacted::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 40%, rgba(255,255,255,0.14) 50%, transparent 60%);
+    transform: translateX(-130%);
+}
+.redacted:hover { border-color: rgba(var(--cold), 0.28); color: rgba(255,255,255,0.22); }
+.redacted.scrambling { color: rgba(var(--cold), 0.75); background: rgba(var(--cold), 0.08); }
+.redacted.scrambling::before { animation: sheen 0.75s ease-out; }
+@keyframes sheen { to { transform: translateX(130%); } }
+
+.denied {
+    display: block; margin-top: 9px;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(var(--cold), 0.75);
+    opacity: 0; transform: translateY(-3px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.denied.show { opacity: 1; transform: none; }
+
+.file-foot {
+    padding: 15px 20px;
+    border-top: 1px solid rgba(255,255,255,0.055);
+    background: rgba(0,0,0,0.25);
+    font-size: 11px; line-height: 1.6; color: rgba(255,255,255,0.32);
+}
+
+/* ════════════════════════════════════════
+   ALERTE EMAIL
+════════════════════════════════════════ */
+.alert-card {
+    margin-top: 16px; padding: 26px 22px;
+    border: 1px solid var(--line); border-radius: 20px;
+    background: rgba(255,255,255,0.035);
+    backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    text-align: center;
+}
+.alert-title { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 19px; letter-spacing: 0.02em; }
+.alert-desc { margin: 10px auto 20px; max-width: 38ch; font-size: 12.5px; line-height: 1.65; color: rgba(255,255,255,0.5); }
+
+.alert-form { display: flex; gap: 8px; max-width: 380px; margin: 0 auto; }
+.alert-input {
+    flex: 1; min-width: 0; height: 48px; padding: 0 16px;
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 12px;
+    background: rgba(255,255,255,0.05); color: #fff;
+    font-family: inherit; font-size: 16px; /* 16px : évite le zoom iOS */
+    transition: border-color 0.25s ease, background 0.25s ease;
+}
+.alert-input::placeholder { color: rgba(255,255,255,0.3); }
+.alert-input:focus { outline: none; border-color: rgba(var(--cold), 0.55); background: rgba(255,255,255,0.08); }
+.alert-submit {
+    width: 48px; height: 48px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(255,255,255,0.18); border-radius: 12px;
+    background: rgba(255,255,255,0.10); color: #fff; cursor: pointer;
+    transition: background 0.25s ease, border-color 0.25s ease;
+}
+.alert-submit:hover:not(:disabled) { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.3); }
+.alert-submit:active:not(:disabled) { transform: scale(0.95); }
+.alert-submit:disabled { opacity: 0.45; cursor: wait; }
+.alert-submit svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.alert-done {
+    display: none; align-items: center; justify-content: center; gap: 9px;
+    min-height: 48px; font-size: 13px; font-weight: 500; color: rgba(var(--cold), 0.95);
+}
+.alert-done.show { display: flex; }
+.alert-done svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.alert-err { margin-top: 11px; font-size: 12px; color: #ff8b8b; min-height: 1em; }
+
+/* ════════════════════════════════════════
+   SALONS OUVERTS
+════════════════════════════════════════ */
+.open-salons { display: grid; gap: 10px; margin-top: 16px; }
+@media (min-width: 560px) { .open-salons { grid-template-columns: 1fr 1fr; } }
+.salon-link {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    min-height: 62px; padding: 15px 18px;
+    border: 1px solid var(--line); border-radius: 16px;
+    background: rgba(255,255,255,0.035);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    color: #fff; text-decoration: none;
+    transition: background 0.25s ease, border-color 0.25s ease;
+}
+.salon-link:hover { background: rgba(255,255,255,0.075); border-color: rgba(255,255,255,0.2); }
+.salon-link:active { transform: scale(0.985); }
+.salon-link-name { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 0.03em; }
+.salon-link-sub { display: block; margin-top: 4px; font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.38); }
+.salon-link svg { width: 17px; height: 17px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.5; }
+
+.legal-note { margin-top: 34px; font-size: 10.5px; line-height: 1.7; color: rgba(255,255,255,0.24); text-align: center; }
+
+/* ════════════════════════════════════════
+   RÉVÉLATION AU SCROLL
+════════════════════════════════════════ */
+.rv { opacity: 0; transform: translateY(18px); transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16,1,0.3,1); }
+.rv.in { opacity: 1; transform: none; }
+
+@media (min-width: 768px) {
+    .leak { padding: 120px 24px 56px; min-height: 82vh; }
+    .wrap { padding-bottom: 110px; }
+    .row { grid-template-columns: 30% 1fr; padding: 19px 24px; }
+    .leak-sub { font-size: 14px; }
+}
+
+/* Accessibilité : on coupe tout ce qui bouge */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .rv { opacity: 1; transform: none; }
+    .leak-slit { display: none; }
+}
+</style>
+</head>
+
+<body>
+<div class="grain" aria-hidden="true"></div>
+<a href="#main" class="skip-to-content">Aller au contenu principal</a>
+
+<header class="header">
+    <a href="../../" class="back-btn" aria-label="Retour à l'accueil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </a>
+    <a href="../../" aria-label="BarberClub, accueil"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+    <div class="header-spacer"></div>
+</header>
+
+<main id="main">
+
+    <!-- ════════ LA PHOTO QUI A FUITÉ ════════ -->
+    <section class="leak">
+        <div class="leak-photo" aria-hidden="true"></div>
+        <div class="leak-vignette" aria-hidden="true"></div>
+        <div class="leak-slit" aria-hidden="true"></div>
+
+        <div class="leak-inner">
+            <span class="stamp"><span class="dot" aria-hidden="true"></span> Dossier non public</span>
+            <h1 class="leak-title">Voiron</h1>
+            <p class="leak-sub">
+                Le <strong>troisième BarberClub</strong> ouvre en <strong>octobre 2026</strong>.
+                Les travaux sont en cours, le reste n'est pas encore communicable.
+            </p>
+        </div>
+    </section>
+
+    <div class="wrap">
+
+        <!-- ════════ LE DOSSIER ════════ -->
+        <h2 class="section-label rv">Ce qu'on peut dire</h2>
+
+        <div class="file rv">
+            <div class="row">
+                <span class="row-key">Ville</span>
+                <span class="row-val">Voiron<small>Isère · à 25 min de Grenoble</small></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Ouverture</span>
+                <span class="row-val">Octobre 2026<small>Date exacte pas encore arrêtée</small></span>
+            </div>
+            <div class="row">
+                <span class="row-key">Adresse</span>
+                <span class="row-val">
+                    <button type="button" class="redacted" data-reveal="RUE ███████" aria-label="Adresse non communiquée">████ ██████████</button>
+                </span>
+            </div>
+            <div class="row">
+                <span class="row-key">Équipe</span>
+                <span class="row-val">
+                    <button type="button" class="redacted" data-reveal="██ BARBIERS" aria-label="Composition de l'équipe non communiquée">███████████</button>
+                </span>
+            </div>
+            <div class="row">
+                <span class="row-key">Prestations</span>
+                <span class="row-val">Les mêmes qu'à Grenoble<small>Tarifs identiques au réseau</small></span>
+            </div>
+            <div class="file-foot">
+                Deux lignes restent caviardées tant que rien n'est signé. Elles s'ouvriront ici même, sans annonce.
+                <span class="denied" id="denied">Accès refusé — le dossier n'est pas encore déclassifié</span>
+            </div>
+        </div>
+
+        <!-- ════════ ALERTE ════════ -->
+        <h2 class="section-label rv">Être prévenu</h2>
+
+        <div class="alert-card rv">
+            <div class="alert-title">Le jour de l'ouverture</div>
+            <p class="alert-desc">Un seul email, le jour J. Pas de newsletter, pas de relance.</p>
+
+            <form class="alert-form" id="alertForm" novalidate>
+                <label for="alertEmail" class="skip-to-content">Votre adresse email</label>
+                <input type="email" id="alertEmail" class="alert-input" placeholder="votre@email.fr" required autocomplete="email" inputmode="email">
+                <button type="submit" class="alert-submit" id="alertSubmit" aria-label="Recevoir l'alerte d'ouverture">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                </button>
+            </form>
+
+            <div class="alert-done" id="alertDone" role="status">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                C'est noté — on vous écrit à l'ouverture.
+            </div>
+            <p class="alert-err" id="alertErr" role="alert"></p>
+        </div>
+
+        <!-- ════════ EN ATTENDANT ════════ -->
+        <h2 class="section-label rv">En attendant</h2>
+
+        <div class="open-salons rv">
+            <a class="salon-link" href="../grenoble/">
+                <span><span class="salon-link-name">Grenoble</span><span class="salon-link-sub">5 rue Clot Bey</span></span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+            <a class="salon-link" href="../meylan/">
+                <span><span class="salon-link-name">Meylan</span><span class="salon-link-sub">26 av. du Grésivaudan</span></span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+        </div>
+
+        <p class="legal-note rv">Ouverture prévue en octobre 2026, sous réserve de l'avancement des travaux.</p>
+    </div>
+</main>
+
+<script src="../../assets/js/api-config.js"></script>
+<script>
+(() => {
+    'use strict';
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ═══ En-tête : fond opaque dès qu'on quitte le haut ═══ */
+    const header = document.querySelector('.header');
+    const onScroll = () => header.classList.toggle('stuck', window.scrollY > 24);
+    addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    /* ═══ Révélation au scroll ═══ */
+    const rv = document.querySelectorAll('.rv');
+    if (reduced || !('IntersectionObserver' in window)) {
+        rv.forEach(el => el.classList.add('in'));
+    } else {
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach((e, i) => {
+                if (!e.isIntersecting) return;
+                setTimeout(() => e.target.classList.add('in'), i * 70);
+                obs.unobserve(e.target);
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+        rv.forEach(el => obs.observe(el));
+    }
+
+    /* ═══ Lignes caviardées ═══
+       On brouille quelques glyphes puis on retombe sur le bloc noir : le
+       dossier fait mine de s'ouvrir et se referme. Rien n'est révélé — le
+       data-reveal est lui-même caviardé, il n'y a donc aucune information
+       à extraire du DOM. */
+    const GLYPHS = '█▓▒░#@$%&/\\|=+*<>';
+    const denied = document.getElementById('denied');
+    let deniedTimer = null;
+
+    document.querySelectorAll('.redacted').forEach((el) => {
+        const original = el.textContent;
+        const teaser = el.dataset.reveal || original;
+        let busy = false;
+
+        el.addEventListener('click', () => {
+            if (busy) return;
+            busy = true;
+
+            if (denied) {
+                denied.classList.add('show');
+                clearTimeout(deniedTimer);
+                deniedTimer = setTimeout(() => denied.classList.remove('show'), 3200);
+            }
+
+            if (reduced) { busy = false; return; }
+
+            el.classList.add('scrambling');
+            let frame = 0;
+            const total = 22;
+            const id = setInterval(() => {
+                frame++;
+                if (frame < total) {
+                    el.textContent = teaser.split('').map((c) =>
+                        c === ' ' ? ' ' : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]
+                    ).join('');
+                } else {
+                    clearInterval(id);
+                    el.textContent = original;
+                    el.classList.remove('scrambling');
+                    busy = false;
+                }
+            }, 45);
+        });
+    });
+
+    /* ═══ Alerte ouverture ═══ */
+    const form = document.getElementById('alertForm');
+    const input = document.getElementById('alertEmail');
+    const submit = document.getElementById('alertSubmit');
+    const done = document.getElementById('alertDone');
+    const err = document.getElementById('alertErr');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        err.textContent = '';
+        const email = input.value.trim();
+        if (!email || !input.checkValidity()) {
+            err.textContent = 'Adresse email invalide.';
+            input.focus();
+            return;
+        }
+
+        submit.disabled = true;
+        try {
+            // salon_id : l'API n'accepte que meylan|grenoble. Voiron n'existe pas
+            // encore en base — on rattache donc les inscrits à Grenoble, le salon
+            // le plus proche, et on les distingue par event_name.
+            const res = await fetch(`${window.BARBERCLUB_API}/event-alerts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, event_name: 'ouverture_voiron', salon_id: 'grenoble' }),
+            });
+            if (res.ok) {
+                form.style.display = 'none';
+                done.classList.add('show');
+            } else {
+                const data = await res.json().catch(() => ({}));
+                err.textContent = data.error || 'Impossible d\'enregistrer, réessayez.';
+                submit.disabled = false;
+            }
+        } catch {
+            err.textContent = 'Connexion impossible. Réessayez dans un instant.';
+            submit.disabled = false;
+        }
+    });
+})();
+</script>
+<script src="../../assets/js/cookie-consent.js" defer></script>
+</body>
+</html>

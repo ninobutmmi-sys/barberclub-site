@@ -8,6 +8,14 @@
         <priority>1.0</priority>
     </url>
 
+    <!-- Salon Voiron — ouverture octobre 2026 -->
+    <url>
+        <loc>https://barberclub-grenoble.fr/pages/voiron/</loc>
+        <lastmod>2026-08-10</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
     <!-- Salon Grenoble -->
     <url>
         <loc>https://barberclub-grenoble.fr/pages/grenoble/</loc>

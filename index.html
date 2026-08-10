@@ -661,6 +661,17 @@ html, body {
 .landing.visible .salon-mystere .salon-location {
   opacity: 1; transform: translateY(0); transition-delay: 1.1s;
 }
+/* CTA du panneau Voiron — même mécanique de révélation que les deux autres,
+   teinte froide pour rester dans le registre "à venir" plutôt que "réserver". */
+.landing.visible .salon-mystere .salon-cta { opacity: 1; transform: translateY(0); transition-delay: 1.25s; }
+.salon-mystere .salon-cta {
+  border-color: rgba(168,205,255,0.22);
+  background: rgba(168,205,255,0.06);
+}
+.salon-mystere:hover .salon-cta, .salon-mystere:active .salon-cta {
+  border-color: rgba(168,205,255,0.42);
+  background: rgba(168,205,255,0.12);
+}
 
 /* ═══════════════════════════════════════
    HIRING BANNER — Meylan (RED)
@@ -1043,16 +1054,20 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       <div class="separator-glow"></div>
     </div>
 
-    <!-- ═══════ 3ᵉ SALON — VOIRON (non cliquable) ═══════ -->
-    <div class="salon salon-mystere" role="img" aria-label="BarberClub Voiron — ouverture en octobre">
+    <!-- ═══════ 3ᵉ SALON — VOIRON (mène à la page teaser) ═══════ -->
+    <a href="pages/voiron/" class="salon salon-mystere" data-salon aria-label="BarberClub Voiron — ouverture en octobre, en savoir plus">
       <div class="salon-bg"></div>
       <div class="salon-overlay"></div>
       <div class="mystere-sheen" aria-hidden="true"></div>
       <div class="salon-content">
         <h2 class="salon-title" data-split>Voiron</h2>
         <p class="salon-location">Ouverture en octobre</p>
+        <span class="salon-cta mystere-cta" data-magnetic>
+          <span class="cta-text">En savoir plus</span>
+          <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </span>
       </div>
-    </div>
+    </a>
 
   </main>
 
@@ -1310,16 +1325,22 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
   });
   document.querySelectorAll('.salon').forEach(link => {
     link.addEventListener('click', function(e) {
-      e.preventDefault();
       const href = this.getAttribute('href');
+      // Un panneau sans href n'est pas navigable : sans ce garde-fou on partait
+      // sur window.location.href = null, donc sur /null (cas du panneau Voiron
+      // tant qu'il était un <div>).
+      if (!href) return;
+      e.preventDefault();
       // Dramatic zoom + darken on clicked salon
       const bg = this.querySelector('.salon-bg');
       bg.style.transition = 'transform 0.8s cubic-bezier(0.4,0,0.2,1), filter 0.8s ease';
       bg.style.transform = 'scale(1.4)';
       bg.style.filter = 'brightness(0.08)';
-      // Fade out other salon
-      const other = [...this.closest('.salons').querySelectorAll('.salon')].find(s => s !== this);
-      if (other) { other.style.transition = 'opacity 0.5s ease'; other.style.opacity = '0'; }
+      // Fade out the other salons (il y en a deux depuis l'ajout de Voiron —
+      // .find() n'en estompait qu'un seul et laissait le troisième allumé)
+      [...this.closest('.salons').querySelectorAll('.salon')]
+        .filter(s => s !== this)
+        .forEach(s => { s.style.transition = 'opacity 0.5s ease'; s.style.opacity = '0'; });
       // Fade separator
       const sep = document.querySelector('.separator-line');
       if (sep) { sep.style.transition = 'opacity 0.4s'; sep.style.opacity = '0'; }
