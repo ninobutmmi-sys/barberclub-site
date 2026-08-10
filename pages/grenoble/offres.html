@@ -494,6 +494,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: #000; color:
     font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
     color: rgba(255,255,255,0.22);
 }
+.mardi-conditions {
+    margin-top: 12px; max-width: 300px;
+    font-size: 10px; font-weight: 500; line-height: 1.5; letter-spacing: 0.01em;
+    color: rgba(255,255,255,0.28);
+}
 @media (hover: hover) and (pointer: fine) {
     .mardi-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.18); box-shadow: 0 16px 48px rgba(0,0,0,0.3); }
 }
@@ -605,6 +610,51 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: #000; color:
 .nav-cta:active .nav-cta-btn { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255,255,255,0.2); }
 .nav-cta-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; }
 
+/* ════════════════════════════════════════════
+   OFFER TABS — segmented control "en cours / à venir"
+════════════════════════════════════════════ */
+.offer-tabs {
+    position: relative; display: flex; padding: 5px; margin-bottom: 30px;
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.09); border-radius: 100px;
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 30px rgba(0,0,0,0.25);
+}
+.offer-tabs-indicator {
+    position: absolute; top: 5px; left: 5px; bottom: 5px;
+    width: calc(50% - 5px); border-radius: 100px; z-index: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.06));
+    border: 1px solid rgba(255,255,255,0.16);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.20);
+    transition: transform 0.55s cubic-bezier(0.5, 1.45, 0.45, 1);
+}
+.offer-tabs[data-active="upcoming"] .offer-tabs-indicator { transform: translateX(100%); }
+.offer-tab {
+    flex: 1; min-width: 0; position: relative; z-index: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 14px 6px; border: none; background: none; cursor: pointer;
+    font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 10px;
+    letter-spacing: 1px; text-transform: uppercase; white-space: nowrap;
+    color: rgba(255,255,255,0.38); transition: color 0.45s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.offer-tab.active { color: #fff; }
+.offer-tab:not(.active):hover { color: rgba(255,255,255,0.62); }
+.offer-tab svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+/* "live" dot — pulse on the active "en cours" tab */
+.offer-tab .live-dot { position: relative; width: 8px; height: 8px; flex-shrink: 0; }
+.offer-tab .live-dot::before, .offer-tab .live-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #fff; }
+.offer-tab .live-dot::after { animation: liveDot 2s ease-out infinite; }
+.offer-tab:not(.active) .live-dot::before { background: rgba(255,255,255,0.4); }
+.offer-tab:not(.active) .live-dot::after { display: none; }
+@keyframes liveDot { 0% { transform: scale(1); opacity: 0.7; } 70%, 100% { transform: scale(2.6); opacity: 0; } }
+
+/* Panels */
+.offer-panels { position: relative; }
+.offer-panel[hidden] { display: none; }
+.offer-panel:not([hidden]) { animation: panelIn 0.55s cubic-bezier(0.22,1,0.36,1); }
+@keyframes panelIn { from { opacity: 0; transform: translateY(16px) scale(0.985); } to { opacity: 1; transform: none; } }
+
 /* ═══ DESKTOP 768px ═══ */
 @media (min-width: 768px) {
     .content { max-width: 700px; }
@@ -713,9 +763,50 @@ a:focus-visible, button:focus-visible { outline: 2px solid rgba(255,255,255,0.5)
 <div class="content" id="main-content">
 
     <!-- ════════════════════════════════════════
-         THE MYSTERY — 2 Ans Teaser
+         OFFER TABS — en cours / à venir
     ════════════════════════════════════════ -->
-    <div class="mystery rv" id="mystery">
+    <div class="offer-tabs rv" id="offerTabs" data-active="current" role="tablist" aria-label="Offres">
+        <span class="offer-tabs-indicator" aria-hidden="true"></span>
+        <button class="offer-tab active" id="tabBtnCurrent" type="button" role="tab" aria-selected="true" aria-controls="tab-current">
+            <span class="live-dot" aria-hidden="true"></span> Offre en cours
+        </button>
+        <button class="offer-tab" id="tabBtnUpcoming" type="button" role="tab" aria-selected="false" aria-controls="tab-upcoming">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7.5 12 12 15 14"/></svg>
+            Offre à venir
+        </button>
+    </div>
+
+    <div class="offer-panels">
+
+        <!-- ═══ PANEL : OFFRE EN COURS — Barbe offerte le mardi ═══ -->
+        <section class="offer-panel" id="tab-current" role="tabpanel" aria-labelledby="tabBtnCurrent">
+            <div class="mardi-section">
+                <h2 class="section-title">Chaque mardi</h2>
+                <a href="reserver.html" class="mardi-card" aria-label="Offre du mardi : barbe offerte avec la coupe homme, de 9h à 13h. Réserver.">
+                    <span class="mardi-bg" aria-hidden="true"><img src="../../assets/images/salons/grenoble/chaise-grenoble.jpg?v=3" alt="" loading="lazy"></span>
+                    <span class="mardi-glow" aria-hidden="true"></span>
+                    <span class="mardi-badge"><span class="dot"></span> Mardi · 9h&nbsp;–&nbsp;13h</span>
+                    <span class="mardi-headline">Barbe<br>offerte</span>
+                    <span class="mardi-sub">avec ta coupe homme, chaque mardi matin au salon de Grenoble.</span>
+                    <span class="mardi-price" aria-label="30 euros, offert à 20 euros le mardi">
+                        <s class="mardi-price-old">30€</s>
+                        <span class="mardi-price-arrow" aria-hidden="true">→</span>
+                        <span class="mardi-price-new">20€</span>
+                    </span>
+                    <span class="mystery-cta mardi-cta">
+                        Réserver mon mardi
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </span>
+                    <span class="mardi-foot">Salon Grenoble · centre-ville</span>
+                    <span class="mardi-conditions">Valable uniquement sur réservation en ligne d'une prestation Coupe + Barbe, le mardi de 9h à 13h. Les forfaits Coupe ne peuvent pas être transformés en Coupe + Barbe sur place. Non cumulable avec d'autres offres.</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- ═══ PANEL : OFFRE À VENIR — Anniversaire Grenoble ═══ -->
+        <section class="offer-panel" id="tab-upcoming" role="tabpanel" aria-labelledby="tabBtnUpcoming" hidden>
+            <h2 class="section-title">Bientôt</h2>
+    <div class="mystery" id="mystery">
         <div class="mystery-bg">
             <img src="../../assets/images/salons/grenoble/salon-grenoble.jpg?v=3" alt="" loading="eager">
         </div>
@@ -770,30 +861,9 @@ a:focus-visible, button:focus-visible { outline: 2px solid rgba(255,255,255,0.5)
             <div class="mystery-note">Détails révélés bientôt</div>
         </div>
     </div>
+        </section>
 
-    <!-- ════════════════════════════════════════
-         OFFRE DU MARDI — Barbe offerte
-    ════════════════════════════════════════ -->
-    <div class="mardi-section rv">
-        <h2 class="section-title">Chaque mardi</h2>
-        <a href="reserver.html" class="mardi-card" aria-label="Offre du mardi : barbe offerte avec la coupe homme, de 9h à 13h. Réserver.">
-            <span class="mardi-bg" aria-hidden="true"><img src="../../assets/images/salons/grenoble/chaise-grenoble.jpg?v=3" alt="" loading="lazy"></span>
-            <span class="mardi-glow" aria-hidden="true"></span>
-            <span class="mardi-badge"><span class="dot"></span> Mardi · 9h&nbsp;–&nbsp;13h</span>
-            <span class="mardi-headline">Barbe<br>offerte</span>
-            <span class="mardi-sub">avec ta coupe homme, chaque mardi matin au salon de Grenoble.</span>
-            <span class="mardi-price" aria-label="30 euros, offert à 20 euros le mardi">
-                <s class="mardi-price-old">30€</s>
-                <span class="mardi-price-arrow" aria-hidden="true">→</span>
-                <span class="mardi-price-new">20€</span>
-            </span>
-            <span class="mystery-cta mardi-cta">
-                Réserver mon mardi
-                <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-            </span>
-            <span class="mardi-foot">Salon Grenoble · centre-ville</span>
-        </a>
-    </div>
+    </div><!-- /.offer-panels -->
 
     <!-- ════════════════════════════════════════
          CARTE CADEAU
@@ -809,35 +879,6 @@ a:focus-visible, button:focus-visible { outline: 2px solid rgba(255,255,255,0.5)
                 <div class="gift-desc">Montant libre, valable 1 an dans nos deux salons.</div>
             </div>
         </a>
-    </div>
-
-    <!-- ════════════════════════════════════════
-         CONDITIONS
-    ════════════════════════════════════════ -->
-    <div class="conds-section rv">
-        <h2 class="section-title">Conditions</h2>
-        <div class="conds-card">
-            <div class="cond-row">
-                <div class="cond-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-                <div class="cond-text">Barbe offerte le mardi de 9h à 13h, salon de Grenoble</div>
-            </div>
-            <div class="cond-row">
-                <div class="cond-icon"><svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
-                <div class="cond-text">Non cumulable avec d'autres offres</div>
-            </div>
-            <div class="cond-row">
-                <div class="cond-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-                <div class="cond-text">Valable sur réservation en ligne</div>
-            </div>
-            <div class="cond-row">
-                <div class="cond-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-                <div class="cond-text">1 offre maximum par réservation</div>
-            </div>
-            <div class="cond-row">
-                <div class="cond-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                <div class="cond-text">Offres limitées dans le temps</div>
-            </div>
-        </div>
     </div>
 
 </div>
@@ -914,7 +955,10 @@ a:focus-visible, button:focus-visible { outline: 2px solid rgba(255,255,255,0.5)
     document.querySelectorAll('.rv').forEach(el => obs.observe(el));
 
     /* ═══ COUNTDOWN ═══ */
-    const TARGET = new Date(2026, 6, 11, 0, 0, 0).getTime(); // 11 Juillet 2026 — 2 ans BarberClub Grenoble
+    // Mois indexé à partir de 0 : 7 = août. Samedi 22 août 2026 — 2 ans BarberClub Grenoble.
+    // (l'échéance précédente, le 11 juillet, était dépassée : le compte à rebours
+    //  restait bloqué sur 00:00:00:00 faute d'état de fin.)
+    const TARGET = new Date(2026, 7, 22, 0, 0, 0).getTime();
 
     function pad(n) { return String(n).padStart(2, '0'); }
     function flipDigit(el, val) {
@@ -982,6 +1026,30 @@ a:focus-visible, button:focus-visible { outline: 2px solid rgba(255,255,255,0.5)
             alertForm.style.display = 'none';
             alertSuccess.style.display = 'flex';
         }
+    });
+
+    /* ═══ OFFER TABS — en cours / à venir ═══ */
+    const offerTabs = document.getElementById('offerTabs');
+    const tabBtnCurrent = document.getElementById('tabBtnCurrent');
+    const tabBtnUpcoming = document.getElementById('tabBtnUpcoming');
+    const panelCurrent = document.getElementById('tab-current');
+    const panelUpcoming = document.getElementById('tab-upcoming');
+    function selectOffer(which) {
+        const up = which === 'upcoming';
+        offerTabs.dataset.active = which;
+        tabBtnCurrent.classList.toggle('active', !up);
+        tabBtnUpcoming.classList.toggle('active', up);
+        tabBtnCurrent.setAttribute('aria-selected', String(!up));
+        tabBtnUpcoming.setAttribute('aria-selected', String(up));
+        panelCurrent.hidden = up;
+        panelUpcoming.hidden = !up;
+    }
+    tabBtnCurrent.addEventListener('click', () => selectOffer('current'));
+    tabBtnUpcoming.addEventListener('click', () => selectOffer('upcoming'));
+    if (location.hash === '#a-venir' || location.hash === '#upcoming') selectOffer('upcoming');
+    offerTabs.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') { selectOffer('current'); tabBtnCurrent.focus(); }
+        else if (e.key === 'ArrowRight') { selectOffer('upcoming'); tabBtnUpcoming.focus(); }
     });
 })();
 </script>

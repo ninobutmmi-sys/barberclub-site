@@ -4,6 +4,7 @@ Allow: /assets/
 Disallow: /generate-icons.html
 Disallow: /sw.js
 Disallow: /manifest.json
+Disallow: /pages/pitch/
 Crawl-delay: 1
 
 Sitemap: https://barberclub-grenoble.fr/sitemap.xml

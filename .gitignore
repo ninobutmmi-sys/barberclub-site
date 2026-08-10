@@ -39,3 +39,7 @@ pages/grenoble/reserver-timify.html
 # Claude Code local settings
 .claude/
 .gstack/
+
+# Handoff design pour equipe app (non versionne, ~48 Mo)
+barberclub-app-handoff/
+barberclub-app-handoff.zip
