@@ -179,6 +179,10 @@ router.post('/register',
     body('password')
       .isLength({ min: 8 }).withMessage('Mot de passe : 8 caractères minimum')
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Mot de passe : majuscule, minuscule et chiffre requis'),
+    // Optionnel : la page /mon-compte de la racine est commune aux deux salons
+    // et n'a donc rien à envoyer. Depuis pages/meylan/ ou pages/grenoble/, le
+    // salon est connu et sert à rattacher le client.
+    body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
@@ -228,6 +232,18 @@ router.post('/register',
           throw ApiError.conflict('Ce numéro de téléphone ou email est déjà utilisé par un autre compte');
         }
         throw dbErr;
+      }
+
+      // Rattacher le client à son salon. Sans ça, quelqu'un qui crée un compte
+      // sans avoir encore réservé n'apparaît dans la liste clients d'aucun des
+      // deux dashboards : c'est client_salons qui les filtre. Les deux autres
+      // chemins de création (réservation, création admin) le faisaient déjà,
+      // celui-ci était le seul à l'oublier.
+      if (req.body.salon_id) {
+        await db.query(
+          'INSERT INTO client_salons (client_id, salon_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [clientId, req.body.salon_id]
+        );
       }
 
       // Generate tokens

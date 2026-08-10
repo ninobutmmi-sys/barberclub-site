@@ -286,6 +286,45 @@ describe('POST /api/auth/register', () => {
     expect(res.body.user.name).toBe('Marie Dupont');
   });
 
+  it('rattache le client au salon quand salon_id est fourni', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });                  // unicité email
+    db.query.mockResolvedValueOnce({ rows: [] });                  // recherche phone+email
+    db.query.mockResolvedValueOnce({ rows: [{ id: CLIENT_ID }] }); // INSERT clients
+    db.query.mockResolvedValueOnce({ rows: [] });                  // INSERT client_salons
+    db.query.mockResolvedValueOnce({ rows: [] });                  // refresh token
+
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ ...validRegistration, salon_id: 'grenoble' });
+
+    expect(res.status).toBe(201);
+    const link = db.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO client_salons'));
+    expect(link).toBeDefined();
+    expect(link[1]).toEqual([CLIENT_ID, 'grenoble']);
+  });
+
+  it("n'écrit aucun lien salon quand salon_id est absent", async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: CLIENT_ID }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send(validRegistration);
+
+    expect(res.status).toBe(201);
+    expect(db.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO client_salons'))).toBeUndefined();
+  });
+
+  it('refuse un salon_id inconnu', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ ...validRegistration, salon_id: 'voiron' });
+
+    expect(res.status).toBe(400);
+  });
+
   it('upgrades existing guest client to account', async () => {
     // Email check: no account yet
     db.query.mockResolvedValueOnce({ rows: [{ id: CLIENT_ID, has_account: false }] });

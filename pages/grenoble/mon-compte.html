@@ -436,7 +436,7 @@
             var res = await fetch(API + '/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ first_name: firstName, last_name: lastName, phone: phone, email: email, password: password }),
+                body: JSON.stringify({ first_name: firstName, last_name: lastName, phone: phone, email: email, password: password, salon_id: 'grenoble' }),
             });
             var data = await res.json();
             if (!res.ok) throw new Error(data.error || (data.errors && data.errors[0] && data.errors[0].msg) || 'Erreur lors de l\'inscription');
