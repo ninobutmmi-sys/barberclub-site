@@ -611,7 +611,7 @@ html, body {
 }
 
 /* ═══════════════════════════════════════
-   3ᵉ SALON — PROCHAINEMENT (panneau mystère, non cliquable)
+   3ᵉ SALON — VOIRON (panneau mystère, non cliquable)
    ═══════════════════════════════════════ */
 .salon-mystere .salon-bg {
   background-image: url('assets/images/salons/salon-nouveau.webp?v=2');
@@ -649,13 +649,12 @@ html, body {
   0%, 55%   { transform: translateX(-120%); }
   88%, 100% { transform: translateX(120%); }
 }
-/* "PROCHAINEMENT" est long → une seule ligne, taille pilotée pour tenir dans une colonne */
+/* "VOIRON" fait la même longueur que "MEYLAN" → taille standard des 2 autres salons.
+   (l'ancien réglage réduit servait à faire tenir "PROCHAINEMENT" sur une ligne) */
 .salon-mystere .salon-title {
-  font-size: clamp(20px, 2.6vw, 30px) !important;
-  letter-spacing: 0; white-space: nowrap;
+  white-space: nowrap;
   text-shadow: 0 0 24px rgba(140,195,255,0.35);
 }
-@media (max-width: 767px) { .salon-mystere .salon-title { font-size: 32px !important; } }
 .salon-mystere .salon-content { padding-left: 18px; padding-right: 18px; }
 .salon-mystere .salon-location { color: rgba(200,225,255,0.6); }
 .landing.visible .salon-mystere .salon-content {
@@ -1046,13 +1045,13 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       <div class="separator-glow"></div>
     </div>
 
-    <!-- ═══════ 3ᵉ SALON — PROCHAINEMENT (non cliquable) ═══════ -->
-    <div class="salon salon-mystere" role="img" aria-label="Troisième salon BarberClub — ouverture prochaine">
+    <!-- ═══════ 3ᵉ SALON — VOIRON (non cliquable) ═══════ -->
+    <div class="salon salon-mystere" role="img" aria-label="BarberClub Voiron — ouverture prochaine">
       <div class="salon-bg"></div>
       <div class="salon-overlay"></div>
       <div class="mystere-sheen" aria-hidden="true"></div>
       <div class="salon-content">
-        <h2 class="salon-title" data-split>Prochainement</h2>
+        <h2 class="salon-title" data-split>Voiron</h2>
         <p class="salon-location">Ouverture prochaine</p>
       </div>
     </div>
