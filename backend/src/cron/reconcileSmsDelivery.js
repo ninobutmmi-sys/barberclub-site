@@ -150,6 +150,18 @@ async function applyEvent(salonId, ev) {
  * Also flags SMS that are still 'pending' after BREVO_SMS_DELIVERY_TIMEOUT_MS.
  */
 async function reconcileSmsDelivery() {
+  // Ce cron est SPECIFIQUE aux SMS Brevo (il interroge l'API Brevo pour confirmer
+  // la livraison). Les salons en Twilio ont leur propre webhook de statut : les
+  // reconcilier via Brevo produit de faux "SMS sans confirmation" + des emails
+  // d'alerte inutiles. On ne traite donc que les salons reellement en smsProvider=brevo.
+  // brevoSalons filtre les DEUX requetes plus bas : la reconciliation ET l'alerte
+  // sur les SMS bloques. Le retour anticipe ne couvre que le cas "aucun salon en
+  // Brevo" ; en configuration mixte (Meylan Brevo + Grenoble Twilio) c'est le
+  // filtre par salon qui fait le travail.
+  const providerOf = (id) => (process.env['SMS_PROVIDER_' + String(id).toUpperCase()] || process.env.SMS_PROVIDER || 'brevo').toLowerCase();
+  const brevoSalons = ['meylan', 'grenoble'].filter((s) => providerOf(s) === 'brevo');
+  if (brevoSalons.length === 0) return;
+
   // 1. Check if we have any SMS still pending — skip Brevo API call if not
   const pending = await db.query(
     `SELECT DISTINCT salon_id
@@ -157,8 +169,9 @@ async function reconcileSmsDelivery() {
      WHERE channel = 'sms'
        AND status = 'sent'
        AND delivery_status = 'pending'
-       AND sent_at > NOW() - ($1 || ' hours')::INTERVAL`,
-    [BREVO_SMS_RECONCILE_LOOKBACK_HOURS]
+       AND sent_at > NOW() - ($1 || ' hours')::INTERVAL
+       AND salon_id = ANY($2)`,
+    [BREVO_SMS_RECONCILE_LOOKBACK_HOURS, brevoSalons]
   );
 
   if (pending.rows.length === 0) {
@@ -198,8 +211,9 @@ async function reconcileSmsDelivery() {
          AND delivery_status = 'pending'
          AND sent_at < NOW() - ($1 || ' milliseconds')::INTERVAL
          AND sent_at > NOW() - INTERVAL '24 hours'
+         AND salon_id = ANY($2)
        LIMIT 20`,
-      [BREVO_SMS_DELIVERY_TIMEOUT_MS]
+      [BREVO_SMS_DELIVERY_TIMEOUT_MS, brevoSalons]
     );
     if (stuck.rows.length > 0) {
       // Mark them 'unknown' so we don't re-alert
