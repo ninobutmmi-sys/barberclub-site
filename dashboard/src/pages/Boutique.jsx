@@ -327,7 +327,7 @@ export default function Boutique() {
             accent={aCommander.length > 0 ? 'red' : 'green'}
             subtitle={aCommander.length === 0 ? 'Rien à commander'
               : coutCommande > 0 ? formatPriceCompact(coutCommande)
-              : 'coût inconnu, prix d’achat vides'}
+              : 'coût inconnu'}
             icon={<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>}
           />
           <KpiCard
@@ -433,13 +433,16 @@ export default function Boutique() {
 function KpiCard({ label, value, subtitle, accent = 'blue', icon }) {
   const a = KPI_ACCENTS[accent] || KPI_ACCENTS.blue;
   return (
-    <div className="a-kpi">
-      <div className="a-kpi-top">
-        <span className="a-kpi-label">{label}</span>
-        <span className="a-kpi-icon" style={{ color: a.color }}>{icon}</span>
+    <div className="a-kpi st-kpi">
+      {/* La couleur passe par le filet du haut. Teinter en plus le chiffre ET
+          l'icône faisait trois signaux pour une seule information. */}
+      <span className="st-kpi-rule" style={{ background: `linear-gradient(90deg, transparent, ${a.color}, transparent)` }} />
+      <div className="st-kpi-top">
+        <span className="st-kpi-label">{label}</span>
+        {icon && <span className="st-kpi-icon">{icon}</span>}
       </div>
-      <div className="a-kpi-value" style={{ color: a.color }}>{value}</div>
-      {subtitle && <div className="a-kpi-sub">{subtitle}</div>}
+      <div className="st-kpi-value">{value}</div>
+      {subtitle && <div className="st-kpi-sub">{subtitle}</div>}
     </div>
   );
 }
