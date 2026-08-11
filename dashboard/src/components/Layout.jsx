@@ -59,10 +59,6 @@ const NAV_GROUPS = [
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
       },
       {
-        to: '/objectives', label: 'Objectifs',
-        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>,
-      },
-      {
         to: '/tasks', label: 'Tâches', badgeTasks: true,
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
       },
@@ -156,7 +152,6 @@ function useTheme() {
 
 // Items shown in the "Plus" drawer on mobile
 const DRAWER_NAV = [
-  { to: '/objectives', label: 'Objectifs', icon: NAV.find(n => n.to === '/objectives').icon },
   { to: '/tasks', label: 'Tâches', icon: NAV.find(n => n.to === '/tasks').icon, badgeTasks: true },
   { to: '/services', label: 'Prestations', icon: NAV.find(n => n.to === '/services').icon },
   { to: '/boutique', label: 'Stock', icon: NAV.find(n => n.to === '/boutique').icon },

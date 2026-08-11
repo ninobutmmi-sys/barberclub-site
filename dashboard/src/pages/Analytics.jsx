@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { format, startOfWeek, addMonths, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import useMobile from '../hooks/useMobile';
+import ObjectivesSection from '../components/ObjectivesSection';
 import {
   useDashboard,
   useRevenue,
@@ -2125,6 +2126,20 @@ export default function Analytics() {
             {/* ======== BLOC : FAUX PLANS ======== */}
 
             <NoShowSection data={noShowStats} isMobile={isMobile} navigate={navigate} />
+
+            {/* ======== BLOC : OBJECTIFS (ex-page dédiée) ======== */}
+            {/* Même sélecteur de mois que le reste de la page : les trophées
+                suivaient leur propre mois, il fallait le régler deux fois. */}
+
+            <SectionTitle
+              className="a-stagger a-d8"
+              icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5 }}><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>}
+              title="Objectifs"
+              subtitle="Classements et challenges du mois"
+            />
+            <div className="a-stagger a-d8">
+              <ObjectivesSection monthStr={monthStr} monthLabel={monthLabel} />
+            </div>
 
             {/* ======== BLOC 4 : ACTIVITE (onglets) ======== */}
 

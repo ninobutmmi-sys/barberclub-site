@@ -3716,3 +3716,80 @@ select.input {
 .bsp-tab:hover { color: var(--text); }
 .bsp-tab.active { background: var(--text); color: var(--bg); font-weight: 600; }
 .bsp-sat { font-size: 10px; font-weight: 600; color: var(--text-muted); padding: 3px 7px; border: 1px solid var(--border); border-radius: 6px; }
+
+/* ════════════════════════════════════════════════════════════════════
+   OBJECTIFS DU MOIS  (.obj-*) — fusionné dans Analytics
+   Barres horizontales : le libellé se lit à l'endroit, la comparaison
+   tient sur une dimension. La couleur suit le barbier, jamais son rang.
+════════════════════════════════════════════════════════════════════ */
+.obj-section { margin-bottom: 32px; }
+.obj-charts { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 900px)  { .obj-charts { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1400px) { .obj-charts { grid-template-columns: repeat(3, 1fr); } }
+
+.obj-chart {
+  margin: 0; padding: 18px 18px 14px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.obj-skeleton { min-height: 200px; opacity: 0.4; }
+.obj-chart-head { display: flex; flex-direction: column; gap: 3px; margin-bottom: 18px; }
+.obj-chart-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; letter-spacing: 0.01em; color: var(--text); }
+.obj-chart-tag { padding: 2px 7px; border-radius: 100px; background: rgba(var(--overlay), 0.07); color: var(--text-muted); font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.obj-chart-hint { font-size: 11px; color: var(--text-muted); }
+
+.obj-bars { list-style: none; display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; }
+.obj-bar-row {
+  display: grid; gap: 4px 10px; align-items: center;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+}
+.obj-bar-name {
+  grid-row: 1; font-size: 12.5px; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.obj-bar-row.lead .obj-bar-name { color: var(--text); font-weight: 700; }
+/* Piste discrète : la grille ne doit jamais concurrencer la donnée. */
+.obj-bar-track { grid-row: 1; height: 10px; border-radius: 5px; background: rgba(var(--overlay), 0.06); overflow: hidden; }
+/* Extrémité arrondie, ancrée à la ligne de base. */
+.obj-bar-fill { display: block; height: 100%; border-radius: 0 5px 5px 0; transition: width 0.6s cubic-bezier(0.16,1,0.3,1); }
+.obj-bar-value { grid-row: 1; font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; text-align: right; }
+.obj-bar-unit { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+/* Le contexte sous la barre : sans lui, un gros total se lit comme une performance. */
+.obj-bar-meta { grid-column: 2 / -1; grid-row: 2; font-size: 10.5px; color: var(--text-muted); }
+.obj-bar-meta.done { color: var(--success); font-weight: 600; }
+
+.obj-table-toggle { margin-top: 16px; }
+.obj-table-toggle summary { font-size: 11px; color: var(--text-muted); cursor: pointer; list-style: none; }
+.obj-table-toggle summary::-webkit-details-marker { display: none; }
+.obj-table-toggle summary::before { content: '\25B8  '; }
+.obj-table-toggle[open] summary::before { content: '\25BE  '; }
+.obj-table-toggle summary:hover { color: var(--text-secondary); }
+.obj-table { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 11.5px; }
+.obj-table th { text-align: left; font-weight: 600; color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; padding-bottom: 6px; }
+.obj-table td { padding: 5px 8px 5px 0; border-top: 1px solid rgba(var(--overlay), 0.06); color: var(--text-secondary); }
+
+.obj-sub-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 28px 0 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(var(--overlay), 0.06); }
+.obj-sub { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+
+.obj-challenges { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 1000px) { .obj-challenges { grid-template-columns: repeat(2, 1fr); } }
+
+.obj-challenge { padding: 16px 18px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; }
+.obj-challenge-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+.obj-challenge-title { display: block; font-size: 14px; font-weight: 700; color: var(--text); }
+.obj-challenge-sub { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+.obj-challenge-del {
+  width: 30px; height: 30px; flex-shrink: 0; padding: 0; border: none; border-radius: 7px;
+  background: transparent; color: var(--text-muted); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.obj-challenge-del:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.obj-challenge-del svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.obj-empty { padding: 14px 0; font-size: 12.5px; color: var(--text-muted); }
+.obj-note { margin-top: 18px; font-size: 11px; color: var(--text-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .obj-bar-fill { transition: none; }
+}

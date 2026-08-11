@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './auth';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -47,7 +47,6 @@ const FauxPlans = lazy(() => import('./pages/FauxPlans'));
 const Messages = lazy(() => import('./pages/Messages'));
 const Boutique = lazy(() => import('./pages/Boutique'));
 const Oney = lazy(() => import('./pages/Oney'));
-const Objectives = lazy(() => import('./pages/Objectives'));
 const Waitlist = lazy(() => import('./pages/Waitlist'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const System = lazy(() => import('./pages/System'));
@@ -89,7 +88,6 @@ function AppRoutes() {
         <Route path="services" element={<Suspense fallback={<PageLoader />}><Services /></Suspense>} />
         <Route path="boutique" element={<Suspense fallback={<PageLoader />}><Boutique /></Suspense>} />
         <Route path="oney" element={<Suspense fallback={<PageLoader />}><Oney /></Suspense>} />
-        <Route path="objectives" element={<Suspense fallback={<PageLoader />}><Objectives /></Suspense>} />
         <Route path="barbers" element={<Suspense fallback={<PageLoader />}><Barbers /></Suspense>} />
         <Route path="clients" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
         <Route path="clients/:id" element={<Suspense fallback={<PageLoader />}><ClientDetail /></Suspense>} />
@@ -99,6 +97,9 @@ function AppRoutes() {
         <Route path="waitlist" element={<Suspense fallback={<PageLoader />}><Waitlist /></Suspense>} />
         <Route path="tasks" element={<Suspense fallback={<PageLoader />}><Tasks /></Suspense>} />
         <Route path="system" element={<Suspense fallback={<PageLoader />}><System /></Suspense>} />
+        {/* Les objectifs vivent dans Analytics depuis la fusion. Les onglets
+            laissés ouverts sur l'ancienne adresse tombaient sur une page vide. */}
+        <Route path="objectives" element={<Navigate to="/analytics" replace />} />
 
       </Route>
     </Routes>

@@ -36,7 +36,8 @@ router.get('/monthly',
       // --- Trophy 1: "Meilleur volume" (revenue ranking) ---
       const revenueResult = await db.query(
         `SELECT b.barber_id, br.name as barber_name,
-                COALESCE(SUM(b.price), 0) as total_revenue
+                COALESCE(SUM(b.price), 0) as total_revenue,
+                COUNT(*) as bookings_count
          FROM bookings b
          JOIN barbers br ON b.barber_id = br.id
          WHERE b.status = 'completed'
@@ -53,14 +54,23 @@ router.get('/monthly',
         ? parseInt(revenueResult.rows[0].total_revenue, 10)
         : 0;
 
-      const revenueRanking = revenueResult.rows.map((row, i) => ({
-        barber_id: row.barber_id,
-        barber_name: row.barber_name,
-        rank: i + 1,
-        percentage: topRevenue > 0
-          ? Math.round((parseInt(row.total_revenue, 10) / topRevenue) * 100)
-          : 0,
-      }));
+      // total_revenue / bookings_count / avg_ticket sont renvoyés en plus du
+      // pourcentage : un « 100 % » relatif au leader ne dit pas combien il a
+      // fait. Le dashboard trace la valeur réelle et garde percentage pour la
+      // compatibilité de l'ancien écran.
+      const revenueRanking = revenueResult.rows.map((row, i) => {
+        const revenue = parseInt(row.total_revenue, 10);
+        const count = parseInt(row.bookings_count, 10);
+        return {
+          barber_id: row.barber_id,
+          barber_name: row.barber_name,
+          rank: i + 1,
+          total_revenue: revenue,          // centimes
+          bookings_count: count,
+          avg_ticket: count > 0 ? Math.round(revenue / count) : 0,   // centimes
+          percentage: topRevenue > 0 ? Math.round((revenue / topRevenue) * 100) : 0,
+        };
+      });
 
       // --- Trophy 2: "Roi des ventes" (bookings with product sold) ---
       const productSalesResult = await db.query(
@@ -78,12 +88,25 @@ router.get('/monthly',
         [startDate, endDate, salonId]
       );
 
-      const salesRanking = productSalesResult.rows.map((row, i) => ({
-        barber_id: row.barber_id,
-        barber_name: row.barber_name,
-        rank: i + 1,
-        count: parseInt(row.bookings_with_sale, 10),
-      }));
+      // Le nombre brut de ventes favorise mécaniquement celui qui a le plus de
+      // RDV. On renvoie aussi le taux d'attache (part des RDV honorés repartis
+      // avec un produit), qui compare des barbiers de charge différente.
+      const rdvParBarbier = new Map(
+        revenueResult.rows.map(r => [r.barber_id, parseInt(r.bookings_count, 10)])
+      );
+
+      const salesRanking = productSalesResult.rows.map((row, i) => {
+        const count = parseInt(row.bookings_with_sale, 10);
+        const rdv = rdvParBarbier.get(row.barber_id) || 0;
+        return {
+          barber_id: row.barber_id,
+          barber_name: row.barber_name,
+          rank: i + 1,
+          count,
+          bookings_count: rdv,
+          attach_rate: rdv > 0 ? Math.round((count / rdv) * 100) : null,
+        };
+      });
 
       // --- Trophy 3: "Moins de faux plans" (fewest no-shows ranking) ---
       const noShowRankResult = await db.query(
@@ -109,12 +132,13 @@ router.get('/monthly',
 
       const noShowRanking = noShowRankResult.rows.map((row, i) => {
         const count = parseInt(row.no_show_count, 10);
+        const done = parseInt(row.completed_count, 10);
         return {
           barber_id: row.barber_id,
           barber_name: row.barber_name,
           rank: i + 1,
           no_show_count: count,
-          completed_count: parseInt(row.completed_count, 10),
+          completed_count: done,
           // Inverse percentage: 0 no-shows = 100%, max no-shows = low %
           percentage: Math.round(((maxNoShows - count) / maxNoShows) * 100),
           display_value: count === 0 ? '✓ 0' : `${count}`,
