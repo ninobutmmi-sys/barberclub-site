@@ -4,6 +4,7 @@ const { body, param, query } = require('express-validator');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { handleValidation } = require('../../middleware/validate');
+const { logAudit } = require('../../middleware/auditLog');
 const { ApiError } = require('../../utils/errors');
 const { queueNotification } = require('../../services/notification');
 const logger = require('../../utils/logger');
@@ -571,9 +572,16 @@ router.get('/:id/services',
 
       // On renvoie TOUT le catalogue du salon, pas seulement ce qu'il fait :
       // l'écran doit permettre de lui ajouter une prestation.
+      // Un UUID quelconque renvoyait tout le catalogue en 200.
+      const barber = await db.query(
+        'SELECT id FROM barbers WHERE id = $1 AND deleted_at IS NULL', [id]
+      );
+      if (barber.rows.length === 0) throw ApiError.notFound('Barbier introuvable');
+
       const result = await db.query(
         `SELECT s.id, s.name, s.price, s.color, s.sort_order,
                 s.duration AS default_duration,
+                s.duration_saturday,
                 bs.barber_id IS NOT NULL AS assigned,
                 bs.custom_duration,
                 COALESCE(bs.custom_duration, s.duration) AS effective_duration
@@ -614,7 +622,7 @@ router.put('/:id/services/:serviceId',
       // contraint pas le salon du barbier : un barbier invité (Louay) exerce
       // dans l'autre salon et doit pouvoir y recevoir des prestations.
       const service = await db.query(
-        'SELECT id, duration FROM services WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
+        'SELECT id, duration, duration_saturday FROM services WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
         [serviceId, salonId]
       );
       if (service.rows.length === 0) throw ApiError.notFound('Prestation introuvable dans ce salon');
@@ -627,7 +635,16 @@ router.put('/:id/services/:serviceId',
 
       // Une durée égale au défaut ne mérite pas d'exception : on stocke NULL
       // pour que le barbier suive la prestation si elle change plus tard.
-      const toStore = customDuration === service.rows[0].duration ? null : customDuration;
+      //
+      // Mais la résolution réelle est custom_duration > duration_saturday >
+      // duration (services/availability.js). Effacer l'exception alors que la
+      // prestation a une durée du samedi DIFFÉRENTE ferait silencieusement
+      // basculer les samedis sur cette autre valeur — sans moyen de la fixer.
+      // On ne collapse donc que si toutes les journées retombent bien dessus.
+      const { duration, duration_saturday: samedi } = service.rows[0];
+      const memeToutLaSemaine = customDuration === duration
+        && (samedi === null || samedi === customDuration);
+      const toStore = memeToutLaSemaine ? null : customDuration;
 
       await db.query(
         `INSERT INTO barber_services (barber_id, service_id, custom_duration)
@@ -637,6 +654,10 @@ router.put('/:id/services/:serviceId',
       );
 
       logger.info('Barber service updated', { barberId: id, serviceId, customDuration: toStore });
+      // Une durée de prestation fixe la fin des RDV : la 050 documente un cas
+      // où un custom_duration s'est remis à NULL tout seul. Sans trace, on ne
+      // sait pas distinguer une action d'écran d'une régression.
+      logAudit(req, 'update', 'barber_service', `${id}:${serviceId}`, { custom_duration: toStore });
 
       res.json({
         barber_id: id,
@@ -674,6 +695,7 @@ router.delete('/:id/services/:serviceId',
       );
 
       logger.info('Barber service removed', { barberId: id, serviceId });
+      logAudit(req, 'delete', 'barber_service', `${id}:${serviceId}`, {});
       res.json({ barber_id: id, service_id: serviceId, assigned: false });
     } catch (error) {
       next(error);

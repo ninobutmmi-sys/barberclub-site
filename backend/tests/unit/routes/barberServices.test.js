@@ -19,6 +19,10 @@ jest.mock('../../../src/services/notification', () => ({
   queueNotification: jest.fn().mockResolvedValue(),
 }));
 
+// logAudit enchaîne .catch() sur db.query : avec un mock nu qui renvoie
+// undefined, la route partirait en 500. On le neutralise, il est testé ailleurs.
+jest.mock('../../../src/middleware/auditLog', () => ({ logAudit: jest.fn() }));
+
 jest.mock('../../../src/utils/logger', () => ({
   info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
 }));
@@ -57,7 +61,7 @@ describe('PUT /api/admin/barbers/:id/services/:serviceId', () => {
   });
 
   it('enregistre la durée personnalisée quand elle diffère du défaut', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: SERVICE, duration: 30 }] }); // service
+    db.query.mockResolvedValueOnce({ rows: [{ id: SERVICE, duration: 30, duration_saturday: null }] }); // service
     db.query.mockResolvedValueOnce({ rows: [{ id: BARBER }] });                // barbier
     db.query.mockResolvedValueOnce({ rows: [] });                              // upsert
 
@@ -74,7 +78,7 @@ describe('PUT /api/admin/barbers/:id/services/:serviceId', () => {
   it('ne stocke rien quand la durée demandée est déjà celle de la prestation', async () => {
     // Sinon le barbier serait figé et ne suivrait plus la prestation si sa
     // durée change — c'est le choix fait dans les migrations 062 et 064.
-    db.query.mockResolvedValueOnce({ rows: [{ id: SERVICE, duration: 30 }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: SERVICE, duration: 30, duration_saturday: null }] });
     db.query.mockResolvedValueOnce({ rows: [{ id: BARBER }] });
     db.query.mockResolvedValueOnce({ rows: [] });
 
@@ -89,8 +93,38 @@ describe('PUT /api/admin/barbers/:id/services/:serviceId', () => {
     expect(upsert[1]).toEqual([BARBER, SERVICE, null]);
   });
 
+  it("garde l'exception quand la prestation a une durée du samedi différente", async () => {
+    // La résolution réelle est custom_duration > duration_saturday > duration.
+    // Effacer l'exception ferait basculer les samedis sur 20 sans qu'on puisse
+    // les fixer à 30 — c'est le piège relevé en revue de code.
+    db.query.mockResolvedValueOnce({ rows: [{ id: SERVICE, duration: 30, duration_saturday: 20 }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: BARBER }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .put(`/api/admin/barbers/${BARBER}/services/${SERVICE}`)
+      .send({ custom_duration: 30 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.custom_duration).toBe(30);
+    const upsert = db.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO barber_services'));
+    expect(upsert[1]).toEqual([BARBER, SERVICE, 30]);
+  });
+
+  it('efface bien l\'exception quand la durée du samedi est la même', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: SERVICE, duration: 30, duration_saturday: 30 }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: BARBER }] });
+    db.query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .put(`/api/admin/barbers/${BARBER}/services/${SERVICE}`)
+      .send({ custom_duration: 30 });
+
+    expect(res.body.custom_duration).toBeNull();
+  });
+
   it('assigne sans durée particulière quand le corps est vide', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: SERVICE, duration: 30 }] });
+    db.query.mockResolvedValueOnce({ rows: [{ id: SERVICE, duration: 30, duration_saturday: null }] });
     db.query.mockResolvedValueOnce({ rows: [{ id: BARBER }] });
     db.query.mockResolvedValueOnce({ rows: [] });
 
@@ -137,6 +171,7 @@ describe('DELETE /api/admin/barbers/:id/services/:serviceId', () => {
 
 describe('GET /api/admin/barbers/:id/services', () => {
   it('renvoie tout le catalogue du salon avec la durée effective', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ id: BARBER }] }); // existence du barbier
     db.query.mockResolvedValueOnce({
       rows: [
         { id: SERVICE, name: 'Coupe + Barbe', assigned: true, custom_duration: 40, default_duration: 30, effective_duration: 40 },
@@ -151,6 +186,6 @@ describe('GET /api/admin/barbers/:id/services', () => {
     // Le catalogue complet, y compris ce que le barbier ne fait pas :
     // l'écran doit permettre de le lui ajouter.
     expect(res.body.filter((s) => !s.assigned)).toHaveLength(1);
-    expect(db.query.mock.calls[0][1]).toEqual(['meylan', BARBER]);
+    expect(db.query.mock.calls[1][1]).toEqual(['meylan', BARBER]);
   });
 });

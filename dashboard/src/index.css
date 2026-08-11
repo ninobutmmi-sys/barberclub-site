@@ -3715,3 +3715,4 @@ select.input {
 }
 .bsp-tab:hover { color: var(--text); }
 .bsp-tab.active { background: var(--text); color: var(--bg); font-weight: 600; }
+.bsp-sat { font-size: 10px; font-weight: 600; color: var(--text-muted); padding: 3px 7px; border: 1px solid var(--border); border-radius: 6px; }

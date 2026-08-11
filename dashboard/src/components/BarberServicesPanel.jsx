@@ -25,14 +25,16 @@ function initials(name = '') {
 
 export default function BarberServicesPanel() {
   const { data: allBarbers = [], isLoading: loadingBarbers } = useBarbers();
-  const barbers = useMemo(
-    () => allBarbers.filter((b) => b.is_active && b.role !== 'Admin'),
-    [allBarbers]
-  );
+  // is_active suffit : les comptes techniques « Admin » sont inactifs en base.
+  // Filtrer aussi sur role écarterait à tort un vrai barbier ainsi intitulé.
+  const barbers = useMemo(() => allBarbers.filter((b) => b.is_active), [allBarbers]);
 
   const [barberId, setBarberId] = useState(null);
   useEffect(() => {
-    if (!barberId && barbers.length) setBarberId(barbers[0].id);
+    if (!barbers.length) return;
+    // On retombe sur le premier barbier si la sélection ne pointe plus sur
+    // personne — cas d'un barbier désactivé pendant que l'écran est ouvert.
+    if (!barberId || !barbers.some((b) => b.id === barberId)) setBarberId(barbers[0].id);
   }, [barbers, barberId]);
 
   const { data: rows = [], isLoading, error } = useBarberServices(barberId);
@@ -110,6 +112,10 @@ function ServiceRow({ row, barberId }) {
     }
     if (n === row.effective_duration) return;   // rien à écrire
     setLocalError('');
+    // On avance l'affichage tout de suite : sinon un second clic sur ± repart
+    // de la valeur d'avant (draft n'est rafraîchi qu'au retour de la requête)
+    // et se fait rejeter comme identique — deux clics ne donnaient que +5.
+    setDraft(String(n));
     try {
       await setService.mutateAsync({ id: barberId, serviceId: row.id, customDuration: n });
     } catch (err) {
@@ -121,7 +127,16 @@ function ServiceRow({ row, barberId }) {
   async function toggleAssigned() {
     setLocalError('');
     try {
-      if (row.assigned) await removeService.mutateAsync({ id: barberId, serviceId: row.id });
+      if (row.assigned) {
+        // Retirer la prestation supprime la ligne barber_services, donc la
+        // durée réglée avec. Une case cochée par erreur ne doit pas effacer
+        // un réglage sans le dire.
+        if (row.custom_duration != null &&
+            !window.confirm(`Retirer « ${row.name} » ?\nSa durée propre de ${row.custom_duration} min sera perdue.`)) {
+          return;
+        }
+        await removeService.mutateAsync({ id: barberId, serviceId: row.id });
+      }
       else await setService.mutateAsync({ id: barberId, serviceId: row.id, customDuration: null });
     } catch (err) {
       setLocalError(err.message || 'Échec de l’enregistrement');
@@ -184,6 +199,11 @@ function ServiceRow({ row, barberId }) {
             onClick={() => commit(Number(draft) + STEP)} aria-label="Augmenter de 5 minutes"
           >+</button>
 
+          {row.duration_saturday != null && row.duration_saturday !== row.default_duration && !custom && (
+            <span className="bsp-sat" title="Le samedi, cette prestation dure autrement">
+              sam {row.duration_saturday}
+            </span>
+          )}
           {custom ? (
             <button className="bsp-revert" onClick={resetToDefault} disabled={saving}
               title={`Revenir à la durée standard (${row.default_duration} min)`}>
