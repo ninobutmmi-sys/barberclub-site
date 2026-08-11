@@ -15,9 +15,9 @@ const IconEdit = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
 const IconClose = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
 const IconHistory = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /><polyline points="12 7 12 12 16 14" /></svg>;
-const IconEmpty = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 56, height: 56, color: 'var(--text-muted)', marginBottom: 14 }}><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>;
 
 const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+const VIDE = [];
 
 function todayISO() {
   const d = new Date();
@@ -65,22 +65,51 @@ function formatRecurrenceLabel(config) {
   return '';
 }
 
-function groupTasks(tasks) {
-  const groups = { overdue: [], today: [], week: [], later: [], none: [] };
-  const today = todayISO();
-  for (const t of tasks) {
-    const due = t.next_due_date || t.due_date;
-    if (!due) {
-      groups.none.push(t);
-      continue;
-    }
-    const diff = daysBetween(today, due);
-    if (diff < 0) groups.overdue.push(t);
-    else if (diff === 0) groups.today.push(t);
-    else if (diff <= 7) groups.week.push(t);
-    else groups.later.push(t);
-  }
-  return groups;
+// =============================================================
+// Statuts — la couleur du point ET son nom. Jamais la couleur seule.
+// =============================================================
+const STATUS = {
+  overdue: { label: 'En retard', color: '#fb5f7a' },
+  today: { label: "Aujourd'hui", color: '#f0a12e' },
+  soon: { label: 'À venir', color: '#4aa3ef' },
+  done: { label: 'Faite', color: '#31c06a' },
+};
+const STATUS_ORDER = ['overdue', 'today', 'soon', 'done'];
+
+function isDone(task) {
+  // Une tâche récurrente n'est jamais « finie » : elle repart à l'échéance suivante.
+  return !task.is_recurring && !!task.completed_at;
+}
+
+function taskDate(task) {
+  return task.next_due_date || task.due_date || null;
+}
+
+function taskStatus(task, today) {
+  if (isDone(task)) return 'done';
+  const due = taskDate(task);
+  if (!due) return 'soon';
+  const diff = daysBetween(today, due);
+  if (diff < 0) return 'overdue';
+  if (diff === 0) return 'today';
+  return 'soon';
+}
+
+function isoOf(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Grille du mois, lundi en tête, sans ligne vide traînante en fin de mois. */
+function monthCells(year, month) {
+  const decalage = (new Date(year, month, 1).getDay() + 6) % 7;   // 0 = lundi
+  const nbJours = new Date(year, month + 1, 0).getDate();
+  const lignes = Math.ceil((decalage + nbJours) / 7);
+  return Array.from({ length: lignes * 7 }, (_, i) => new Date(year, month, 1 - decalage + i));
+}
+
+function longDate(iso) {
+  return new Date(iso + 'T00:00:00')
+    .toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 // =============================================================
@@ -89,35 +118,66 @@ function groupTasks(tasks) {
 export default function Tasks() {
   const isMobile = useMobile();
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialFilter = searchParams.get('filter') === 'overdue' ? 'overdue' : null;
+  const onlyOverdue = searchParams.get('filter') === 'overdue';
 
-  const [tab, setTab] = useState('todo'); // todo | done | all
-  const [editing, setEditing] = useState(null); // null | 'new' | task
+  const today = todayISO();
+  const [cursor, setCursor] = useState(() => {
+    const d = new Date();
+    return { y: d.getFullYear(), m: d.getMonth() };
+  });
+  const [selected, setSelected] = useState(today);
+  // Les tâches faites s'accumulent (31 sur 38 à Meylan) : affichées par défaut
+  // elles noyaient les 4 qui restent. Un seul interrupteur pour la grille ET
+  // la liste, sinon les points du calendrier ne correspondent plus au panneau.
+  const [showDone, setShowDone] = useState(false);
+  const [editing, setEditing] = useState(null);       // null | 'new' | task | {due_date}
   const [historyTaskId, setHistoryTaskId] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const tasksQuery = useTasks({ status: tab });
+  // Le calendrier montre le mois entier, fait comme à faire. Filtrer côté
+  // serveur viderait la case dès qu'une tâche est cochée — le mois écoulé
+  // doit rester lisible.
+  const tasksQuery = useTasks({ status: 'all' });
   const barbersQuery = useBarbers();
   const completeMutation = useCompleteTask();
   const uncompleteMutation = useUncompleteTask();
   const deleteMutation = useDeleteTask();
 
-  const tasks = tasksQuery.data || [];
-  const barbers = (barbersQuery.data || []).filter((b) => b.is_active);
+  // Réutiliser la même référence vide : un [] neuf à chaque rendu ferait
+  // recalculer les trois useMemo en boucle tant que la requête n'a pas répondu.
+  const tasks = tasksQuery.data ?? VIDE;
+  const barbers = useMemo(
+    () => (barbersQuery.data ?? VIDE).filter((b) => b.is_active),
+    [barbersQuery.data]
+  );
 
-  // Filter overdue if param set
-  const filtered = useMemo(() => {
-    if (initialFilter === 'overdue') {
-      const today = todayISO();
-      return tasks.filter((t) => {
-        const due = t.next_due_date || t.due_date;
-        return due && daysBetween(today, due) < 0;
-      });
+  const visible = useMemo(() => {
+    let out = showDone ? tasks : tasks.filter((t) => !isDone(t));
+    if (onlyOverdue) out = out.filter((t) => taskStatus(t, today) === 'overdue');
+    return out;
+  }, [tasks, onlyOverdue, showDone, today]);
+
+  const nbFaites = useMemo(() => tasks.filter(isDone).length, [tasks]);
+
+  const parJour = useMemo(() => {
+    const m = new Map();
+    for (const t of visible) {
+      const d = taskDate(t);
+      if (!d) continue;
+      if (!m.has(d)) m.set(d, []);
+      m.get(d).push(t);
     }
-    return tasks;
-  }, [tasks, initialFilter]);
+    return m;
+  }, [visible]);
 
-  const groups = useMemo(() => groupTasks(filtered), [filtered]);
+  const sansEcheance = useMemo(() => visible.filter((t) => !taskDate(t)), [visible]);
+  const nbRetard = useMemo(
+    () => tasks.filter((t) => taskStatus(t, today) === 'overdue').length,
+    [tasks, today]
+  );
+
+  const cells = useMemo(() => monthCells(cursor.y, cursor.m), [cursor]);
+  const jourSelection = parJour.get(selected) || [];
 
   const toastTimer = useRef(null);
   const showToast = useCallback((message, type = 'success') => {
@@ -161,103 +221,195 @@ export default function Tasks() {
     }
   }
 
-  const isLoading = tasksQuery.isLoading;
-  const isEmpty = !isLoading && filtered.length === 0;
+  const moisLabel = new Date(cursor.y, cursor.m, 1)
+    .toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  const moisCourant = cursor.y === new Date().getFullYear() && cursor.m === new Date().getMonth();
+
+  function decalerMois(pas) {
+    setCursor((c) => {
+      const d = new Date(c.y, c.m + pas, 1);
+      return { y: d.getFullYear(), m: d.getMonth() };
+    });
+  }
+
+  function allerAujourdhui() {
+    const d = new Date();
+    setCursor({ y: d.getFullYear(), m: d.getMonth() });
+    setSelected(today);
+  }
+
+  const cardProps = {
+    onComplete: handleComplete,
+    onUncomplete: handleUncomplete,
+    onEdit: setEditing,
+    onDelete: handleDelete,
+    onHistory: setHistoryTaskId,
+  };
 
   return (
-    <div style={{ padding: isMobile ? '16px 12px 80px' : '24px 24px 32px', maxWidth: 900, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, gap: 12 }}>
+    <div className="tk">
+      {/* ---- En-tête ---- */}
+      <header className="tk-head">
         <div>
-          <h1 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 600, margin: 0 }}>Tâches</h1>
-          {initialFilter === 'overdue' && (
+          <h1 className="tk-title">Tâches</h1>
+          <p className="tk-subtitle">
+            {nbRetard > 0
+              ? <><span className="tk-late-dot" aria-hidden="true" />{nbRetard} en retard</>
+              : 'Rien en retard'}
+          </p>
+        </div>
+        <div className="tk-head-actions">
+          {nbRetard > 0 && (
             <button
               type="button"
-              onClick={() => setSearchParams({})}
-              style={{
-                marginTop: 6, fontSize: 12, color: 'var(--text-secondary)',
-                background: 'none', border: 'none', padding: 0, cursor: 'pointer', textDecoration: 'underline',
-              }}
+              className={`tk-filter ${onlyOverdue ? 'on' : ''}`}
+              onClick={() => setSearchParams(onlyOverdue ? {} : { filter: 'overdue' })}
+              aria-pressed={onlyOverdue}
             >
-              Filtre "en retard" actif — voir toutes
+              {onlyOverdue ? 'Voir tout' : 'En retard'}
             </button>
           )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setEditing('new')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '9px 14px', borderRadius: 'var(--radius-sm)',
-            background: 'var(--accent)', color: 'var(--bg)', border: 'none',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          }}
-        >
-          <IconPlus />
-          {isMobile ? 'Nouvelle' : 'Nouvelle tâche'}
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 18, borderBottom: '1px solid var(--border)' }}>
-        {[
-          { key: 'todo', label: 'À faire' },
-          { key: 'done', label: 'Faites' },
-          { key: 'all', label: 'Toutes' },
-        ].map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            style={{
-              padding: '10px 14px',
-              background: 'none',
-              border: 'none',
-              borderBottom: tab === t.key ? '2px solid var(--accent)' : '2px solid transparent',
-              color: tab === t.key ? 'var(--text)' : 'var(--text-secondary)',
-              fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              marginBottom: -1,
-            }}
-          >
-            {t.label}
+          {nbFaites > 0 && (
+            <button
+              type="button"
+              className={`tk-chip ${showDone ? 'on' : ''}`}
+              onClick={() => setShowDone((v) => !v)}
+              aria-pressed={showDone}
+            >
+              <IconCheck />
+              Faites
+              <span className="tk-chip-n">{nbFaites}</span>
+            </button>
+          )}
+          <button type="button" className="tk-new" onClick={() => setEditing('new')}>
+            <IconPlus />
+            {isMobile ? 'Nouvelle' : 'Nouvelle tâche'}
           </button>
-        ))}
-      </div>
+        </div>
+      </header>
 
-      {/* Loading / empty */}
-      {isLoading && <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>Chargement…</div>}
+      {tasksQuery.isLoading ? (
+        <div className="tk-loading">Chargement…</div>
+      ) : (
+        <div className="tk-layout">
+          {/* ---- Calendrier ---- */}
+          <section className="tk-cal" aria-label="Calendrier des tâches">
+            <div className="tk-cal-head">
+              <button type="button" className="tk-nav" onClick={() => decalerMois(-1)} aria-label="Mois précédent">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+              </button>
+              <h2 className="tk-month">{moisLabel}</h2>
+              <button type="button" className="tk-nav" onClick={() => decalerMois(1)} aria-label="Mois suivant">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+              </button>
+              {!moisCourant && (
+                <button type="button" className="tk-today-btn" onClick={allerAujourdhui}>Auj.</button>
+              )}
+            </div>
 
-      {isEmpty && (
-        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-          <IconEmpty />
-          <div style={{ fontSize: 14 }}>
-            {tab === 'todo' ? 'Aucune tâche en cours' : tab === 'done' ? 'Aucune tâche terminée' : 'Aucune tâche'}
-          </div>
+            <div className="tk-grid" role="grid">
+              {DAY_LABELS.map((d) => (
+                <div key={d} className="tk-dow" role="columnheader">
+                  <abbr title={d}>{d.slice(0, 1)}</abbr>
+                </div>
+              ))}
+
+              {cells.map((d) => {
+                const iso = isoOf(d);
+                const items = parJour.get(iso) || [];
+                const statuts = items.map((t) => taskStatus(t, today));
+                const points = STATUS_ORDER.flatMap((s) => statuts.filter((x) => x === s));
+                const horsMois = d.getMonth() !== cursor.m;
+                const cl = [
+                  'tk-cell',
+                  horsMois ? 'out' : '',
+                  iso === today ? 'today' : '',
+                  iso === selected ? 'sel' : '',
+                  items.length ? 'has' : '',
+                ].join(' ');
+
+                const resume = points.length
+                  ? `${points.length} tâche${points.length > 1 ? 's' : ''} : ` +
+                    STATUS_ORDER
+                      .map((s) => ({ s, n: points.filter((p) => p === s).length }))
+                      .filter((x) => x.n > 0)
+                      .map((x) => `${x.n} ${STATUS[x.s].label.toLowerCase()}`)
+                      .join(', ')
+                  : 'aucune tâche';
+
+                return (
+                  <button
+                    key={iso}
+                    type="button"
+                    role="gridcell"
+                    className={cl}
+                    onClick={() => { setSelected(iso); if (horsMois) setCursor({ y: d.getFullYear(), m: d.getMonth() }); }}
+                    aria-pressed={iso === selected}
+                    aria-label={`${longDate(iso)} — ${resume}`}
+                  >
+                    <span className="tk-daynum">{d.getDate()}</span>
+                    <span className="tk-dots" aria-hidden="true">
+                      {points.slice(0, 3).map((s, i) => (
+                        <span key={i} className={`tk-dot ${s}`} style={{ '--dot': STATUS[s].color }} />
+                      ))}
+                      {points.length > 3 && <span className="tk-more">+{points.length - 3}</span>}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* La couleur ne porte jamais l'information seule. */}
+            <ul className="tk-legend">
+              {STATUS_ORDER.map((s) => (
+                <li key={s}>
+                  <span className={`tk-dot ${s}`} style={{ '--dot': STATUS[s].color }} aria-hidden="true" />
+                  {STATUS[s].label}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* ---- Jour sélectionné ---- */}
+          <section className="tk-day" aria-label="Tâches du jour sélectionné">
+            <div className="tk-day-head">
+              <h2 className="tk-day-title">
+                {selected === today ? "Aujourd'hui" : longDate(selected)}
+                <span className="tk-day-count">{jourSelection.length}</span>
+              </h2>
+              <button
+                type="button"
+                className="tk-day-add"
+                onClick={() => setEditing({ due_date: selected })}
+                aria-label={`Ajouter une tâche le ${longDate(selected)}`}
+              >
+                <IconPlus />
+              </button>
+            </div>
+
+            {jourSelection.length === 0 ? (
+              <p className="tk-day-empty">Rien de prévu ce jour-là.</p>
+            ) : (
+              <div className="tk-day-list">
+                {jourSelection.map((t) => <TaskCard key={t.id} task={t} {...cardProps} />)}
+              </div>
+            )}
+
+            {sansEcheance.length > 0 && (
+              <>
+                <h3 className="tk-sub">
+                  Sans échéance <span>{sansEcheance.length}</span>
+                  <em>pas de date, donc pas dans le calendrier</em>
+                </h3>
+                <div className="tk-day-list">
+                  {sansEcheance.map((t) => <TaskCard key={t.id} task={t} {...cardProps} />)}
+                </div>
+              </>
+            )}
+          </section>
         </div>
       )}
 
-      {/* Groups */}
-      {!isLoading && !isEmpty && (
-        <>
-          <Group title="En retard" count={groups.overdue.length} tasks={groups.overdue} color="var(--danger)"
-                 onComplete={handleComplete} onUncomplete={handleUncomplete} onEdit={setEditing}
-                 onDelete={handleDelete} onHistory={setHistoryTaskId} />
-          <Group title="Aujourd'hui" count={groups.today.length} tasks={groups.today} color="var(--warning)"
-                 onComplete={handleComplete} onUncomplete={handleUncomplete} onEdit={setEditing}
-                 onDelete={handleDelete} onHistory={setHistoryTaskId} />
-          <Group title="Cette semaine" count={groups.week.length} tasks={groups.week}
-                 onComplete={handleComplete} onUncomplete={handleUncomplete} onEdit={setEditing}
-                 onDelete={handleDelete} onHistory={setHistoryTaskId} />
-          <Group title="Plus tard" count={groups.later.length} tasks={groups.later}
-                 onComplete={handleComplete} onUncomplete={handleUncomplete} onEdit={setEditing}
-                 onDelete={handleDelete} onHistory={setHistoryTaskId} />
-          <Group title="Sans échéance" count={groups.none.length} tasks={groups.none}
-                 onComplete={handleComplete} onUncomplete={handleUncomplete} onEdit={setEditing}
-                 onDelete={handleDelete} onHistory={setHistoryTaskId} />
-        </>
-      )}
-
-      {/* Modal */}
       {editing && (
         <TaskModal
           task={editing === 'new' ? null : editing}
@@ -267,67 +419,22 @@ export default function Tasks() {
         />
       )}
 
-      {/* History drawer */}
       {historyTaskId && (
         <HistoryDrawer
           taskId={historyTaskId}
           onClose={() => setHistoryTaskId(null)}
-          onUncomplete={async (task) => {
-            await handleUncomplete(task);
-            setHistoryTaskId(null);
-          }}
+          onUncomplete={async (task) => { await handleUncomplete(task); setHistoryTaskId(null); }}
         />
       )}
 
-      {/* Toast */}
       {toast && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: isMobile ? 80 : 24,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: toast.type === 'error' ? 'var(--danger)' : 'var(--accent)',
-            color: toast.type === 'error' ? '#fff' : 'var(--bg)',
-            padding: '11px 18px',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: 13, fontWeight: 500,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-            zIndex: 1000,
-            maxWidth: 'calc(100vw - 40px)',
-          }}
-        >
+        <div className={`tk-toast ${toast.type === 'error' ? 'err' : ''}`} role="status">
           {toast.message}
         </div>
       )}
     </div>
   );
 }
-
-// =============================================================
-// Group section
-// =============================================================
-function Group({ title, count, tasks, color, onComplete, onUncomplete, onEdit, onDelete, onHistory }) {
-  if (count === 0) return null;
-  return (
-    <div style={{ marginBottom: 24 }}>
-      <h3 style={{
-        fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em',
-        color: color || 'var(--text-secondary)', margin: '0 0 10px', padding: '0 4px',
-      }}>
-        {title} <span style={{ opacity: 0.5, marginLeft: 6 }}>{count}</span>
-      </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {tasks.map((t) => (
-          <TaskCard key={t.id} task={t}
-            onComplete={onComplete} onUncomplete={onUncomplete}
-            onEdit={onEdit} onDelete={onDelete} onHistory={onHistory} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // =============================================================
 // Task card
 // =============================================================
@@ -523,7 +630,9 @@ function Avatar({ name, photo }) {
 // =============================================================
 function TaskModal({ task, barbers, onClose, onSaved }) {
   const isMobile = useMobile();
-  const isEdit = !!task;
+  // Le calendrier ouvre la modale pré-remplie avec la date cliquée : cet objet
+  // n'a pas d'id, ce n'est pas une modification.
+  const isEdit = !!task?.id;
   const createMutation = useCreateTask();
   const updateMutation = useUpdateTask();
 

@@ -3793,3 +3793,178 @@ select.input {
 @media (prefers-reduced-motion: reduce) {
   .obj-bar-fill { transition: none; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   TÂCHES  (.tk-*) — calendrier du mois + panneau du jour
+   Un point = une tâche, sa couleur = son état. La couleur ne porte
+   jamais l'information seule : légende, résumé vocal et libellés.
+════════════════════════════════════════════════════════════════════ */
+.tk { padding: 24px 24px 40px; max-width: 1240px; margin: 0 auto; }
+@media (max-width: 1023px) { .tk { padding: 16px 12px 90px; } }
+
+.tk-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+/* Sous 720px les trois boutons ne tiennent plus à côté du titre : ils passent
+   sur leur propre ligne plutôt que de rogner « Nouvelle tâche ». */
+@media (max-width: 719px) {
+  .tk-head-actions { width: 100%; justify-content: flex-end; }
+  .tk-new { flex: 1; justify-content: center; }
+}
+.tk-title { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+@media (max-width: 1023px) { .tk-title { font-size: 22px; } }
+.tk-subtitle { display: flex; align-items: center; gap: 7px; margin: 5px 0 0; font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
+.tk-late-dot { width: 7px; height: 7px; border-radius: 50%; background: #fb5f7a; box-shadow: 0 0 8px #fb5f7a; }
+
+.tk-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.tk-filter, .tk-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 38px; padding: 0 13px; border-radius: var(--radius-sm);
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-secondary); font-size: 12.5px; font-weight: 600; cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.tk-filter:hover, .tk-chip:hover { background: rgba(var(--overlay), 0.07); color: var(--text); }
+.tk-filter { color: #fb5f7a; border-color: rgba(251, 95, 122, 0.3); }
+.tk-filter:hover { background: rgba(251, 95, 122, 0.12); color: #fb5f7a; }
+.tk-filter.on { background: #fb5f7a; border-color: #fb5f7a; color: #fff; }
+.tk-chip.on { background: rgba(49, 192, 106, 0.13); border-color: rgba(49, 192, 106, 0.4); color: #31c06a; }
+.tk-chip-n { opacity: 0.65; font-weight: 700; }
+.tk-chip svg { width: 12px; height: 12px; }
+.tk-new {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 38px; padding: 0 15px; border-radius: var(--radius-sm);
+  background: var(--accent); color: var(--bg); border: none;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: filter 0.2s ease;
+}
+.tk-new:hover { filter: brightness(1.12); }
+
+.tk-loading { padding: 60px; text-align: center; color: var(--text-muted); }
+
+.tk-layout { display: grid; gap: 18px; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 1100px) { .tk-layout { grid-template-columns: minmax(0, 1.1fr) minmax(340px, 1fr); } }
+
+/* ── Calendrier ── */
+.tk-cal { padding: 18px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; }
+@media (max-width: 1023px) { .tk-cal { padding: 14px 12px; } }
+
+.tk-cal-head { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+.tk-month {
+  flex: 1; margin: 0; text-align: center; font-size: 15px; font-weight: 700;
+  text-transform: capitalize; letter-spacing: 0.01em; color: var(--text);
+}
+.tk-nav {
+  width: 38px; height: 38px; flex-shrink: 0; padding: 0; border: none; border-radius: 10px;
+  background: rgba(var(--overlay), 0.05); color: var(--text-secondary); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.tk-nav:hover { background: rgba(var(--overlay), 0.11); color: var(--text); }
+.tk-nav svg { width: 15px; height: 15px; }
+.tk-today-btn {
+  min-height: 32px; padding: 0 11px; border: none; border-radius: 8px;
+  background: rgba(var(--overlay), 0.07); color: var(--text-secondary);
+  font-size: 11.5px; font-weight: 600; cursor: pointer; transition: background 0.2s ease;
+}
+.tk-today-btn:hover { background: rgba(var(--overlay), 0.14); }
+
+.tk-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.tk-dow {
+  padding-bottom: 8px; text-align: center;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.tk-dow abbr { text-decoration: none; border: none; }
+
+.tk-cell {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  min-height: 66px; padding: 8px 2px 6px; border-radius: 12px;
+  background: transparent; border: 1px solid transparent; cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+/* Cible tactile : à 390px la case fait ~48px de large, on garde 48 de haut. */
+@media (max-width: 1023px) { .tk-cell { min-height: 52px; padding: 6px 1px 5px; gap: 4px; border-radius: 10px; } }
+.tk-cell:hover { background: rgba(var(--overlay), 0.05); }
+.tk-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tk-cell.out { opacity: 0.32; }
+.tk-cell.today { border-color: rgba(var(--overlay), 0.28); }
+.tk-cell.today .tk-daynum { color: var(--text); font-weight: 800; }
+.tk-cell.sel { background: rgba(var(--overlay), 0.1); border-color: rgba(var(--overlay), 0.3); }
+
+.tk-daynum { font-size: 13px; font-weight: 500; color: var(--text-secondary); line-height: 1; }
+@media (max-width: 1023px) { .tk-daynum { font-size: 12px; } }
+
+.tk-dots { display: flex; align-items: center; justify-content: center; gap: 3px; min-height: 9px; flex-wrap: wrap; }
+.tk-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: var(--dot);
+  /* Le glow : deux halos, un serré pour la netteté, un large pour la lueur. */
+  box-shadow: 0 0 4px var(--dot), 0 0 9px var(--dot);
+}
+/* Seul le retard bat — une page qui clignote partout ne signale plus rien. */
+.tk-dot.overdue { animation: tk-pulse 2.4s ease-in-out infinite; }
+@keyframes tk-pulse {
+  0%, 100% { box-shadow: 0 0 4px var(--dot), 0 0 9px var(--dot); }
+  50%      { box-shadow: 0 0 5px var(--dot), 0 0 16px var(--dot); }
+}
+.tk-dot.done { opacity: 0.75; box-shadow: 0 0 3px var(--dot); }
+.tk-more { font-size: 9px; font-weight: 700; color: var(--text-muted); line-height: 1; }
+
+.tk-legend {
+  display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 16px 0 0;
+  padding-top: 14px; border-top: 1px solid rgba(var(--overlay), 0.07);
+  list-style: none; font-size: 11px; color: var(--text-muted);
+}
+.tk-legend li { display: flex; align-items: center; gap: 6px; }
+.tk-legend .tk-dot { animation: none; }
+
+/* ── Panneau du jour ── */
+.tk-day { min-width: 0; }
+@media (min-width: 1100px) { .tk-day { position: sticky; top: 16px; max-height: calc(100vh - 40px); overflow-y: auto; padding-right: 4px; } }
+
+.tk-day-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.tk-day-title {
+  display: flex; align-items: center; gap: 9px; margin: 0;
+  font-size: 15px; font-weight: 700; text-transform: capitalize; color: var(--text);
+}
+.tk-day-count {
+  min-width: 20px; padding: 2px 6px; border-radius: 100px; text-align: center;
+  background: rgba(var(--overlay), 0.09); color: var(--text-muted);
+  font-size: 11px; font-weight: 700; text-transform: none;
+}
+.tk-day-add {
+  width: 38px; height: 38px; flex-shrink: 0; padding: 0; border: none; border-radius: 10px;
+  background: rgba(var(--overlay), 0.06); color: var(--text-secondary); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.tk-day-add:hover { background: rgba(var(--overlay), 0.13); color: var(--text); }
+
+.tk-day-list { display: flex; flex-direction: column; gap: 8px; }
+.tk-day-empty {
+  margin: 0; padding: 26px 16px; text-align: center;
+  background: var(--bg-card); border: 1px dashed var(--border); border-radius: 14px;
+  font-size: 13px; color: var(--text-muted);
+}
+.tk-sub {
+  display: flex; align-items: center; gap: 8px; margin: 24px 0 10px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.tk-sub span { opacity: 0.6; }
+.tk-sub em { margin-left: auto; font-style: normal; font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 10.5px; opacity: 0.75; }
+@media (max-width: 600px) { .tk-sub { flex-wrap: wrap; } .tk-sub em { margin-left: 0; width: 100%; } }
+
+.tk-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  padding: 11px 18px; border-radius: var(--radius-sm);
+  background: var(--accent); color: var(--bg);
+  font-size: 13px; font-weight: 500; z-index: 1000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); max-width: calc(100vw - 40px);
+}
+.tk-toast.err { background: var(--danger); color: #fff; }
+@media (max-width: 1023px) { .tk-toast { bottom: 80px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tk-dot.overdue { animation: none; }
+  .tk-cell, .tk-nav, .tk-new, .tk-filter { transition: none; }
+}
