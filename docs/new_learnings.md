@@ -3316,3 +3316,58 @@ Twilio, Vonage, MessageBird ont tous le même problème : API renvoie OK mais de
 - **Pricing SaaS salon** se professionnalise (Fresha n'est plus gratuit). La fenêtre pour productiser BarberClub à un prix attractif (~79€/mois) reste ouverte mais se ferme — concurrents poussent leurs prix en haut.
 - **Burst Fade** explose côté TikTok/Insta — opportunité de contenu visuel pour nourrir IG/galerie sans budget pub.
 
+
+---
+
+## Veille du 2026-08-11 — Fonctionnalités visiteur & dashboard
+
+> Angle demandé par Nino : des fonctionnalités et détails concrets à ajouter, côté site visiteur ou côté dashboard. Les chiffres BarberClub ci-dessous sont mesurés en base le 2026-08-11, pas repris d'un article.
+
+### Le chiffre qui recadre tout : notre rétention est le double du secteur
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | Zylu / JeriCommerce | **La rétention 1re visite du secteur est de 35 %** — 65 nouveaux clients sur 100 ne reviennent jamais. Les salons performants visent 75-85 %. | https://zylu.co/client-retention-benchmarks-salons/ |
+| 5/5 | **Mesure BarberClub** | **Nous sommes à 67,2 % (Grenoble) et 67,5 % (Meylan)** sur les nouveaux clients des 12 derniers mois. Soit ~2× la moyenne, à 8 points du palier « exceptionnel ». Écart médian entre deux visites : **27 jours**, quand le secteur décrit un trou de 6-10 semaines comme LE problème à combler. | — |
+| 5/5 | Booksy / DoTheBeauty | Conséquence directe : l'argumentaire habituel du programme de fidélité (« réparez vos 35 % ») **ne s'applique pas chez nous**. Le programme n'a pas à sauver la rétention, il doit servir le panier et la préférence. Ne pas construire la fidélité en croyant régler une fuite qui n'existe pas. | https://www.dothebeauty.com/blog/salon-client-retention |
+
+### Carte fidélité — notre barème tombe pile dans la fourchette du secteur
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | LoyaltyPass / Deelo | Le standard 2026 qui fonctionne : **1 € = 1 point, 100 points = 5 € de remise**, soit **5-7 % de remise effective** — « le point d'équilibre qui change le comportement sans détruire la marge ». | https://www.loyaltypass.co/blog/industries/salon-loyalty-program |
+| 5/5 | **Calcul BarberClub** | Notre brief (`docs/design-fidelite-barberclub.md`) tient la route : palier **150 pts → produit offert** = 9,41 € de produit pour 150 € dépensés = **6,3 %**. Palier **300 pts → barbe offerte** = 20 € pour 300 € = **6,7 %**. Palier 75 pts → produit −30 % = **3,8 %**. Toute l'échelle est dans ou sous la fourchette 5-7 %. Rien à recalibrer. | — |
+| 4/5 | BonusQR / FaveCard | 72 % des clients salon préfèrent une enseigne avec programme de fidélité, **84 % chez les millennials et la Gen Z**. Intégration Apple/Google Wallet citée comme l'attente 2026 — pertinent pour notre carte « Club Privé » qui est aujourd'hui une maquette front. | https://bonusqr.com/article/loyalty-program-for-salons-the-2026-resource-guide-to-client-retention |
+| 4/5 | FaveCard | **Le rebooking en fauteuil** (le barbier propose le prochain RDV pendant la coupe) donne 20-30 % de rétention en plus que si on laisse la prise au comptoir. Fonctionnalité dashboard évidente : un bouton « reprendre RDV » sur la fiche du RDV en cours, qui pré-remplit J+28 (notre écart médian). | https://www.favecard.co/en/blog/salon-loyalty-program/ |
+
+### No-show — la distinction juridique française qui change l'implémentation
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | Omany / Yumcall | **L'acompte ne peut PAS être conservé automatiquement en cas de no-show en France.** L'**empreinte bancaire** (pré-autorisation, aucun débit) le peut, à condition d'informer clairement avant la réservation — Code monétaire et financier + RGPD. Si on veut sécuriser les créneaux, c'est empreinte, pas acompte. | https://omany.fr/blog/empreinte-bancaire-restaurant-legal-mise-en-place |
+| 4/5 | BookyWell | Recommandation de ciblage : empreinte/acompte **uniquement sur les nouveaux clients et les prestations premium**, pas sur tout le monde. Chez nous : « Coupe + Barbe + Soin Complet » à 48 € et les nouveaux clients. | https://bookywell.com/blog/reduire-no-shows/ |
+| 4/5 | Booksy | Les rappels automatiques réduisent les no-shows de **30 à 50 %**. Nous avons déjà le rappel J-1 par SMS ; le secteur en envoie **deux** (24 h puis 2 h avant). Un second rappel à H-2 est un ajout de quelques lignes dans le cron existant. | https://biz.booksy.com/en-us/blog/what-app-do-barbers-choose-the-best-booking-app-for-barbers |
+
+### Tunnel de réservation — ce qu'on fait déjà bien, ce qui manque
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | Booknetic / Webeyez | Repère : **15-25 % de conversion entre « commence à réserver » et « réservation confirmée »**. En dessous de 12 % = friction de tunnel. Nous ne mesurons pas ce taux — aucun event de début de tunnel n'est tracé. C'est l'angle mort le plus rentable du dashboard. | https://webeyez.com/insights/guides/booking-conversion-rate-optimization-guide |
+| 5/5 | HeyGoldie / Zenoti | **Le « no-app movement » est LA tendance 2026** : les barbiers en croissance abandonnent les apps obligatoires et la création de compte. « Voir les disponibilités sans créer de compte » est cité comme le critère n°1. **Notre tunnel fait déjà exactement ça** (réservation invité + cancel_token) — c'est un avantage, pas un manque. | https://heygoldie.com/blog/best-booking-apps-for-barbers |
+| 4/5 | Personizely | Détails de tunnel qui convertissent : validation en temps réel, remplissage automatique, divulgation progressive (ne montrer que les champs indispensables), CTA explicite (« Réserver », « Voir les disponibilités »). À passer en revue sur `reserver.html`. | https://www.personizely.net/blog/conversion-funnel-optimization |
+| 3/5 | SQUIRE (via Booksy) | 72-77 % des barbershops utilisent un logiciel de gestion en 2026, contre 15-20 % avant 2020 ; **plus de 90 % des nouvelles ouvertures démarrent en digital-first**. Contexte utile pour l'ouverture de Voiron. | https://biz.booksy.com/en-us/blog/what-app-do-barbers-choose-the-best-booking-app-for-barbers |
+
+### Reserve with Google — toujours le plus gros levier non exploité
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | Google Actions Center | L'intégration Reservations End-to-End est **toujours active et maintenue** en août 2026 (portail partenaire, endpoints de fulfillment). Rien n'a bougé depuis la veille du 29/04 : le sujet reste ouvert et notre backend est candidat à une intégration directe, sans passer par un SaaS partenaire. | https://developers.google.com/actions-center/verticals/reservations/e2e/overview |
+| 4/5 | HeyGoldie | En 2026, « la meilleure app de réservation barbier supporte Reserve with Google et laisse voir les disponibilités sans compte ». Nous cochons la seconde condition, pas la première. | https://heygoldie.com/blog/best-booking-apps-for-barbers |
+
+### Dashboard — fonctionnalités standard chez les concurrents qui nous manquent
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 4/5 | Booksy Biz | **Objectifs par membre d'équipe** : Booksy laisse fixer et suivre un objectif par barbier. Nous avons la page Objectives — vérifier si elle est par salon ou par barbier. | https://biz.booksy.com/blog/faq-everything-you-need-to-know-about-salon-software |
+| 3/5 | Fresha | Tableau de bord multi-établissements centralisé. Pertinent à l'ouverture de Voiron : notre dashboard force aujourd'hui à choisir un salon et à en sortir pour changer. Une vue consolidée des 3 salons deviendra utile. | https://www.fresha.com/for-business/salon/best-salon-software |
+| 3/5 | Nectarbits | Suivi de stock et rapports de performance cités comme indispensables 2026 — nous avons déjà Boutique + stock_movements + Analytics. Rien à rattraper de ce côté. | https://nectarbits.com/blog/salon-booking-software-solutions-for-businesses/ |
