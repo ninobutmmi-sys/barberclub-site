@@ -48,7 +48,7 @@ router.get('/',
       // centaine de ventes par trimestre), 30 jours donnerait 0 partout.
       const result = await db.query(
         `SELECT p.id, p.name, p.description, p.category, p.buy_price, p.sell_price,
-                p.stock_quantity, p.alert_threshold, p.sku, p.is_active, p.sellable, p.created_at,
+                p.stock_quantity, p.alert_threshold, p.sku, p.is_active, p.sellable, p.image_url, p.created_at,
                 COALESCE(v.sold_90d, 0)::int AS sold_90d
          FROM products p
          LEFT JOIN (
@@ -230,16 +230,19 @@ router.post('/',
     body('alert_threshold').optional().isInt({ min: 0 }).withMessage('Seuil d\'alerte invalide'),
     body('sku').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
     body('sellable').optional().isBoolean(),
+    // Data URL base64, comme les photos de barbiers. Le dashboard réduit à
+    // 400px avant d'envoyer, donc ~40 Ko ; la borne haute est un garde-fou.
+    body('image_url').optional({ values: 'falsy' }).isLength({ max: 3000000 }).withMessage('Image trop lourde'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
-      const { name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, sellable } = req.body;
+      const { name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, sellable, image_url } = req.body;
 
       const result = await db.query(
-        `INSERT INTO products (name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, sellable, salon_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO products (name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, sellable, image_url, salon_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING *`,
         [
           name,
@@ -251,6 +254,7 @@ router.post('/',
           alert_threshold != null ? alert_threshold : 5,
           sku || null,
           sellable != null ? sellable : true,
+          image_url || null,
           salonId,
         ]
       );
@@ -345,13 +349,14 @@ router.put('/:id',
     body('sku').optional({ values: 'falsy' }).trim().isLength({ max: 100 }),
     body('is_active').optional().isBoolean(),
     body('sellable').optional().isBoolean(),
+    body('image_url').optional({ values: 'falsy' }).isLength({ max: 3000000 }).withMessage('Image trop lourde'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const salonId = req.user.salon_id;
       const { id } = req.params;
-      const { name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, is_active, sellable } = req.body;
+      const { name, description, category, buy_price, sell_price, stock_quantity, alert_threshold, sku, is_active, sellable, image_url } = req.body;
 
       const fields = [];
       const values = [];
@@ -367,6 +372,8 @@ router.put('/:id',
       if (sku !== undefined) { fields.push(`sku = $${paramIndex++}`); values.push(sku || null); }
       if (is_active !== undefined) { fields.push(`is_active = $${paramIndex++}`); values.push(is_active); }
       if (sellable !== undefined) { fields.push(`sellable = $${paramIndex++}`); values.push(sellable); }
+      // '' vaut « retirer la photo », d'où le null explicite.
+      if (image_url !== undefined) { fields.push(`image_url = $${paramIndex++}`); values.push(image_url || null); }
 
       if (fields.length === 0) {
         throw ApiError.badRequest('Aucune donnee a mettre a jour');

@@ -69,6 +69,39 @@ const KPI_ACCENTS = {
 // Main Component
 // ============================================
 
+/**
+ * Réduit une photo avant de l'envoyer. Une photo de téléphone fait 2 à 5 Mo ;
+ * seize de ces photos dans la liste rendraient la page inutilisable. 400px de
+ * côté suffisent largement pour une vignette de carte, et on retombe autour de
+ * 40 Ko par produit.
+ */
+const IMAGE_MAX_PX = 400;
+
+function reduireImage(file) {
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onerror = () => reject(new Error('Lecture du fichier impossible'));
+    lecteur.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Image illisible'));
+      img.onload = () => {
+        const ratio = Math.min(1, IMAGE_MAX_PX / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * ratio);
+        c.height = Math.round(img.height * ratio);
+        const ctx = c.getContext('2d');
+        // Fond blanc : un PNG transparent vire au noir en JPEG.
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = lecteur.result;
+    };
+    lecteur.readAsDataURL(file);
+  });
+}
+
 // ============================================
 // Lecture du stock — c'est ici que se décide ce qui est urgent
 // ============================================
@@ -417,68 +450,68 @@ function KpiCard({ label, value, subtitle, accent = 'blue', icon }) {
 
 function ProductCard({ product, insight, categoryColor, onEdit, onMove }) {
   const n = NIVEAUX[insight.niveau];
-  const marge = product.buy_price > 0
-    ? Math.round(((product.sell_price - product.buy_price) / product.sell_price) * 100)
-    : null;
+  const [imgKo, setImgKo] = useState(false);
 
   return (
     <article className={`st-card ${insight.niveau}`} style={{ '--cat': categoryColor }}>
-      <div className="st-card-top">
-        <div className="st-card-id">
-          <h4 className="st-card-name" title={product.name}>{product.name}</h4>
-          {product.sku && <span className="st-card-sku">{product.sku}</span>}
-        </div>
-        <button type="button" className="st-icon-btn" onClick={onEdit} aria-label={`Modifier ${product.name}`}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-        </button>
-      </div>
-
-      <div className="st-card-stock">
-        <span className="st-qty">{insight.stock}</span>
-        <span className="st-qty-unit">en stock</span>
-        {/* Un badge sur chaque carte ne signale plus rien : seul ce qui sort de
-            l'ordinaire en porte un. Le nom accompagne toujours la couleur. */}
+      {/* La photo est aussi le bouton d'édition : c'est là qu'on clique pour
+          la mettre, et là qu'on retourne pour corriger la fiche. */}
+      <button
+        type="button"
+        className={`st-thumb ${product.image_url && !imgKo ? 'has' : ''}`}
+        onClick={onEdit}
+        aria-label={product.image_url ? `Modifier ${product.name}` : `Ajouter une photo à ${product.name}`}
+      >
+        {product.image_url && !imgKo ? (
+          <img src={product.image_url} alt="" loading="lazy" onError={() => setImgKo(true)} />
+        ) : (
+          <span className="st-thumb-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+            </svg>
+            Ajouter une photo
+          </span>
+        )}
         {insight.niveau !== 'ok' && (
           <span className="st-badge" style={{ '--lvl': n.color }}>{n.label}</span>
         )}
-      </div>
+      </button>
 
-      <p className="st-card-days">
-        {product.sellable === false ? 'consommable, non vendu' : joursLabel(insight.jours)}
-      </p>
+      <div className="st-card-body">
+        <h4 className="st-card-name" title={product.name}>{product.name}</h4>
 
-      <div className="st-card-price">
-        {product.sellable === false ? (
-          <span className="st-internal">Usage interne</span>
-        ) : product.sell_price > 0 ? (
-          <>
+        <p className="st-card-line">
+          <strong>{insight.stock}</strong> en stock
+          <span> · {product.sellable === false ? 'consommable' : joursLabel(insight.jours)}</span>
+        </p>
+
+        <div className="st-card-price">
+          {product.sellable === false ? (
+            <span className="st-internal">Usage interne</span>
+          ) : product.sell_price > 0 ? (
             <span className="st-price">{formatPriceCompact(product.sell_price)}</span>
-            {marge !== null && <span className="st-margin">+{marge}%</span>}
-          </>
-        ) : (
-          <button type="button" className="st-noprice" onClick={onEdit}>Prix à définir</button>
-        )}
-      </div>
+          ) : (
+            <button type="button" className="st-noprice" onClick={onEdit}>Prix à définir</button>
+          )}
+        </div>
 
-      <div className="st-card-actions">
-        <button
-          type="button" className="st-act in"
-          onClick={() => onMove('in', insight.niveau === 'ok' || insight.niveau === 'over' ? 1 : insight.aCommander)}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Entrée
-        </button>
-        <button
-          type="button" className="st-act out"
-          onClick={() => onMove('out', 1)}
-          disabled={insight.stock <= 0}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Sortie
-        </button>
+        <div className="st-card-actions">
+          <button
+            type="button" className="st-act in"
+            onClick={() => onMove('in', insight.niveau === 'ok' || insight.niveau === 'over' ? 1 : insight.aCommander)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            Entrée
+          </button>
+          <button
+            type="button" className="st-act out"
+            onClick={() => onMove('out', 1)}
+            disabled={insight.stock <= 0}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            Sortie
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -673,6 +706,7 @@ function ProductModal({ product, onClose }) {
   const [sku, setSku] = useState(product?.sku || '');
   const [sellable, setSellable] = useState(product?.sellable ?? true);
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
+  const [image, setImage] = useState(product?.image_url || '');
   const [error, setError] = useState('');
   const saving = createMutation.isPending || updateMutation.isPending;
 
@@ -695,6 +729,8 @@ function ProductModal({ product, onClose }) {
       sku: sku || undefined,
       sellable,
       is_active: isActive,
+      // '' est significatif : c'est « retire la photo », pas « ne touche à rien ».
+      image_url: image,
     };
 
     try {
@@ -704,6 +740,22 @@ function ProductModal({ product, onClose }) {
         await createMutation.mutateAsync(body);
       }
       onClose();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function choisirImage(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError('Format d’image invalide (JPEG, PNG ou WebP)');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) { setError('Photo trop lourde (max 10 Mo)'); return; }
+    setError('');
+    try {
+      setImage(await reduireImage(file));
     } catch (err) {
       setError(err.message);
     }
@@ -731,6 +783,34 @@ function ProductModal({ product, onClose }) {
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && <div className="login-error" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
+
+            {/* Photo — les barbiers reconnaissent un flacon avant d'en lire l'étiquette */}
+            <div className="form-group">
+              <span className="label">Photo</span>
+              <div className="st-photo-row">
+                <label className="st-photo-zone" htmlFor="st-photo">
+                  {image
+                    ? <img src={image} alt="" />
+                    : (
+                      <span className="st-photo-empty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                        </svg>
+                        Ajouter
+                      </span>
+                    )}
+                </label>
+                <input id="st-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={choisirImage} className="sr-only" />
+                <div className="st-photo-side">
+                  <p>JPEG, PNG ou WebP. La photo est réduite à 400 px avant l’envoi.</p>
+                  {image && (
+                    <button type="button" className="st-photo-del" onClick={() => setImage('')}>
+                      Retirer la photo
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div className="form-group">
               <label className="label">Nom du produit</label>

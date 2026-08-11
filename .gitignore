@@ -43,3 +43,6 @@ pages/grenoble/reserver-timify.html
 # Handoff design pour equipe app (non versionne, ~48 Mo)
 barberclub-app-handoff/
 barberclub-app-handoff.zip
+
+# Photos sources des produits — les vignettes vivent en base (products.image_url)
+Photo produits/
