@@ -85,6 +85,13 @@ beforeAll(() => {
 
 afterEach(() => {
   jest.clearAllMocks();
+  // Défaut sûr : une fois la chaîne de mockResolvedValueOnce épuisée, jest
+  // renvoyait undefined et la route explosait sur `.rows` — d'où des 500 qui
+  // masquaient la vraie assertion. Les routes ont gagné des requêtes au fil du
+  // temps (dates de contrat, guest assignments, journal d'audit) sans que ces
+  // mocks positionnels suivent. Un résultat vide laisse le test échouer sur ce
+  // qu'il vérifie vraiment, au lieu de planter avant.
+  db.query.mockResolvedValue({ rows: [], rowCount: 0 });
 });
 
 // ============================================

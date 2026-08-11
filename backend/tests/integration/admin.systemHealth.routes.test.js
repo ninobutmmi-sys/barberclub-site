@@ -54,6 +54,8 @@ beforeAll(() => {
 
 afterEach(() => {
   jest.clearAllMocks();
+  // Défaut sûr : voir les autres suites d'intégration.
+  db.query.mockResolvedValue({ rows: [], rowCount: 0 });
 });
 
 // ============================================
