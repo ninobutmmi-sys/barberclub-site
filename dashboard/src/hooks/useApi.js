@@ -766,10 +766,10 @@ export function useStockMovements(productId, options) {
   });
 }
 
-export function useRemoveStock() {
+export function useStockMovement() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }) => api.removeStock(id, data),
+    mutationFn: ({ id, data }) => api.stockMovement(id, data),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: ['products'] });
       qc.invalidateQueries({ queryKey: keys.productStats });

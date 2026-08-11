@@ -408,7 +408,7 @@ export const deleteProduct = (id) =>
   request(`/admin/products/${id}`, { method: 'DELETE' });
 export const recordProductSale = (id, body) =>
   request(`/admin/products/${id}/sale`, { method: 'POST', body: JSON.stringify(body) });
-export const removeStock = (id, body) =>
+export const stockMovement = (id, body) =>
   request(`/admin/products/${id}/stock-movement`, { method: 'POST', body: JSON.stringify(body) });
 export const getStockMovements = (id) =>
   request(`/admin/products/${id}/stock-movements`);

@@ -41,10 +41,22 @@ router.get('/',
 
       const whereClause = 'WHERE ' + conditions.join(' AND ');
 
+      // sold_90d : ce qui est réellement parti sur 90 jours. Le dashboard en
+      // tire une vitesse d'écoulement et donc un nombre de jours de stock
+      // restants — « 3 en stock » ne dit pas s'il faut commander demain ou
+      // dans deux mois. 90 jours plutôt que 30 : à ce volume (une petite
+      // centaine de ventes par trimestre), 30 jours donnerait 0 partout.
       const result = await db.query(
         `SELECT p.id, p.name, p.description, p.category, p.buy_price, p.sell_price,
-                p.stock_quantity, p.alert_threshold, p.sku, p.is_active, p.sellable, p.created_at
+                p.stock_quantity, p.alert_threshold, p.sku, p.is_active, p.sellable, p.created_at,
+                COALESCE(v.sold_90d, 0)::int AS sold_90d
          FROM products p
+         LEFT JOIN (
+           SELECT product_id, SUM(quantity) AS sold_90d
+           FROM product_sales
+           WHERE salon_id = $1 AND sold_at >= NOW() - INTERVAL '90 days'
+           GROUP BY product_id
+         ) v ON v.product_id = p.id
          ${whereClause}
          ORDER BY p.category, p.name`,
         params
@@ -516,15 +528,25 @@ router.post('/:id/sale',
 );
 
 // ============================================
-// POST /api/admin/products/:id/stock-movement — Retrait de stock SANS CA
-// Consommation interne (cire pour coiffer), perte/casse, correction inventaire.
-// Décrémente le stock mais ne crée PAS de vente (n'impacte pas le CA).
+// POST /api/admin/products/:id/stock-movement — Mouvement de stock SANS CA
+// Entrée : réception d'une commande, correction d'inventaire vers le haut.
+// Sortie : consommation interne (cire pour coiffer), perte/casse, inventaire.
+// Bouge le stock mais ne crée PAS de vente (n'impacte pas le CA) — la vente
+// réelle passe par le modal du RDV.
 // ============================================
+const SENS_PAR_MOTIF = {
+  restock: 'in',
+  internal_use: 'out',
+  loss: 'out',
+  inventory: null,   // le seul motif qui va dans les deux sens
+};
+
 router.post('/:id/stock-movement',
   [
     param('id').matches(uuidRegex),
     body('quantity').isInt({ min: 1 }).withMessage('Quantite requise (min 1)'),
-    body('reason').isIn(['internal_use', 'loss', 'inventory']).withMessage('Motif invalide'),
+    body('reason').isIn(['internal_use', 'loss', 'inventory', 'restock']).withMessage('Motif invalide'),
+    body('direction').optional({ values: 'falsy' }).isIn(['in', 'out']).withMessage('Sens invalide'),
     body('note').optional({ values: 'falsy' }).trim().isLength({ max: 500 }),
     body('performed_by').optional({ values: 'falsy' }).matches(uuidRegex),
   ],
@@ -534,6 +556,13 @@ router.post('/:id/stock-movement',
       const salonId = req.user.salon_id;
       const { id } = req.params;
       const { quantity, reason, note, performed_by } = req.body;
+
+      // Le motif impose son sens, sauf l'inventaire. Un client qui enverrait
+      // { reason: 'loss', direction: 'in' } créditerait du stock au motif
+      // « perte » : on ignore le champ plutôt que de lui faire confiance.
+      const impose = SENS_PAR_MOTIF[reason];
+      const direction = impose || (req.body.direction === 'in' ? 'in' : 'out');
+      const entree = direction === 'in';
 
       const result = await db.transaction(async (client) => {
         // Lock the product row to prevent concurrent stock races (sale + removal)
@@ -548,7 +577,7 @@ router.post('/:id/stock-movement',
 
         const product = productResult.rows[0];
 
-        if (product.stock_quantity < quantity) {
+        if (!entree && product.stock_quantity < quantity) {
           throw ApiError.badRequest(
             `Stock insuffisant (disponible: ${product.stock_quantity}, demande: ${quantity})`
           );
@@ -565,24 +594,24 @@ router.post('/:id/stock-movement',
           }
         }
 
-        // Decrease stock (no product_sale → no revenue impact)
+        // Bouge le stock (aucun product_sale → aucun impact CA)
         await client.query(
-          'UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2',
-          [quantity, id]
+          'UPDATE products SET stock_quantity = stock_quantity + $1 WHERE id = $2',
+          [entree ? quantity : -quantity, id]
         );
 
         // Record the movement for traceability / history
         const movementResult = await client.query(
-          `INSERT INTO stock_movements (product_id, salon_id, quantity, reason, note, performed_by)
-           VALUES ($1, $2, $3, $4, $5, $6)
+          `INSERT INTO stock_movements (product_id, salon_id, quantity, reason, direction, note, performed_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
            RETURNING *`,
-          [id, salonId, quantity, reason, note || null, performed_by || null]
+          [id, salonId, quantity, reason, direction, note || null, performed_by || null]
         );
 
         return {
           ...movementResult.rows[0],
           product_name: product.name,
-          new_stock_quantity: product.stock_quantity - quantity,
+          new_stock_quantity: product.stock_quantity + (entree ? quantity : -quantity),
         };
       });
 
@@ -591,6 +620,7 @@ router.post('/:id/stock-movement',
         product_name: result.product_name,
         quantity,
         reason,
+        direction,
       });
 
       res.status(201).json(result);
@@ -610,7 +640,7 @@ router.get('/:id/stock-movements',
     try {
       const salonId = req.user.salon_id;
       const result = await db.query(
-        `SELECT sm.id, sm.quantity, sm.reason, sm.note, sm.created_at,
+        `SELECT sm.id, sm.quantity, sm.reason, sm.direction, sm.note, sm.created_at,
                 b.name as performed_by_name
          FROM stock_movements sm
          LEFT JOIN barbers b ON sm.performed_by = b.id

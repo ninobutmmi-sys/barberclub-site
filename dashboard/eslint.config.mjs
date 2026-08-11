@@ -35,6 +35,8 @@ export default [
         Blob: 'readonly',
         URL: 'readonly',
         FileReader: 'readonly',
+        MutationObserver: 'readonly',
+        sessionStorage: 'readonly',
       },
     },
     rules: {

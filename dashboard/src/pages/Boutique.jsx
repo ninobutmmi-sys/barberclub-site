@@ -7,7 +7,7 @@ import {
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
-  useRemoveStock,
+  useStockMovement,
   useStockMovements,
   useGiftCards,
   useCreateGiftCard,
@@ -40,13 +40,6 @@ function getCategoryColor(category) {
   return ACCENT_COLORS[Math.abs(hash) % ACCENT_COLORS.length];
 }
 
-function getStockStatus(qty, threshold) {
-  const t = threshold || 5;
-  if (qty <= t) return { color: '#ef4444', bg: 'rgba(239,68,68,0.12)' };
-  if (qty <= t * 2.5) return { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' };
-  return { color: '#22c55e', bg: 'rgba(34,197,94,0.12)' };
-}
-
 const SUGGESTED_CATEGORIES = ['Cires', 'Coiffage', 'Barbe', 'Parfum', 'Accessoires'];
 const PAYMENT_METHODS = [
   { value: 'cb', label: 'CB' },
@@ -57,6 +50,7 @@ const PAYMENT_METHODS = [
 
 // Motifs de retrait de stock (sans impact CA — la vente passe par le RDV)
 const STOCK_REASONS = [
+  { value: 'restock', label: 'Réception commande' },
   { value: 'internal_use', label: 'Usage interne' },
   { value: 'loss', label: 'Perte / casse' },
   { value: 'inventory', label: 'Correction inventaire' },
@@ -75,205 +69,302 @@ const KPI_ACCENTS = {
 // Main Component
 // ============================================
 
+// ============================================
+// Lecture du stock — c'est ici que se décide ce qui est urgent
+// ============================================
+
+/** Couvre-t-on encore combien de jours ? Sans historique de vente, on ne sait pas. */
+function stockInsight(p) {
+  const stock = p.stock_quantity || 0;
+  const seuil = p.alert_threshold || 5;
+  const vendu90 = p.sold_90d || 0;
+  const parJour = vendu90 / 90;
+  const jours = parJour > 0 ? Math.round(stock / parJour) : null;
+
+  // Le seuil est à 5 pour tout le monde : il ne distingue pas une cire qui part
+  // en une semaine d'une qui dort un an. Quand on connaît la vitesse, c'est
+  // elle qui décide ; le seuil ne sert que de filet aux produits jamais vendus.
+  let niveau;
+  if (stock === 0) niveau = 'out';
+  else if (jours !== null) niveau = jours < 30 ? 'low' : jours > 365 ? 'over' : 'ok';
+  else niveau = stock <= seuil ? 'low' : 'ok';
+
+  // De quoi tenir 90 jours, arrondi au-dessus.
+  const aCommander = parJour > 0
+    ? Math.max(1, Math.ceil(parJour * 90) - stock)
+    : Math.max(1, seuil * 2 - stock);
+
+  return { stock, seuil, jours, niveau, aCommander, parJour };
+}
+
+// Les teintes viennent du thème : les hex vifs deviennent illisibles sur le
+// fond clair (2,15:1 pour l'ambre, il en faut 4,5).
+const NIVEAUX = {
+  out:  { label: 'Rupture', color: 'var(--ink-danger)' },
+  low:  { label: 'À commander', color: 'var(--ink-warn)' },
+  ok:   { label: 'OK', color: 'var(--ink-good)' },
+  over: { label: 'Surstock', color: 'var(--ink-mute)' },
+};
+
+function joursLabel(jours) {
+  if (jours === null) return 'jamais vendu';
+  if (jours === 0) return 'épuisé';
+  if (jours < 60) return `≈ ${jours} j de stock`;
+  if (jours < 730) return `≈ ${Math.round(jours / 30)} mois de stock`;
+  return '≈ 2 ans et +';
+}
+
+// ============================================
+// Main Component
+// ============================================
+
 export default function Boutique() {
   const isMobile = useMobile();
   const { data: products = [], isLoading, error, refetch } = useProducts();
   const { data: stats } = useProductStats();
   const { data: allBarbers = [] } = useBarbers();
-  const barbers = allBarbers.filter(b => b.is_active);
+  const barbers = useMemo(() => allBarbers.filter(b => b.is_active), [allBarbers]);
   const [search, setSearch] = useState('');
+  const [filtre, setFiltre] = useState('all');       // all | order | over
   const [productModal, setProductModal] = useState(null);
-  const [stockModal, setStockModal] = useState(null);
+  const [stockModal, setStockModal] = useState(null); // { product, sens }
   const [giftCardModal, setGiftCardModal] = useState(false);
+  const [copie, setCopie] = useState(null);   // null | 'ok' | 'ko'
+
+  const actifs = useMemo(() => products.filter(p => p.is_active), [products]);
+
+  const insights = useMemo(() => {
+    const m = new Map();
+    actifs.forEach(p => m.set(p.id, stockInsight(p)));
+    return m;
+  }, [actifs]);
+
+  const aCommander = useMemo(() => (
+    actifs
+      .filter(p => ['out', 'low'].includes(insights.get(p.id).niveau))
+      // Le plus urgent d'abord : rupture, puis le moins de jours restants.
+      .sort((a, b) => {
+        const ia = insights.get(a.id), ib = insights.get(b.id);
+        return (ia.jours ?? 9999) - (ib.jours ?? 9999);
+      })
+  ), [actifs, insights]);
+
+  const coutCommande = useMemo(() => aCommander.reduce(
+    (s, p) => s + (p.buy_price || 0) * insights.get(p.id).aCommander, 0
+  ), [aCommander, insights]);
 
   const grouped = useMemo(() => {
-    const filtered = products.filter(p =>
-      p.is_active &&
-      (!search || p.name.toLowerCase().includes(search.toLowerCase()) ||
-        (p.category || '').toLowerCase().includes(search.toLowerCase()))
-    );
+    const q = search.trim().toLowerCase();
+    const filtered = actifs.filter(p => {
+      if (q && !p.name.toLowerCase().includes(q) && !(p.category || '').toLowerCase().includes(q)) return false;
+      const n = insights.get(p.id).niveau;
+      if (filtre === 'order') return n === 'out' || n === 'low';
+      if (filtre === 'over') return n === 'over';
+      return true;
+    });
     const groups = {};
     filtered.forEach(p => {
       const cat = p.category || 'Autre';
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(p);
+      (groups[cat] ||= []).push(p);
     });
     return Object.entries(groups).sort(([a], [b]) => {
       if (a === 'Autre') return 1;
       if (b === 'Autre') return -1;
       return a.localeCompare(b, 'fr');
     });
-  }, [products, search]);
+  }, [actifs, search, filtre, insights]);
 
-  const stockValue = useMemo(() => {
-    return products
-      .filter(p => p.is_active)
-      .reduce((sum, p) => sum + (p.sell_price || 0) * (p.stock_quantity || 0), 0);
-  }, [products]);
+  const stockValue = useMemo(
+    () => actifs.reduce((sum, p) => sum + (p.sell_price || 0) * (p.stock_quantity || 0), 0),
+    [actifs]
+  );
+  const nbSurstock = useMemo(
+    () => actifs.filter(p => insights.get(p.id).niveau === 'over').length,
+    [actifs, insights]
+  );
 
-  const lowStockCount = useMemo(() => {
-    return products.filter(p => p.is_active && p.stock_quantity <= (p.alert_threshold || 5)).length;
-  }, [products]);
+  // La tâche récurrente dit « passer commande sur barbercorner » : le presse-papier
+  // évite de recopier la liste à la main dans un mail ou un SMS.
+  async function copierCommande() {
+    const lignes = aCommander.map(p => `${insights.get(p.id).aCommander} x ${p.name}`);
+    try {
+      await navigator.clipboard.writeText(`Commande BarberClub\n\n${lignes.join('\n')}`);
+      setCopie('ok');
+    } catch {
+      // Safari refuse le presse-papier hors geste direct, et le refus était muet.
+      setCopie('ko');
+    }
+    setTimeout(() => setCopie(null), 2800);
+  }
+
+  const nbResultats = grouped.reduce((s, [, items]) => s + items.length, 0);
 
   return (
     <>
       {error && (
-        <div role="alert" style={{
-          background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8,
-          padding: '12px 16px', marginBottom: 16, display: 'flex',
-          justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5',
-        }}>
+        <div className="st-error" role="alert">
           <span>{typeof error === 'string' ? error : error.message}</span>
-          <button onClick={() => refetch()} style={{
-            background: '#dc2626', color: '#fff', border: 'none',
-            borderRadius: 6, padding: '6px 12px', cursor: 'pointer',
-          }}>Reessayer</button>
+          <button onClick={() => refetch()}>Réessayer</button>
         </div>
       )}
 
       <div className="page-header">
         <h2 className="page-title">Stock</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => setGiftCardModal(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-          >
+          <button className="btn btn-secondary btn-sm" onClick={() => setGiftCardModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 12 20 22 4 22 4 12" />
-              <rect x="2" y="7" width="20" height="5" />
+              <polyline points="20 12 20 22 4 22 4 12" /><rect x="2" y="7" width="20" height="5" />
               <line x1="12" y1="22" x2="12" y2="7" />
-              <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" />
-              <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
+              <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" />
             </svg>
-            Cartes cadeaux
+            {isMobile ? 'Cartes' : 'Cartes cadeaux'}
           </button>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => setProductModal('create')}
-          >
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+          <button className="btn btn-primary btn-sm" onClick={() => setProductModal('create')}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
             Produit
           </button>
         </div>
       </div>
 
       <div className="page-body">
-        {/* ---- KPI Stats ---- */}
-        <div className="a-kpi-grid" style={{ marginBottom: 28 }}>
+        {/* ---- Ce qu'il faut commander : la seule chose qui demande une action ---- */}
+        {!isLoading && aCommander.length > 0 && (
+          <section className="st-order" aria-label="Produits à commander">
+            <header className="st-order-head">
+              <h3>
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                À commander
+                <span className="st-order-n">{aCommander.length}</span>
+              </h3>
+              <button type="button" className={`st-copy ${copie === 'ko' ? 'ko' : ''}`} onClick={copierCommande}>
+                {copie === 'ok' ? (
+                  <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg> Copié</>
+                ) : copie === 'ko' ? (
+                  <>Copie refusée</>
+                ) : (
+                  <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg> Copier la liste</>
+                )}
+              </button>
+            </header>
+
+            <ul className="st-order-list">
+              {aCommander.map(p => {
+                const i = insights.get(p.id);
+                return (
+                  <li key={p.id}>
+                    <span className={`st-pip ${i.niveau}`} aria-hidden="true" />
+                    <span className="st-order-name">{p.name}</span>
+                    <span className="st-order-state">
+                      {i.niveau === 'out' ? 'en rupture' : joursLabel(i.jours)}
+                    </span>
+                    <span className="st-order-qty">{i.aCommander}</span>
+                    <button
+                      type="button"
+                      className="st-order-in"
+                      onClick={() => setStockModal({ product: p, sens: 'in', suggestion: i.aCommander })}
+                    >
+                      Réceptionner
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <p className="st-order-total">
+              {coutCommande > 0
+                ? <>Coût d’achat estimé <strong>{formatPriceCompact(coutCommande)}</strong> · </>
+                : <>Renseignez le prix d’achat des produits pour estimer le coût · </>}
+              <span>quantités calculées pour tenir 90 jours</span>
+            </p>
+          </section>
+        )}
+
+        {/* ---- KPI ---- */}
+        <div className="a-kpi-grid" style={{ marginBottom: 24 }}>
           <KpiCard
-            label="Valeur du stock"
-            value={formatPriceCompact(stockValue)}
-            accent="blue"
+            label="Valeur du stock" value={formatPriceCompact(stockValue)} accent="blue"
+            subtitle={`${actifs.length} produits`}
             icon={<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21" /><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0022 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>}
           />
           <KpiCard
-            label="Alertes stock"
-            value={lowStockCount}
-            accent={lowStockCount > 0 ? 'red' : 'green'}
-            subtitle={lowStockCount > 0 ? 'produit(s) bas' : 'Tout est OK'}
+            label="À commander" value={aCommander.length}
+            accent={aCommander.length > 0 ? 'red' : 'green'}
+            subtitle={aCommander.length === 0 ? 'Rien à commander'
+              : coutCommande > 0 ? formatPriceCompact(coutCommande)
+              : 'coût inconnu, prix d’achat vides'}
             icon={<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>}
           />
           <KpiCard
-            label="CA produits (mois)"
-            value={formatPriceCompact(stats?.revenue_month || 0)}
-            accent="green"
+            label="CA produits (mois)" value={formatPriceCompact(stats?.revenue_month || 0)} accent="green"
             subtitle={`${stats?.sales_month || 0} ventes`}
             icon={<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>}
           />
           <KpiCard
-            label="Ventes aujourd'hui"
-            value={stats?.sales_today || 0}
-            accent="amber"
+            label="Ventes aujourd'hui" value={stats?.sales_today || 0} accent="amber"
             subtitle={formatPriceCompact(stats?.revenue_today || 0)}
             icon={<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" /></svg>}
           />
         </div>
 
-        {/* ---- Search ---- */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28,
-          flexWrap: isMobile ? 'wrap' : 'nowrap',
-        }}>
-          <div style={{ flex: 1, minWidth: isMobile ? '100%' : 200, position: 'relative' }}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-              style={{
-                position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
-                color: 'var(--text-muted)', pointerEvents: 'none',
-              }}>
+        {/* ---- Recherche + filtres ---- */}
+        <div className="st-tools">
+          <div className="st-search">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
             </svg>
-            <input
-              className="input"
-              placeholder="Rechercher un produit..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ paddingLeft: 38, width: '100%' }}
-            />
+            <label className="sr-only" htmlFor="st-q">Rechercher un produit</label>
+            <input id="st-q" className="input" placeholder="Rechercher un produit..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          {search && (
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-              {grouped.reduce((sum, [, items]) => sum + items.length, 0)} resultat(s)
-            </span>
-          )}
+          <div className="st-chips" role="group" aria-label="Filtrer">
+            {[
+              { k: 'all', l: 'Tout', n: actifs.length },
+              { k: 'order', l: 'À commander', n: aCommander.length },
+              { k: 'over', l: 'Surstock', n: nbSurstock },
+            ].map(c => (
+              <button
+                key={c.k} type="button"
+                className={`st-chip ${filtre === c.k ? 'on' : ''}`}
+                onClick={() => setFiltre(c.k)}
+                aria-pressed={filtre === c.k}
+              >
+                {c.l}<span>{c.n}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* ---- Products by category ---- */}
+        {/* ---- Produits par catégorie ---- */}
         {isLoading ? (
           <div className="empty-state">Chargement...</div>
-        ) : grouped.length === 0 ? (
+        ) : nbResultats === 0 ? (
           <div className="empty-state">
-            {search ? 'Aucun produit trouve' : 'Aucun produit — ajoutez votre premier produit'}
+            {search ? 'Aucun produit trouvé'
+              : filtre === 'order' ? 'Rien à commander, tout est approvisionné'
+              : filtre === 'over' ? 'Aucun surstock'
+              : 'Aucun produit — ajoutez votre premier produit'}
           </div>
         ) : (
           grouped.map(([category, items]) => {
             const catColor = getCategoryColor(category);
             return (
-              <div key={category} style={{ marginBottom: 32 }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  marginBottom: 16, paddingBottom: 12,
-                  borderBottom: '1px solid rgba(var(--overlay), 0.04)',
-                }}>
-                  <div style={{
-                    width: 10, height: 10, borderRadius: 3,
-                    background: catColor,
-                    boxShadow: `0 0 8px ${catColor}40`,
-                  }} />
-                  <h3 style={{
-                    fontSize: 14, fontWeight: 700, letterSpacing: '0.04em',
-                    textTransform: 'uppercase', color: 'var(--text-secondary)',
-                  }}>
-                    {category}
-                  </h3>
-                  <span style={{
-                    fontSize: 11, color: 'var(--text-muted)',
-                    background: 'rgba(var(--overlay), 0.05)',
-                    padding: '2px 8px', borderRadius: 10,
-                  }}>
-                    {items.length}
-                  </span>
+              <div key={category} className="st-cat">
+                <div className="st-cat-head">
+                  <span className="st-cat-dot" style={{ background: catColor, boxShadow: `0 0 8px ${catColor}55` }} aria-hidden="true" />
+                  <h3>{category}</h3>
+                  <span className="st-cat-n">{items.length}</span>
                 </div>
-
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: isMobile
-                    ? 'repeat(2, 1fr)'
-                    : 'repeat(auto-fill, minmax(220px, 1fr))',
-                  gap: isMobile ? 10 : 14,
-                }}>
+                <div className="st-grid">
                   {items.map(product => (
                     <ProductCard
                       key={product.id}
                       product={product}
+                      insight={insights.get(product.id)}
                       categoryColor={catColor}
                       onEdit={() => setProductModal(product)}
-                      onRemoveStock={() => setStockModal(product)}
-                      isMobile={isMobile}
+                      onMove={(sens, suggestion) => setStockModal({ product, sens, suggestion })}
                     />
                   ))}
                 </div>
@@ -284,23 +375,19 @@ export default function Boutique() {
       </div>
 
       {stockModal && (
-        <StockRemovalModal
-          product={stockModal}
+        <StockMovementModal
+          product={stockModal.product}
+          sens={stockModal.sens}
+          suggestion={stockModal.suggestion}
           barbers={barbers}
           onClose={() => setStockModal(null)}
         />
       )}
       {productModal && (
-        <ProductModal
-          product={productModal === 'create' ? null : productModal}
-          onClose={() => setProductModal(null)}
-        />
+        <ProductModal product={productModal === 'create' ? null : productModal} onClose={() => setProductModal(null)} />
       )}
       {giftCardModal && (
-        <GiftCardsModal
-          barbers={barbers}
-          onClose={() => setGiftCardModal(false)}
-        />
+        <GiftCardsModal barbers={barbers} onClose={() => setGiftCardModal(false)} />
       )}
     </>
   );
@@ -314,235 +401,129 @@ function KpiCard({ label, value, subtitle, accent = 'blue', icon }) {
   const a = KPI_ACCENTS[accent] || KPI_ACCENTS.blue;
   return (
     <div className="a-kpi">
-      <div style={{
-        position: 'absolute', top: 0, left: 24, right: 24, height: 2,
-        background: `linear-gradient(90deg, transparent, ${a.color}, transparent)`,
-        opacity: 0.5, borderRadius: '0 0 2px 2px',
-      }} />
-      <div style={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12,
-      }}>
-        <div style={{
-          fontSize: 11, fontWeight: 600, color: 'var(--text-muted)',
-          textTransform: 'uppercase', letterSpacing: '0.08em',
-        }}>
-          {label}
-        </div>
-        {icon && <div style={{ opacity: 0.25 }}>{icon}</div>}
+      <div className="a-kpi-top">
+        <span className="a-kpi-label">{label}</span>
+        <span className="a-kpi-icon" style={{ color: a.color }}>{icon}</span>
       </div>
-      <div style={{
-        fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800,
-        lineHeight: 1.1, marginBottom: 6,
-      }}>
-        {value}
-      </div>
-      {subtitle && (
-        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{subtitle}</div>
-      )}
+      <div className="a-kpi-value" style={{ color: a.color }}>{value}</div>
+      {subtitle && <div className="a-kpi-sub">{subtitle}</div>}
     </div>
   );
 }
 
 // ============================================
-// Product Card
+// Product card
 // ============================================
 
-function ProductCard({ product, categoryColor, onEdit, onRemoveStock, isMobile }) {
-  const stock = getStockStatus(product.stock_quantity, product.alert_threshold);
-  const threshold = product.alert_threshold || 5;
-  const barFill = Math.min(100, (product.stock_quantity / (threshold * 4)) * 100);
-  const margin = product.buy_price > 0
+function ProductCard({ product, insight, categoryColor, onEdit, onMove }) {
+  const n = NIVEAUX[insight.niveau];
+  const marge = product.buy_price > 0
     ? Math.round(((product.sell_price - product.buy_price) / product.sell_price) * 100)
     : null;
 
   return (
-    <div
-      style={{
-        background: 'linear-gradient(165deg, rgba(var(--overlay),0.05) 0%, rgba(var(--overlay),0.015) 100%)',
-        border: '1px solid rgba(var(--overlay),0.06)',
-        borderRadius: 14,
-        padding: isMobile ? 14 : 16,
-        position: 'relative',
-        transition: 'all 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
-        cursor: 'default',
-        overflow: 'hidden',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = `${categoryColor}30`;
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = `0 8px 32px rgba(0,0,0,0.2), 0 0 0 1px ${categoryColor}15`;
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = '';
-        e.currentTarget.style.transform = '';
-        e.currentTarget.style.boxShadow = '';
-      }}
-    >
-      {/* Top accent line */}
-      <div style={{
-        position: 'absolute', top: 0, left: 16, right: 16, height: 2,
-        background: `linear-gradient(90deg, transparent, ${categoryColor}60, transparent)`,
-        borderRadius: '0 0 2px 2px',
-      }} />
-
-      {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-        marginBottom: 10, gap: 6,
-      }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{
-            fontSize: isMobile ? 13 : 14, fontWeight: 700, lineHeight: 1.3,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {product.name}
-          </div>
-          {product.sku && (
-            <div style={{
-              fontSize: 10, color: 'var(--text-muted)', marginTop: 1,
-              fontFamily: 'var(--font-display)', letterSpacing: '0.04em',
-            }}>
-              {product.sku}
-            </div>
-          )}
+    <article className={`st-card ${insight.niveau}`} style={{ '--cat': categoryColor }}>
+      <div className="st-card-top">
+        <div className="st-card-id">
+          <h4 className="st-card-name" title={product.name}>{product.name}</h4>
+          {product.sku && <span className="st-card-sku">{product.sku}</span>}
         </div>
-        <button
-          onClick={onEdit}
-          style={{
-            background: 'none', border: 'none', padding: 4, cursor: 'pointer',
-            color: 'var(--text-muted)', borderRadius: 6, flexShrink: 0,
-            transition: 'color 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
-          title="Modifier"
-        >
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+        <button type="button" className="st-icon-btn" onClick={onEdit} aria-label={`Modifier ${product.name}`}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
         </button>
       </div>
 
-      {/* Stock bar */}
-      <div style={{ marginBottom: 12 }}>
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4,
-        }}>
-          <span style={{
-            fontSize: 11, fontWeight: 600, color: stock.color,
-            display: 'flex', alignItems: 'center', gap: 4,
-          }}>
-            {product.stock_quantity <= threshold && (
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            )}
-            {product.stock_quantity} en stock
-          </span>
-          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-            seuil {threshold}
-          </span>
-        </div>
-        <div style={{
-          height: 4, borderRadius: 2,
-          background: 'rgba(var(--overlay), 0.06)',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            height: '100%', borderRadius: 2,
-            width: `${barFill}%`,
-            background: `linear-gradient(90deg, ${stock.color}, ${stock.color}cc)`,
-            transition: 'width 0.4s ease',
-          }} />
-        </div>
-      </div>
-
-      {/* Price + margin */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12,
-      }}>
-        <div style={{
-          fontFamily: 'var(--font-display)', fontSize: isMobile ? 16 : 18, fontWeight: 800,
-        }}>
-          {formatPriceCompact(product.sell_price)}
-        </div>
-        {margin !== null && (
-          <span style={{
-            fontSize: 10, fontWeight: 700, color: '#22c55e',
-            background: 'rgba(34,197,94,0.1)',
-            padding: '2px 6px', borderRadius: 4,
-          }}>
-            +{margin}%
-          </span>
+      <div className="st-card-stock">
+        <span className="st-qty">{insight.stock}</span>
+        <span className="st-qty-unit">en stock</span>
+        {/* Un badge sur chaque carte ne signale plus rien : seul ce qui sort de
+            l'ordinaire en porte un. Le nom accompagne toujours la couleur. */}
+        {insight.niveau !== 'ok' && (
+          <span className="st-badge" style={{ '--lvl': n.color }}>{n.label}</span>
         )}
       </div>
 
-      {/* Retrait de stock (sans CA — la vente passe par le modal du RDV) */}
-      <button
-        onClick={onRemoveStock}
-        disabled={product.stock_quantity <= 0}
-        style={{
-          width: '100%', padding: '8px 0',
-          background: `${categoryColor}12`,
-          border: `1px solid ${categoryColor}20`,
-          borderRadius: 8,
-          cursor: product.stock_quantity <= 0 ? 'not-allowed' : 'pointer',
-          opacity: product.stock_quantity <= 0 ? 0.4 : 1,
-          color: categoryColor, fontSize: 12, fontWeight: 700,
-          fontFamily: 'var(--font)',
-          transition: 'all 0.15s',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-        }}
-        onMouseEnter={e => {
-          if (product.stock_quantity <= 0) return;
-          e.currentTarget.style.background = `${categoryColor}22`;
-          e.currentTarget.style.borderColor = `${categoryColor}35`;
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = `${categoryColor}12`;
-          e.currentTarget.style.borderColor = `${categoryColor}20`;
-        }}
-        title="Retirer du stock (consommation interne, perte, inventaire) — n'impacte pas le CA"
-      >
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0022 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-          <line x1="12" y1="22.08" x2="12" y2="12" />
-          <line x1="22" y1="2" x2="16" y2="8" />
-        </svg>
-        Retirer du stock
-      </button>
-    </div>
+      <p className="st-card-days">
+        {product.sellable === false ? 'consommable, non vendu' : joursLabel(insight.jours)}
+      </p>
+
+      <div className="st-card-price">
+        {product.sellable === false ? (
+          <span className="st-internal">Usage interne</span>
+        ) : product.sell_price > 0 ? (
+          <>
+            <span className="st-price">{formatPriceCompact(product.sell_price)}</span>
+            {marge !== null && <span className="st-margin">+{marge}%</span>}
+          </>
+        ) : (
+          <button type="button" className="st-noprice" onClick={onEdit}>Prix à définir</button>
+        )}
+      </div>
+
+      <div className="st-card-actions">
+        <button
+          type="button" className="st-act in"
+          onClick={() => onMove('in', insight.niveau === 'ok' || insight.niveau === 'over' ? 1 : insight.aCommander)}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+          Entrée
+        </button>
+        <button
+          type="button" className="st-act out"
+          onClick={() => onMove('out', 1)}
+          disabled={insight.stock <= 0}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
+          Sortie
+        </button>
+      </div>
+    </article>
   );
 }
 
 // ============================================
-// Stock Removal Modal — retrait de stock SANS impact CA
+// Mouvement de stock — entrée ou sortie, sans impact CA
 // (la vente réelle aux clients passe par le modal du RDV)
 // ============================================
 
-function StockRemovalModal({ product, barbers, onClose }) {
-  const removeStock = useRemoveStock();
+const MOTIFS = {
+  in: [
+    { value: 'restock', label: 'Réception commande' },
+    { value: 'inventory', label: 'Correction inventaire' },
+  ],
+  out: [
+    { value: 'internal_use', label: 'Usage interne' },
+    { value: 'loss', label: 'Perte / casse' },
+    { value: 'inventory', label: 'Correction inventaire' },
+  ],
+};
+
+function StockMovementModal({ product, sens, suggestion, barbers, onClose }) {
+  const mouvement = useStockMovement();
   const { data: movements = [], isLoading: loadingMovements } = useStockMovements(product.id);
-  const [qty, setQty] = useState(1);
-  const [reason, setReason] = useState('internal_use');
+  const entree = sens === 'in';
+  const [qty, setQty] = useState(Math.max(1, suggestion || 1));
+  const [reason, setReason] = useState(MOTIFS[sens][0].value);
   const [barberId, setBarberId] = useState(barbers[0]?.id || '');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
 
+  const apres = entree ? product.stock_quantity + qty : product.stock_quantity - qty;
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    if (qty > product.stock_quantity) { setError('Stock insuffisant'); return; }
+    if (!entree && qty > product.stock_quantity) { setError('Stock insuffisant'); return; }
     try {
-      await removeStock.mutateAsync({
+      await mouvement.mutateAsync({
         id: product.id,
         data: {
           quantity: qty,
           reason,
+          direction: sens,
           performed_by: barberId || undefined,
           note: note.trim() || undefined,
         },
@@ -555,10 +536,12 @@ function StockRemovalModal({ product, barbers, onClose }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 440 }}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
         <div className="modal-header">
-          <h3 className="modal-title">Retirer du stock : {product.name}</h3>
-          <button className="btn-ghost" onClick={onClose}>
+          <h3 className="modal-title">
+            {entree ? 'Entrée de stock' : 'Sortie de stock'} : {product.name}
+          </h3>
+          <button className="btn-ghost" onClick={onClose} aria-label="Fermer">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
         </div>
@@ -566,65 +549,39 @@ function StockRemovalModal({ product, barbers, onClose }) {
           <div className="modal-body">
             {error && <div className="login-error" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
 
-            <div style={{
-              fontSize: 12, color: 'var(--text-muted)', marginBottom: 16,
-              padding: '8px 12px', borderRadius: 8,
-              background: 'rgba(var(--overlay),0.03)',
-              border: '1px solid rgba(var(--overlay),0.06)',
-            }}>
-              Ce retrait décrémente le stock sans compter dans le CA.
-              Pour une vente à un client, ajoutez le produit depuis le rendez-vous.
-            </div>
+            <p className="st-hint">
+              {entree
+                ? 'Une entrée ajoute au stock sans rien changer au chiffre d’affaires.'
+                : 'Une sortie retire du stock sans compter dans le CA. Pour une vente à un client, ajoutez le produit depuis le rendez-vous.'}
+            </p>
 
-            {/* Quantity stepper */}
+            {/* Compteur — gros boutons, utilisable au comptoir sans clavier */}
             <div className="form-group">
-              <label className="label">Quantite a retirer</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button type="button" onClick={() => setQty(q => Math.max(1, q - 1))}
-                  style={{
-                    width: 40, height: 40, borderRadius: 10,
-                    background: 'rgba(var(--overlay),0.06)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 20, fontWeight: 600, transition: 'all 0.15s',
-                  }}>
-                  -
-                </button>
-                <span style={{
-                  fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800,
-                  minWidth: 48, textAlign: 'center',
-                }}>
-                  {qty}
-                </span>
-                <button type="button"
-                  onClick={() => setQty(q => Math.min(product.stock_quantity, q + 1))}
-                  style={{
-                    width: 40, height: 40, borderRadius: 10,
-                    background: 'rgba(var(--overlay),0.06)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 20, fontWeight: 600, transition: 'all 0.15s',
-                  }}>
-                  +
-                </button>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  / {product.stock_quantity} en stock
-                </span>
+              <label className="label" htmlFor="st-qty">Quantité</label>
+              <div className="st-stepper">
+                <button type="button" onClick={() => setQty(q => Math.max(1, q - 1))} aria-label="Diminuer">−</button>
+                <input
+                  id="st-qty" type="number" inputMode="numeric" min="1" value={qty}
+                  onChange={e => setQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                />
+                <button type="button" onClick={() => setQty(q => q + 1)} aria-label="Augmenter">+</button>
               </div>
+              <p className="st-after">
+                {product.stock_quantity} <span aria-hidden="true">→</span> <strong>{apres}</strong>
+                <span className="sr-only">après le mouvement</span>
+                {apres < 0 && <em> stock insuffisant</em>}
+              </p>
             </div>
 
-            {/* Reason */}
             <div className="form-group">
               <label className="label">Motif</label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {STOCK_REASONS.map(r => (
+              <div className="st-reasons">
+                {MOTIFS[sens].map(r => (
                   <button
-                    key={r.value}
-                    type="button"
-                    className={`btn btn-sm ${reason === r.value ? 'btn-primary' : 'btn-secondary'}`}
+                    key={r.value} type="button"
+                    className={`st-reason ${reason === r.value ? 'on' : ''}`}
                     onClick={() => setReason(r.value)}
+                    aria-pressed={reason === r.value}
                   >
                     {r.label}
                   </button>
@@ -632,79 +589,54 @@ function StockRemovalModal({ product, barbers, onClose }) {
               </div>
             </div>
 
-            {/* Barber */}
             <div className="form-group">
-              <label className="label">Par (optionnel)</label>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className={`btn btn-sm ${!barberId ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setBarberId('')}
-                >
-                  —
-                </button>
-                {barbers.map(b => (
-                  <button
-                    key={b.id}
-                    type="button"
-                    className={`btn btn-sm ${barberId === b.id ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => setBarberId(b.id)}
-                  >
-                    {b.name}
-                  </button>
-                ))}
-              </div>
+              <label className="label" htmlFor="st-by">Par</label>
+              <select id="st-by" className="input" value={barberId} onChange={e => setBarberId(e.target.value)}>
+                <option value="">—</option>
+                {barbers.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
             </div>
 
-            {/* Note */}
             <div className="form-group">
-              <label className="label">Note (optionnel)</label>
-              <input className="input" value={note} maxLength={500}
-                onChange={e => setNote(e.target.value)}
-                placeholder="Ex: cire utilisee pour coiffer un client" />
+              <label className="label" htmlFor="st-note">Note (facultatif)</label>
+              <input id="st-note" className="input" value={note} onChange={e => setNote(e.target.value)}
+                placeholder={entree ? 'Ex : livraison BarberCorner' : 'Ex : flacon cassé'} maxLength={500} />
             </div>
 
-            {/* History */}
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="label">Derniers retraits</label>
+            {/* Historique : voir ce qui a déjà été fait évite le double comptage */}
+            <div className="st-history">
+              <h4>Derniers mouvements</h4>
               {loadingMovements ? (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Chargement...</div>
+                <p className="st-history-empty">Chargement...</p>
               ) : movements.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Aucun retrait enregistre</div>
+                <p className="st-history-empty">Aucun mouvement enregistré.</p>
               ) : (
-                <div style={{
-                  display: 'flex', flexDirection: 'column', gap: 6,
-                  maxHeight: 160, overflowY: 'auto',
-                }}>
-                  {movements.map(m => (
-                    <div key={m.id} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      gap: 8, padding: '6px 10px', borderRadius: 8,
-                      background: 'rgba(var(--overlay),0.03)',
-                      border: '1px solid rgba(var(--overlay),0.05)',
-                      fontSize: 12,
-                    }}>
-                      <span style={{ color: 'var(--text-secondary)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <strong style={{ color: 'var(--text)' }}>−{m.quantity}</strong>
-                        {' · '}{STOCK_REASON_LABELS[m.reason] || m.reason}
+                <ul>
+                  {movements.slice(0, 5).map(m => (
+                    <li key={m.id}>
+                      <span className={`st-mv ${m.direction === 'in' ? 'in' : 'out'}`}>
+                        {m.direction === 'in' ? '+' : '−'}{m.quantity}
+                      </span>
+                      <span className="st-mv-reason">{STOCK_REASON_LABELS[m.reason] || m.reason}</span>
+                      <span className="st-mv-date">
+                        {new Date(m.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                         {m.performed_by_name ? ` · ${m.performed_by_name}` : ''}
-                        {m.note ? ` · ${m.note}` : ''}
                       </span>
-                      <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                        {new Date(m.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                      </span>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
           </div>
 
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Annuler</button>
-            <button type="submit" className="btn btn-primary btn-sm"
-              disabled={removeStock.isPending || product.stock_quantity <= 0}>
-              {removeStock.isPending ? 'Retrait...' : 'Confirmer le retrait'}
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm"
+              disabled={mouvement.isPending || (!entree && qty > product.stock_quantity)}
+            >
+              {mouvement.isPending ? 'Enregistrement...' : entree ? `Ajouter ${qty}` : `Retirer ${qty}`}
             </button>
           </div>
         </form>
