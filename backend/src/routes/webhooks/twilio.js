@@ -20,6 +20,16 @@
 const express = require('express');
 const db = require('../../config/database');
 const logger = require('../../utils/logger');
+const crypto = require('crypto');
+
+// Comparaison à temps constant. timingSafeEqual exige des longueurs égales,
+// d'où le hachage préalable des deux côtés.
+function safeEqual(a, b) {
+  if (!a || !b) return false;
+  const ha = crypto.createHash('sha256').update(a).digest();
+  const hb = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
 const { notifySmsFailed } = require('../../services/push');
 const { brevoEmail } = require('../../services/notification/brevo');
 
@@ -48,8 +58,18 @@ const formParser = express.urlencoded({ extended: false, limit: '50kb' });
 
 router.post('/twilio/sms', formParser, async (req, res) => {
   const expected = process.env.TWILIO_WEBHOOK_SECRET || '';
-  const provided = String(req.query.token || req.headers['x-webhook-secret'] || '');
-  if (!expected || provided !== expected) {
+  // En-tête d'abord : un secret passé en ?token= se retrouve dans les journaux
+  // d'accès Railway/Cloudflare et dans l'en-tête Referer. Le paramètre d'URL
+  // reste accepté pour ne pas casser la configuration actuelle du fournisseur,
+  // mais il est signalé à chaque appel — à retirer une fois le webhook
+  // reconfiguré sur l'en-tête X-Webhook-Secret.
+  const fromHeader = String(req.headers['x-webhook-secret'] || '');
+  const fromQuery = String(req.query.token || '');
+  const provided = fromHeader || fromQuery;
+  if (!fromHeader && fromQuery) {
+    logger.warn('TWILIO webhook authentifié par paramètre d URL — migrer vers l en-tête X-Webhook-Secret', { ip: req.ip });
+  }
+  if (!expected || !safeEqual(provided, expected)) {
     logger.warn('Twilio webhook rejected — invalid token', { ip: req.ip });
     return res.status(403).json({ error: 'Invalid token' });
   }

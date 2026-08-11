@@ -1,5 +1,7 @@
 const { Router } = require('express');
 const db = require('../../config/database');
+const { logAudit } = require('../../middleware/auditLog');
+const logger = require('../../utils/logger');
 const config = require('../../config/env');
 const { getErrorSummary } = require('../../utils/errorTracker');
 
@@ -245,7 +247,7 @@ router.post('/trigger-reminders', async (req, res, next) => {
         meylan: check.rows.filter(r => (r.salon_id || 'meylan') === 'meylan').length,
         grenoble: check.rows.filter(r => r.salon_id === 'grenoble').length,
       },
-      grenobleKeySet: !!grenobleConf.brevo?.apiKey,
+      grenobleKeySet: !!brevoGre.apiKey,   // était grenobleConf.brevo?.apiKey — variable inexistante, la route plantait ici
       grenobleKeyPrefix: (brevoGre.apiKey || '').slice(0, 12) + '...',
     });
   } catch (error) {
@@ -310,57 +312,88 @@ router.post('/requeue-failed', async (req, res, next) => {
   }
 });
 
-// GET /api/admin/system/backup — Download full database backup as JSON
-// Safe, read-only export of all critical tables
+// GET /api/admin/system/backup — Export JSON, CLOISONNÉ PAR SALON
+//
+// Cette route exportait les 19 tables sans aucun filtre : un compte barbier de
+// Meylan pouvait aspirer le fichier client de Grenoble (9 481 clients, 16 749
+// RDV, les deux salons confondus). Toutes les autres routes admin filtrent sur
+// req.user.salon_id ; celle-ci ne le faisait pas.
+//
+// Chaque table est désormais restreinte au salon de l'admin connecté :
+//   - table avec colonne salon_id  -> WHERE salon_id = $1
+//   - clients                      -> uniquement ceux rattachés via client_salons
+//   - barber_services              -> uniquement les services du salon
+//   - guest_assignments            -> reçus OU envoyés par le salon
+//   - salons                       -> la ligne du salon uniquement
+//
+// Lecture seule. Aucune donnée n'est modifiée ni supprimée par cette route.
+const BACKUP_SCOPED = {
+  // Tables portant directement salon_id
+  salons:              'SELECT * FROM salons WHERE id = $1',
+  barbers:             'SELECT * FROM barbers WHERE salon_id = $1',
+  services:            'SELECT * FROM services WHERE salon_id = $1',
+  schedules:           'SELECT * FROM schedules WHERE salon_id = $1',
+  schedule_overrides:  'SELECT * FROM schedule_overrides WHERE salon_id = $1',
+  client_salons:       'SELECT * FROM client_salons WHERE salon_id = $1',
+  bookings:            'SELECT * FROM bookings WHERE salon_id = $1',
+  blocked_slots:       'SELECT * FROM blocked_slots WHERE salon_id = $1',
+  payments:            'SELECT * FROM payments WHERE salon_id = $1',
+  register_closings:   'SELECT * FROM register_closings WHERE salon_id = $1',
+  products:            'SELECT * FROM products WHERE salon_id = $1',
+  product_sales:       'SELECT * FROM product_sales WHERE salon_id = $1',
+  gift_cards:          'SELECT * FROM gift_cards WHERE salon_id = $1',
+  waitlist:            'SELECT * FROM waitlist WHERE salon_id = $1',
+  campaigns:           'SELECT * FROM campaigns WHERE salon_id = $1',
+  automation_triggers: 'SELECT * FROM automation_triggers WHERE salon_id = $1',
+  // Tables sans salon_id : on passe par le lien métier
+  clients: `SELECT c.* FROM clients c
+            WHERE EXISTS (SELECT 1 FROM client_salons cs WHERE cs.client_id = c.id AND cs.salon_id = $1)`,
+  barber_services: `SELECT bs.* FROM barber_services bs
+                    JOIN services s ON s.id = bs.service_id WHERE s.salon_id = $1`,
+  guest_assignments: `SELECT ga.* FROM guest_assignments ga
+                      JOIN barbers b ON b.id = ga.barber_id
+                      WHERE ga.host_salon_id = $1 OR b.salon_id = $1`,
+};
+
 router.get('/backup', async (req, res, next) => {
   try {
-    const tables = [
-      'salons',
-      'barbers',
-      'services',
-      'barber_services',
-      'schedules',
-      'schedule_overrides',
-      'clients',
-      'client_salons',
-      'bookings',
-      'blocked_slots',
-      'guest_assignments',
-      'payments',
-      'register_closings',
-      'products',
-      'product_sales',
-      'gift_cards',
-      'waitlist',
-      'campaigns',
-      'automation_triggers',
-    ];
+    const salonId = req.user.salon_id;
 
     const backup = {
       generated_at: new Date().toISOString(),
-      version: '1.0',
+      version: '2.0',
+      salon_id: salonId,
+      scope: 'salon',
       tables: {},
     };
 
-    for (const table of tables) {
+    for (const [table, sql] of Object.entries(BACKUP_SCOPED)) {
       try {
-        const { rows } = await db.query(`SELECT * FROM ${table}`);
+        const { rows } = await db.query(sql, [salonId]);
         backup.tables[table] = { count: rows.length, rows };
       } catch (err) {
         backup.tables[table] = { count: 0, rows: [], error: err.message };
       }
     }
 
-    const dateStr = new Date().toISOString().slice(0, 10);
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="barberclub-backup-${dateStr}.json"`);
+    // Un export du fichier client doit laisser une trace nominative.
+    logAudit(req, 'export', 'database_backup', salonId, {
+      tables: Object.keys(backup.tables).length,
+      clients: backup.tables.clients?.count ?? 0,
+      bookings: backup.tables.bookings?.count ?? 0,
+    });
+    logger.warn('Full database export downloaded', {
+      salonId, actor: req.user.id, ip: req.ip,
+      clients: backup.tables.clients?.count ?? 0,
+    });
+
+    res.setHeader('Content-Disposition', `attachment; filename="backup-${salonId}-${new Date().toISOString().slice(0, 10)}.json"`);
     res.json(backup);
   } catch (error) {
     next(error);
   }
 });
 
-// GET /api/admin/system/backups — List stored automatic backups
 router.get('/backups', async (req, res, next) => {
   try {
     const { rows } = await db.query(
