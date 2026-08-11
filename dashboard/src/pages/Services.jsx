@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import useMobile from '../hooks/useMobile';
+import BarberServicesPanel from '../components/BarberServicesPanel';
 import { useServices, useBarbers, useCreateService, useUpdateService, useDeleteService, useServiceRestrictions, useUpdateServiceRestrictions } from '../hooks/useApi';
 import { formatPrice } from '../utils/format';
 import { COLOR_PALETTE } from '../utils/constants';
@@ -10,6 +11,9 @@ export default function Services() {
   const { data: allBarbers = [] } = useBarbers();
   const barbers = allBarbers.filter(b => b.is_active);
   const [modal, setModal] = useState(null);
+  // Par barbier par defaut : c'est la question qu'on se pose le plus souvent
+  // (qui fait quoi, et en combien de temps). Le catalogue reste a cote.
+  const [tab, setTab] = useState('barbers');
   const deleteMutation = useDeleteService();
 
   async function handleDelete(id) {
@@ -31,12 +35,26 @@ export default function Services() {
       )}
       <div className="page-header">
         <h2 className="page-title">Prestations</h2>
+        {tab === 'catalogue' && (
         <button className="btn btn-primary btn-sm" onClick={() => setModal('create')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Ajouter
         </button>
+        )}
       </div>
 
+      <div className="bsp-tabs" role="tablist" aria-label="Vue des prestations">
+        <button role="tab" aria-selected={tab === 'barbers'}
+          className={`bsp-tab ${tab === 'barbers' ? 'active' : ''}`}
+          onClick={() => setTab('barbers')}>Par barbier</button>
+        <button role="tab" aria-selected={tab === 'catalogue'}
+          className={`bsp-tab ${tab === 'catalogue' ? 'active' : ''}`}
+          onClick={() => setTab('catalogue')}>Catalogue</button>
+      </div>
+
+      {tab === 'barbers' && <div className="page-body"><BarberServicesPanel /></div>}
+
+      {tab === 'catalogue' && (
       <div className="page-body">
         {loading ? (
           <div className="empty-state">Chargement...</div>
@@ -116,6 +134,7 @@ export default function Services() {
           </div>
         )}
       </div>
+      )}
 
       {modal && (
         <ServiceModal

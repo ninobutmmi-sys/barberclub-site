@@ -14,6 +14,7 @@ export const keys = {
   guestAssignments: ['guestAssignments'],
   barberSchedule: (id) => ['barberSchedule', id],
   barberGuestDays: (id) => ['barberGuestDays', id],
+  barberServices: (id) => ['barberServices', id],
   clients: (params) => ['clients', params],
   client: (id) => ['client', id],
   inactiveClients: ['inactiveClients'],
@@ -106,6 +107,40 @@ export function useDeleteBarber() {
     mutationFn: (id) => api.deleteBarber(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.barbers });
+      qc.invalidateQueries({ queryKey: keys.services });
+    },
+  });
+}
+
+export function useBarberServices(id, options) {
+  return useQuery({
+    queryKey: keys.barberServices(id),
+    queryFn: () => api.getBarberServices(id),
+    enabled: !!id,
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useSetBarberService() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, serviceId, customDuration }) => api.setBarberService(id, serviceId, customDuration),
+    // La liste des prestations affiche aussi les barbiers qui les assurent :
+    // les deux caches doivent repartir.
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: keys.barberServices(id) });
+      qc.invalidateQueries({ queryKey: keys.services });
+    },
+  });
+}
+
+export function useRemoveBarberService() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, serviceId }) => api.removeBarberService(id, serviceId),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: keys.barberServices(id) });
       qc.invalidateQueries({ queryKey: keys.services });
     },
   });

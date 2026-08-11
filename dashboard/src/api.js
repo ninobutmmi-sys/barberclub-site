@@ -224,6 +224,17 @@ export const updateBarberSchedule = (id, schedules) =>
   request(`/admin/barbers/${id}/schedule`, { method: 'PUT', body: JSON.stringify({ schedules }) });
 export const addBarberOverride = (id, body) =>
   request(`/admin/barbers/${id}/overrides`, { method: 'POST', body: JSON.stringify(body) });
+// Prestations d'un barbier — catalogue du salon + durée propre à ce barbier
+export const getBarberServices = (id) =>
+  request(`/admin/barbers/${id}/services`);
+export const setBarberService = (id, serviceId, customDuration) =>
+  request(`/admin/barbers/${id}/services/${serviceId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ custom_duration: customDuration ?? null }),
+  });
+export const removeBarberService = (id, serviceId) =>
+  request(`/admin/barbers/${id}/services/${serviceId}`, { method: 'DELETE' });
+
 export const deleteBarberOverride = (id) =>
   request(`/admin/barbers/overrides/${id}`, { method: 'DELETE' });
 

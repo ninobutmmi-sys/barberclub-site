@@ -557,4 +557,128 @@ router.delete('/guest-days/:id',
   }
 );
 
+// ============================================
+// GET /api/admin/barbers/:id/services
+// Catalogue du salon vu par un barbier : ce qu'il fait, et à quelle durée.
+// ============================================
+router.get('/:id/services',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const salonId = req.user.salon_id;
+
+      // On renvoie TOUT le catalogue du salon, pas seulement ce qu'il fait :
+      // l'écran doit permettre de lui ajouter une prestation.
+      const result = await db.query(
+        `SELECT s.id, s.name, s.price, s.color, s.sort_order,
+                s.duration AS default_duration,
+                bs.barber_id IS NOT NULL AS assigned,
+                bs.custom_duration,
+                COALESCE(bs.custom_duration, s.duration) AS effective_duration
+         FROM services s
+         LEFT JOIN barber_services bs ON bs.service_id = s.id AND bs.barber_id = $2
+         WHERE s.salon_id = $1 AND s.is_active = true AND s.deleted_at IS NULL
+         ORDER BY s.sort_order, s.name`,
+        [salonId, id]
+      );
+
+      res.json(result.rows);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// PUT /api/admin/barbers/:id/services/:serviceId
+// Assigne la prestation au barbier et fixe sa durée.
+// custom_duration null (ou absent) = il suit la durée de la prestation.
+// ============================================
+router.put('/:id/services/:serviceId',
+  [
+    param('id').matches(uuidRegex),
+    param('serviceId').matches(uuidRegex),
+    body('custom_duration').optional({ nullable: true }).isInt({ min: 5, max: 240 })
+      .withMessage('Durée entre 5 et 240 minutes'),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { id, serviceId } = req.params;
+      const salonId = req.user.salon_id;
+      const customDuration = req.body.custom_duration ?? null;
+
+      // La prestation doit appartenir au salon de l'admin connecté. On ne
+      // contraint pas le salon du barbier : un barbier invité (Louay) exerce
+      // dans l'autre salon et doit pouvoir y recevoir des prestations.
+      const service = await db.query(
+        'SELECT id, duration FROM services WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
+        [serviceId, salonId]
+      );
+      if (service.rows.length === 0) throw ApiError.notFound('Prestation introuvable dans ce salon');
+
+      const barber = await db.query(
+        'SELECT id FROM barbers WHERE id = $1 AND deleted_at IS NULL',
+        [id]
+      );
+      if (barber.rows.length === 0) throw ApiError.notFound('Barbier introuvable');
+
+      // Une durée égale au défaut ne mérite pas d'exception : on stocke NULL
+      // pour que le barbier suive la prestation si elle change plus tard.
+      const toStore = customDuration === service.rows[0].duration ? null : customDuration;
+
+      await db.query(
+        `INSERT INTO barber_services (barber_id, service_id, custom_duration)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (barber_id, service_id) DO UPDATE SET custom_duration = EXCLUDED.custom_duration`,
+        [id, serviceId, toStore]
+      );
+
+      logger.info('Barber service updated', { barberId: id, serviceId, customDuration: toStore });
+
+      res.json({
+        barber_id: id,
+        service_id: serviceId,
+        assigned: true,
+        custom_duration: toStore,
+        effective_duration: toStore ?? service.rows[0].duration,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// DELETE /api/admin/barbers/:id/services/:serviceId — le barbier ne la fait plus
+// ============================================
+router.delete('/:id/services/:serviceId',
+  [param('id').matches(uuidRegex), param('serviceId').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { id, serviceId } = req.params;
+      const salonId = req.user.salon_id;
+
+      const service = await db.query(
+        'SELECT id FROM services WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
+        [serviceId, salonId]
+      );
+      if (service.rows.length === 0) throw ApiError.notFound('Prestation introuvable dans ce salon');
+
+      await db.query(
+        'DELETE FROM barber_services WHERE barber_id = $1 AND service_id = $2',
+        [id, serviceId]
+      );
+
+      logger.info('Barber service removed', { barberId: id, serviceId });
+      res.json({ barber_id: id, service_id: serviceId, assigned: false });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 module.exports = router;
