@@ -34,6 +34,31 @@
   --ink-danger: #ef4444;
   --ink-good: #22c55e;
   --ink-mute: #64748b;
+
+  /* ── Échelle. Le dashboard comptait 14 rayons et 39 ombres différents :
+     chaque écran avait été dessiné à la main avec des valeurs voisines. Ces
+     quatre marches suffisent, et elles s'appliquent aux primitives partagées
+     (.btn, .input, .modal, .table…) donc à toutes les pages d'un coup. ── */
+  --r-xs: 6px;
+  --r-sm: 9px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-pill: 999px;
+
+  /* Ombres portées d'une source haute et lointaine : décalage vertical, étalement
+     négatif pour resserrer le contact. Trois marches, pas trente-neuf. */
+  --e-1: 0 1px 2px rgba(0,0,0,0.4);
+  --e-2: 0 6px 20px -6px rgba(0,0,0,0.5);
+  --e-3: 0 24px 60px -16px rgba(0,0,0,0.7);
+  /* Liseré haut : une surface éclairée par le dessus a une arête claire. C'est
+     ce détail qui sépare une carte « posée » d'un rectangle plus clair. */
+  --hair: inset 0 1px 0 rgba(255,255,255,0.055);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-1: 0.16s;
+  --dur-2: 0.28s;
+
+  --ring: rgba(255,255,255,0.85);
   --shadow: 0 1px 3px rgba(0,0,0,0.4);
   --overlay: 255,255,255;
   --status-completed-bg: rgb(44,46,51);
@@ -66,6 +91,14 @@
   --ink-danger: #b91c1c;
   --ink-good: #15803d;
   --ink-mute: #475569;
+
+  /* En clair, une ombre noire salit. On teinte vers le bleu-gris et on
+     allège, et le liseré passe du blanc au blanc pur sur fond déjà clair. */
+  --e-1: 0 1px 2px rgba(15,23,42,0.06);
+  --e-2: 0 6px 18px -6px rgba(15,23,42,0.12);
+  --e-3: 0 24px 56px -16px rgba(15,23,42,0.18);
+  --hair: inset 0 1px 0 rgba(255,255,255,0.9);
+  --ring: rgba(15,23,42,0.75);
 }
 
 html, body, #root {
@@ -4269,4 +4302,197 @@ select.input {
 @media (max-width: 1023px) {
   .st-kpi-rule { left: 14px; right: 14px; }
   .st-kpi-value { font-size: 22px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FINITION GLOBALE
+   Rien ici ne change une dimension : ni padding, ni hauteur, ni taille de
+   police. Uniquement la finition — rayon, profondeur, transition, focus. Les
+   1 400 styles en ligne des pages restent intacts, donc rien ne peut se
+   décaler ; ce fichier ne fait que mieux habiller les primitives partagées.
+════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Chiffres à chasse fixe ──
+   Un tableau de bord est fait de nombres. En chasse proportionnelle, un 1 est
+   plus étroit qu'un 8 : les colonnes de prix ondulent, et un compteur qui
+   passe de 9 à 10 fait sauter tout ce qui le suit. Une ligne, et chaque
+   nombre du dashboard s'aligne. C'est le gain le plus visible du lot. */
+body {
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Focus visible ──
+   Une seule règle pour tout ce qui se navigue au clavier. Sans elle, un Tab
+   ne montre nulle part où l'on se trouve. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+/* La souris ne déclenche pas le halo : :focus-visible s'en charge déjà, mais
+   Safari pose encore un contour au clic sur certains contrôles. */
+:where(a, button, input, select, textarea):focus:not(:focus-visible) { outline: none; }
+
+/* ── Boutons ──
+   Finition seulement : le padding et la taille de police ne bougent pas, donc
+   aucune page ne se réagence. */
+.btn {
+  border-radius: var(--r-sm);
+  box-shadow: var(--e-1);
+  transition: background var(--dur-1) var(--ease),
+              border-color var(--dur-1) var(--ease),
+              color var(--dur-1) var(--ease),
+              box-shadow var(--dur-1) var(--ease),
+              transform var(--dur-1) var(--ease);
+}
+.btn:hover { box-shadow: var(--e-2); }
+/* Le retour tactile : au doigt, sans survol possible, l'enfoncement est le
+   seul accusé de réception. */
+.btn:active { transform: translateY(1px); box-shadow: var(--e-1); }
+.btn:disabled, .btn[disabled] { box-shadow: none; transform: none; }
+.btn-primary { box-shadow: var(--e-2), var(--hair); }
+.btn-primary:hover { opacity: 1; filter: brightness(0.94); box-shadow: var(--e-3); }
+
+/* ── Champs ── */
+.input {
+  border-radius: var(--r-sm);
+  transition: border-color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+}
+.input:focus {
+  border-color: var(--border-focus);
+  /* Anneau intérieur : il n'agrandit pas la boîte, donc rien ne se décale au focus. */
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+  outline: none;
+}
+.input::placeholder { color: var(--text-muted); }
+
+/* ── Surfaces ── */
+.modal {
+  border-radius: var(--r-lg);
+  box-shadow: var(--e-3), var(--hair);
+  animation: slideUp var(--dur-2) var(--ease);
+}
+
+.a-card, .a-kpi {
+  border-radius: var(--r-lg);
+  box-shadow: var(--e-1), var(--hair);
+}
+.a-kpi:hover { box-shadow: var(--e-3), var(--hair); }
+
+/* ── Tableaux ──
+   Pas d'en-tête collant ici : « sticky » n'a de sens que dans un conteneur qui
+   défile, et ces 8 pages ne défilent pas toutes de la même façon. Posé
+   globalement, le th se décrochait pour aller se glisser sous l'en-tête de
+   page. Ce serait à faire page par page, en vérifiant chacune. */
+.table tbody tr { transition: background var(--dur-1) var(--ease); }
+
+/* ── Badges ── */
+.badge { border-radius: var(--r-pill); }
+
+/* ── Barres de défilement ──
+   La barre par défaut de macOS/Windows jure sur un fond sombre. */
+* { scrollbar-width: thin; scrollbar-color: rgba(var(--overlay), 0.18) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(var(--overlay), 0.14);
+  border-radius: var(--r-pill);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(var(--overlay), 0.26); background-clip: content-box; }
+
+/* ── Sélection ── */
+::selection { background: rgba(var(--overlay), 0.16); color: var(--text); }
+
+/* ── Titre de page ──
+   Orbitron en 800 sur des capitales serrées bavait : on desserre d'un cheveu. */
+.page-title { letter-spacing: 0.06em; }
+
+/* ── Vide ── */
+.empty-state {
+  border-radius: var(--r-lg);
+  background: rgba(var(--overlay), 0.02);
+  border: 1px dashed var(--border);
+}
+
+/* ── Images ──
+   Garde-fou : une image trop large déborde et fait défiler la page en travers. */
+img { max-width: 100%; }
+
+/* ── Encoche et barre du bas sur iPhone ── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  @media (max-width: 1023px) {
+    .page-body { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+  }
+}
+
+/* ── Mouvement réduit ──
+   Un interrupteur global : les pages ajoutées ensuite en héritent sans y penser. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:active { transform: none; }
+}
+
+/* ── L'ossature ──
+   Barre latérale et en-tête sont les deux seuls éléments présents sur les 23
+   écrans. C'est là que se joue la qualité perçue, et c'est le seul endroit où
+   un soin porte partout à la fois. */
+
+/* Repère d'onglet actif : le fond seul ne dit pas assez où l'on est. Une
+   arête à gauche se lit du coin de l'œil, y compris barre repliée. */
+.sidebar-link { position: relative; transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease); }
+.sidebar-link::before {
+  content: '';
+  position: absolute; left: 0; top: 50%;
+  width: 3px; height: 0; border-radius: 0 var(--r-pill) var(--r-pill) 0;
+  background: var(--text);
+  transform: translateY(-50%);
+  transition: height var(--dur-2) var(--ease);
+}
+.sidebar-link.active::before { height: 18px; }
+.sidebar-link.active { box-shadow: var(--hair); }
+
+/* En-tête translucide : le contenu passe dessous au défilement au lieu de
+   disparaître sous un bandeau opaque. Il est déjà sticky, rien ne bouge. */
+.page-header {
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+}
+/* Repli pour les navigateurs sans color-mix : on garde le fond opaque. */
+@supports not (background: color-mix(in srgb, red 50%, transparent)) {
+  .page-header { background: var(--bg); backdrop-filter: none; }
+}
+
+/* Même traitement pour la barre du bas au téléphone. */
+@media (max-width: 1023px) {
+  .mob-bottom-nav {
+    background: color-mix(in srgb, var(--sidebar-bg) 80%, transparent);
+    backdrop-filter: saturate(1.4) blur(16px);
+    -webkit-backdrop-filter: saturate(1.4) blur(16px);
+    box-shadow: 0 -1px 0 var(--border), var(--e-2);
+  }
+  @supports not (background: color-mix(in srgb, red 50%, transparent)) {
+    .mob-bottom-nav { background: var(--sidebar-bg); backdrop-filter: none; }
+  }
+}
+
+/* Une lueur très faible en haut du contenu : de l'air, pas un dégradé. Elle
+   est derrière tout (z-index négatif) et ne capte aucun clic. */
+.main-content::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; height: 340px;
+  background: radial-gradient(120% 100% at 50% 0%, rgba(var(--overlay), 0.045), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
 }
