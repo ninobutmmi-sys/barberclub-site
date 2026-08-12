@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import useMobile from '../hooks/useMobile';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   useWaitlist, useWaitlistCount, useAddToWaitlist, useUpdateWaitlistEntry, useDeleteWaitlistEntry,
   useNotifyWaitlistSms, useBarbers, useServices,
@@ -10,21 +9,13 @@ import { getClients } from '../api';
 
 // ---- Icons ----
 const IconPlus = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
-const IconSms = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 15, height: 15 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
 const IconPhone = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 15, height: 15 }}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg>;
 const IconTrash = () => <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>;
-const IconCalendar = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 13, height: 13 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
-const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 13, height: 13 }}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
 const IconClipboard = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 48, height: 48, color: 'var(--text-muted)', marginBottom: 12 }}><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>;
 const IconBooking = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 15, height: 15 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>;
 
 function formatDate(dateStr) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-}
-
-function formatSlot(start, end) {
-  if (!start) return 'Toute la journée';
-  return `${start.slice(0, 5)} – ${end?.slice(0, 5) || '?'}`;
 }
 
 function buildSmsPreview(entry) {
@@ -34,19 +25,19 @@ function buildSmsPreview(entry) {
 }
 
 export default function Waitlist() {
-  const isMobile = useMobile();
   const [addModal, setAddModal] = useState(false);
   const [filter, setFilter] = useState('waiting');
   const [bookingEntry, setBookingEntry] = useState(null);
   const [smsPreview, setSmsPreview] = useState(null); // entry to preview SMS for
   const [toast, setToast] = useState(null);
+  const [jourFiltre, setJourFiltre] = useState(null);
 
   const waitlistQuery = useWaitlist(filter === 'all' ? {} : { status: 'waiting' });
+  const entries = useMemo(() => waitlistQuery.data || [], [waitlistQuery.data]);
   const waitlistCountQuery = useWaitlistCount();
   const barbersQuery = useBarbers();
   const servicesQuery = useServices();
 
-  const waitlist = waitlistQuery.data || [];
   const waitlistCount = waitlistCountQuery.data?.count ?? 0;
   const barbers = (barbersQuery.data || []).filter(b => b.is_active);
   const services = servicesQuery.data || [];
@@ -97,16 +88,64 @@ export default function Waitlist() {
     setBookingEntry(null);
   }
 
-  const statusLabel = { waiting: 'En attente', notified: 'Notifié', booked: 'Réservé', expired: 'Expiré' };
-  const statusColor = { waiting: '#3b82f6', notified: '#f59e0b', booked: '#22c55e', expired: 'var(--text-muted)' };
+  const statusLabel = { waiting: 'En attente', notified: 'Prévenu', booked: 'Réservé', expired: 'Expiré' };
+
+  // ── Regroupement par personne ──
+  // La table stocke un souhait par date : la même personne y figure autant de
+  // fois qu'elle a coché de jours. Affichée telle quelle, la liste comptait
+  // 17 « clients en attente » pour 7 personnes réelles, dont une répétée
+  // quatre fois d'affilée.
+  const personnes = useMemo(() => {
+    const m = new Map();
+    for (const e of entries) {
+      const cle = e.client_id || e.client_phone || e.id;
+      if (!m.has(cle)) {
+        m.set(cle, { cle, nom: e.client_name, tel: e.client_phone, souhaits: [] });
+      }
+      m.get(cle).souhaits.push(e);
+    }
+    return [...m.values()]
+      .map((p) => {
+        p.souhaits.sort((a, b) => (a.preferred_date || '').localeCompare(b.preferred_date || ''));
+        p.depuis = p.souhaits.reduce((min, e) => (!min || e.created_at < min ? e.created_at : min), null);
+        p.enAttente = p.souhaits.filter((e) => e.status === 'waiting').length;
+        return p;
+      })
+      // Le plus ancien inscrit en premier : c'est le seul ordre défendable
+      // quand on doit choisir qui appeler.
+      .sort((a, b) => (a.depuis || '').localeCompare(b.depuis || ''));
+  }, [entries]);
+
+  // ── Demande par jour ──
+  // Le vrai déclencheur de cette page : un créneau se libère jeudi, qui le veut ?
+  const jours = useMemo(() => {
+    const m = new Map();
+    for (const e of entries) {
+      if (e.status !== 'waiting' || !e.preferred_date) continue;
+      m.set(e.preferred_date, (m.get(e.preferred_date) || 0) + 1);
+    }
+    return [...m.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [entries]);
+
+  const visibles = useMemo(() => (
+    jourFiltre
+      ? personnes.filter((p) => p.souhaits.some((e) => e.preferred_date === jourFiltre))
+      : personnes
+  ), [personnes, jourFiltre]);
+
+  const nbSouhaits = entries.filter((e) => e.status === 'waiting').length;
 
   return (
     <>
       <div className="page-header">
         <div>
           <h2 className="page-title">Liste d'attente</h2>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            {waitlistCount} client{waitlistCount !== 1 ? 's' : ''} en attente
+          <p className="wl-sub">
+            {/* Le compteur d'avant additionnait les souhaits et les appelait
+                des clients. Les deux nombres sont utiles, pas confondus. */}
+            <strong>{personnes.filter((p) => p.enAttente > 0).length}</strong> personne
+            {personnes.filter((p) => p.enAttente > 0).length !== 1 ? 's' : ''}
+            {' · '}{nbSouhaits} créneau{nbSouhaits !== 1 ? 'x' : ''} souhaité{nbSouhaits !== 1 ? 's' : ''}
           </p>
         </div>
         <button className="btn btn-primary btn-sm" onClick={() => setAddModal(true)}>
@@ -115,8 +154,34 @@ export default function Waitlist() {
       </div>
 
       <div className="page-body">
-        {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        {/* ── Un créneau se libère ? ── */}
+        {jours.length > 0 && (
+          <section className="wl-days" aria-label="Demande par jour">
+            <span className="wl-days-label">Un créneau se libère&nbsp;?</span>
+            <div className="wl-days-scroll">
+              {jours.map(([d, n]) => (
+                <button
+                  key={d}
+                  type="button"
+                  className={`wl-day ${jourFiltre === d ? 'on' : ''}`}
+                  onClick={() => setJourFiltre(jourFiltre === d ? null : d)}
+                  aria-pressed={jourFiltre === d}
+                >
+                  <span className="wl-day-date">{formatDate(d)}</span>
+                  <span className="wl-day-n">{n}</span>
+                </button>
+              ))}
+            </div>
+            {jourFiltre && (
+              <button type="button" className="wl-day-clear" onClick={() => setJourFiltre(null)}>
+                Tout voir
+              </button>
+            )}
+          </section>
+        )}
+
+        {/* ── Filtres de statut ── */}
+        <div className="wl-tabs" role="group" aria-label="Filtrer par statut">
           {[
             { key: 'waiting', label: 'En attente' },
             { key: 'all', label: 'Tous' },
@@ -124,224 +189,42 @@ export default function Waitlist() {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`btn btn-sm ${filter === f.key ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ fontSize: 12 }}
+              className={`wl-tab ${filter === f.key ? 'on' : ''}`}
+              aria-pressed={filter === f.key}
             >
               {f.label}
-              {f.key === 'waiting' && waitlistCount > 0 && (
-                <span style={{ marginLeft: 6, background: filter === f.key ? 'rgba(255,255,255,0.2)' : '#3b82f6', color: '#fff', fontSize: 10, padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>
-                  {waitlistCount}
-                </span>
-              )}
+              {f.key === 'waiting' && waitlistCount > 0 && <span>{waitlistCount}</span>}
             </button>
           ))}
         </div>
 
         {waitlistQuery.isLoading ? (
           <div className="empty-state">Chargement...</div>
-        ) : waitlist.length === 0 ? (
-          <div className="empty-state" style={{ padding: 60 }}>
+        ) : visibles.length === 0 ? (
+          <div className="empty-state">
             <IconClipboard />
-            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Aucun client en attente</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Ajoutez un client quand un créneau est complet</div>
-          </div>
-        ) : isMobile ? (
-          /* ======== MOBILE ======== */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {waitlist.map((w) => (
-              <div key={w.id} style={{
-                background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
-                padding: '14px 16px', transition: 'background 0.2s',
-              }}>
-                {/* Header: name + status */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>{w.client_name}</div>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
-                    background: `${statusColor[w.status] || 'var(--text-muted)'}20`,
-                    color: statusColor[w.status] || 'var(--text-muted)',
-                    textTransform: 'uppercase', letterSpacing: 0.5,
-                  }}>
-                    {statusLabel[w.status] || w.status}
-                  </span>
-                </div>
-
-                {/* Phone */}
-                {w.client_phone && (
-                  <a href={`tel:${w.client_phone}`} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'none',
-                    marginBottom: 10,
-                  }}>
-                    <IconPhone /> {formatPhoneWithFlag(w.client_phone)}
-                  </a>
-                )}
-
-                {/* Details */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    <IconCalendar /> {formatDate(w.preferred_date)}
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    <IconClock /> {formatSlot(w.preferred_time_start, w.preferred_time_end)}
-                  </span>
-                  {w.service_name && <span>{w.service_name}</span>}
-                  {w.barber_name && <span>{w.barber_name}</span>}
-                </div>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {w.status === 'waiting' && (
-                    <>
-                      <button
-                        onClick={() => handleNotify(w)}
-                        style={{
-                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          padding: '9px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-                          background: '#3b82f6', color: '#fff', fontSize: 13, fontWeight: 600,
-                          fontFamily: 'var(--font)',
-                        }}
-                      >
-                        <IconSms /> SMS
-                      </button>
-                      <a
-                        href={`tel:${w.client_phone}`}
-                        style={{
-                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          padding: '9px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-                          background: 'rgba(34,197,94,0.15)', color: '#22c55e', fontSize: 13, fontWeight: 600,
-                          textDecoration: 'none', fontFamily: 'var(--font)',
-                        }}
-                      >
-                        <IconPhone /> Appeler
-                      </a>
-                    </>
-                  )}
-                  <button
-                    onClick={() => handleDelete(w.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: 40, padding: '9px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-                      background: 'rgba(239,68,68,0.1)', color: '#ef4444',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <IconTrash />
-                  </button>
-                </div>
-              </div>
-            ))}
+            {jourFiltre
+              ? <>Personne n’attend pour le {formatDate(jourFiltre)}.</>
+              : filter === 'waiting'
+                ? <>Personne n’attend de créneau.</>
+                : <>Aucune demande enregistrée.</>}
           </div>
         ) : (
-          /* ======== DESKTOP ======== */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {waitlist.map((w) => (
-              <div key={w.id} style={{
-                background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12,
-                padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16,
-                transition: 'background 0.2s',
-              }}>
-                {/* Status dot */}
-                <div style={{
-                  width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-                  background: statusColor[w.status] || 'var(--text-muted)',
-                }} />
-
-                {/* Client info */}
-                <div style={{ minWidth: 160, flexShrink: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{w.client_name}</div>
-                  {w.client_phone && (
-                    <a href={`tel:${w.client_phone}`} style={{
-                      fontSize: 12, color: 'var(--text-secondary)', textDecoration: 'none',
-                      display: 'inline-flex', alignItems: 'center', gap: 4,
-                    }}>
-                      <IconPhone /> {formatPhoneWithFlag(w.client_phone)}
-                    </a>
-                  )}
-                </div>
-
-                {/* Details */}
-                <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: '4px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    <IconCalendar /> {formatDate(w.preferred_date)}
-                  </span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    <IconClock /> {formatSlot(w.preferred_time_start, w.preferred_time_end)}
-                  </span>
-                  {w.service_name && <span style={{ color: 'var(--text-muted)' }}>{w.service_name}</span>}
-                  {w.barber_name && <span style={{ color: 'var(--text-muted)' }}>{w.barber_name}</span>}
-                </div>
-
-                {/* Status badge */}
-                <span style={{
-                  fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6, flexShrink: 0,
-                  background: `${statusColor[w.status] || 'var(--text-muted)'}15`,
-                  color: statusColor[w.status] || 'var(--text-muted)',
-                  textTransform: 'uppercase', letterSpacing: 0.5,
-                }}>
-                  {statusLabel[w.status] || w.status}
-                </span>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  {w.status === 'waiting' && (
-                    <>
-                      <button
-                        className="btn btn-sm"
-                        onClick={() => handleNotify(w)}
-                        title="Envoyer SMS"
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 5,
-                          padding: '6px 12px', fontSize: 12, fontWeight: 600,
-                          background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <IconSms /> SMS
-                      </button>
-                      <a
-                        href={`tel:${w.client_phone}`}
-                        title="Appeler"
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          width: 34, height: 34, borderRadius: 8, textDecoration: 'none',
-                          background: 'rgba(34,197,94,0.12)', color: '#22c55e',
-                        }}
-                      >
-                        <IconPhone />
-                      </a>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => handleBooked(w)}
-                        title="Créer réservation"
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          width: 34, height: 34, borderRadius: 8, padding: 0,
-                          color: 'var(--text-secondary)',
-                        }}
-                      >
-                        <IconBooking />
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={() => handleDelete(w.id)}
-                    title="Supprimer"
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: 34, height: 34, borderRadius: 8, border: 'none', cursor: 'pointer',
-                      background: 'rgba(239,68,68,0.08)', color: '#ef4444',
-                    }}
-                  >
-                    <IconTrash />
-                  </button>
-                </div>
-              </div>
+          <ul className="wl-list">
+            {visibles.map((p) => (
+              <PersonneCard
+                key={p.cle}
+                personne={p}
+                jourFiltre={jourFiltre}
+                statusLabel={statusLabel}
+                onNotify={handleNotify}
+                onBook={handleBooked}
+                onDelete={handleDelete}
+              />
             ))}
-          </div>
+          </ul>
         )}
       </div>
-
       {addModal && (
         <AddWaitlistModal
           barbers={barbers}
@@ -413,6 +296,103 @@ export default function Waitlist() {
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * Une carte par personne, ses jours souhaités en pastilles.
+ *
+ * Chaque pastille est le bouton d'envoi du SMS pour CE jour-là : c'est la
+ * seule façon d'avoir un bouton « Prévenir » qui sache de quelle date il
+ * parle quand la personne en a coché quatre.
+ */
+function PersonneCard({ personne, jourFiltre, statusLabel, onNotify, onBook, onDelete }) {
+  const [menu, setMenu] = useState(false);
+  const menuRef = useRef(null);
+  useEffect(() => {
+    if (!menu) return;
+    const clic = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenu(false); };
+    document.addEventListener('mousedown', clic);
+    return () => document.removeEventListener('mousedown', clic);
+  }, [menu]);
+
+  const jours = Math.max(0, Math.round((Date.now() - new Date(personne.depuis).getTime()) / 86400000));
+  const ref = personne.souhaits.find((e) => e.preferred_date === jourFiltre) || personne.souhaits[0];
+  const service = ref?.service_name;
+  const barbier = ref?.barber_name;
+
+  return (
+    <li className="wl-card">
+      <div className="wl-card-main">
+        <div className="wl-id">
+          <span className="wl-name">{personne.nom || 'Sans nom'}</span>
+          <a className="wl-phone" href={`tel:${personne.tel}`}>{formatPhoneWithFlag(personne.tel)}</a>
+        </div>
+
+        <div className="wl-meta">
+          {service && <span className="wl-service">{service}</span>}
+          {barbier && <span className="wl-barber">{barbier}</span>}
+          <span className="wl-since">
+            {jours === 0 ? "inscrit aujourd'hui" : `attend depuis ${jours} j`}
+          </span>
+        </div>
+      </div>
+
+      <ul className="wl-chips">
+        {personne.souhaits.map((e) => {
+          const creneau = e.preferred_time_start
+            ? `${e.preferred_time_start.slice(0, 5)}–${e.preferred_time_end?.slice(0, 5) || '?'}`
+            : null;
+          // Relancer quelqu'un déjà prévenu qui n'a pas répondu est un besoin
+          // réel, et l'ancienne page le permettait (le bouton SMS était sur
+          // chaque ligne). Seul un créneau déjà réservé n'a plus rien à dire.
+          const actif = e.status !== 'booked';
+          return (
+            <li key={e.id}>
+              <button
+                type="button"
+                className={`wl-chip ${e.status} ${e.preferred_date === jourFiltre ? 'cible' : ''}`}
+                onClick={() => actif && onNotify(e)}
+                disabled={!actif}
+                title={!actif
+                  ? 'Rendez-vous déjà pris'
+                  : e.status === 'waiting'
+                    ? `Prévenir par SMS pour le ${formatDate(e.preferred_date)}`
+                    : `Relancer par SMS pour le ${formatDate(e.preferred_date)}`}
+              >
+                <span className="wl-chip-date">{formatDate(e.preferred_date)}</span>
+                {/* L'ancienne liste écrivait « Toute la journée » sur chaque
+                    ligne. C'est le défaut : on ne l'affiche que s'il y a
+                    vraiment une plage. */}
+                {creneau && <span className="wl-chip-slot">{creneau}</span>}
+                {e.status !== 'waiting' && <span className="wl-chip-state">{statusLabel[e.status]}</span>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="wl-actions">
+        <a className="wl-act" href={`tel:${personne.tel}`} title="Appeler"><IconPhone /></a>
+        <button type="button" className="wl-act" onClick={() => onBook(ref)} title="Créer le rendez-vous">
+          <IconBooking />
+        </button>
+        <div className="wl-menu-wrap" ref={menuRef}>
+          <button type="button" className="wl-act" onClick={() => setMenu((v) => !v)} aria-label="Plus d'actions" aria-expanded={menu}>
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+          </button>
+          {menu && (
+            <div className="wl-menu">
+              {personne.souhaits.map((e) => (
+                <button key={e.id} type="button" onClick={() => { setMenu(false); onDelete(e.id); }}>
+                  <IconTrash /> Retirer {formatDate(e.preferred_date)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </li>
   );
 }
 
