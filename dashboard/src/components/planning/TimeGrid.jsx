@@ -119,7 +119,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
   return (
     <div
       ref={scrollRef}
-      className={`planning-grid-container${isWeek ? ' planning-week' : ''}`}
+      className="planning-grid-container"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -264,11 +264,6 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                         style={{
                           flex: 1,
                           position: 'relative',
-                          // Conteneur de requête : c'est la largeur de CETTE colonne
-                          // qui décide de ce qu'une pastille affiche. En vue
-                          // semaine elle tombe à ~60 px, où « 09:00 - 09:30 » ne
-                          // rentre pas — d'où les « CO... » et « HO... ».
-                          containerType: 'inline-size',
                           borderRight: bIdx < barberCount - 1 ? '1px solid rgba(var(--overlay),0.04)' : 'none',
                           cursor: barberIsOff ? 'default' : 'pointer',
                           background: barberIsOff ? 'repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(var(--overlay),0.035) 6px, rgba(var(--overlay),0.035) 7px)' : 'transparent',

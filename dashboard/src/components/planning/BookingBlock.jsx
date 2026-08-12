@@ -110,14 +110,12 @@ export default function BookingBlock({ booking, onClick, pxPerMin, highlighted }
           </div>
         )}
 
-        <div className="planning-block-time">
-          {booking.start_time?.slice(0, 5)}
-          <span className="pb-end"> - {booking.end_time?.slice(0, 5)}</span>
+        <div className="planning-block-time" style={{ fontWeight: 600, fontSize: 10, opacity: 0.7, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+          {booking.start_time?.slice(0, 5)} - {booking.end_time?.slice(0, 5)}
         </div>
         {!isTiny && (
-          <div className={`planning-block-name${isTall ? ' wrap' : ''}`} style={{ paddingRight: isOnline ? 14 : 0 }}>
-            {booking.client_first_name}
-            <span className="pb-last"> {booking.client_last_name}</span>
+          <div className="planning-block-name" style={{ fontWeight: 700, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isTall ? 'normal' : 'nowrap', paddingRight: isOnline ? 14 : 0 }}>
+            {booking.client_first_name} {booking.client_last_name}
             {isFirstVisit && !isTiny && (
               <span className="planning-block-new-badge">
                 <svg viewBox="0 0 24 24" width="8" height="8" fill="currentColor" stroke="none"><path d="M12 2l2.09 6.26L20.18 9.27l-5.09 3.9L16.18 19.27 12 16l-4.18 3.27 1.09-6.1-5.09-3.9 6.09-1.01z"/></svg>
@@ -127,7 +125,7 @@ export default function BookingBlock({ booking, onClick, pxPerMin, highlighted }
           </div>
         )}
         {!isSmall && (
-          <div className={`planning-block-service${isTall ? ' wrap' : ''}`}>
+          <div className="planning-block-service" style={{ fontSize: 10, opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: isTall ? 'normal' : 'nowrap', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.02em' }}>
             {booking.service_name}
           </div>
         )}
