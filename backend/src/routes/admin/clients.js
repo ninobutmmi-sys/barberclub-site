@@ -234,11 +234,13 @@ router.get('/:id',
       const clientResult = await db.query(
         `SELECT c.id, c.first_name, c.last_name, c.phone, c.email,
                 c.has_account, c.notes, c.created_at,
+                c.birth_date, c.preferences,
                 COUNT(b.id) FILTER (WHERE b.status = 'completed') as visit_count,
                 COUNT(b.id) FILTER (WHERE b.status = 'no_show') as no_show_count,
                 COUNT(b.id) FILTER (WHERE b.status = 'cancelled') as cancelled_count,
                 COALESCE(SUM(b.price) FILTER (WHERE b.status = 'completed'), 0) as total_spent,
-                MAX(b.date) FILTER (WHERE b.status IN ('completed', 'confirmed')) as last_visit
+                MAX(b.date) FILTER (WHERE b.status = 'completed') as last_visit,
+                MIN(b.date) FILTER (WHERE b.status = 'completed') as first_visit
          FROM clients c
          LEFT JOIN bookings b ON c.id = b.client_id AND b.deleted_at IS NULL AND b.salon_id = $2
          WHERE c.id = $1 AND c.deleted_at IS NULL
@@ -285,10 +287,77 @@ router.get('/:id',
         [id, salonId]
       );
 
+      // ── Rythme de visite ──
+      // L'écart médian entre deux passages, pas la moyenne : une seule longue
+      // absence (déménagement, blessure) fausserait une moyenne pour toujours.
+      // À partir de 3 visites seulement — sur deux points l'écart n'est pas
+      // encore une habitude.
+      const rythmeResult = await db.query(
+        `SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ecart) AS median_days,
+                COUNT(*) AS n
+         FROM (
+           SELECT date - LAG(date) OVER (ORDER BY date) AS ecart
+           FROM bookings
+           WHERE client_id = $1 AND salon_id = $2 AND status = 'completed' AND deleted_at IS NULL
+         ) e
+         WHERE ecart IS NOT NULL AND ecart > 0`,
+        [id, salonId]
+      );
+      const nbEcarts = parseInt(rythmeResult.rows[0]?.n || 0, 10);
+      const medianDays = nbEcarts >= 2 ? Math.round(Number(rythmeResult.rows[0].median_days)) : null;
+
+      // ── Créneau habituel ──
+      // Le jour et la tranche horaire où il vient le plus souvent : de quoi
+      // proposer un rendez-vous qui lui va sans avoir à lui demander.
+      const creneauResult = await db.query(
+        `SELECT EXTRACT(ISODOW FROM date)::int AS jour,
+                (EXTRACT(HOUR FROM start_time)::int) AS heure,
+                COUNT(*) AS n
+         FROM bookings
+         WHERE client_id = $1 AND salon_id = $2 AND status = 'completed' AND deleted_at IS NULL
+         GROUP BY jour, heure
+         ORDER BY n DESC, jour
+         LIMIT 1`,
+        [id, salonId]
+      );
+
+      // ── Prochain rendez-vous ──
+      // last_visit inclut les RDV confirmés à venir : sans ce champ séparé, la
+      // fiche affichait une « dernière visite » qui n'a pas encore eu lieu.
+      const prochainResult = await db.query(
+        `SELECT b.id, b.date, b.start_time, s.name AS service_name, br.name AS barber_name
+         FROM bookings b
+         JOIN services s ON b.service_id = s.id
+         JOIN barbers br ON b.barber_id = br.id
+         WHERE b.client_id = $1 AND b.salon_id = $2 AND b.status = 'confirmed'
+           AND b.deleted_at IS NULL AND b.date >= CURRENT_DATE
+         ORDER BY b.date, b.start_time
+         LIMIT 1`,
+        [id, salonId]
+      );
+
+      // ── Produits achetés ──
+      const produitsResult = await db.query(
+        `SELECT p.name, SUM(ps.quantity)::int AS quantity,
+                SUM(ps.total_price)::int AS total, MAX(ps.sold_at) AS last_sold_at
+         FROM product_sales ps
+         JOIN products p ON p.id = ps.product_id
+         WHERE ps.client_id = $1 AND ps.salon_id = $2
+         GROUP BY p.name
+         ORDER BY last_sold_at DESC`,
+        [id, salonId]
+      );
+
       res.json({
         ...client,
         favourite_service: favServiceResult.rows[0]?.name || null,
         favourite_barber: favBarberResult.rows[0]?.name || null,
+        median_interval_days: medianDays,
+        next_booking: prochainResult.rows[0] || null,
+        usual_slot: creneauResult.rows[0]
+          ? { weekday: creneauResult.rows[0].jour, hour: creneauResult.rows[0].heure, count: parseInt(creneauResult.rows[0].n, 10) }
+          : null,
+        products: produitsResult.rows,
         bookings: historyResult.rows,
       });
     } catch (error) {
@@ -308,12 +377,20 @@ router.put('/:id',
     body('last_name').optional().trim().notEmpty().isLength({ max: 100 }),
     body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
     body('phone').optional().trim().matches(PHONE_REGEX).withMessage('Numéro de téléphone invalide'),
+    body('preferences').optional({ values: 'null' }).trim().isLength({ max: 1000 }),
+    body('birth_date').optional({ values: 'falsy' })
+      .matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de naissance invalide')
+      // La borne « pas dans le futur » vit ici, pas en contrainte SQL : une
+      // contrainte à CURRENT_DATE n'est vérifiée qu'à l'écriture et se
+      // périmerait pour les lignes déjà en place.
+      .custom((v) => v <= new Date().toISOString().slice(0, 10))
+      .withMessage('Date de naissance dans le futur'),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { notes, first_name, last_name, email, phone } = req.body;
+      const { notes, first_name, last_name, email, phone, preferences, birth_date } = req.body;
 
       const fields = [];
       const values = [];
@@ -323,6 +400,9 @@ router.put('/:id',
       if (first_name) { fields.push(`first_name = $${paramIndex++}`); values.push(first_name); }
       if (last_name) { fields.push(`last_name = $${paramIndex++}`); values.push(last_name); }
       if (email !== undefined) { fields.push(`email = $${paramIndex++}`); values.push(email || null); }
+      if (preferences !== undefined) { fields.push(`preferences = $${paramIndex++}`); values.push(preferences || null); }
+      // '' vaut « efface la date », d'où le null explicite.
+      if (birth_date !== undefined) { fields.push(`birth_date = $${paramIndex++}`); values.push(birth_date || null); }
 
       if (phone) {
         // Normaliser en +33
