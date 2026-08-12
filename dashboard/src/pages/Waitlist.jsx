@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   useWaitlist, useWaitlistCount, useAddToWaitlist, useUpdateWaitlistEntry, useDeleteWaitlistEntry,
   useNotifyWaitlistSms, useBarbers, useServices,
@@ -100,9 +101,13 @@ export default function Waitlist() {
     for (const e of entries) {
       const cle = e.client_id || e.client_phone || e.id;
       if (!m.has(cle)) {
-        m.set(cle, { cle, nom: e.client_name, tel: e.client_phone, souhaits: [] });
+        m.set(cle, { cle, nom: e.client_name, tel: e.client_phone, clientId: e.client_id || null, souhaits: [] });
       }
-      m.get(cle).souhaits.push(e);
+      const p = m.get(cle);
+      p.souhaits.push(e);
+      // Quatre demandes sur dix-sept sont saisies à la main sans fiche liée.
+      // Si une seule des lignes porte un client_id, on le récupère.
+      if (!p.clientId && e.client_id) p.clientId = e.client_id;
     }
     return [...m.values()]
       .map((p) => {
@@ -325,7 +330,15 @@ function PersonneCard({ personne, jourFiltre, statusLabel, onNotify, onBook, onD
     <li className="wl-card">
       <div className="wl-card-main">
         <div className="wl-id">
-          <span className="wl-name">{personne.nom || 'Sans nom'}</span>
+          {/* Le nom mène à la fiche — mais seulement s'il y en a une. Une
+              demande saisie à la main n'est rattachée à aucun client. */}
+          {personne.clientId ? (
+            <Link className="wl-name lien" to={`/clients/${personne.clientId}`} title={`Ouvrir la fiche de ${personne.nom}`}>
+              {personne.nom || 'Sans nom'}
+            </Link>
+          ) : (
+            <span className="wl-name">{personne.nom || 'Sans nom'}</span>
+          )}
           <a className="wl-phone" href={`tel:${personne.tel}`}>{formatPhoneWithFlag(personne.tel)}</a>
         </div>
 
