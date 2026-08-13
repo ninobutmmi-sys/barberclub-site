@@ -220,6 +220,8 @@ export const deleteBarber = (id) =>
   request(`/admin/barbers/${id}`, { method: 'DELETE' });
 export const getBarberSchedule = (id) =>
   request(`/admin/barbers/${id}/schedule`);
+// Semaine type de toute l'équipe, en une requête (cartes de la page Barbers)
+export const getAllSchedules = () => request('/admin/barbers/schedules/all');
 export const updateBarberSchedule = (id, schedules) =>
   request(`/admin/barbers/${id}/schedule`, { method: 'PUT', body: JSON.stringify({ schedules }) });
 export const addBarberOverride = (id, body) =>

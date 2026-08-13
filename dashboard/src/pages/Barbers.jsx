@@ -1,13 +1,16 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import useMobile from '../hooks/useMobile';
 import {
   useBarbers,
+  useAllSchedules,
   useBarberSchedule,
   useBarberGuestDays,
   useUpdateBarber,
   useCreateBarber,
   useDeleteBarber,
   useServices,
+  useBarberServices,
+  useSetBarberService,
+  useRemoveBarberService,
   useUpdateBarberSchedule,
   useAddBarberOverride,
   useDeleteBarberOverride,
@@ -18,943 +21,578 @@ import {
   useDeleteBlockedSlot,
   useDeleteBarberBreaksBulk,
 } from '../hooks/useApi';
-
-const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+import { formatPrice } from '../utils/format';
 
 /**
- * Format an ISO date string (YYYY-MM-DD) into a French readable date.
- * @param {string} dateStr - e.g. "2026-03-14"
- * @returns {string} e.g. "Sam. 14 mars 2026"
+ * L'équipe.
+ *
+ * L'écran d'avant était un lanceur : quatre boutons par personne — Modifier,
+ * Horaires, Pauses, Jours invite — et une carte qui ne disait rien d'autre que
+ * le nom et l'e-mail. Pour savoir quand quelqu'un travaille il fallait ouvrir
+ * une fenêtre, et plusieurs réglages n'étaient joignables nulle part : les
+ * dates de contrat n'étaient modifiables qu'à la création, la photo se saisis-
+ * sait en collant une URL, les prestations vivaient sur un autre écran.
+ *
+ * Ici la carte montre la semaine — c'est la seule chose qui distingue une fiche
+ * de barbier d'un carnet d'adresses — et tout ce qui se modifie tient dans une
+ * fiche unique à onglets, utilisable au téléphone.
  */
+
+const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const DAYS_COURT = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const DAYS_ABREGE = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+
+// Échelle du semainier : le salon ouvre à 9h et l'admin va jusqu'à 20h.
+const AMPLITUDE_DEBUT = 8;
+const AMPLITUDE_FIN = 20;
+
+const SALON_OPTIONS = [
+  { id: 'grenoble', label: 'Grenoble' },
+  { id: 'meylan', label: 'Meylan' },
+];
+
+const ONGLETS = [
+  { cle: 'identite', label: 'Identité' },
+  { cle: 'semaine', label: 'Semaine' },
+  { cle: 'absences', label: 'Absences' },
+  { cle: 'prestations', label: 'Prestations' },
+  { cle: 'deplacements', label: 'Déplacements' },
+];
+
+const PHOTO_MAX_MO = 2;
+
+// ---- Icônes ----
+const IcoClose = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>;
+const IcoPlus = () => <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>;
+const IcoTrash = () => <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" /></svg>;
+const IcoCamera = () => <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>;
+const IcoChevron = () => <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>;
+
+// ---- Utilitaires ----
+
 function formatDateFr(dateStr) {
   try {
-    const d = new Date(dateStr + 'T00:00:00');
-    return d.toLocaleDateString('fr-FR', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', {
+      weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
     });
   } catch {
     return dateStr;
   }
 }
 
-/**
- * Inline toast-style status message shown inside a modal.
- * Auto-clears after a timeout.
- */
+function formatJourCourt(dateStr) {
+  try {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  } catch {
+    return dateStr;
+  }
+}
+
+function hhmm(t) {
+  return (t || '').slice(0, 5);
+}
+
+function enHeures(t) {
+  const [h, m] = hhmm(t).split(':').map(Number);
+  return (h || 0) + (m || 0) / 60;
+}
+
+function initiale(nom = '') {
+  return nom.trim().charAt(0).toUpperCase() || '?';
+}
+
+function aujourdhuiISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Sept jours normalisés à partir de ce que renvoie l'API. */
+function semaineComplete(lignes = []) {
+  return Array.from({ length: 7 }, (_, i) => {
+    const j = lignes.find((l) => l.day_of_week === i);
+    return {
+      day_of_week: i,
+      is_working: !!j?.is_working,
+      start_time: hhmm(j?.start_time) || '09:00',
+      end_time: hhmm(j?.end_time) || '19:00',
+    };
+  });
+}
+
+function totalHeures(semaine) {
+  return semaine.reduce((h, j) => (j.is_working ? h + Math.max(0, enHeures(j.end_time) - enHeures(j.start_time)) : h), 0);
+}
+
+function resumeRepos(semaine) {
+  const repos = semaine.filter((j) => !j.is_working).map((j) => DAYS_ABREGE[j.day_of_week]);
+  if (repos.length === 0) return 'aucun jour de repos';
+  if (repos.length === 7) return 'aucun jour travaillé';
+  return `repos ${repos.join(' ')}`;
+}
+
+/** Message éphémère affiché dans une section. */
 function InlineStatus({ status }) {
   if (!status) return null;
-  const isError = status.type === 'error';
   return (
-    <div
-      style={{
-        padding: '10px 14px',
-        borderRadius: 8,
-        fontSize: 13,
-        fontWeight: 600,
-        marginBottom: 16,
-        background: isError ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.12)',
-        border: `1px solid ${isError ? 'rgba(239,68,68,0.3)' : 'rgba(34,197,94,0.3)'}`,
-        color: isError ? 'var(--danger)' : 'var(--success)',
-      }}
-    >
+    <div className={`bb-flash ${status.type === 'error' ? 'err' : ''}`} role="status">
       {status.message}
     </div>
   );
 }
 
+function useFlash() {
+  const [status, setStatus] = useState(null);
+  const timer = useRef(null);
+  const flash = useCallback((type, message) => {
+    setStatus({ type, message });
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setStatus(null), 3200);
+  }, []);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  return [status, flash];
+}
+
 // ============================================
-// Main Page
+// Page — l'équipe
 // ============================================
 
 export default function Barbers() {
-  const isMobile = useMobile();
-  const updateBarber = useUpdateBarber();
-  const { data: barbers = [], isLoading: loading, error, refetch } = useBarbers();
-  const [editBarber, setEditBarber] = useState(null);
-  const [scheduleBarber, setScheduleBarber] = useState(null);
-  const [guestBarber, setGuestBarber] = useState(null);
-  const [breaksBarber, setBreaksBarber] = useState(null);
+  const { data: barbers = [], isLoading, error, refetch } = useBarbers();
+  const { data: horaires = [] } = useAllSchedules();
+  const [fiche, setFiche] = useState(null);       // { id, onglet }
   const [showCreate, setShowCreate] = useState(false);
+
+  // Une seule requête pour toute l'équipe, redécoupée par personne.
+  const semaines = useMemo(() => {
+    const m = new Map();
+    for (const l of horaires) {
+      if (!m.has(l.barber_id)) m.set(l.barber_id, []);
+      m.get(l.barber_id).push(l);
+    }
+    const out = new Map();
+    for (const [id, lignes] of m) out.set(id, semaineComplete(lignes));
+    return out;
+  }, [horaires]);
+
+  const actifs = barbers.filter((b) => b.is_active);
+  const inactifs = barbers.filter((b) => !b.is_active);
+
+  const barberOuvert = fiche ? barbers.find((b) => b.id === fiche.id) : null;
+  // La fiche se referme d'elle-même si la personne disparaît (suppression).
+  useEffect(() => {
+    if (fiche && !isLoading && barbers.length > 0 && !barbers.some((b) => b.id === fiche.id)) setFiche(null);
+  }, [fiche, barbers, isLoading]);
 
   return (
     <>
-      {error && (
-        <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
-          <span>{error}</span>
-          <button onClick={() => refetch()} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+      <div className="page-header bb-header">
+        <div>
+          <h2 className="page-title">Équipe</h2>
+          <p className="bb-sous">
+            {isLoading
+              ? 'Chargement…'
+              : `${actifs.length} en poste${inactifs.length ? ` · ${inactifs.length} désactivé${inactifs.length > 1 ? 's' : ''}` : ''}`}
+          </p>
         </div>
-      )}
-      <div className="page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <h2 className="page-title" style={{ margin: 0 }}>Barbers</h2>
-          {!loading && (
-            <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>
-              {barbers.length} barbers · {barbers.filter(b => b.is_active).length} actifs
-            </span>
-          )}
-        </div>
-        <button
-          className="btn btn-sm"
-          style={{ background: 'var(--success)', color: '#000', fontWeight: 700, border: 'none' }}
-          onClick={() => setShowCreate(true)}
-        >
-          + Ajouter
+        <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
+          <IcoPlus /> Ajouter
         </button>
       </div>
 
       <div className="page-body">
-        {loading ? (
-          <div className="empty-state">Chargement...</div>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: 16,
-            }}
-          >
-            {barbers.map((b) => (
-              <div className="card" key={b.id} style={!b.is_active ? { opacity: 0.45 } : undefined}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 14,
-                    marginBottom: 16,
-                  }}
-                >
-                  {b.photo_url ? (
-                    <img
-                      src={b.photo_url}
-                      alt={b.name}
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '2px solid var(--border)',
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: '50%',
-                        background: 'rgba(var(--overlay),0.06)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 700,
-                        fontSize: 18,
-                        border: '2px solid var(--border)',
-                      }}
-                    >
-                      {b.name.charAt(0)}
-                    </div>
-                  )}
-                  <div>
-                    <div
-                      style={{
-                        fontFamily: 'var(--font-display)',
-                        fontSize: 15,
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                      }}
-                    >
-                      {b.name}
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      {b.role || 'Barber'}
-                    </div>
-                  </div>
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, flexDirection: 'column', alignItems: 'flex-end' }}>
-                    <button
-                      className={`toggle ${b.is_active ? 'active' : ''}`}
-                      onClick={() => updateBarber.mutateAsync({ id: b.id, data: { is_active: !b.is_active } })}
-                    />
-                    {b.is_guest && (
-                      <span style={{ fontSize: 10, fontWeight: 600, color: '#3b82f6', background: 'rgba(59,130,246,0.12)', padding: '1px 8px', borderRadius: 10 }}>
-                        Invite
-                      </span>
-                    )}
-                    {b.contract_end && (
-                      <span style={{ fontSize: 10, fontWeight: 600, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', padding: '1px 8px', borderRadius: 10 }}>
-                        CDD → {b.contract_end.slice(8, 10)}/{b.contract_end.slice(5, 7)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: 'var(--text-muted)',
-                    marginBottom: 16,
-                  }}
-                >
-                  {b.email}
-                </div>
-
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    style={{ flex: 1 }}
-                    onClick={() => setEditBarber(b)}
-                  >
-                    Modifier
-                  </button>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    style={{ flex: 1 }}
-                    onClick={() => setScheduleBarber(b)}
-                  >
-                    Horaires
-                  </button>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    style={{ flex: 1 }}
-                    onClick={() => setBreaksBarber(b)}
-                  >
-                    Pauses
-                  </button>
-                  {!b.is_guest && (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      style={{ flex: 1, minWidth: 'fit-content' }}
-                      onClick={() => setGuestBarber(b)}
-                    >
-                      Jours invite
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            <div className="barber-ghost-card" onClick={() => setShowCreate(true)}>
-              <div className="ghost-icon">+</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>Ajouter un barber</div>
-            </div>
+        {error && (
+          <div className="bb-flash err" role="alert">
+            {String(error.message || error)}
+            <button className="bb-lien" onClick={() => refetch()}>Réessayer</button>
           </div>
+        )}
+
+        {isLoading ? (
+          <div className="bb-grille">
+            {Array.from({ length: 4 }, (_, i) => <div key={i} className="bb-skel" />)}
+          </div>
+        ) : (
+          <>
+            <ul className="bb-grille">
+              {actifs.map((b) => (
+                <CarteBarbier key={b.id} barber={b} semaine={semaines.get(b.id)} onOuvrir={(onglet) => setFiche({ id: b.id, onglet })} />
+              ))}
+              <li>
+                <button type="button" className="bb-ajout" onClick={() => setShowCreate(true)}>
+                  <span className="bb-ajout-rond"><IcoPlus /></span>
+                  Ajouter un barbier
+                </button>
+              </li>
+            </ul>
+
+            {inactifs.length > 0 && (
+              <>
+                {/* Le compte technique « Admin » et les anciens vivent ici :
+                    ils ne sont pas réservables et n'ont rien à faire au milieu
+                    de l'équipe en poste. */}
+                <h3 className="bb-groupe">Désactivés<span>{inactifs.length}</span></h3>
+                <ul className="bb-grille">
+                  {inactifs.map((b) => (
+                    <CarteBarbier key={b.id} barber={b} semaine={semaines.get(b.id)} onOuvrir={(onglet) => setFiche({ id: b.id, onglet })} />
+                  ))}
+                </ul>
+              </>
+            )}
+          </>
         )}
       </div>
 
-      {editBarber && (
-        <EditBarberModal
-          barber={editBarber}
-          onClose={() => setEditBarber(null)}
+      {barberOuvert && (
+        <FicheBarbier
+          barber={barberOuvert}
+          ongletInitial={fiche.onglet}
+          onClose={() => setFiche(null)}
         />
       )}
 
-      {scheduleBarber && (
-        <ScheduleModal
-          barber={scheduleBarber}
-          onClose={() => setScheduleBarber(null)}
-        />
-      )}
-
-      {guestBarber && (
-        <GuestDaysModal
-          barber={guestBarber}
-          onClose={() => setGuestBarber(null)}
-        />
-      )}
-
-      {breaksBarber && (
-        <BreaksModal
-          barber={breaksBarber}
-          onClose={() => setBreaksBarber(null)}
-        />
-      )}
-
-      {showCreate && (
-        <CreateBarberModal onClose={() => setShowCreate(false)} />
-      )}
+      {showCreate && <CreateBarberModal onClose={() => setShowCreate(false)} />}
     </>
   );
 }
 
 // ============================================
-// Breaks Modal — manage recurring breaks for a barber
+// Carte — une personne, sa semaine
 // ============================================
 
-function BreaksModal({ barber, onClose }) {
-  const { data: breaks = [], isLoading } = useBarberBreaks(barber.id);
-  const createMutation = useCreateBlockedSlot();
-  const deleteMutation = useDeleteBlockedSlot();
-  const bulkDeleteMutation = useDeleteBarberBreaksBulk();
-
-  const [showForm, setShowForm] = useState(false);
-  const [startTime, setStartTime] = useState('13:00');
-  const [endTime, setEndTime] = useState('14:00');
-  const [reason, setReason] = useState('Pause déjeuner');
-  const [startDate, setStartDate] = useState(() => {
-    const d = new Date();
-    return d.toISOString().split('T')[0];
-  });
-  const [recurrence, setRecurrence] = useState('weekly');
-  const [occurrences, setOccurrences] = useState(52);
-  const [status, setStatus] = useState(null);
-
-  const flashTimer = useRef(null);
-  const flash = useCallback((type, message) => {
-    setStatus({ type, message });
-    clearTimeout(flashTimer.current);
-    flashTimer.current = setTimeout(() => setStatus(null), 3000);
-  }, []);
-  useEffect(() => () => clearTimeout(flashTimer.current), []);
-
-  // Group breaks by reason + time pattern
-  const grouped = useMemo(() => {
-    const map = {};
-    for (const b of breaks) {
-      const key = `${b.reason || 'Sans motif'}|${(b.start_time || '').slice(0, 5)}-${(b.end_time || '').slice(0, 5)}`;
-      if (!map[key]) map[key] = { reason: b.reason || 'Sans motif', start_time: (b.start_time || '').slice(0, 5), end_time: (b.end_time || '').slice(0, 5), slots: [] };
-      map[key].slots.push(b);
-    }
-    return Object.values(map).sort((a, b) => a.slots[0].date.localeCompare(b.slots[0].date));
-  }, [breaks]);
-
-  async function handleCreate(e) {
-    e.preventDefault();
-    try {
-      const payload = {
-        barber_id: barber.id,
-        date: startDate,
-        start_time: startTime,
-        end_time: endTime,
-        type: 'break',
-        reason: reason || undefined,
-      };
-      if (recurrence !== 'none') {
-        payload.recurrence = {
-          type: recurrence,
-          end_type: 'occurrences',
-          occurrences: parseInt(occurrences) || 52,
-        };
-      }
-      await createMutation.mutateAsync(payload);
-      setShowForm(false);
-      flash('success', 'Pause(s) créée(s)');
-    } catch (err) {
-      flash('error', err.message);
-    }
-  }
-
-  async function handleDeleteGroup(group) {
-    if (!window.confirm(`Supprimer les ${group.slots.length} pauses "${group.reason}" ?`)) return;
-    try {
-      await bulkDeleteMutation.mutateAsync({ barberId: barber.id, reason: group.reason !== 'Sans motif' ? group.reason : undefined });
-      flash('success', `${group.slots.length} pauses supprimées`);
-    } catch (err) {
-      flash('error', err.message);
-    }
-  }
-
-  async function handleDeleteOne(id) {
-    try {
-      await deleteMutation.mutateAsync(id);
-      flash('success', 'Pause supprimée');
-    } catch (err) {
-      flash('error', err.message);
-    }
-  }
+function CarteBarbier({ barber, semaine, onOuvrir }) {
+  const updateBarber = useUpdateBarber();
+  const heures = semaine ? totalHeures(semaine) : null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">Pauses — {barber.name}</h3>
-          <button className="btn-ghost" onClick={onClose}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+    <li className={`bb-carte${barber.is_active ? '' : ' off'}`}>
+      <div className="bb-carte-haut">
+        {barber.photo_url
+          ? <img className="bb-photo" src={barber.photo_url} alt="" />
+          : <span className="bb-photo bb-photo-vide">{initiale(barber.name)}</span>}
+
+        <div className="bb-ident">
+          <button type="button" className="bb-nom" onClick={() => onOuvrir('identite')}>
+            {barber.name}
           </button>
+          <span className="bb-role">{barber.role || 'Barbier'}</span>
         </div>
-        <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-          <InlineStatus status={status} />
 
-          {isLoading ? (
-            <div className="empty-state">Chargement...</div>
-          ) : grouped.length === 0 ? (
-            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-              Aucune pause programmée.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-              {grouped.map((group, gi) => (
-                <div
-                  key={gi}
-                  style={{
-                    padding: '12px 14px',
-                    background: 'rgba(245,158,11,0.04)',
-                    border: '1px solid rgba(245,158,11,0.12)',
-                    borderRadius: 10,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>
-                        {group.reason}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                        {group.start_time} - {group.end_time} · {group.slots.length} occurrence{group.slots.length > 1 ? 's' : ''}
-                      </div>
-                    </div>
-                    <button
-                      className="btn btn-sm"
-                      style={{ background: 'rgba(239,68,68,0.12)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)', fontSize: 12, padding: '4px 10px' }}
-                      onClick={() => handleDeleteGroup(group)}
-                      disabled={bulkDeleteMutation.isPending}
-                    >
-                      Tout supprimer
-                    </button>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                    {group.slots.slice(0, 8).map((slot) => (
-                      <span
-                        key={slot.id}
-                        style={{
-                          fontSize: 11,
-                          padding: '2px 8px',
-                          borderRadius: 6,
-                          background: 'rgba(var(--overlay),0.06)',
-                          color: 'var(--text-secondary)',
-                          cursor: 'pointer',
-                        }}
-                        title="Cliquer pour supprimer"
-                        onClick={() => handleDeleteOne(slot.id)}
-                      >
-                        {new Date(slot.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                      </span>
-                    ))}
-                    {group.slots.length > 8 && (
-                      <span style={{ fontSize: 11, padding: '2px 8px', color: 'var(--text-muted)' }}>
-                        +{group.slots.length - 8} autres
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Add break form */}
-          {!showForm ? (
-            <button
-              className="btn btn-secondary btn-sm"
-              style={{ width: '100%' }}
-              onClick={() => setShowForm(true)}
-            >
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 6 }}>
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              Ajouter une pause
-            </button>
-          ) : (
-            <form
-              onSubmit={handleCreate}
-              style={{
-                padding: 16,
-                background: 'rgba(var(--overlay),0.02)',
-                border: '1px solid var(--border)',
-                borderRadius: 10,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <label className="label" style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>
-                  Nouvelle pause
-                </label>
-                <button type="button" className="btn-ghost" style={{ padding: 4 }} onClick={() => setShowForm(false)}>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="form-group">
-                <label className="label">Motif</label>
-                <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Pause déjeuner" />
-              </div>
-
-              <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                <div className="form-group" style={{ flex: 1, margin: 0 }}>
-                  <label className="label">Début</label>
-                  <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-                </div>
-                <div className="form-group" style={{ flex: 1, margin: 0 }}>
-                  <label className="label">Fin</label>
-                  <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="label">Date de début</label>
-                <input className="input" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
-              </div>
-
-              <div className="form-group">
-                <label className="label">Récurrence</label>
-                <select className="input" value={recurrence} onChange={(e) => setRecurrence(e.target.value)}>
-                  <option value="none">Unique</option>
-                  <option value="weekly">Chaque semaine</option>
-                  <option value="biweekly">Toutes les 2 semaines</option>
-                </select>
-              </div>
-
-              {recurrence !== 'none' && (
-                <div className="form-group">
-                  <label className="label">Nombre de semaines</label>
-                  <input className="input" type="number" min="2" max="52" value={occurrences} onChange={(e) => setOccurrences(e.target.value)} />
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="btn btn-primary btn-sm"
-                style={{ width: '100%' }}
-                disabled={createMutation.isPending}
-              >
-                {createMutation.isPending ? 'Création...' : recurrence !== 'none' ? `Créer ${occurrences} pauses` : 'Créer la pause'}
-              </button>
-            </form>
-          )}
-        </div>
+        {/* L'interrupteur reste sur la carte : couper quelqu'un du planning
+            est le geste le plus fréquent, il ne mérite pas d'ouvrir une fiche. */}
+        <button
+          type="button"
+          className={`toggle ${barber.is_active ? 'active' : ''}`}
+          onClick={() => updateBarber.mutate({ id: barber.id, data: { is_active: !barber.is_active } })}
+          aria-label={barber.is_active ? `Désactiver ${barber.name}` : `Activer ${barber.name}`}
+          aria-pressed={barber.is_active}
+          title={barber.is_active ? 'Réservable — cliquer pour désactiver' : 'Non réservable — cliquer pour activer'}
+        />
       </div>
+
+      <div className="bb-etiquettes">
+        {barber.is_guest && <span className="bb-tag invite">Invité</span>}
+        {barber.contract_end && (
+          <span className="bb-tag cdd">
+            Contrat jusqu’au {barber.contract_end.slice(8, 10)}/{barber.contract_end.slice(5, 7)}
+          </span>
+        )}
+      </div>
+
+      <Semainier semaine={semaine} />
+
+      <p className="bb-resume">
+        {semaine
+          ? <><strong>{heures % 1 === 0 ? heures : heures.toFixed(1).replace('.', ',')} h</strong> par semaine · {resumeRepos(semaine)}</>
+          : 'Semaine non renseignée'}
+      </p>
+
+      <div className="bb-raccourcis">
+        <button type="button" onClick={() => onOuvrir('semaine')}>Semaine</button>
+        <button type="button" onClick={() => onOuvrir('absences')}>Absences</button>
+        <button type="button" onClick={() => onOuvrir('prestations')}>Prestations</button>
+      </div>
+    </li>
+  );
+}
+
+/**
+ * Le semainier : sept colonnes de 8h à 20h, la barre couvre l'amplitude
+ * travaillée. C'est ce qui remplace le bouton « Horaires » — on lit d'un coup
+ * qu'un tel commence à 13h le mercredi et ne travaille pas le samedi.
+ */
+function Semainier({ semaine }) {
+  // Tout le monde travaille à peu près 9h–19h : à l'œil, sept barres presque
+  // pleines se ressemblent. Ce qui mérite d'être lu, c'est l'écart — le jour
+  // qui commence plus tard, celui qui finit plus tôt. On chiffre donc les
+  // seuls jours qui sortent de l'horaire habituel de la personne.
+  const habituel = useMemo(() => {
+    if (!semaine) return null;
+    const compte = new Map();
+    for (const j of semaine) {
+      if (!j.is_working) continue;
+      const cle = `${j.start_time}|${j.end_time}`;
+      compte.set(cle, (compte.get(cle) || 0) + 1);
+    }
+    let gagnant = null, max = 0;
+    for (const [cle, n] of compte) if (n > max) { max = n; gagnant = cle; }
+    return gagnant;
+  }, [semaine]);
+
+  if (!semaine) return <div className="bb-semainier bb-semainier-vide" aria-hidden="true" />;
+  const total = AMPLITUDE_FIN - AMPLITUDE_DEBUT;
+
+  return (
+    <div className="bb-semainier">
+      {semaine.map((j) => {
+        const debut = Math.max(AMPLITUDE_DEBUT, enHeures(j.start_time));
+        const fin = Math.min(AMPLITUDE_FIN, enHeures(j.end_time));
+        const haut = ((debut - AMPLITUDE_DEBUT) / total) * 100;
+        const hauteur = Math.max(0, ((fin - debut) / total) * 100);
+        const [hDebut, hFin] = (habituel || '|').split('|');
+        const ecart = j.is_working && habituel && `${j.start_time}|${j.end_time}` !== habituel;
+        const marque = !ecart ? null
+          : j.start_time !== hDebut ? `${j.start_time.slice(0, 2)}h`
+            : j.end_time !== hFin ? `→${j.end_time.slice(0, 2)}h` : null;
+        return (
+          <div key={j.day_of_week} className={`bb-jour${j.is_working ? '' : ' repos'}`}>
+            <span
+              className="bb-piste"
+              title={j.is_working
+                ? `${DAYS[j.day_of_week]} ${j.start_time}–${j.end_time}`
+                : `${DAYS[j.day_of_week]} : repos`}
+            >
+              {j.is_working && <i style={{ top: `${haut}%`, height: `${hauteur}%` }} />}
+            </span>
+            <span className="bb-jour-lettre">{DAYS_COURT[j.day_of_week]}</span>
+            {marque && <span className="bb-jour-ecart">{marque}</span>}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 // ============================================
-// Create Barber Modal (wizard with photo, schedules, services)
+// Fiche — tout ce qui se modifie, au même endroit
 // ============================================
 
-function CreateBarberModal({ onClose }) {
-  const createMutation = useCreateBarber();
-  const { data: services = [] } = useServices();
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('Barber');
-  const [email, setEmail] = useState('');
-  const [emailManual, setEmailManual] = useState(false);
-  const [contractStart, setContractStart] = useState('');
-  const [contractEnd, setContractEnd] = useState('');
-  const [photoPreview, setPhotoPreview] = useState(null);
-  const [schedules, setSchedules] = useState(
-    DAYS.map((_, i) => ({ day_of_week: i, is_working: i < 6, start_time: '09:00', end_time: '19:00' }))
-  );
-  const [selectedServices, setSelectedServices] = useState(new Set());
-  const [showRecap, setShowRecap] = useState(false);
-  const [status, setStatus] = useState(null);
-  const fileInputRef = useRef(null);
+function FicheBarbier({ barber, ongletInitial, onClose }) {
+  const [onglet, setOnglet] = useState(ongletInitial || 'identite');
 
-  // Pre-select all active services on load
+  // Échap ferme la fiche : sur un panneau plein écran c'est la sortie attendue.
   useEffect(() => {
-    if (services.length > 0 && selectedServices.size === 0) {
-      setSelectedServices(new Set(services.filter(s => s.is_active !== false).map(s => s.id)));
-    }
-  }, [services]);
+    const k = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', k);
+    return () => document.removeEventListener('keydown', k);
+  }, [onClose]);
 
-  const handlePhotoSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { setStatus({ type: 'error', message: 'Photo trop lourde (max 2 Mo)' }); return; }
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { setStatus({ type: 'error', message: 'Format photo invalide' }); return; }
-    const reader = new FileReader();
-    reader.onload = () => setPhotoPreview(reader.result);
-    reader.readAsDataURL(file);
-  };
-
-  const toggleDay = (i) => {
-    setSchedules(prev => prev.map((s, idx) => idx === i ? { ...s, is_working: !s.is_working } : s));
-  };
-  const updateTime = (i, field, value) => {
-    setSchedules(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
-  };
-
-  const toggleService = (id) => {
-    setSelectedServices(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const handleCreate = async () => {
-    try {
-      await createMutation.mutateAsync({
-        name: name.trim(),
-        role: role.trim() || 'Barber',
-        email: email.trim() || undefined,
-        photo_url: photoPreview || undefined,
-        schedules,
-        service_ids: [...selectedServices],
-        contract_start: contractStart || undefined,
-        contract_end: contractEnd || undefined,
-      });
-      onClose();
-    } catch (err) {
-      setStatus({ type: 'error', message: err.message });
-      setShowRecap(false);
-    }
-  };
-
-  // Summarize schedule for recap
-  const scheduleSummary = () => {
-    const working = schedules.filter(s => s.is_working);
-    if (working.length === 0) return 'Aucun jour travaille';
-    const allSameTime = working.every(w => w.start_time === working[0].start_time && w.end_time === working[0].end_time);
-    const dayNames = working.map(w => DAYS[w.day_of_week].slice(0, 3));
-    const off = schedules.filter(s => !s.is_working).map(s => DAYS[s.day_of_week].slice(0, 3));
-    if (allSameTime) {
-      return `${dayNames.join('-')} ${working[0].start_time}—${working[0].end_time}${off.length ? ` · ${off.join(', ')} repos` : ''}`;
-    }
-    return `${working.length} jours travailles`;
-  };
-
-  // Recap screen
-  if (showRecap) {
-    return (
-      <div className="modal-backdrop" onClick={onClose}>
-        <div className="modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h3 className="modal-title">Recapitulatif</h3>
-            <button className="btn-ghost" onClick={onClose}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div className="modal-body">
-            <InlineStatus status={status} />
-            <div className="recap-card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                {photoPreview ? (
-                  <img src={photoPreview} alt={name} style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
-                ) : (
-                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(var(--overlay),0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 22, border: '2px solid var(--border)' }}>
-                    {name.trim().charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {name.trim()}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{role || 'Barber'}</div>
-                </div>
-              </div>
-
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                <span style={{ color: 'var(--text-muted)', marginRight: 8 }}>Email</span>
-                {email.trim() || 'Auto-genere'}
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                <span style={{ color: 'var(--text-muted)', marginRight: 8 }}>Horaires</span>
-                {scheduleSummary()}
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
-                <span style={{ color: 'var(--text-muted)', marginRight: 8 }}>Prestations</span>
-                {selectedServices.size}/{services.length} prestations
-              </div>
-
-              <div className="recap-warning">
-                Le barber sera cree en mode INACTIF. Activez-le depuis la page Barbers quand il sera pret.
-              </div>
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowRecap(false)}>
-              ← Retour
-            </button>
-            <button
-              className="btn btn-sm"
-              style={{ background: 'var(--success)', color: '#000', fontWeight: 700, border: 'none' }}
-              disabled={createMutation.isPending}
-              onClick={handleCreate}
-            >
-              {createMutation.isPending ? 'Creation...' : 'Confirmer ✓'}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Main form
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">Nouveau barber</h3>
-          <button className="btn-ghost" onClick={onClose}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+    <div className="bb-fiche-fond" onClick={onClose}>
+      <aside
+        className="bb-fiche"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Fiche de ${barber.name}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="bb-fiche-haut">
+          <button type="button" className="bb-retour" onClick={onClose} aria-label="Fermer la fiche">
+            <IcoChevron />
           </button>
-        </div>
-        <div className="modal-body">
-          <InlineStatus status={status} />
-
-          {/* Photo */}
-          <div className="create-section-label">Photo</div>
-          <div
-            className="photo-upload-zone"
-            onClick={() => fileInputRef.current?.click()}
-            style={photoPreview ? { backgroundImage: `url(${photoPreview})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-          >
-            {!photoPreview && (
-              <>
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" style={{ marginBottom: 6 }}>
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <path d="M21 15l-5-5L5 21" />
-                </svg>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Cliquer pour uploader</span>
-              </>
-            )}
+          {barber.photo_url
+            ? <img className="bb-photo sm" src={barber.photo_url} alt="" />
+            : <span className="bb-photo sm bb-photo-vide">{initiale(barber.name)}</span>}
+          <div className="bb-fiche-ident">
+            <h2>{barber.name}</h2>
+            <p>{barber.role || 'Barbier'} · {barber.is_active ? 'réservable' : 'non réservable'}</p>
           </div>
-          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoSelect} style={{ display: 'none' }} />
-          {photoPreview && (
+          <button type="button" className="bb-fermer" onClick={onClose} aria-label="Fermer la fiche">
+            <IcoClose />
+          </button>
+        </header>
+
+        <nav className="bb-onglets" aria-label="Sections de la fiche">
+          {ONGLETS.map((o) => (
             <button
-              className="btn btn-secondary btn-sm"
-              style={{ marginTop: 8, fontSize: 11 }}
-              onClick={() => setPhotoPreview(null)}
+              key={o.cle}
+              type="button"
+              className={onglet === o.cle ? 'on' : ''}
+              onClick={() => setOnglet(o.cle)}
+              aria-current={onglet === o.cle ? 'true' : undefined}
             >
-              Supprimer la photo
+              {o.label}
             </button>
-          )}
+          ))}
+        </nav>
 
-          {/* Informations */}
-          <div className="create-section-label" style={{ marginTop: 20 }}>Informations</div>
-          <div className="form-group">
-            <label className="label">Nom *</label>
-            <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Prenom du barber" required />
-          </div>
-          <div className="form-group">
-            <label className="label">Role</label>
-            <input className="input" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Barber" />
-          </div>
-          <div className="form-group">
-            <label className="label">Email (optionnel)</label>
-            <input
-              className="input"
-              type="email"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setEmailManual(true); }}
-              placeholder="Auto-genere a partir du nom"
-            />
-          </div>
-
-          {/* Contrat (CDD / saisonnier) */}
-          <div className="create-section-label" style={{ marginTop: 20 }}>Contrat (optionnel — CDD / saisonnier)</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="label">Début</label>
-              <input className="input" type="date" value={contractStart} onChange={(e) => setContractStart(e.target.value)} />
-            </div>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="label">Fin</label>
-              <input className="input" type="date" value={contractEnd} onChange={(e) => setContractEnd(e.target.value)} />
-            </div>
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: -4, marginBottom: 4 }}>
-            Laisser vide pour un barber permanent. Sinon, réservable uniquement entre ces dates.
-          </div>
-
-          {/* Horaires */}
-          <div className="create-section-label" style={{ marginTop: 20 }}>Horaires de travail</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
-            {schedules.map((s, i) => (
-              <div className="schedule-row" key={i}>
-                <button
-                  type="button"
-                  className={`toggle ${s.is_working ? 'active' : ''}`}
-                  onClick={() => toggleDay(i)}
-                  style={{ transform: 'scale(0.8)' }}
-                />
-                <span className="day-name">{DAYS[i]}</span>
-                {s.is_working ? (
-                  <div className="time-inputs">
-                    <input className="input" type="time" value={s.start_time} onChange={(e) => updateTime(i, 'start_time', e.target.value)} style={{ width: 100, padding: '4px 6px', fontSize: 13, textAlign: 'center' }} />
-                    <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>a</span>
-                    <input className="input" type="time" value={s.end_time} onChange={(e) => updateTime(i, 'end_time', e.target.value)} style={{ width: 100, padding: '4px 6px', fontSize: 13, textAlign: 'center' }} />
-                  </div>
-                ) : (
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Repos</span>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Prestations */}
-          <div className="create-section-label" style={{ marginTop: 20 }}>Prestations</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-            {services.filter(s => s.is_active !== false).map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                className={`service-pill ${selectedServices.has(s.id) ? 'selected' : ''}`}
-                onClick={() => toggleService(s.id)}
-              >
-                {s.name}
-              </button>
-            ))}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
-            {selectedServices.size}/{services.filter(s => s.is_active !== false).length} selectionnees
-          </div>
+        <div className="bb-fiche-corps">
+          {onglet === 'identite' && <SectionIdentite barber={barber} onClose={onClose} />}
+          {onglet === 'semaine' && <SectionSemaine barber={barber} />}
+          {onglet === 'absences' && <SectionAbsences barber={barber} />}
+          {onglet === 'prestations' && <SectionPrestations barber={barber} />}
+          {onglet === 'deplacements' && <SectionDeplacements barber={barber} />}
         </div>
-        <div className="modal-footer">
-          <button className="btn btn-secondary btn-sm" onClick={onClose}>
-            Annuler
-          </button>
-          <button
-            className="btn btn-primary btn-sm"
-            disabled={!name.trim()}
-            onClick={() => setShowRecap(true)}
-          >
-            Verifier et creer →
-          </button>
-        </div>
-      </div>
+      </aside>
     </div>
   );
 }
 
 // ============================================
-// Edit Barber Modal (unchanged)
+// Identité — nom, photo, contrat, priorité, suppression
 // ============================================
 
-function EditBarberModal({ barber, onClose }) {
+function SectionIdentite({ barber, onClose }) {
   const mutation = useUpdateBarber();
-  const [name, setName] = useState(barber.name);
+  const [status, flash] = useFlash();
+  const [nom, setNom] = useState(barber.name);
   const [role, setRole] = useState(barber.role || '');
-  const [photoUrl, setPhotoUrl] = useState(barber.photo_url || '');
-  const [isActive, setIsActive] = useState(barber.is_active);
+  const [email, setEmail] = useState(barber.email || '');
+  const [photo, setPhoto] = useState(barber.photo_url || '');
+  const [actif, setActif] = useState(barber.is_active);
+  const [debut, setDebut] = useState(barber.contract_start ? barber.contract_start.slice(0, 10) : '');
+  const [fin, setFin] = useState(barber.contract_end ? barber.contract_end.slice(0, 10) : '');
   const [showDelete, setShowDelete] = useState(false);
-  const saving = mutation.isPending;
+  const fichier = useRef(null);
 
-  const handleSubmit = async (e) => {
+  const choisirPhoto = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > PHOTO_MAX_MO * 1024 * 1024) { flash('error', `Photo trop lourde (max ${PHOTO_MAX_MO} Mo)`); return; }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type)) { flash('error', 'Format accepté : JPEG, PNG ou WebP'); return; }
+    const lecteur = new FileReader();
+    lecteur.onload = () => setPhoto(lecteur.result);
+    lecteur.readAsDataURL(f);
+  };
+
+  const enregistrer = async (e) => {
     e.preventDefault();
+    if (fin && debut && fin < debut) { flash('error', 'La fin du contrat précède son début'); return; }
     try {
-      await mutation.mutateAsync({ id: barber.id, data: { name, role, photo_url: photoUrl || null, is_active: isActive } });
-      onClose();
+      const data = {
+        name: nom.trim(),
+        role: role.trim(),
+        photo_url: photo || null,
+        is_active: actif,
+        contract_start: debut || null,
+        contract_end: fin || null,
+      };
+      // L'adresse sert d'identifiant : on ne l'envoie que si elle a bougé.
+      if (email.trim() && email.trim() !== barber.email) data.email = email.trim();
+      await mutation.mutateAsync({ id: barber.id, data });
+      flash('success', 'Fiche enregistrée');
     } catch (err) {
-      alert(err.message);
+      flash('error', err.message);
+    }
+  };
+
+  const changerPriorite = async (delta) => {
+    const valeur = Math.max(0, (barber.sort_order || 0) + delta);
+    try {
+      await mutation.mutateAsync({ id: barber.id, data: { sort_order: valeur } });
+      flash('success', `Priorité : ${valeur}`);
+    } catch (err) {
+      flash('error', err.message);
     }
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">Modifier {barber.name}</h3>
-          <button className="btn-ghost" onClick={onClose}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="form-group">
-              <label className="label">Nom</label>
-              <input
-                className="input"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="label">Role</label>
-              <input
-                className="input"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                placeholder="Barber"
-              />
-            </div>
-            <div className="form-group">
-              <label className="label">Photo URL</label>
-              <input
-                className="input"
-                value={photoUrl}
-                onChange={(e) => setPhotoUrl(e.target.value)}
-                placeholder="/barbers/photo.jpg"
-              />
-              {photoUrl && (
-                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <img
-                    src={photoUrl}
-                    alt={name}
-                    style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }}
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Apercu</span>
-                </div>
-              )}
-            </div>
-            <div className="form-group">
-              <label className="label">Statut</label>
-              <button
-                type="button"
-                className={`toggle ${isActive ? 'active' : ''}`}
-                onClick={() => setIsActive(!isActive)}
-              />
-              <span
-                style={{
-                  marginLeft: 10,
-                  fontSize: 13,
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                {isActive ? 'Actif' : 'Inactif'}
-              </span>
-            </div>
+    <form onSubmit={enregistrer}>
+      <InlineStatus status={status} />
 
-            {/* Danger Zone */}
-            <div className="danger-zone">
-              <div className="danger-zone-label">Zone danger</div>
-              <div className="danger-zone-card">
-                <div style={{ flex: 1 }}>
-                  <div className="danger-title">Supprimer ce barber</div>
-                  <div className="danger-desc">
-                    Les futurs RDV seront annules et les clients notifies. L'historique sera conserve.
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  style={{ background: '#dc2626', color: '#fff', border: 'none', flexShrink: 0 }}
-                  onClick={() => setShowDelete(true)}
-                >
-                  Supprimer
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={onClose}
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary btn-sm"
-              disabled={saving}
-            >
-              {saving ? '...' : 'Enregistrer'}
-            </button>
-          </div>
-        </form>
+      <div className="bb-photo-champ">
+        {photo
+          ? <img className="bb-photo lg" src={photo} alt="" />
+          : <span className="bb-photo lg bb-photo-vide">{initiale(nom)}</span>}
+        <div>
+          {/* Coller une URL était impossible depuis un téléphone. */}
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => fichier.current?.click()}>
+            <IcoCamera /> {photo ? 'Changer la photo' : 'Ajouter une photo'}
+          </button>
+          {photo && (
+            <button type="button" className="bb-lien" onClick={() => setPhoto('')}>Retirer</button>
+          )}
+          <p className="bb-aide">JPEG, PNG ou WebP — {PHOTO_MAX_MO} Mo maximum.</p>
+        </div>
+        <input ref={fichier} type="file" accept="image/jpeg,image/png,image/webp" onChange={choisirPhoto} hidden />
       </div>
+
+      <div className="form-group">
+        <label className="label" htmlFor="bb-nom">Nom</label>
+        <input id="bb-nom" className="input" value={nom} onChange={(e) => setNom(e.target.value)} required />
+      </div>
+
+      <div className="form-group">
+        <label className="label" htmlFor="bb-role">Rôle</label>
+        <input id="bb-role" className="input" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Barbier" />
+        <p className="bb-aide">Affiché sous son nom sur le site et dans le planning.</p>
+      </div>
+
+      <div className="form-group">
+        <label className="label" htmlFor="bb-email">Adresse e-mail</label>
+        <input id="bb-email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <p className="bb-aide">Sert d’identifiant de connexion. Celle du compte avec lequel vous êtes connecté ne peut pas être changée ici.</p>
+      </div>
+
+      <h3 className="bb-titre-bloc">Contrat</h3>
+      <div className="bb-duo">
+        <div className="form-group">
+          <label className="label" htmlFor="bb-debut">Début</label>
+          <input id="bb-debut" className="input" type="date" value={debut} onChange={(e) => setDebut(e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label className="label" htmlFor="bb-fin">Fin</label>
+          <input id="bb-fin" className="input" type="date" value={fin} onChange={(e) => setFin(e.target.value)} />
+        </div>
+      </div>
+      <p className="bb-aide">
+        Laisser vide pour un contrat permanent. Sinon, il n’est réservable qu’entre ces deux dates.
+      </p>
+
+      <h3 className="bb-titre-bloc">Réservable</h3>
+      <div className="bb-ligne-reglage">
+        <div>
+          <div className="bb-reglage-nom">{actif ? 'Visible à la réservation' : 'Retiré de la réservation'}</div>
+          <p className="bb-aide">Un barbier désactivé garde ses rendez-vous passés mais n’apparaît plus aux clients.</p>
+        </div>
+        <button
+          type="button"
+          className={`toggle ${actif ? 'active' : ''}`}
+          onClick={() => setActif(!actif)}
+          aria-pressed={actif}
+          aria-label="Réservable"
+        />
+      </div>
+
+      <h3 className="bb-titre-bloc">Priorité « peu importe »</h3>
+      <div className="bb-ligne-reglage">
+        <div>
+          <div className="bb-reglage-nom">Niveau {barber.sort_order || 0}</div>
+          <p className="bb-aide">
+            Quand le client ne choisit pas de barbier, le plus haut niveau passe devant. À égalité, c’est celui
+            qui a le moins de rendez-vous ce jour-là.
+          </p>
+        </div>
+        <div className="bb-stepper">
+          <button type="button" onClick={() => changerPriorite(-1)} disabled={(barber.sort_order || 0) <= 0} aria-label="Baisser la priorité">−</button>
+          <button type="button" onClick={() => changerPriorite(1)} aria-label="Monter la priorité">+</button>
+        </div>
+      </div>
+
+      <div className="bb-actions-collees">
+        <button type="submit" className="btn btn-primary btn-sm" disabled={mutation.isPending}>
+          {mutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+      </div>
+
+      <h3 className="bb-titre-bloc danger">Zone de danger</h3>
+      <div className="bb-danger">
+        <div>
+          <div className="bb-reglage-nom">Supprimer {barber.name}</div>
+          <p className="bb-aide">Ses rendez-vous à venir seront annulés et les clients prévenus. L’historique est conservé.</p>
+        </div>
+        <button type="button" className="btn btn-sm bb-btn-danger" onClick={() => setShowDelete(true)}>Supprimer</button>
+      </div>
+
       {showDelete && (
         <DeleteBarberDialog
           barber={barber}
@@ -962,304 +600,620 @@ function EditBarberModal({ barber, onClose }) {
           onDeleted={() => { setShowDelete(false); onClose(); }}
         />
       )}
-    </div>
+    </form>
   );
 }
 
 // ============================================
-// Delete Barber Confirmation Dialog
+// Semaine type
+// ============================================
+
+function SectionSemaine({ barber }) {
+  const { data: brut, isLoading } = useBarberSchedule(barber.id);
+  const save = useUpdateBarberSchedule();
+  const [status, flash] = useFlash();
+  const [semaine, setSemaine] = useState(null);
+  const [reference, setReference] = useState(null);
+
+  useEffect(() => {
+    if (!brut) return;
+    const s = semaineComplete(brut.weekly || []);
+    setSemaine(s);
+    setReference(JSON.stringify(s));
+  }, [brut]);
+
+  const modifie = semaine && reference !== null && JSON.stringify(semaine) !== reference;
+
+  const majJour = (i, champ, valeur) => {
+    setSemaine((prev) => prev.map((j, idx) => (idx === i ? { ...j, [champ]: valeur } : j)));
+  };
+
+  const enregistrer = async () => {
+    try {
+      await save.mutateAsync({ id: barber.id, schedules: semaine });
+      setReference(JSON.stringify(semaine));
+      flash('success', 'Semaine enregistrée');
+    } catch (err) {
+      flash('error', err.message);
+    }
+  };
+
+  if (isLoading || !semaine) return <div className="empty-state">Chargement…</div>;
+
+  const heures = totalHeures(semaine);
+
+  return (
+    <>
+      <InlineStatus status={status} />
+      <p className="bb-intro">
+        La semaine qui se répète. Pour un jour précis — congé, horaire exceptionnel — passez par
+        <strong> Absences</strong>.
+      </p>
+
+      <ul className="bb-jours">
+        {semaine.map((j, i) => (
+          <li key={i} className={`bb-jour-ligne${j.is_working ? ' on' : ''}`}>
+            <button
+              type="button"
+              className={`toggle ${j.is_working ? 'active' : ''}`}
+              onClick={() => majJour(i, 'is_working', !j.is_working)}
+              aria-label={`${DAYS[i]} travaillé`}
+              aria-pressed={j.is_working}
+            />
+            <span className="bb-jour-nom">{DAYS[i]}</span>
+            {j.is_working ? (
+              <span className="bb-heures">
+                <input className="input" type="time" value={j.start_time} onChange={(e) => majJour(i, 'start_time', e.target.value)} aria-label={`Début ${DAYS[i]}`} />
+                <em>à</em>
+                <input className="input" type="time" value={j.end_time} onChange={(e) => majJour(i, 'end_time', e.target.value)} aria-label={`Fin ${DAYS[i]}`} />
+              </span>
+            ) : (
+              <span className="bb-repos">Repos</span>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <p className="bb-total">
+        {heures % 1 === 0 ? heures : heures.toFixed(1).replace('.', ',')} h par semaine
+      </p>
+
+      <div className="bb-actions-collees">
+        <button className="btn btn-primary btn-sm" onClick={enregistrer} disabled={save.isPending || !modifie}>
+          {save.isPending ? 'Enregistrement…' : modifie ? 'Enregistrer la semaine' : 'À jour'}
+        </button>
+      </div>
+    </>
+  );
+}
+
+// ============================================
+// Absences — congés ponctuels et pauses qui reviennent
+// ============================================
+
+function SectionAbsences({ barber }) {
+  const { data: brut, isLoading } = useBarberSchedule(barber.id);
+  const { data: pauses = [], isLoading: chargePauses } = useBarberBreaks(barber.id);
+  const addOverride = useAddBarberOverride();
+  const delOverride = useDeleteBarberOverride();
+  const addPause = useCreateBlockedSlot();
+  const delPause = useDeleteBlockedSlot();
+  const delPauses = useDeleteBarberBreaksBulk();
+  const [status, flash] = useFlash();
+
+  const overrides = brut?.overrides || [];
+  const [form, setForm] = useState(null); // null | 'exception' | 'pause'
+
+  // Exception
+  const [mode, setMode] = useState('off'); // off | custom | unblock
+  const [date, setDate] = useState('');
+  const [debut, setDebut] = useState('09:00');
+  const [fin, setFin] = useState('19:00');
+  const [motif, setMotif] = useState('');
+
+  // Pause récurrente
+  const [pDebut, setPDebut] = useState('13:00');
+  const [pFin, setPFin] = useState('14:00');
+  const [pMotif, setPMotif] = useState('Pause déjeuner');
+  const [pDate, setPDate] = useState(aujourdhuiISO);
+  const [pRecurrence, setPRecurrence] = useState('weekly');
+  const [pOccurrences, setPOccurrences] = useState(52);
+
+  // Les pauses arrivent une par date : on les regroupe par motif et horaire,
+  // sinon « Pause déjeuner » s'affiche cinquante-deux fois.
+  const groupes = useMemo(() => {
+    const m = new Map();
+    for (const p of pauses) {
+      const cle = `${p.reason || 'Sans motif'}|${hhmm(p.start_time)}-${hhmm(p.end_time)}`;
+      if (!m.has(cle)) m.set(cle, { motif: p.reason || 'Sans motif', debut: hhmm(p.start_time), fin: hhmm(p.end_time), slots: [] });
+      m.get(cle).slots.push(p);
+    }
+    return [...m.values()].sort((a, b) => a.slots[0].date.localeCompare(b.slots[0].date));
+  }, [pauses]);
+
+  async function ajouterException(e) {
+    e.preventDefault();
+    const estOff = mode === 'off';
+    try {
+      await addOverride.mutateAsync({
+        id: barber.id,
+        data: {
+          date,
+          is_day_off: estOff,
+          start_time: estOff ? undefined : debut,
+          end_time: estOff ? undefined : fin,
+          reason: motif || (mode === 'unblock' ? 'Ouverture exceptionnelle' : undefined),
+        },
+      });
+      setDate(''); setMotif(''); setMode('off'); setForm(null);
+      flash('success', estOff ? 'Congé ajouté' : 'Exception ajoutée');
+    } catch (err) {
+      flash('error', err.message);
+    }
+  }
+
+  async function ajouterPause(e) {
+    e.preventDefault();
+    if (pDebut >= pFin) { flash('error', 'La pause finit avant de commencer'); return; }
+    try {
+      const payload = {
+        barber_id: barber.id,
+        date: pDate,
+        start_time: pDebut,
+        end_time: pFin,
+        type: 'break',
+        reason: pMotif || undefined,
+      };
+      if (pRecurrence !== 'none') {
+        payload.recurrence = { type: pRecurrence, end_type: 'occurrences', occurrences: parseInt(pOccurrences, 10) || 52 };
+      }
+      await addPause.mutateAsync(payload);
+      setForm(null);
+      flash('success', 'Pause enregistrée');
+    } catch (err) {
+      flash('error', err.message);
+    }
+  }
+
+  async function supprimerException(id) {
+    try {
+      await delOverride.mutateAsync(id);
+      flash('success', 'Exception supprimée');
+    } catch (err) { flash('error', err.message); }
+  }
+
+  async function supprimerGroupe(g) {
+    if (!window.confirm(`Supprimer les ${g.slots.length} pauses « ${g.motif} » ?`)) return;
+    try {
+      await delPauses.mutateAsync({ barberId: barber.id, reason: g.motif !== 'Sans motif' ? g.motif : undefined });
+      flash('success', `${g.slots.length} pauses supprimées`);
+    } catch (err) { flash('error', err.message); }
+  }
+
+  if (isLoading || chargePauses) return <div className="empty-state">Chargement…</div>;
+
+  return (
+    <>
+      <InlineStatus status={status} />
+      <p className="bb-intro">
+        {/* Ces deux listes répondaient à la même question depuis deux fenêtres
+            différentes : quand n'est-il pas disponible ? */}
+        Tout ce qui retire {barber.name} du planning : les jours à part, et les pauses qui reviennent chaque semaine.
+      </p>
+
+      <h3 className="bb-titre-bloc">Jours à part<span className="bb-compte">{overrides.length}</span></h3>
+      {overrides.length === 0 ? (
+        <p className="bb-vide">Aucun congé ni horaire exceptionnel prévu.</p>
+      ) : (
+        <ul className="bb-liste">
+          {overrides.map((ov) => (
+            <li key={ov.id} className={`bb-item ${ov.is_day_off ? 'conge' : 'special'}`}>
+              <div>
+                <div className="bb-item-titre">{formatDateFr(ov.date)}</div>
+                <div className="bb-item-meta">
+                  <span className="bb-tag">{ov.is_day_off ? 'Congé' : 'Horaire à part'}</span>
+                  {!ov.is_day_off && ov.start_time && <span>{hhmm(ov.start_time)}–{hhmm(ov.end_time)}</span>}
+                  {ov.reason && <span>{ov.reason}</span>}
+                </div>
+              </div>
+              <button type="button" className="bb-supprimer" onClick={() => supprimerException(ov.id)} aria-label="Supprimer">
+                <IcoTrash />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {form === 'exception' ? (
+        <form className="bb-form" onSubmit={ajouterException}>
+          <div className="form-group">
+            <span className="label">Type</span>
+            <div className="bb-choix">
+              {[
+                { cle: 'off', label: 'Congé' },
+                { cle: 'custom', label: 'Horaire à part' },
+                { cle: 'unblock', label: 'Ouvrir un jour de repos' },
+              ].map((t) => (
+                <button key={t.cle} type="button" className={mode === t.cle ? 'on' : ''} onClick={() => setMode(t.cle)} aria-pressed={mode === t.cle}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="label" htmlFor="bb-ov-date">Date</label>
+            <input id="bb-ov-date" className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          </div>
+          {mode !== 'off' && (
+            <div className="form-group">
+              <span className="label">Horaires ce jour-là</span>
+              <div className="bb-heures">
+                <input className="input" type="time" value={debut} onChange={(e) => setDebut(e.target.value)} required aria-label="Début" />
+                <em>à</em>
+                <input className="input" type="time" value={fin} onChange={(e) => setFin(e.target.value)} required aria-label="Fin" />
+              </div>
+            </div>
+          )}
+          <div className="form-group">
+            <label className="label" htmlFor="bb-ov-motif">Motif</label>
+            <input
+              id="bb-ov-motif"
+              className="input"
+              value={motif}
+              onChange={(e) => setMotif(e.target.value)}
+              placeholder={mode === 'off' ? 'Vacances, rendez-vous médical…' : 'Ouverture exceptionnelle…'}
+            />
+          </div>
+          <div className="bb-form-actions">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setForm(null)}>Annuler</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={addOverride.isPending}>
+              {addOverride.isPending ? '…' : 'Ajouter'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" className="bb-ajout-ligne" onClick={() => setForm('exception')}>
+          <IcoPlus /> Ajouter un jour à part
+        </button>
+      )}
+
+      <h3 className="bb-titre-bloc">Pauses récurrentes<span className="bb-compte">{groupes.length}</span></h3>
+      {groupes.length === 0 ? (
+        <p className="bb-vide">Aucune pause programmée.</p>
+      ) : (
+        <ul className="bb-liste">
+          {groupes.map((g, i) => (
+            <li key={i} className="bb-item pause">
+              <div>
+                <div className="bb-item-titre">{g.motif}</div>
+                <div className="bb-item-meta">
+                  <span>{g.debut}–{g.fin}</span>
+                  <span>{g.slots.length} date{g.slots.length > 1 ? 's' : ''}</span>
+                </div>
+                <div className="bb-dates">
+                  {g.slots.slice(0, 6).map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      title="Supprimer cette date"
+                      onClick={async () => {
+                        try { await delPause.mutateAsync(s.id); flash('success', 'Pause supprimée'); }
+                        catch (err) { flash('error', err.message); }
+                      }}
+                    >
+                      {formatJourCourt(s.date)}
+                    </button>
+                  ))}
+                  {g.slots.length > 6 && <span className="bb-dates-reste">+{g.slots.length - 6}</span>}
+                </div>
+              </div>
+              <button type="button" className="bb-supprimer" onClick={() => supprimerGroupe(g)} aria-label="Tout supprimer">
+                <IcoTrash />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {form === 'pause' ? (
+        <form className="bb-form" onSubmit={ajouterPause}>
+          <div className="form-group">
+            <label className="label" htmlFor="bb-p-motif">Motif</label>
+            <input id="bb-p-motif" className="input" value={pMotif} onChange={(e) => setPMotif(e.target.value)} placeholder="Pause déjeuner" />
+          </div>
+          <div className="form-group">
+            <span className="label">Horaires</span>
+            <div className="bb-heures">
+              <input className="input" type="time" value={pDebut} onChange={(e) => setPDebut(e.target.value)} aria-label="Début de la pause" />
+              <em>à</em>
+              <input className="input" type="time" value={pFin} onChange={(e) => setPFin(e.target.value)} aria-label="Fin de la pause" />
+            </div>
+          </div>
+          <div className="bb-duo">
+            <div className="form-group">
+              <label className="label" htmlFor="bb-p-date">À partir du</label>
+              <input id="bb-p-date" className="input" type="date" value={pDate} onChange={(e) => setPDate(e.target.value)} required />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="bb-p-rec">Répétition</label>
+              <select id="bb-p-rec" className="input" value={pRecurrence} onChange={(e) => setPRecurrence(e.target.value)}>
+                <option value="none">Une seule fois</option>
+                <option value="weekly">Chaque semaine</option>
+                <option value="biweekly">Une semaine sur deux</option>
+              </select>
+            </div>
+          </div>
+          {pRecurrence !== 'none' && (
+            <div className="form-group">
+              <label className="label" htmlFor="bb-p-occ">Nombre de semaines</label>
+              <input id="bb-p-occ" className="input" type="number" min="2" max="52" value={pOccurrences} onChange={(e) => setPOccurrences(e.target.value)} />
+            </div>
+          )}
+          <div className="bb-form-actions">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setForm(null)}>Annuler</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={addPause.isPending}>
+              {addPause.isPending ? '…' : pRecurrence === 'none' ? 'Ajouter la pause' : `Ajouter ${pOccurrences} pauses`}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" className="bb-ajout-ligne" onClick={() => setForm('pause')}>
+          <IcoPlus /> Ajouter une pause
+        </button>
+      )}
+    </>
+  );
+}
+
+// ============================================
+// Prestations — ce qu'il fait, et en combien de temps
+// ============================================
+
+function SectionPrestations({ barber }) {
+  const { data: lignes = [], isLoading } = useBarberServices(barber.id);
+  const [status, flash] = useFlash();
+
+  if (isLoading) return <div className="empty-state">Chargement…</div>;
+
+  const assignees = lignes.filter((l) => l.assigned).length;
+  const perso = lignes.filter((l) => l.assigned && l.custom_duration != null).length;
+
+  return (
+    <>
+      <InlineStatus status={status} />
+      <p className="bb-intro">
+        {assignees} prestation{assignees > 1 ? 's' : ''} sur {lignes.length}
+        {perso > 0 && <> · {perso} avec une durée qui lui est propre</>}.
+      </p>
+      <ul className="bb-liste">
+        {lignes.map((l) => (
+          <LignePrestation key={l.id} ligne={l} barberId={barber.id} onFlash={flash} />
+        ))}
+      </ul>
+    </>
+  );
+}
+
+function LignePrestation({ ligne, barberId, onFlash }) {
+  const set = useSetBarberService();
+  const retirer = useRemoveBarberService();
+  const [duree, setDuree] = useState(ligne.effective_duration);
+
+  useEffect(() => { setDuree(ligne.effective_duration); }, [ligne.effective_duration]);
+
+  const basculer = async () => {
+    try {
+      if (ligne.assigned) {
+        await retirer.mutateAsync({ id: barberId, serviceId: ligne.id });
+        onFlash('success', `${ligne.name} retirée`);
+      } else {
+        await set.mutateAsync({ id: barberId, serviceId: ligne.id, customDuration: null });
+        onFlash('success', `${ligne.name} ajoutée`);
+      }
+    } catch (err) { onFlash('error', err.message); }
+  };
+
+  const changerDuree = async (valeur) => {
+    const v = Math.min(240, Math.max(5, valeur));
+    setDuree(v);
+    try {
+      // Ramenée à la durée du catalogue, on n'enregistre pas d'exception :
+      // le barbier suivra la prestation si sa durée change plus tard.
+      await set.mutateAsync({ id: barberId, serviceId: ligne.id, customDuration: v === ligne.default_duration ? null : v });
+    } catch (err) {
+      setDuree(ligne.effective_duration);
+      onFlash('error', err.message);
+    }
+  };
+
+  const surMesure = ligne.assigned && ligne.custom_duration != null;
+
+  return (
+    <li className={`bb-presta${ligne.assigned ? ' on' : ''}`}>
+      <span className="bb-presta-pastille" style={{ background: ligne.color || 'var(--text-muted)' }} aria-hidden="true" />
+      <div className="bb-presta-ident">
+        <span className="bb-presta-nom">{ligne.name}</span>
+        <span className="bb-presta-prix">{formatPrice(ligne.price || 0)}</span>
+      </div>
+
+      {ligne.assigned && (
+        <div className="bb-presta-duree">
+          <button type="button" onClick={() => changerDuree(duree - 5)} aria-label={`Réduire la durée de ${ligne.name}`}>−</button>
+          <span className={surMesure ? 'perso' : ''}>{duree} min</span>
+          <button type="button" onClick={() => changerDuree(duree + 5)} aria-label={`Augmenter la durée de ${ligne.name}`}>+</button>
+        </div>
+      )}
+
+      <button
+        type="button"
+        className={`toggle ${ligne.assigned ? 'active' : ''}`}
+        onClick={basculer}
+        aria-pressed={ligne.assigned}
+        aria-label={`${ligne.name} assurée`}
+      />
+
+      {surMesure && (
+        <button type="button" className="bb-lien bb-presta-reset" onClick={() => changerDuree(ligne.default_duration)}>
+          Revenir à {ligne.default_duration} min
+        </button>
+      )}
+    </li>
+  );
+}
+
+// ============================================
+// Déplacements — jours travaillés dans l'autre salon
+// ============================================
+
+function SectionDeplacements({ barber }) {
+  const { data: brut, isLoading } = useBarberGuestDays(barber.id);
+  const ajouter = useAddBarberGuestDay();
+  const supprimer = useDeleteBarberGuestDay();
+  const [status, flash] = useFlash();
+  const jours = Array.isArray(brut) ? brut : [];
+
+  const destinations = SALON_OPTIONS.filter((s) => s.id !== barber.salon_id);
+  const [form, setForm] = useState(false);
+  const [salon, setSalon] = useState(destinations[0]?.id || '');
+  const [date, setDate] = useState('');
+  const [debut, setDebut] = useState('09:00');
+  const [fin, setFin] = useState('19:00');
+
+  async function handleAjout(e) {
+    e.preventDefault();
+    try {
+      await ajouter.mutateAsync({ id: barber.id, data: { date, host_salon_id: salon, start_time: debut, end_time: fin } });
+      setDate(''); setForm(false);
+      flash('success', 'Déplacement enregistré');
+    } catch (err) { flash('error', err.message); }
+  }
+
+  if (isLoading) return <div className="empty-state">Chargement…</div>;
+
+  return (
+    <>
+      <InlineStatus status={status} />
+      <p className="bb-intro">
+        Les jours où {barber.name} travaille dans l’autre salon. Il y devient réservable, et disparaît d’ici
+        automatiquement.
+      </p>
+
+      {jours.length === 0 ? (
+        <p className="bb-vide">Aucun déplacement prévu.</p>
+      ) : (
+        <ul className="bb-liste">
+          {jours.map((g) => (
+            <li key={g.id} className="bb-item invite">
+              <div>
+                <div className="bb-item-titre">{formatDateFr(g.date)}</div>
+                <div className="bb-item-meta">
+                  <span className="bb-tag invite">{g.host_salon_id === 'grenoble' ? 'Grenoble' : 'Meylan'}</span>
+                  <span>{hhmm(g.start_time) || '09:00'}–{hhmm(g.end_time) || '19:00'}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="bb-supprimer"
+                aria-label="Supprimer"
+                onClick={async () => {
+                  if (!window.confirm('Supprimer ce déplacement ?')) return;
+                  try { await supprimer.mutateAsync(g.id); flash('success', 'Déplacement supprimé'); }
+                  catch (err) { flash('error', err.message); }
+                }}
+              >
+                <IcoTrash />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {form ? (
+        <form className="bb-form" onSubmit={handleAjout}>
+          <div className="form-group">
+            <label className="label" htmlFor="bb-gd-salon">Salon</label>
+            <select id="bb-gd-salon" className="input" value={salon} onChange={(e) => setSalon(e.target.value)} required>
+              {destinations.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="label" htmlFor="bb-gd-date">Date</label>
+            <input id="bb-gd-date" className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          </div>
+          <div className="form-group">
+            <span className="label">Horaires sur place</span>
+            <div className="bb-heures">
+              <input className="input" type="time" value={debut} onChange={(e) => setDebut(e.target.value)} required aria-label="Début" />
+              <em>à</em>
+              <input className="input" type="time" value={fin} onChange={(e) => setFin(e.target.value)} required aria-label="Fin" />
+            </div>
+          </div>
+          <div className="bb-form-actions">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setForm(false)}>Annuler</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={ajouter.isPending}>
+              {ajouter.isPending ? '…' : 'Ajouter'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" className="bb-ajout-ligne" onClick={() => setForm(true)} disabled={destinations.length === 0}>
+          <IcoPlus /> Ajouter un déplacement
+        </button>
+      )}
+    </>
+  );
+}
+
+// ============================================
+// Suppression
 // ============================================
 
 function DeleteBarberDialog({ barber, onClose, onDeleted }) {
   const mutation = useDeleteBarber();
-  const [confirmName, setConfirmName] = useState('');
-  const nameMatch = confirmName.trim().toLowerCase() === barber.name.toLowerCase();
+  const [saisie, setSaisie] = useState('');
+  const [erreur, setErreur] = useState('');
+  const correspond = saisie.trim().toLowerCase() === barber.name.toLowerCase();
 
-  const handleDelete = async () => {
+  const supprimer = async () => {
     try {
       await mutation.mutateAsync(barber.id);
       onDeleted();
     } catch (err) {
-      alert(err.message);
+      setErreur(err.message);
     }
   };
-
-  return (
-    <div className="delete-dialog-overlay" onClick={onClose}>
-      <div className="delete-dialog" onClick={e => e.stopPropagation()}>
-        <div className="delete-dialog-header">
-          <div className="delete-dialog-icon">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#dc2626" strokeWidth="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 14, color: '#fca5a5' }}>Supprimer {barber.name} ?</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Cette action est irreversible</div>
-          </div>
-        </div>
-        <div className="delete-dialog-body">
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px' }}>
-            Tous les futurs RDV de ce barber seront annules et les clients notifies. L'historique sera conserve.
-          </p>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 8px' }}>
-            Ecrivez <strong style={{ color: '#fca5a5' }}>{barber.name}</strong> pour confirmer :
-          </p>
-          <input
-            className="input confirm-input"
-            value={confirmName}
-            onChange={e => setConfirmName(e.target.value)}
-            placeholder={barber.name}
-            autoFocus
-            style={{ width: '100%', marginBottom: 16 }}
-          />
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={onClose}>Annuler</button>
-            <button
-              className="btn btn-sm"
-              style={{ flex: 1, background: nameMatch ? '#dc2626' : '#333', color: nameMatch ? '#fff' : '#555', border: 'none', cursor: nameMatch ? 'pointer' : 'not-allowed' }}
-              disabled={!nameMatch || mutation.isPending}
-              onClick={handleDelete}
-            >
-              {mutation.isPending ? 'Suppression...' : 'Supprimer'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// Schedule & Overrides Modal
-// ============================================
-
-function ScheduleModal({ barber, onClose }) {
-  const { data: rawSchedule, isLoading: loading } = useBarberSchedule(barber.id);
-  const saveMutation = useUpdateBarberSchedule();
-  const addOverrideMutation = useAddBarberOverride();
-  const deleteOverrideMutation = useDeleteBarberOverride();
-  const createBlockedSlotMutation = useCreateBlockedSlot();
-
-  // Local editable copy of the schedule
-  const [schedule, setSchedule] = useState(null);
-  const [status, setStatus] = useState(null);
-  const [activeTab, setActiveTab] = useState('schedule');
-  const [ovDate, setOvDate] = useState('');
-  // ovMode: 'off' = jour de congé | 'custom' = horaire spécial | 'unblock' = débloquer un jour off
-  const [ovMode, setOvMode] = useState('off');
-  const [ovStartTime, setOvStartTime] = useState('09:00');
-  const [ovEndTime, setOvEndTime] = useState('19:00');
-  const [ovReason, setOvReason] = useState('');
-  const [ovBreakEnabled, setOvBreakEnabled] = useState(true);
-  const [ovBreakStart, setOvBreakStart] = useState('12:00');
-  const [ovBreakEnd, setOvBreakEnd] = useState('13:00');
-  const [showOverrideForm, setShowOverrideForm] = useState(false);
-
-  const saving = saveMutation.isPending;
-  const addingOverride = addOverrideMutation.isPending || createBlockedSlotMutation.isPending;
-  const overrides = rawSchedule?.overrides || [];
-
-  // Initialize local schedule from query data
-  if (rawSchedule && !schedule) {
-    const sched = Array.from({ length: 7 }, (_, i) => {
-      const existing = rawSchedule.weekly?.find((w) => w.day_of_week === i);
-      if (existing) {
-        return {
-          ...existing,
-          start_time: (existing.start_time || '09:00').slice(0, 5),
-          end_time: (existing.end_time || '19:00').slice(0, 5),
-        };
-      }
-      return { day_of_week: i, start_time: '09:00', end_time: '19:00', is_working: false };
-    });
-    setSchedule(sched);
-  }
-
-  const flashTimer = useRef(null);
-  const flash = useCallback((type, message) => {
-    setStatus({ type, message });
-    clearTimeout(flashTimer.current);
-    flashTimer.current = setTimeout(() => setStatus(null), 3000);
-  }, []);
-  useEffect(() => () => clearTimeout(flashTimer.current), []);
-
-  async function saveSchedule() {
-    try {
-      await saveMutation.mutateAsync({ id: barber.id, schedules: schedule });
-      flash('success', 'Horaires enregistres avec succes');
-    } catch (err) {
-      flash('error', err.message);
-    }
-  }
-
-  async function handleAddOverride(e) {
-    e.preventDefault();
-    const isDayOff = ovMode === 'off';
-    const isUnblock = ovMode === 'unblock';
-    if (isUnblock && ovBreakEnabled) {
-      if (ovBreakStart < ovStartTime || ovBreakEnd > ovEndTime) {
-        flash('error', 'La pause doit être dans les horaires de travail');
-        return;
-      }
-      if (ovBreakStart >= ovBreakEnd) {
-        flash('error', 'Heure de fin de pause invalide');
-        return;
-      }
-    }
-    let createdOverride = null;
-    try {
-      createdOverride = await addOverrideMutation.mutateAsync({
-        id: barber.id,
-        data: {
-          date: ovDate,
-          is_day_off: isDayOff,
-          start_time: isDayOff ? undefined : ovStartTime,
-          end_time: isDayOff ? undefined : ovEndTime,
-          reason: ovReason || (isUnblock ? 'Ouverture exceptionnelle' : undefined),
-        },
-      });
-      if (isUnblock && ovBreakEnabled) {
-        try {
-          await createBlockedSlotMutation.mutateAsync({
-            barber_id: barber.id,
-            date: ovDate,
-            start_time: ovBreakStart,
-            end_time: ovBreakEnd,
-            type: 'break',
-            reason: 'Pause déjeuner',
-          });
-        } catch (breakErr) {
-          // Rollback: the day was unblocked but the break failed — undo the override
-          // so the user can retry from a clean slate (otherwise unique-date constraint blocks retry).
-          if (createdOverride?.id) {
-            try { await deleteOverrideMutation.mutateAsync(createdOverride.id); } catch (_) {}
-          }
-          throw breakErr;
-        }
-      }
-      setOvDate(''); setOvMode('off'); setOvStartTime('09:00'); setOvEndTime('19:00');
-      setOvReason(''); setOvBreakEnabled(true); setOvBreakStart('12:00'); setOvBreakEnd('13:00');
-      setShowOverrideForm(false);
-      flash('success', isUnblock ? 'Jour débloqué' : 'Exception ajoutee');
-    } catch (err) {
-      flash('error', err.message);
-    }
-  }
-
-  async function removeOverride(id) {
-    if (!window.confirm('Supprimer cette exception ?')) return;
-    try {
-      await deleteOverrideMutation.mutateAsync(id);
-      flash('success', 'Exception supprimee');
-    } catch (err) {
-      flash('error', err.message);
-    }
-  }
-
-  const updateDay = (idx, field, value) => {
-    setSchedule((prev) =>
-      prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s))
-    );
-  };
-
-  // Styles for the tab buttons
-  const tabStyle = (active) => ({
-    flex: 1,
-    padding: '10px 0',
-    fontSize: 13,
-    fontWeight: 600,
-    background: active ? 'rgba(var(--overlay),0.08)' : 'transparent',
-    color: active ? 'var(--text)' : 'var(--text-muted)',
-    border: 'none',
-    borderBottom: active ? '2px solid #fff' : '2px solid transparent',
-    cursor: 'pointer',
-    transition: 'all 0.15s ease',
-    fontFamily: 'var(--font)',
-  });
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div
-        className="modal"
-        style={{ maxWidth: 600 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
+      <div className="modal" role="dialog" aria-modal="true" aria-label={`Supprimer ${barber.name}`} style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">Horaires — {barber.name}</h3>
-          <button className="btn-ghost" onClick={onClose}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
+          <h3 className="modal-title">Supprimer {barber.name} ?</h3>
+          <button className="btn-ghost" onClick={onClose} aria-label="Fermer"><IcoClose /></button>
         </div>
-
-        {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
-          <button style={tabStyle(activeTab === 'schedule')} onClick={() => setActiveTab('schedule')}>
-            Semaine type
-          </button>
-          <button style={tabStyle(activeTab === 'overrides')} onClick={() => setActiveTab('overrides')}>
-            Exceptions
-            {overrides.length > 0 && (
-              <span
-                style={{
-                  marginLeft: 6,
-                  background: 'rgba(var(--overlay),0.12)',
-                  padding: '2px 7px',
-                  borderRadius: 10,
-                  fontSize: 11,
-                }}
-              >
-                {overrides.length}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Body */}
         <div className="modal-body">
-          <InlineStatus status={status} />
-
-          {loading ? (
-            <div className="empty-state">Chargement...</div>
-          ) : activeTab === 'schedule' ? (
-            <WeeklyScheduleEditor
-              schedule={schedule}
-              updateDay={updateDay}
-              saving={saving}
-              onSave={saveSchedule}
-            />
-          ) : (
-            <OverridesEditor
-              overrides={overrides}
-              showForm={showOverrideForm}
-              onToggleForm={() => setShowOverrideForm(!showOverrideForm)}
-              formProps={{
-                ovDate,
-                setOvDate,
-                ovMode,
-                setOvMode,
-                ovStartTime,
-                setOvStartTime,
-                ovEndTime,
-                setOvEndTime,
-                ovReason,
-                setOvReason,
-                ovBreakEnabled,
-                setOvBreakEnabled,
-                ovBreakStart,
-                setOvBreakStart,
-                ovBreakEnd,
-                setOvBreakEnd,
-                addingOverride,
-              }}
-              onAddOverride={handleAddOverride}
-              onRemoveOverride={removeOverride}
-            />
-          )}
+          {erreur && <div className="bb-flash err" role="alert">{erreur}</div>}
+          <p className="bb-aide" style={{ marginBottom: 14 }}>
+            Ses rendez-vous à venir seront annulés et les clients prévenus. L’historique est conservé.
+            Cette action ne s’annule pas.
+          </p>
+          <label className="label" htmlFor="bb-confirm">
+            Écrivez <strong>{barber.name}</strong> pour confirmer
+          </label>
+          <input
+            id="bb-confirm"
+            className="input"
+            value={saisie}
+            onChange={(e) => setSaisie(e.target.value)}
+            placeholder={barber.name}
+            autoFocus
+            autoComplete="off"
+          />
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary btn-sm" onClick={onClose}>Annuler</button>
+          <button className="btn btn-sm bb-btn-danger" disabled={!correspond || mutation.isPending} onClick={supprimer}>
+            {mutation.isPending ? 'Suppression…' : 'Supprimer'}
+          </button>
         </div>
       </div>
     </div>
@@ -1267,649 +1221,170 @@ function ScheduleModal({ barber, onClose }) {
 }
 
 // ============================================
-// Weekly Schedule Editor (tab content)
+// Création — un barbier complet en un passage
 // ============================================
 
-function WeeklyScheduleEditor({ schedule, updateDay, saving, onSave }) {
-  return (
-    <>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-          marginBottom: 20,
-          overflowX: 'auto',
-        }}
-      >
-        {schedule.map((day, idx) => (
-          <div
-            key={idx}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '8px 12px',
-              borderRadius: 8,
-              background: day.is_working
-                ? 'rgba(34,197,94,0.04)'
-                : 'rgba(var(--overlay),0.02)',
-              border: '1px solid',
-              borderColor: day.is_working
-                ? 'rgba(34,197,94,0.12)'
-                : 'var(--border)',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <span
-              style={{
-                width: 74,
-                fontSize: 13,
-                fontWeight: 600,
-                color: day.is_working ? 'var(--text)' : 'var(--text-muted)',
-              }}
-            >
-              {DAYS[idx]}
-            </span>
-
-            <button
-              type="button"
-              className={`toggle ${day.is_working ? 'active' : ''}`}
-              onClick={() => updateDay(idx, 'is_working', !day.is_working)}
-            />
-
-            {day.is_working ? (
-              <>
-                <input
-                  className="input"
-                  type="time"
-                  value={day.start_time || '09:00'}
-                  onChange={(e) => updateDay(idx, 'start_time', e.target.value)}
-                  style={{
-                    width: 110,
-                    padding: '6px 8px',
-                    fontSize: 13,
-                    textAlign: 'center',
-                  }}
-                />
-                <span
-                  style={{
-                    color: 'var(--text-muted)',
-                    fontSize: 12,
-                    userSelect: 'none',
-                  }}
-                >
-                  a
-                </span>
-                <input
-                  className="input"
-                  type="time"
-                  value={day.end_time || '19:00'}
-                  onChange={(e) => updateDay(idx, 'end_time', e.target.value)}
-                  style={{
-                    width: 110,
-                    padding: '6px 8px',
-                    fontSize: 13,
-                    textAlign: 'center',
-                  }}
-                />
-              </>
-            ) : (
-              <span style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                Repos
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <button
-        className="btn btn-primary btn-sm"
-        onClick={onSave}
-        disabled={saving}
-        style={{ width: '100%' }}
-      >
-        {saving ? 'Enregistrement...' : 'Enregistrer les horaires'}
-      </button>
-    </>
+function CreateBarberModal({ onClose }) {
+  const createMutation = useCreateBarber();
+  const { data: services = [] } = useServices();
+  const [status, flash] = useFlash();
+  const [nom, setNom] = useState('');
+  const [role, setRole] = useState('Barbier');
+  const [email, setEmail] = useState('');
+  const [debut, setDebut] = useState('');
+  const [fin, setFin] = useState('');
+  const [photo, setPhoto] = useState(null);
+  const [semaine, setSemaine] = useState(
+    DAYS.map((_, i) => ({ day_of_week: i, is_working: i < 6, start_time: '09:00', end_time: '19:00' }))
   );
-}
+  const [choisies, setChoisies] = useState(() => new Set());
+  const fichier = useRef(null);
 
-// ============================================
-// Overrides / Holidays Editor (tab content)
-// ============================================
+  const actives = useMemo(() => services.filter((s) => s.is_active !== false), [services]);
+  useEffect(() => {
+    // Un barbier qui n'assure rien n'est réservable nulle part : tout est coché
+    // par défaut, à décocher au besoin.
+    if (actives.length > 0) setChoisies((prev) => (prev.size === 0 ? new Set(actives.map((s) => s.id)) : prev));
+  }, [actives]);
 
-function OverridesEditor({
-  overrides,
-  showForm,
-  onToggleForm,
-  formProps,
-  onAddOverride,
-  onRemoveOverride,
-}) {
-  const {
-    ovDate,
-    setOvDate,
-    ovMode,
-    setOvMode,
-    ovStartTime,
-    setOvStartTime,
-    ovEndTime,
-    setOvEndTime,
-    ovReason,
-    setOvReason,
-    ovBreakEnabled,
-    setOvBreakEnabled,
-    ovBreakStart,
-    setOvBreakStart,
-    ovBreakEnd,
-    setOvBreakEnd,
-    addingOverride,
-  } = formProps;
-  const ovIsDayOff = ovMode === 'off';
-  const ovIsUnblock = ovMode === 'unblock';
+  const choisirPhoto = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > PHOTO_MAX_MO * 1024 * 1024) { flash('error', `Photo trop lourde (max ${PHOTO_MAX_MO} Mo)`); return; }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.type)) { flash('error', 'Format accepté : JPEG, PNG ou WebP'); return; }
+    const lecteur = new FileReader();
+    lecteur.onload = () => setPhoto(lecteur.result);
+    lecteur.readAsDataURL(f);
+  };
+
+  const creer = async (e) => {
+    e.preventDefault();
+    if (fin && debut && fin < debut) { flash('error', 'La fin du contrat précède son début'); return; }
+    try {
+      await createMutation.mutateAsync({
+        name: nom.trim(),
+        role: role.trim() || 'Barbier',
+        email: email.trim() || undefined,
+        photo_url: photo || undefined,
+        schedules: semaine,
+        service_ids: [...choisies],
+        contract_start: debut || undefined,
+        contract_end: fin || undefined,
+      });
+      onClose();
+    } catch (err) {
+      flash('error', err.message);
+    }
+  };
+
+  const majJour = (i, champ, valeur) => setSemaine((prev) => prev.map((j, idx) => (idx === i ? { ...j, [champ]: valeur } : j)));
 
   return (
-    <>
-      {/* Existing overrides list */}
-      {overrides.length === 0 ? (
-        <div
-          style={{
-            padding: '24px 0',
-            textAlign: 'center',
-            color: 'var(--text-muted)',
-            fontSize: 13,
-          }}
-        >
-          Aucune exception programmee.
-        </div>
-      ) : (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 6,
-            marginBottom: 16,
-          }}
-        >
-          {overrides.map((ov) => {
-            const isDayOff = ov.is_day_off;
-            return (
-              <div
-                key={ov.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  fontSize: 13,
-                  padding: '10px 14px',
-                  background: isDayOff
-                    ? 'rgba(239,68,68,0.04)'
-                    : 'rgba(245,158,11,0.04)',
-                  border: '1px solid',
-                  borderColor: isDayOff
-                    ? 'rgba(239,68,68,0.12)'
-                    : 'rgba(245,158,11,0.12)',
-                  borderRadius: 8,
-                }}
-              >
-                {/* Date */}
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 2 }}>
-                    {formatDateFr(ov.date)}
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      fontSize: 12,
-                    }}
-                  >
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        padding: '1px 8px',
-                        borderRadius: 10,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        background: isDayOff
-                          ? 'rgba(239,68,68,0.12)'
-                          : 'rgba(245,158,11,0.12)',
-                        color: isDayOff ? 'var(--danger)' : 'var(--warning)',
-                      }}
-                    >
-                      {isDayOff ? 'Jour off' : 'Horaire modifie'}
-                    </span>
-                    {!isDayOff && ov.start_time && ov.end_time && (
-                      <span style={{ color: 'var(--text-secondary)' }}>
-                        {ov.start_time} - {ov.end_time}
-                      </span>
-                    )}
-                    {ov.reason && (
-                      <span style={{ color: 'var(--text-muted)' }}>
-                        {ov.reason}
-                      </span>
-                    )}
-                  </div>
-                </div>
+    <div className="bb-fiche-fond" onClick={onClose}>
+      <aside className="bb-fiche" role="dialog" aria-modal="true" aria-label="Nouveau barbier" onClick={(e) => e.stopPropagation()}>
+        <header className="bb-fiche-haut">
+          <button type="button" className="bb-retour" onClick={onClose} aria-label="Fermer"><IcoChevron /></button>
+          <div className="bb-fiche-ident">
+            <h2>Nouveau barbier</h2>
+            <p>Il sera créé désactivé — à activer quand il commence.</p>
+          </div>
+          <button type="button" className="bb-fermer" onClick={onClose} aria-label="Fermer"><IcoClose /></button>
+        </header>
 
-                {/* Delete button */}
+        <form className="bb-fiche-corps" onSubmit={creer}>
+          <InlineStatus status={status} />
+
+          <div className="bb-photo-champ">
+            {photo
+              ? <img className="bb-photo lg" src={photo} alt="" />
+              : <span className="bb-photo lg bb-photo-vide">{initiale(nom)}</span>}
+            <div>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => fichier.current?.click()}>
+                <IcoCamera /> {photo ? 'Changer la photo' : 'Ajouter une photo'}
+              </button>
+              <p className="bb-aide">JPEG, PNG ou WebP — {PHOTO_MAX_MO} Mo maximum.</p>
+            </div>
+            <input ref={fichier} type="file" accept="image/jpeg,image/png,image/webp" onChange={choisirPhoto} hidden />
+          </div>
+
+          <div className="form-group">
+            <label className="label" htmlFor="bb-c-nom">Nom</label>
+            <input id="bb-c-nom" className="input" value={nom} onChange={(e) => setNom(e.target.value)} required autoFocus />
+          </div>
+          <div className="bb-duo">
+            <div className="form-group">
+              <label className="label" htmlFor="bb-c-role">Rôle</label>
+              <input id="bb-c-role" className="input" value={role} onChange={(e) => setRole(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="bb-c-email">E-mail</label>
+              <input id="bb-c-email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Généré depuis le nom" />
+            </div>
+          </div>
+
+          <h3 className="bb-titre-bloc">Contrat</h3>
+          <div className="bb-duo">
+            <div className="form-group">
+              <label className="label" htmlFor="bb-c-debut">Début</label>
+              <input id="bb-c-debut" className="input" type="date" value={debut} onChange={(e) => setDebut(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="bb-c-fin">Fin</label>
+              <input id="bb-c-fin" className="input" type="date" value={fin} onChange={(e) => setFin(e.target.value)} />
+            </div>
+          </div>
+          <p className="bb-aide">Laisser vide pour un contrat permanent.</p>
+
+          <h3 className="bb-titre-bloc">Semaine type</h3>
+          <ul className="bb-jours">
+            {semaine.map((j, i) => (
+              <li key={i} className={`bb-jour-ligne${j.is_working ? ' on' : ''}`}>
                 <button
-                  className="btn-ghost"
-                  style={{ color: 'var(--danger)', flexShrink: 0, padding: 6 }}
-                  onClick={() => onRemoveOverride(ov.id)}
-                  title="Supprimer"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14" />
-                  </svg>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Add override toggle */}
-      {!showForm ? (
-        <button
-          className="btn btn-secondary btn-sm"
-          style={{ width: '100%' }}
-          onClick={onToggleForm}
-        >
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Ajouter une exception
-        </button>
-      ) : (
-        <form
-          onSubmit={onAddOverride}
-          style={{
-            padding: 16,
-            background: 'rgba(var(--overlay),0.02)',
-            border: '1px solid var(--border)',
-            borderRadius: 10,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-            }}
-          >
-            <label
-              className="label"
-              style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text)' }}
-            >
-              Nouvelle exception
-            </label>
-            <button
-              type="button"
-              className="btn-ghost"
-              style={{ padding: 4 }}
-              onClick={onToggleForm}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Type toggle: day off vs custom hours vs unblock */}
-          <div className="form-group">
-            <label className="label">Type</label>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className={`btn btn-sm ${ovMode === 'off' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setOvMode('off')}
-                style={{ flex: '1 1 0', minWidth: 0, padding: '8px 6px', fontSize: 12 }}
-              >
-                Jour de congé
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm ${ovMode === 'custom' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setOvMode('custom')}
-                style={{ flex: '1 1 0', minWidth: 0, padding: '8px 6px', fontSize: 12 }}
-              >
-                Horaire spécial
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm ${ovMode === 'unblock' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setOvMode('unblock')}
-                style={{ flex: '1 1 0', minWidth: 0, padding: '8px 6px', fontSize: 12 }}
-              >
-                Débloquer ce jour
-              </button>
-            </div>
-          </div>
-
-          {/* Date */}
-          <div className="form-group">
-            <label className="label">Date</label>
-            <input
-              className="input"
-              type="date"
-              value={ovDate}
-              onChange={(e) => setOvDate(e.target.value)}
-              required
-              style={{ fontSize: 13 }}
-            />
-          </div>
-
-          {/* Custom hours (only if not day off) */}
-          {!ovIsDayOff && (
-            <div className="form-group">
-              <label className="label">Horaires</label>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  className="input"
-                  type="time"
-                  value={ovStartTime}
-                  onChange={(e) => setOvStartTime(e.target.value)}
-                  required
-                  style={{ flex: 1, fontSize: 13, textAlign: 'center' }}
+                  type="button"
+                  className={`toggle ${j.is_working ? 'active' : ''}`}
+                  onClick={() => majJour(i, 'is_working', !j.is_working)}
+                  aria-pressed={j.is_working}
+                  aria-label={`${DAYS[i]} travaillé`}
                 />
-                <span style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}>
-                  a
-                </span>
-                <input
-                  className="input"
-                  type="time"
-                  value={ovEndTime}
-                  onChange={(e) => setOvEndTime(e.target.value)}
-                  required
-                  style={{ flex: 1, fontSize: 13, textAlign: 'center' }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Pause (unblock mode only) */}
-          {ovIsUnblock && (
-            <div className="form-group">
-              <label
-                className="label"
-                style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
-              >
-                <input
-                  type="checkbox"
-                  checked={ovBreakEnabled}
-                  onChange={(e) => setOvBreakEnabled(e.target.checked)}
-                  style={{ cursor: 'pointer' }}
-                />
-                Pause déjeuner
-              </label>
-              {ovBreakEnabled && (
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
-                  <input
-                    className="input"
-                    type="time"
-                    value={ovBreakStart}
-                    onChange={(e) => setOvBreakStart(e.target.value)}
-                    required
-                    style={{ flex: 1, fontSize: 13, textAlign: 'center' }}
-                  />
-                  <span style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}>
-                    a
+                <span className="bb-jour-nom">{DAYS[i]}</span>
+                {j.is_working ? (
+                  <span className="bb-heures">
+                    <input className="input" type="time" value={j.start_time} onChange={(e) => majJour(i, 'start_time', e.target.value)} aria-label={`Début ${DAYS[i]}`} />
+                    <em>à</em>
+                    <input className="input" type="time" value={j.end_time} onChange={(e) => majJour(i, 'end_time', e.target.value)} aria-label={`Fin ${DAYS[i]}`} />
                   </span>
-                  <input
-                    className="input"
-                    type="time"
-                    value={ovBreakEnd}
-                    onChange={(e) => setOvBreakEnd(e.target.value)}
-                    required
-                    style={{ flex: 1, fontSize: 13, textAlign: 'center' }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+                ) : <span className="bb-repos">Repos</span>}
+              </li>
+            ))}
+          </ul>
 
-          {/* Reason */}
-          <div className="form-group">
-            <label className="label">Raison (optionnel)</label>
-            <input
-              className="input"
-              value={ovReason}
-              onChange={(e) => setOvReason(e.target.value)}
-              placeholder={
-                ovIsDayOff
-                  ? 'ex: Vacances, RDV medical...'
-                  : ovIsUnblock
-                    ? 'ex: Ouverture exceptionnelle...'
-                    : 'ex: Fermeture anticipee...'
-              }
-              style={{ fontSize: 13 }}
-            />
+          <h3 className="bb-titre-bloc">Prestations<span className="bb-compte">{choisies.size}/{actives.length}</span></h3>
+          <div className="bb-pastilles">
+            {actives.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={choisies.has(s.id) ? 'on' : ''}
+                aria-pressed={choisies.has(s.id)}
+                onClick={() => setChoisies((prev) => {
+                  const n = new Set(prev);
+                  if (n.has(s.id)) n.delete(s.id); else n.add(s.id);
+                  return n;
+                })}
+              >
+                {s.name}
+              </button>
+            ))}
           </div>
 
-          {/* Submit */}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={onToggleForm}
-              style={{ flex: 1 }}
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary btn-sm"
-              disabled={addingOverride}
-              style={{ flex: 1 }}
-            >
-              {addingOverride
-                ? '...'
-                : ovIsDayOff
-                  ? 'Ajouter le congé'
-                  : ovIsUnblock
-                    ? 'Débloquer ce jour'
-                    : 'Ajouter l\'exception'}
+          <div className="bb-actions-collees">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Annuler</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={!nom.trim() || createMutation.isPending}>
+              {createMutation.isPending ? 'Création…' : 'Créer le barbier'}
             </button>
           </div>
         </form>
-      )}
-    </>
-  );
-}
-
-// ============================================
-// Guest Days Modal — Manage cross-salon assignments
-// ============================================
-
-const SALON_OPTIONS = [
-  { id: 'grenoble', label: 'Grenoble' },
-  { id: 'meylan', label: 'Meylan' },
-];
-
-function GuestDaysModal({ barber, onClose }) {
-  const { data: rawGuestDays, isLoading: loading } = useBarberGuestDays(barber.id);
-  const addMutation = useAddBarberGuestDay();
-  const deleteMutation = useDeleteBarberGuestDay();
-
-  const guestDays = Array.isArray(rawGuestDays) ? rawGuestDays : [];
-  const [status, setStatus] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [gdDate, setGdDate] = useState('');
-  const [gdSalon, setGdSalon] = useState('');
-  const [gdStartTime, setGdStartTime] = useState('09:00');
-  const [gdEndTime, setGdEndTime] = useState('19:00');
-  const adding = addMutation.isPending;
-
-  const flashTimer = useRef(null);
-  const flash = useCallback((type, message) => {
-    setStatus({ type, message });
-    clearTimeout(flashTimer.current);
-    flashTimer.current = setTimeout(() => setStatus(null), 3000);
-  }, []);
-  useEffect(() => () => clearTimeout(flashTimer.current), []);
-
-  const destinations = SALON_OPTIONS.filter(s => s.id !== barber.salon_id);
-
-  async function handleAdd(e) {
-    e.preventDefault();
-    try {
-      await addMutation.mutateAsync({
-        id: barber.id,
-        data: {
-          date: gdDate,
-          host_salon_id: gdSalon || destinations[0]?.id,
-          start_time: gdStartTime,
-          end_time: gdEndTime,
-        },
-      });
-      setGdDate(''); setGdStartTime('09:00'); setGdEndTime('19:00');
-      setShowForm(false);
-      flash('success', 'Jour invite ajoute');
-    } catch (err) {
-      flash('error', err.message);
-    }
-  }
-
-  async function handleDelete(id) {
-    if (!window.confirm('Supprimer ce jour invite ?')) return;
-    try {
-      await deleteMutation.mutateAsync(id);
-      flash('success', 'Jour invite supprime');
-    } catch (err) {
-      flash('error', err.message);
-    }
-  }
-
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3 className="modal-title">Jours invite — {barber.name}</h3>
-          <button className="btn-ghost" onClick={onClose}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="modal-body">
-          <InlineStatus status={status} />
-
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5 }}>
-            Planifier des jours ou {barber.name} travaille dans un autre salon. Il sera automatiquement bloque ici ces jours-la.
-          </div>
-
-          {loading ? (
-            <div className="empty-state">Chargement...</div>
-          ) : guestDays.length === 0 && !showForm ? (
-            <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-              Aucun jour invite programme.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-              {guestDays.map((gd) => (
-                <div
-                  key={gd.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    fontSize: 13,
-                    padding: '10px 14px',
-                    background: 'rgba(59,130,246,0.04)',
-                    border: '1px solid rgba(59,130,246,0.12)',
-                    borderRadius: 8,
-                  }}
-                >
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontWeight: 600, marginBottom: 2 }}>
-                      {formatDateFr(gd.date)}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                      <span style={{
-                        display: 'inline-block', padding: '1px 8px', borderRadius: 10,
-                        fontSize: 11, fontWeight: 600, background: 'rgba(59,130,246,0.12)', color: '#3b82f6',
-                      }}>
-                        {gd.host_salon_id === 'grenoble' ? 'Grenoble' : 'Meylan'}
-                      </span>
-                      <span style={{ color: 'var(--text-secondary)' }}>
-                        {(gd.start_time || '09:00').slice(0, 5)} - {(gd.end_time || '19:00').slice(0, 5)}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    className="btn-ghost"
-                    style={{ color: 'var(--danger)', flexShrink: 0, padding: 6 }}
-                    onClick={() => handleDelete(gd.id)}
-                    title="Supprimer"
-                  >
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!showForm ? (
-            <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => { setGdSalon(destinations[0]?.id || ''); setShowForm(true); }}>
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              Ajouter un jour invite
-            </button>
-          ) : (
-            <form
-              onSubmit={handleAdd}
-              style={{ padding: 16, background: 'rgba(var(--overlay),0.02)', border: '1px solid var(--border)', borderRadius: 10 }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <label className="label" style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                  Nouveau jour invite
-                </label>
-                <button type="button" className="btn-ghost" style={{ padding: 4 }} onClick={() => setShowForm(false)}>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="form-group">
-                <label className="label">Salon destination</label>
-                <select className="input" value={gdSalon} onChange={(e) => setGdSalon(e.target.value)} required style={{ fontSize: 13 }}>
-                  {destinations.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="label">Date</label>
-                <input className="input" type="date" value={gdDate} onChange={(e) => setGdDate(e.target.value)} required style={{ fontSize: 13 }} />
-              </div>
-
-              <div className="form-group">
-                <label className="label">Horaires</label>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input className="input" type="time" value={gdStartTime} onChange={(e) => setGdStartTime(e.target.value)} required style={{ flex: 1, fontSize: 13, textAlign: 'center' }} />
-                  <span style={{ color: 'var(--text-muted)', fontSize: 12, flexShrink: 0 }}>a</span>
-                  <input className="input" type="time" value={gdEndTime} onChange={(e) => setGdEndTime(e.target.value)} required style={{ flex: 1, fontSize: 13, textAlign: 'center' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowForm(false)} style={{ flex: 1 }}>Annuler</button>
-                <button type="submit" className="btn btn-primary btn-sm" disabled={adding} style={{ flex: 1 }}>
-                  {adding ? '...' : 'Ajouter'}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-      </div>
+      </aside>
     </div>
   );
 }

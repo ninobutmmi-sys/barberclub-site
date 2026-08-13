@@ -2,7 +2,7 @@
 // React Query hooks — wraps api.js functions
 // ============================================
 
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import * as api from '../api';
 
 // ---------- Query Keys ----------
@@ -55,6 +55,15 @@ export function useBarbers(options) {
     queryKey: keys.barbers,
     queryFn: api.getBarbers,
     staleTime: 5 * 60_000,
+    ...options,
+  });
+}
+
+export function useAllSchedules(options) {
+  return useQuery({
+    queryKey: ['allSchedules'],
+    queryFn: api.getAllSchedules,
+    staleTime: 60_000,
     ...options,
   });
 }
@@ -150,7 +159,12 @@ export function useUpdateBarberSchedule() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, schedules }) => api.updateBarberSchedule(id, schedules),
-    onSuccess: (_, { id }) => qc.invalidateQueries({ queryKey: keys.barberSchedule(id) }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: keys.barberSchedule(id) });
+      // Les cartes de la page Barbers dessinent la semaine à partir de cette
+      // liste : sans ça, la carte garderait l'ancien horaire.
+      qc.invalidateQueries({ queryKey: ['allSchedules'] });
+    },
   });
 }
 
@@ -409,6 +423,27 @@ export function useBookingsHistory(params, options) {
     queryFn: () => api.getBookingsHistory(params),
     staleTime: 30_000,
     placeholderData: keepPreviousData,
+    ...options,
+  });
+}
+
+/**
+ * Historique chargé par tranches successives et concaténé.
+ *
+ * L'API plafonne à 200 lignes par requête. La page Faux plans calcule ses
+ * totaux, sa recherche et ses regroupements sur ce qu'elle a en mémoire :
+ * il lui faut donc tout ce que la requête ramène, pas la première page.
+ */
+export function useBookingsHistoryPages(params, options) {
+  return useInfiniteQuery({
+    queryKey: [...keys.bookingsHistory(params), 'pages'],
+    queryFn: ({ pageParam }) => api.getBookingsHistory({ ...params, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (derniere, pages) => {
+      const charges = pages.reduce((n, p) => n + (p.bookings?.length || 0), 0);
+      return charges > 0 && charges < (derniere.total || 0) ? charges : undefined;
+    },
+    staleTime: 30_000,
     ...options,
   });
 }

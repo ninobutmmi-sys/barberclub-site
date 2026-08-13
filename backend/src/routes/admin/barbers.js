@@ -68,6 +68,28 @@ router.get('/guest-assignments/list', async (req, res, next) => {
 });
 
 // ============================================
+// GET /api/admin/barbers/schedules/all — Semaine type de toute l'équipe
+// La page Barbers montre la semaine de chacun sur sa carte. Une requête par
+// barbier en ferait six ; celle-ci ramène les ~42 lignes d'un coup.
+// (À définir AVANT les routes /:id pour éviter la collision de paramètre.)
+// ============================================
+router.get('/schedules/all', async (req, res, next) => {
+  try {
+    const result = await db.query(
+      `SELECT s.barber_id, s.day_of_week, s.start_time, s.end_time, s.is_working
+       FROM schedules s
+       JOIN barbers b ON b.id = s.barber_id
+       WHERE s.salon_id = $1 AND b.deleted_at IS NULL
+       ORDER BY s.barber_id, s.day_of_week`,
+      [req.user.salon_id]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
 // POST /api/admin/barbers — Create a new barber
 // ============================================
 router.post('/',
@@ -261,12 +283,17 @@ router.delete('/:id',
 // PUT /api/admin/barbers/:id — Update a barber
 // ============================================
 router.put('/:id',
+  // La photo arrive en data-URI comme à la création : la limite globale de
+  // 100 ko rejetterait n'importe quelle photo prise au téléphone.
+  express.json({ limit: '5mb' }),
   [
     param('id').matches(uuidRegex),
     body('name').optional().trim().notEmpty().isLength({ max: 100 }),
     body('role').optional().trim().isLength({ max: 200 }),
-    body('photo_url').optional().trim(),
+    body('photo_url').optional({ nullable: true }).trim().isLength({ max: 3000000 }),
+    body('email').optional().trim().isEmail().withMessage('Email invalide'),
     body('is_active').optional().isBoolean(),
+    body('sort_order').optional().isInt({ min: 0, max: 999 }).toInt(),
     body('contract_start').optional({ nullable: true }).matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de début invalide'),
     body('contract_end').optional({ nullable: true }).matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de fin invalide'),
   ],
@@ -274,7 +301,20 @@ router.put('/:id',
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { name, role, photo_url, is_active, contract_start, contract_end } = req.body;
+      const { name, role, photo_url, email, is_active, sort_order, contract_start, contract_end } = req.body;
+
+      if (email !== undefined) {
+        // L'adresse sert d'identifiant de connexion. Changer la sienne depuis
+        // cet écran, c'est se fermer la porte au prochain login.
+        if (id === req.user.id) {
+          throw ApiError.badRequest("Impossible de changer l'adresse du compte connecté");
+        }
+        const doublon = await db.query(
+          'SELECT id FROM barbers WHERE email = $1 AND id != $2 AND deleted_at IS NULL',
+          [email, id]
+        );
+        if (doublon.rows.length > 0) throw ApiError.conflict('Un barber utilise déjà cette adresse');
+      }
 
       const fields = [];
       const values = [];
@@ -282,8 +322,10 @@ router.put('/:id',
 
       if (name !== undefined) { fields.push(`name = $${paramIndex++}`); values.push(name); }
       if (role !== undefined) { fields.push(`role = $${paramIndex++}`); values.push(role); }
-      if (photo_url !== undefined) { fields.push(`photo_url = $${paramIndex++}`); values.push(photo_url); }
+      if (photo_url !== undefined) { fields.push(`photo_url = $${paramIndex++}`); values.push(photo_url || null); }
+      if (email !== undefined) { fields.push(`email = $${paramIndex++}`); values.push(email); }
       if (is_active !== undefined) { fields.push(`is_active = $${paramIndex++}`); values.push(is_active); }
+      if (sort_order !== undefined) { fields.push(`sort_order = $${paramIndex++}`); values.push(sort_order); }
       if (contract_start !== undefined) { fields.push(`contract_start = $${paramIndex++}`); values.push(contract_start || null); }
       if (contract_end !== undefined) { fields.push(`contract_end = $${paramIndex++}`); values.push(contract_end || null); }
 

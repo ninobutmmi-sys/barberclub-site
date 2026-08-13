@@ -19,10 +19,49 @@ function formatDate(dateStr) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
+/**
+ * Le SMS passerelle, recopié du backend (routes/admin/waitlist.js) pour
+ * montrer ce qui partira vraiment : sans accents, tronqué à 155 caractères
+ * pour tenir en un crédit. À garder synchronisé.
+ */
 function buildSmsPreview(entry) {
   const dateStr = new Date(entry.preferred_date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
   const firstName = (entry.client_name || '').split(/\s+/)[0];
   return `BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateStr} avec ${entry.barber_name} pour ${entry.service_name}. Reservez vite au salon ou appelez-nous.`;
+}
+
+function heureFr(t) {
+  if (!t) return null;
+  const [h, m] = t.slice(0, 5).split(':');
+  return m === '00' ? `${parseInt(h, 10)}h` : `${parseInt(h, 10)}h${m}`;
+}
+
+/**
+ * Le message tapé dans Messages. Rien à voir avec le SMS passerelle : pas de
+ * crédit à économiser ni d'alphabet GSM, donc les accents et surtout l'heure
+ * du créneau — la seule information qui décide le client à répondre oui.
+ */
+function messageTelephone(entry) {
+  const prenom = (entry.client_name || '').split(/\s+/)[0];
+  const jour = new Date(entry.preferred_date + 'T00:00:00')
+    .toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const debut = heureFr(entry.preferred_time_start);
+  const fin = heureFr(entry.preferred_time_end);
+  // Une demande sans plage horaire vaut pour la journée : on n'invente pas
+  // d'heure, on n'en annonce simplement aucune.
+  const creneau = debut ? (fin ? ` entre ${debut} et ${fin}` : ` à partir de ${debut}`) : '';
+  return `Bonjour ${prenom}, c'est BarberClub. Une place vient de se libérer ${jour}${creneau} avec ${entry.barber_name} pour ${entry.service_name}. Ça vous intéresse ? Répondez-moi et je vous la bloque.`;
+}
+
+/**
+ * Ouvre l'app Messages avec le texte déjà écrit.
+ * Le séparateur du corps n'est pas le même partout : « & » chez Apple,
+ * « ? » chez Android. Le mauvais ouvre l'app avec un message vide.
+ */
+function lienMessages(tel, texte) {
+  const numero = (tel || '').replace(/[^\d+]/g, '');
+  const apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+  return `sms:${numero}${apple ? '&' : '?'}body=${encodeURIComponent(texte)}`;
 }
 
 export default function Waitlist() {
@@ -30,6 +69,9 @@ export default function Waitlist() {
   const [filter, setFilter] = useState('waiting');
   const [bookingEntry, setBookingEntry] = useState(null);
   const [smsPreview, setSmsPreview] = useState(null); // entry to preview SMS for
+  // Messages d'abord : c'est gratuit, le client peut répondre, et le texte
+  // est modifiable avant l'envoi.
+  const [canal, setCanal] = useState('messages');
   const [toast, setToast] = useState(null);
   const [jourFiltre, setJourFiltre] = useState(null);
 
@@ -64,6 +106,7 @@ export default function Waitlist() {
   }
 
   function handleNotify(entry) {
+    setCanal('messages');
     setSmsPreview(entry);
   }
 
@@ -74,6 +117,25 @@ export default function Waitlist() {
       showToast(`SMS envoyé à ${smsPreview.client_name}`);
     } catch (err) { showToast(err.message, 'error'); }
     setSmsPreview(null);
+  }
+
+  function ouvrirMessages() {
+    if (!smsPreview) return;
+    const entry = smsPreview;
+    const prenom = (entry.client_name || '').split(/\s+/)[0];
+    // Passer par window.location plutôt qu'un <a> : la fenêtre se referme dans
+    // la foulée, et un lien démonté n'ouvre plus rien.
+    window.location.href = lienMessages(entry.client_phone, messageTelephone(entry));
+    setSmsPreview(null);
+    // L'app Messages ne dit pas si le message est parti. Sans cette trace,
+    // rien ne distinguerait la personne prévenue de celle qu'on a oubliée —
+    // et la pastille reste cliquable pour relancer.
+    if (entry.status === 'waiting') {
+      updateMutation.mutateAsync({ id: entry.id, data: { status: 'notified' } }).catch(() => {});
+      showToast(`${prenom} — message ouvert, marqué comme prévenu`);
+    } else {
+      showToast(`${prenom} — message ouvert`);
+    }
   }
 
   function handleBooked(entry) {
@@ -254,41 +316,73 @@ export default function Waitlist() {
         />
       )}
 
-      {/* SMS Preview Modal */}
+      {/* Prévenir — deux canaux, deux textes différents, chacun montré tel quel */}
       {smsPreview && (
         <div className="modal-backdrop" onClick={() => setSmsPreview(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Prévenir ${smsPreview.client_name}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 440 }}
+          >
             <div className="modal-header">
-              <h3 className="modal-title">Aperçu SMS</h3>
-              <button className="btn-ghost" onClick={() => setSmsPreview(null)}>
+              <h3 className="modal-title">Prévenir {(smsPreview.client_name || '').split(/\s+/)[0]}</h3>
+              <button className="btn-ghost" onClick={() => setSmsPreview(null)} aria-label="Fermer">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
             </div>
             <div className="modal-body">
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
-                Destinataire : <strong style={{ color: 'var(--text)' }}>{smsPreview.client_name}</strong> — {smsPreview.client_phone}
+              <p className="wl-dest">
+                Pour <strong>{smsPreview.client_name}</strong> — {formatPhoneWithFlag(smsPreview.client_phone)}
+              </p>
+
+              <div className="wl-canaux" role="group" aria-label="Choisir le canal">
+                <button
+                  type="button"
+                  className={canal === 'messages' ? 'on' : ''}
+                  onClick={() => setCanal('messages')}
+                  aria-pressed={canal === 'messages'}
+                >
+                  Messages
+                  <em>gratuit, depuis votre téléphone</em>
+                </button>
+                <button
+                  type="button"
+                  className={canal === 'sms' ? 'on' : ''}
+                  onClick={() => setCanal('sms')}
+                  aria-pressed={canal === 'sms'}
+                >
+                  SMS
+                  <em>payant, envoyé par le salon</em>
+                </button>
               </div>
-              <div style={{
-                background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12,
-                padding: 16, fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)',
-                fontFamily: 'monospace', whiteSpace: 'pre-wrap',
-              }}>
-                {buildSmsPreview(smsPreview)}
+
+              <div className="wl-apercu">
+                {canal === 'messages' ? messageTelephone(smsPreview) : buildSmsPreview(smsPreview)}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, textAlign: 'right' }}>
-                {buildSmsPreview(smsPreview).length} caractères — {buildSmsPreview(smsPreview).length <= 160 ? '1 SMS' : '2 SMS'}
-              </div>
+
+              {canal === 'messages' ? (
+                <p className="wl-compte">Le texte s’ouvre dans Messages : vous pouvez le modifier avant d’envoyer.</p>
+              ) : (
+                <p className="wl-compte">
+                  {buildSmsPreview(smsPreview).length} caractères —{' '}
+                  {buildSmsPreview(smsPreview).length <= 160 ? '1 SMS' : '2 SMS'}. Part sans accents.
+                </p>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary btn-sm" onClick={() => setSmsPreview(null)}>Annuler</button>
-              <button
-                className="btn btn-sm"
-                style={{ background: '#3b82f6', color: '#fff', border: 'none' }}
-                onClick={confirmSendSms}
-                disabled={notifySms.isPending}
-              >
-                {notifySms.isPending ? 'Envoi...' : 'Envoyer le SMS'}
-              </button>
+              {canal === 'messages' ? (
+                <button className="btn btn-primary btn-sm" onClick={ouvrirMessages} disabled={!smsPreview.client_phone}>
+                  Écrire dans Messages
+                </button>
+              ) : (
+                <button className="btn btn-primary btn-sm" onClick={confirmSendSms} disabled={notifySms.isPending}>
+                  {notifySms.isPending ? 'Envoi…' : 'Envoyer le SMS'}
+                </button>
+              )}
             </div>
           </div>
         </div>

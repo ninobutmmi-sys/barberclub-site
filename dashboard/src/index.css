@@ -3298,319 +3298,274 @@ select.input {
   color: var(--qa-color);
 }
 
-/* ============================================ */
-/* FAUX PLANS PAGE                              */
-/* ============================================ */
+/* ════════════════════════════════════════════════════════════════════
+   FAUX PLANS — L'ARDOISE  (.fx-*)
+   Deux cents rendez-vous non honorés sur cinq mois, trente-sept relancés.
+   L'ancienne page les alignait tous pareil, cinquante par page. Ici la
+   couleur ne dit qu'une chose — l'état de la relance — et la fraîcheur
+   ordonne la liste, parce qu'un SMS « facturé au prochain passage » sur un
+   rendez-vous de mars ne veut plus rien dire.
+════════════════════════════════════════════════════════════════════ */
 
-.fp-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
+.fx-header { align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.fx-sous { margin-top: 4px; max-width: 52ch; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+
+/* Période : la fenêtre glissante remplace la pagination. Tout ce qui est
+   compté à l'écran vient de ce que cette fenêtre a chargé. */
+.fx-fenetres { display: flex; gap: 5px; padding: 3px; border-radius: var(--r-pill); background: rgba(var(--overlay), 0.05); border: 1px solid var(--border); }
+.fx-fenetre {
+  min-height: 32px; padding: 0 13px; border: none; border-radius: var(--r-pill); cursor: pointer;
+  background: transparent; color: var(--text-secondary);
+  font-family: var(--font); font-size: 12px; font-weight: 600; white-space: nowrap;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.fx-fenetre:hover { color: var(--text); }
+.fx-fenetre.on { background: var(--text); color: var(--bg); }
+
+/* ── L'ardoise ──
+   Somme due, part jamais relancée, et le filtre : un seul objet. */
+.fx-ardoise {
+  padding: 18px 20px 16px; margin-bottom: 16px; border-radius: var(--r-lg);
+  background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--e-1), var(--hair);
+}
+.fx-ardoise-haut { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 13px; }
+.fx-ardoise-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); }
+.fx-somme {
+  margin-top: 4px; font-family: var(--font-display); font-size: clamp(26px, 5.5vw, 36px);
+  font-weight: 800; line-height: 1.02; letter-spacing: -0.01em; color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.fx-ardoise-compte { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.fx-ardoise-compte span { color: var(--text-muted); }
+
+/* La jauge : le fond est la part relancée, le remplissage ce qui attend
+   encore. Sur les données réelles elle est presque entièrement pleine —
+   c'est exactement le constat que la page doit faire. */
+.fx-jauge {
+  height: 8px; border-radius: var(--r-pill); overflow: hidden;
+  background: rgba(245, 158, 11, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(var(--overlay), 0.07);
+}
+.fx-jauge-du { display: block; height: 100%; background: var(--ink-danger); transition: width var(--dur-2) var(--ease); }
+
+.fx-legende { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.fx-seg {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 34px; padding: 0 12px; border-radius: var(--r-pill); cursor: pointer;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-secondary); font-family: var(--font); font-size: 12px; font-weight: 600;
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.fx-seg:hover { background: rgba(var(--overlay), 0.06); color: var(--text); }
+.fx-seg.on { background: rgba(var(--overlay), 0.11); border-color: rgba(var(--overlay), 0.3); color: var(--text); }
+.fx-seg i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.fx-seg.du i { background: var(--ink-danger); }
+.fx-seg.relance i { background: var(--ink-warn); }
+.fx-seg b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.fx-seg em { padding: 1px 6px; border-radius: var(--r-pill); background: rgba(var(--overlay), 0.12); font-size: 10.5px; font-weight: 800; font-style: normal; }
+
+/* ── Recherche et barbier ── */
+.fx-outils { display: flex; gap: 9px; margin-bottom: 4px; }
+.fx-search { position: relative; flex: 1; min-width: 0; }
+.fx-search .input { padding-left: 36px; padding-right: 34px; }
+.fx-search .input::-webkit-search-cancel-button { appearance: none; }
+.fx-search-ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); display: flex; color: var(--text-muted); pointer-events: none; }
+.fx-search-clear {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+  padding: 0; border: none; border-radius: var(--r-xs); cursor: pointer;
+  background: none; color: var(--text-muted);
+}
+.fx-search-clear:hover { background: rgba(var(--overlay), 0.08); color: var(--text); }
+.fx-select { width: 190px; flex-shrink: 0; }
+
+.fx-alerte {
+  padding: 12px 14px; margin-bottom: 14px; border-radius: var(--r-md);
+  background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.22);
+  color: var(--ink-danger); font-size: 12.5px;
+}
+.fx-tronque { margin-top: 12px; font-size: 11.5px; color: var(--text-muted); }
+.fx-lien-btn {
+  padding: 0; border: none; background: none; cursor: pointer;
+  color: var(--text); font-family: var(--font); font-size: 11.5px; font-weight: 600;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.fx-lien-btn:hover { color: var(--text-secondary); }
+
+/* ── Cohortes de fraîcheur ── */
+.fx-cohorte-titre {
+  display: flex; align-items: center; gap: 9px; margin: 22px 0 9px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);
+}
+.fx-cohorte-titre span { padding: 1px 7px; border-radius: var(--r-pill); background: rgba(var(--overlay), 0.09); font-size: 10px; font-weight: 800; letter-spacing: 0; }
+.fx-cohorte-titre::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── Une ligne d'ardoise ──
+   Même balisage partout : c'est la grille qui se replie au téléphone. */
+.fx-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fx-row {
+  position: relative; overflow: hidden;
+  display: grid; align-items: center; gap: 3px 20px;
+  /* La colonne du nom est bornée : laissée en fraction, elle s'étirait sur
+     grand écran et ouvrait un trou entre le client et sa prestation. */
+  grid-template-columns: 136px minmax(170px, 320px) minmax(140px, 1fr) 96px auto;
+  grid-template-areas: "quand qui quoi somme actions";
+  padding: 12px 16px 12px 17px; border-radius: var(--r-lg);
+  background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--e-1), var(--hair);
+  transition: border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+}
+.fx-row:hover { border-color: rgba(var(--overlay), 0.16); }
+
+/* Le liseré est le seul endroit où la couleur porte du sens : rouge tant que
+   personne n'a été relancé, ambre une fois le SMS parti. */
+.fx-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink-danger); }
+.fx-row.relance::before { background: var(--ink-warn); }
+.fx-row.ancien::before { opacity: 0.4; }
+.fx-row.sortie::before { background: var(--ink-good); opacity: 1; }
+
+.fx-quand { grid-area: quand; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.fx-jour { font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.fx-heure { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.fx-qui { grid-area: qui; display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 8px; min-width: 0; }
+.fx-nom {
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 14px; font-weight: 700; color: var(--text); text-decoration: none; cursor: pointer;
+}
+.fx-nom:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* Récidive : à partir du troisième lapin, ce n'est plus un oubli. */
+.fx-recidive {
+  padding: 1px 6px; border-radius: var(--r-pill); flex-shrink: 0;
+  background: rgba(var(--overlay), 0.09); color: var(--text-secondary);
+  font-size: 10px; font-weight: 800; letter-spacing: 0.02em;
+}
+.fx-recidive.fort { background: rgba(239, 68, 68, 0.13); color: var(--ink-danger); }
+.fx-tel { flex-basis: 100%; font-size: 11.5px; color: var(--text-muted); text-decoration: none; font-variant-numeric: tabular-nums; }
+.fx-tel:hover { color: var(--text-secondary); }
+
+.fx-quoi { grid-area: quoi; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.fx-presta { font-size: 12.5px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fx-barbier { font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Le montant reste neutre : il est déjà lisible, et cent chiffres rouges ne
+   hiérarchisent plus rien. */
+.fx-montant {
+  grid-area: somme; justify-self: end;
+  font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--text);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 
-.fp-stat-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.fx-actions { grid-area: actions; display: flex; align-items: center; gap: 6px; }
+.fx-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 34px; padding: 0 12px; border-radius: var(--r-sm); cursor: pointer;
+  border: 1px solid var(--border); background: rgba(var(--overlay), 0.05); color: var(--text-secondary);
+  font-family: var(--font); font-size: 12px; font-weight: 600; white-space: nowrap;
+  transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.fx-btn.sms { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #60a5fa; }
+.fx-btn.sms:hover:not(:disabled) { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); }
+.fx-btn.regle { background: rgba(34, 197, 94, 0.09); border-color: rgba(34, 197, 94, 0.26); color: var(--ink-good); }
+.fx-btn.regle:hover:not(:disabled) { background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.45); }
+.fx-btn:disabled { cursor: default; opacity: 0.45; }
+/* Déjà relancé : le bouton devient l'état, dans l'ambre du liseré. */
+.fx-btn.sms.fait:disabled {
+  opacity: 1; cursor: default;
+  background: rgba(245, 158, 11, 0.09); border-color: rgba(245, 158, 11, 0.26); color: var(--ink-warn);
+}
+[data-theme="light"] .fx-btn.sms { color: #1d4ed8; }
+.fx-spin { width: 14px; height: 14px; border: 2px solid rgba(34, 197, 94, 0.25); border-top-color: var(--ink-good); border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+.fx-fenetre:focus-visible, .fx-seg:focus-visible, .fx-btn:focus-visible,
+.fx-nom:focus-visible, .fx-search-clear:focus-visible {
+  outline: 2px solid var(--ring); outline-offset: 2px;
 }
 
-.fp-stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+/* ── Régularisation ──
+   Le seul moment animé de la page : le liseré passe au vert, le montant se
+   barre, la ligne sort par la droite. */
+@keyframes fxSortie { to { opacity: 0; transform: translateX(26px); } }
+.fx-row.sortie {
+  background: color-mix(in srgb, var(--ink-good) 8%, var(--bg-card));
+  animation: fxSortie var(--dur-2) var(--ease) 0.2s forwards;
 }
+.fx-row.sortie .fx-montant { color: var(--ink-good); text-decoration: line-through; }
+.fx-row.sortie .fx-actions { visibility: hidden; }
 
-.fp-stat-text {
-  min-width: 0;
+/* ── Chargement ── */
+.fx-squelette { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; }
+.fx-skel-ligne {
+  height: 64px; border-radius: var(--r-lg); border: 1px solid var(--border);
+  background: linear-gradient(90deg, rgba(var(--overlay), 0.02), rgba(var(--overlay), 0.07), rgba(var(--overlay), 0.02));
+  background-size: 200% 100%; animation: fxGlisse 1.4s linear infinite;
 }
+@keyframes fxGlisse { to { background-position: -200% 0; } }
 
-.fp-stat-value {
-  font-size: 22px;
-  font-weight: 800;
-  font-family: var(--font-display);
-  color: var(--text);
-  line-height: 1.2;
+/* ── Ardoise vide ── */
+.fx-vide { margin-top: 22px; padding: 44px 20px; color: var(--text-muted); }
+.fx-vide svg { color: var(--ink-good); }
+.fx-vide-titre { font-size: 14.5px; font-weight: 700; color: var(--text); }
+
+/* ── Aperçu du SMS ── */
+.fx-modal-dest { margin-bottom: 10px; font-size: 12px; color: var(--text-muted); }
+.fx-modal-dest strong { color: var(--text); }
+.fx-modal-sms {
+  padding: 15px; border-radius: var(--r-md); background: var(--bg); border: 1px solid var(--border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.65;
+  color: var(--text-secondary); white-space: pre-wrap;
 }
+.fx-modal-compte { margin-top: 8px; text-align: right; font-size: 11px; color: var(--text-muted); }
 
-.fp-stat-danger {
-  color: #ef4444;
-}
+/* ── Au téléphone ──
+   Trois lignes : qui doit quoi, quand et pour quelle prestation, puis les
+   deux actions à pleine largeur. */
+@media (max-width: 900px) {
+  .fx-header { flex-direction: column; }
+  .fx-fenetres { width: 100%; }
+  .fx-fenetre { flex: 1; min-height: 36px; }
+  .fx-outils { flex-direction: column; }
+  .fx-select { width: 100%; }
 
-.fp-stat-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.fp-filters {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.fp-search-wrap {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-}
-
-.fp-search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  pointer-events: none;
-}
-
-.fp-search-input {
-  padding-left: 36px !important;
-  padding-right: 32px !important;
-  width: 100%;
-}
-
-.fp-search-clear {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  border-radius: 4px;
-}
-
-.fp-search-clear:hover {
-  color: var(--text);
-}
-
-/* Mobile cards */
-.fp-card-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.fp-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  border-left: 3px solid #ef4444;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.fp-card-fade {
-  opacity: 0;
-  transform: translateX(40px);
-}
-
-.fp-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-}
-
-.fp-card-client {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.fp-card-name {
-  font-weight: 700;
-  font-size: 15px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.fp-card-meta {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.fp-card-price {
-  font-weight: 800;
-  font-size: 15px;
-  color: #ef4444;
-  font-family: var(--font-display);
-  flex-shrink: 0;
-  margin-left: 12px;
-}
-
-.fp-card-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.fp-card-service {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.fp-card-phone {
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  flex-shrink: 0;
-}
-
-.fp-card-phone:hover {
-  color: var(--text);
-}
-
-/* Pay buttons */
-.fp-pay-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px;
-  background: rgba(34,197,94,0.1);
-  color: #22c55e;
-  border: 1px solid rgba(34,197,94,0.2);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.fp-pay-btn:hover:not(:disabled) {
-  background: rgba(34,197,94,0.18);
-  border-color: rgba(34,197,94,0.35);
-}
-
-.fp-pay-btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-.fp-pay-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.fp-pay-btn-sm {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: rgba(34,197,94,0.08);
-  color: #22c55e;
-  border: 1px solid rgba(34,197,94,0.15);
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: var(--font);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.fp-pay-btn-sm:hover:not(:disabled) {
-  background: rgba(34,197,94,0.18);
-  border-color: rgba(34,197,94,0.3);
-}
-
-.fp-pay-btn-sm:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.fp-pay-btn-sm:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Table row fade out */
-.fp-row-fade td {
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-/* Spinner */
-.fp-spinner {
-  width: 28px;
-  height: 28px;
-  border: 2.5px solid var(--border);
-  border-top-color: var(--text-secondary);
-  border-radius: 50%;
-  animation: fpSpin 0.7s linear infinite;
-}
-
-.fp-spinner-sm {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(34,197,94,0.2);
-  border-top-color: #22c55e;
-  border-radius: 50%;
-  animation: fpSpin 0.7s linear infinite;
-}
-
-@keyframes fpSpin {
-  to { transform: rotate(360deg); }
-}
-
-@media (max-width: 1024px) {
-  .fp-stats {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+  .fx-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "qui somme"
+      "quand quoi"
+      "actions actions";
+    gap: 8px 12px; padding: 13px 14px 13px 15px;
   }
+  .fx-montant { align-self: start; font-size: 15px; }
+  .fx-quoi { align-items: flex-end; text-align: right; }
+  .fx-actions { margin-top: 2px; }
+  .fx-btn { flex: 1; min-height: 42px; font-size: 12.5px; }
+}
 
-  .fp-stat-card {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 12px 8px;
-    gap: 8px;
+/* Entre 900 et 1160px la barre latérale de 240px est encore là : il ne reste
+   que ~720px de contenu, soit une centaine de pixels de moins que ce que les
+   cinq colonnes réclament, et les boutons passaient sous le bord coupé de la
+   carte. La date descend alors sous le nom, ce qui rend une colonne. */
+@media (min-width: 901px) and (max-width: 1160px) {
+  .fx-row {
+    grid-template-columns: minmax(150px, 1fr) minmax(120px, 1fr) 92px auto;
+    grid-template-areas:
+      "qui quoi somme actions"
+      "quand quoi somme actions";
+    gap: 2px 16px;
   }
+  .fx-quand { align-self: start; }
+}
 
-  .fp-stat-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-  }
+/* Sur tablette la carte est déjà empilée, mais deux boutons de 350px de large
+   ne ressemblent plus à des boutons. */
+@media (min-width: 600px) and (max-width: 900px) {
+  .fx-actions { justify-content: flex-end; }
+  .fx-btn { flex: 0 0 auto; min-width: 124px; }
+}
 
-  .fp-stat-icon svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .fp-stat-value {
-    font-size: 18px;
-  }
-
-  .fp-stat-label {
-    font-size: 10px;
-  }
-
-  .fp-filters {
-    flex-direction: column;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .fx-row.sortie { animation: none; opacity: 0.4; }
+  .fx-skel-ligne { animation: none; }
+  .fx-jauge-du, .fx-row, .fx-btn, .fx-seg, .fx-fenetre { transition: none; }
 }
 
 /* ---- PRINT (PDF export) ---- */
@@ -4814,6 +4769,31 @@ img { max-width: 100%; }
 }
 .wl-menu button:hover { background: rgba(239, 68, 68, 0.1); }
 
+/* ── Prévenir : deux canaux, deux textes ──
+   Le message tapé dans l'app Messages n'est pas le SMS de la passerelle : le
+   second est tronqué et sans accents. Montrer l'un en envoyant l'autre serait
+   un mensonge, donc le canal se choisit et l'aperçu suit. */
+.wl-dest { margin-bottom: 12px; font-size: 12.5px; color: var(--text-muted); }
+.wl-dest strong { color: var(--text); }
+.wl-canaux { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 13px; }
+.wl-canaux button {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  padding: 10px 12px; border-radius: var(--r-sm); cursor: pointer;
+  background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
+  font-family: var(--font); font-size: 12.5px; font-weight: 700; text-align: left;
+  transition: border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.wl-canaux button:hover { border-color: var(--border-focus); color: var(--text); }
+.wl-canaux button.on { background: var(--bg-card); border-color: rgba(var(--overlay), 0.35); color: var(--text); }
+.wl-canaux button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.wl-canaux em { font-style: normal; font-size: 10.5px; font-weight: 500; line-height: 1.35; color: var(--text-muted); }
+.wl-apercu {
+  padding: 14px; border-radius: var(--r-md);
+  background: var(--bg); border: 1px solid var(--border);
+  font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); white-space: pre-wrap;
+}
+.wl-compte { margin-top: 8px; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
+
 /* Au téléphone la carte s'empile : nom, pastilles, actions. */
 @media (max-width: 980px) {
   .wl-card { grid-template-columns: minmax(0, 1fr) auto; }
@@ -4821,4 +4801,367 @@ img { max-width: 100%; }
   .wl-actions { grid-column: 2; grid-row: 1; align-self: start; }
   .wl-days { flex-direction: column; align-items: stretch; gap: 9px; }
   .wl-days-scroll { padding-bottom: 4px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ÉQUIPE  (.bb-*)
+   L'écran d'avant était un lanceur : quatre boutons par personne, et une
+   carte qui ne disait que le nom. Ici la carte montre la semaine — c'est la
+   seule chose qui distingue une fiche de barbier d'un carnet d'adresses — et
+   tout ce qui se modifie tient dans un seul panneau à onglets.
+════════════════════════════════════════════════════════════════════ */
+
+.bb-header { align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.bb-sous { margin-top: 4px; font-size: 12.5px; color: var(--text-secondary); }
+
+.bb-grille {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 12px;
+}
+
+.bb-groupe {
+  display: flex; align-items: center; gap: 9px; margin: 26px 0 10px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);
+}
+.bb-groupe span { padding: 1px 7px; border-radius: var(--r-pill); background: rgba(var(--overlay), 0.09); letter-spacing: 0; }
+.bb-groupe::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── La carte ── */
+.bb-carte {
+  display: flex; flex-direction: column; gap: 11px;
+  padding: 15px 16px 13px; border-radius: var(--r-lg);
+  background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--e-1), var(--hair);
+  transition: border-color var(--dur-1) var(--ease);
+}
+.bb-carte:hover { border-color: rgba(var(--overlay), 0.17); }
+/* Désactivé : la carte se retire sans devenir illisible. L'ancienne version
+   passait toute la carte à 45 % d'opacité, interrupteur compris. */
+.bb-carte.off { background: transparent; border-style: dashed; }
+.bb-carte.off .bb-photo, .bb-carte.off .bb-semainier { opacity: 0.55; }
+
+.bb-carte-haut { display: flex; align-items: center; gap: 11px; }
+.bb-photo {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; object-fit: cover;
+  border: 1px solid var(--border);
+}
+.bb-photo.sm { width: 34px; height: 34px; }
+.bb-photo.lg { width: 76px; height: 76px; }
+.bb-photo-vide {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(var(--overlay), 0.07); color: var(--text-secondary);
+  font-family: var(--font-display); font-size: 17px; font-weight: 800;
+}
+.bb-photo.lg.bb-photo-vide { font-size: 28px; }
+
+.bb-ident { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.bb-nom {
+  max-width: 100%; padding: 0; border: none; background: none; cursor: pointer; text-align: left;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-display); font-size: 14px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--text);
+}
+.bb-nom:hover { text-decoration: underline; text-underline-offset: 3px; }
+.bb-role { font-size: 11.5px; color: var(--text-muted); }
+
+.bb-etiquettes:empty { display: none; }
+.bb-etiquettes { display: flex; flex-wrap: wrap; gap: 5px; margin-top: -4px; }
+.bb-tag {
+  padding: 2px 8px; border-radius: var(--r-pill);
+  background: rgba(var(--overlay), 0.08); color: var(--text-secondary);
+  font-size: 10.5px; font-weight: 700; white-space: nowrap;
+}
+.bb-tag.invite { background: rgba(59, 130, 246, 0.13); color: #60a5fa; }
+.bb-tag.cdd { background: rgba(245, 158, 11, 0.13); color: var(--ink-warn); }
+[data-theme="light"] .bb-tag.invite { color: #1d4ed8; }
+
+/* ── Le semainier ──
+   Sept colonnes de 8h à 20h. La barre couvre l'amplitude travaillée : on lit
+   sans ouvrir quoi que ce soit qu'un tel commence à 13h le mercredi. */
+.bb-semainier { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.bb-semainier-vide { height: 62px; }
+.bb-jour { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; }
+.bb-piste {
+  position: relative; display: block; width: 100%; max-width: 26px; height: 46px;
+  border-radius: var(--r-xs); background: rgba(var(--overlay), 0.04);
+  box-shadow: inset 0 0 0 1px rgba(var(--overlay), 0.05);
+}
+.bb-piste i {
+  position: absolute; left: 0; right: 0; display: block;
+  border-radius: var(--r-xs); background: rgba(var(--overlay), 0.62);
+}
+.bb-jour.repos .bb-piste { background: repeating-linear-gradient(135deg, transparent 0 3px, rgba(var(--overlay), 0.07) 3px 6px); }
+.bb-jour-lettre { font-size: 10px; font-weight: 700; color: var(--text-muted); }
+.bb-jour.repos .bb-jour-lettre { opacity: 0.5; }
+/* Le chiffre n'apparaît que sur le jour qui sort de l'ordinaire. */
+.bb-jour-ecart { font-size: 9.5px; font-weight: 700; color: var(--ink-warn); font-variant-numeric: tabular-nums; }
+
+.bb-resume { font-size: 11.5px; color: var(--text-muted); }
+.bb-resume strong { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+.bb-raccourcis { margin-top: auto; display: flex; flex-wrap: wrap; gap: 4px 14px; padding-top: 10px; border-top: 1px solid var(--border); }
+.bb-raccourcis button {
+  padding: 4px 0; border: none; background: none; cursor: pointer;
+  color: var(--text-secondary); font-family: var(--font); font-size: 12px; font-weight: 600;
+}
+.bb-raccourcis button:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+
+.bb-ajout {
+  width: 100%; height: 100%; min-height: 180px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 20px; border-radius: var(--r-lg); cursor: pointer;
+  background: transparent; border: 1px dashed var(--border); color: var(--text-muted);
+  font-family: var(--font); font-size: 12.5px; font-weight: 600;
+  transition: border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.bb-ajout:hover { border-color: var(--border-focus); color: var(--text); }
+.bb-ajout-rond {
+  width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(var(--overlay), 0.07);
+}
+
+.bb-skel {
+  height: 194px; border-radius: var(--r-lg); border: 1px solid var(--border);
+  background: linear-gradient(90deg, rgba(var(--overlay), 0.02), rgba(var(--overlay), 0.07), rgba(var(--overlay), 0.02));
+  background-size: 200% 100%; animation: bbGlisse 1.4s linear infinite;
+}
+@keyframes bbGlisse { to { background-position: -200% 0; } }
+
+/* ── La fiche ──
+   Un panneau latéral sur grand écran, plein écran au téléphone. */
+.bb-fiche-fond {
+  position: fixed; inset: 0; z-index: 120;
+  background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px);
+  display: flex; justify-content: flex-end;
+  animation: bbFond var(--dur-1) var(--ease);
+}
+@keyframes bbFond { from { opacity: 0; } }
+.bb-fiche {
+  display: flex; flex-direction: column; width: min(560px, 100%); height: 100%;
+  background: var(--bg); border-left: 1px solid var(--border); box-shadow: var(--e-3);
+  animation: bbEntre var(--dur-2) var(--ease);
+}
+@keyframes bbEntre { from { transform: translateX(26px); opacity: 0; } }
+
+.bb-fiche-haut {
+  display: flex; align-items: center; gap: 11px; flex-shrink: 0;
+  padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--bg-card);
+}
+.bb-fiche-ident { min-width: 0; flex: 1; }
+.bb-fiche-ident h2 {
+  font-family: var(--font-display); font-size: 15px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.bb-fiche-ident p { margin-top: 2px; font-size: 11.5px; color: var(--text-muted); }
+.bb-retour, .bb-fermer {
+  width: 38px; height: 38px; flex-shrink: 0; padding: 0; border-radius: var(--r-sm); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(var(--overlay), 0.05); border: 1px solid var(--border); color: var(--text-secondary);
+}
+.bb-retour:hover, .bb-fermer:hover { background: rgba(var(--overlay), 0.12); color: var(--text); }
+.bb-retour { display: none; }
+
+/* Le rail défile plutôt que de tasser cinq onglets sur 360 pixels. */
+.bb-onglets {
+  display: flex; gap: 4px; flex-shrink: 0; padding: 8px 14px;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid var(--border); background: var(--bg-card);
+}
+.bb-onglets::-webkit-scrollbar { display: none; }
+.bb-onglets button {
+  flex-shrink: 0; min-height: 34px; padding: 0 13px; border-radius: var(--r-pill); cursor: pointer;
+  background: transparent; border: 1px solid transparent; color: var(--text-secondary);
+  font-family: var(--font); font-size: 12.5px; font-weight: 600; white-space: nowrap;
+  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+}
+.bb-onglets button:hover { color: var(--text); }
+.bb-onglets button.on { background: var(--text); color: var(--bg); }
+
+.bb-fiche-corps { flex: 1; overflow-y: auto; padding: 18px; -webkit-overflow-scrolling: touch; }
+
+/* ── Éléments de formulaire de la fiche ── */
+.bb-flash {
+  display: flex; align-items: center; gap: 10px; justify-content: space-between;
+  padding: 10px 13px; margin-bottom: 14px; border-radius: var(--r-sm);
+  background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.25); color: var(--ink-good);
+  font-size: 12.5px; font-weight: 600;
+}
+.bb-flash.err { background: rgba(239, 68, 68, 0.09); border-color: rgba(239, 68, 68, 0.25); color: var(--ink-danger); }
+
+.bb-intro { margin-bottom: 16px; font-size: 12.5px; line-height: 1.55; color: var(--text-secondary); }
+.bb-intro strong { color: var(--text); }
+.bb-titre-bloc {
+  display: flex; align-items: center; gap: 9px; margin: 24px 0 10px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);
+}
+.bb-titre-bloc::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.bb-titre-bloc.danger { color: var(--ink-danger); }
+.bb-titre-bloc.danger::after { background: rgba(239, 68, 68, 0.2); }
+.bb-compte { padding: 1px 7px; border-radius: var(--r-pill); background: rgba(var(--overlay), 0.09); font-size: 10px; letter-spacing: 0; color: var(--text-secondary); }
+.bb-aide { margin-top: 5px; font-size: 11.5px; line-height: 1.5; color: var(--text-muted); }
+.bb-vide { padding: 16px 0; font-size: 12.5px; color: var(--text-muted); }
+.bb-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bb-lien {
+  padding: 0 0 0 10px; border: none; background: none; cursor: pointer;
+  color: var(--text-secondary); font-family: var(--font); font-size: 12px; font-weight: 600;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.bb-lien:hover { color: var(--text); }
+
+.bb-photo-champ { display: flex; align-items: center; gap: 15px; margin-bottom: 18px; }
+
+.bb-ligne-reglage {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 13px 15px; border-radius: var(--r-md);
+  background: var(--bg-card); border: 1px solid var(--border);
+}
+.bb-reglage-nom { font-size: 13px; font-weight: 600; }
+.bb-stepper { display: flex; gap: 5px; flex-shrink: 0; }
+.bb-stepper button, .bb-presta-duree button {
+  width: 34px; height: 34px; flex-shrink: 0; padding: 0; border-radius: var(--r-sm); cursor: pointer;
+  background: rgba(var(--overlay), 0.06); border: 1px solid var(--border); color: var(--text);
+  font-family: var(--font); font-size: 16px; font-weight: 600; line-height: 1;
+}
+.bb-stepper button:hover:not(:disabled), .bb-presta-duree button:hover { background: rgba(var(--overlay), 0.14); }
+.bb-stepper button:disabled { opacity: 0.4; cursor: default; }
+
+/* La barre d'action colle en bas : au téléphone, le bouton Enregistrer se
+   trouvait après six champs de formulaire. */
+.bb-actions-collees {
+  position: sticky; bottom: -18px; z-index: 5;
+  display: flex; gap: 9px; justify-content: flex-end; margin: 22px -18px -18px; padding: 14px 18px;
+  background: linear-gradient(to top, var(--bg) 62%, transparent);
+}
+.bb-actions-collees .btn { min-height: 42px; }
+
+.bb-danger {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 13px 15px; border-radius: var(--r-md);
+  background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.18);
+}
+.bb-btn-danger { background: var(--ink-danger); color: #fff; border: none; flex-shrink: 0; }
+.bb-btn-danger:disabled { opacity: 0.45; cursor: default; }
+
+/* ── Semaine type ── */
+.bb-jours { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bb-jour-ligne {
+  display: flex; align-items: center; gap: 11px; padding: 8px 12px;
+  border-radius: var(--r-sm); background: transparent; border: 1px solid var(--border);
+}
+.bb-jour-ligne.on { background: var(--bg-card); }
+.bb-jour-nom { width: 78px; flex-shrink: 0; font-size: 12.5px; font-weight: 600; }
+.bb-jour-ligne:not(.on) .bb-jour-nom { color: var(--text-muted); }
+.bb-heures { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.bb-heures .input { width: 108px; padding: 6px 8px; font-size: 13px; text-align: center; }
+.bb-heures em { font-style: normal; font-size: 11px; color: var(--text-muted); }
+.bb-repos { font-size: 12px; color: var(--text-muted); }
+.bb-total { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+/* ── Listes de la fiche ── */
+.bb-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.bb-item {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 11px 13px; border-radius: var(--r-md);
+  background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--border);
+}
+.bb-item.conge { border-left-color: var(--ink-danger); }
+.bb-item.special { border-left-color: var(--ink-warn); }
+.bb-item.pause { border-left-color: var(--ink-warn); }
+.bb-item.invite { border-left-color: #3b82f6; }
+.bb-item-titre { font-size: 13px; font-weight: 600; }
+.bb-item-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 9px; margin-top: 4px; font-size: 11.5px; color: var(--text-muted); }
+.bb-supprimer {
+  width: 32px; height: 32px; flex-shrink: 0; padding: 0; border-radius: var(--r-sm); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: 1px solid transparent; color: var(--text-muted);
+}
+.bb-supprimer:hover { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: var(--ink-danger); }
+.bb-dates { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.bb-dates button {
+  padding: 2px 8px; border-radius: var(--r-xs); cursor: pointer;
+  background: rgba(var(--overlay), 0.06); border: 1px solid transparent; color: var(--text-secondary);
+  font-family: var(--font); font-size: 10.5px; font-variant-numeric: tabular-nums;
+}
+.bb-dates button:hover { background: rgba(239, 68, 68, 0.12); color: var(--ink-danger); }
+.bb-dates-reste { font-size: 10.5px; color: var(--text-muted); align-self: center; }
+
+.bb-ajout-ligne {
+  width: 100%; min-height: 42px; margin-top: 10px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: var(--r-sm); cursor: pointer;
+  background: transparent; border: 1px dashed var(--border); color: var(--text-secondary);
+  font-family: var(--font); font-size: 12.5px; font-weight: 600;
+}
+.bb-ajout-ligne:hover:not(:disabled) { border-color: var(--border-focus); color: var(--text); }
+.bb-ajout-ligne:disabled { opacity: 0.4; cursor: default; }
+
+.bb-form { margin-top: 12px; padding: 15px; border-radius: var(--r-md); background: var(--bg-card); border: 1px solid var(--border); }
+.bb-form-actions { display: flex; gap: 9px; }
+.bb-form-actions .btn { flex: 1; min-height: 40px; }
+.bb-choix { display: flex; flex-wrap: wrap; gap: 6px; }
+.bb-choix button {
+  flex: 1 1 auto; min-height: 36px; padding: 0 12px; border-radius: var(--r-sm); cursor: pointer;
+  background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+}
+.bb-choix button.on { background: var(--text); border-color: var(--text); color: var(--bg); }
+
+/* ── Prestations ── */
+.bb-presta {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 13px; border-radius: var(--r-md);
+  background: transparent; border: 1px solid var(--border);
+}
+.bb-presta.on { background: var(--bg-card); }
+.bb-presta-pastille { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.bb-presta:not(.on) .bb-presta-pastille { opacity: 0.35; }
+.bb-presta-ident { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.bb-presta-nom { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bb-presta:not(.on) .bb-presta-nom { color: var(--text-muted); }
+.bb-presta-prix { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.bb-presta-duree { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.bb-presta-duree span { min-width: 54px; text-align: center; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Une durée propre au barbier se voit : c'est une exception au catalogue. */
+.bb-presta-duree span.perso { color: var(--ink-warn); }
+.bb-presta-reset { flex-basis: 100%; padding-left: 18px; text-align: left; font-size: 11px; }
+
+.bb-pastilles { display: flex; flex-wrap: wrap; gap: 6px; }
+.bb-pastilles button {
+  min-height: 34px; padding: 0 12px; border-radius: var(--r-pill); cursor: pointer;
+  background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
+  font-family: var(--font); font-size: 12px; font-weight: 600;
+}
+.bb-pastilles button.on { background: rgba(var(--overlay), 0.12); border-color: rgba(var(--overlay), 0.3); color: var(--text); }
+
+.bb-nom:focus-visible, .bb-raccourcis button:focus-visible, .bb-onglets button:focus-visible,
+.bb-choix button:focus-visible, .bb-pastilles button:focus-visible, .bb-ajout:focus-visible,
+.bb-ajout-ligne:focus-visible, .bb-supprimer:focus-visible, .bb-dates button:focus-visible,
+.bb-stepper button:focus-visible, .bb-presta-duree button:focus-visible, .bb-lien:focus-visible {
+  outline: 2px solid var(--ring); outline-offset: 2px;
+}
+
+/* ── Au téléphone ── */
+@media (max-width: 720px) {
+  .bb-grille { grid-template-columns: 1fr; }
+  .bb-fiche-fond { background: var(--bg); backdrop-filter: none; }
+  .bb-fiche { width: 100%; border-left: none; animation: none; }
+  .bb-retour { display: inline-flex; }
+  .bb-fermer { display: none; }
+  .bb-fiche-corps { padding: 16px; }
+  .bb-actions-collees { margin: 22px -16px -16px; padding: 13px 16px; }
+  .bb-duo { grid-template-columns: 1fr; gap: 0; }
+  .bb-jour-nom { width: 62px; }
+  .bb-heures .input { width: 100%; min-width: 0; }
+  .bb-heures { flex: 1; }
+  .bb-piste { height: 52px; max-width: none; }
+  /* Le stepper passe sous le nom, et le lien de retour reste sous le stepper :
+     autrement « Revenir à 30 min » s'affichait avant la durée qu'il annule. */
+  .bb-presta-duree { order: 3; flex-basis: 100%; justify-content: flex-end; }
+  .bb-presta-reset { order: 4; padding-left: 0; text-align: right; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bb-fiche, .bb-fiche-fond { animation: none; }
+  .bb-skel { animation: none; }
+  .bb-carte, .bb-onglets button, .bb-ajout, .bb-ajout-ligne { transition: none; }
 }
