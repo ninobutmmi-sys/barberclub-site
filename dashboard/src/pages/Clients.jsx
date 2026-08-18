@@ -1,45 +1,172 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getClients, getAccountStats } from '../api';
 import { exportToCSV } from '../utils/csv';
 import useMobile from '../hooks/useMobile';
 import { formatPhoneWithFlag } from '../utils/phone';
-import { useClients, useAccountStats, useCreateClient } from '../hooks/useApi';
+import { useClientsPages, useClients, useAccountStats, useCreateClient } from '../hooks/useApi';
 import { formatPrice, formatDateFR } from '../utils/format';
 
-const PAGE_SIZE = 20;
+const PAGE = 50;
+
+/* Les segments sont des filtres, pas des compteurs decoratifs : chacun
+   correspond a un filtre que l'API sait appliquer, et cliquer dessus
+   restreint la liste. « Sans venir depuis 3 mois » utilise inactive_weeks,
+   qui existait cote serveur mais qu'aucun ecran n'exploitait. */
+const SEGMENTS = [
+  { key: 'all', label: 'Tous', short: 'Tous', params: {} },
+  { key: 'lapsed', label: 'Sans venir depuis 3 mois', short: '3 mois+', params: { inactive_weeks: 12 } },
+  { key: 'accounts', label: 'Avec un compte', short: 'Comptes', params: { has_account: 'true' } },
+];
+
+const MS_DAY = 86400000;
+
+function parseDay(value) {
+  if (!value) return null;
+  const d = new Date(String(value).slice(0, 10) + 'T00:00:00');
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function today0h() {
+  const t = new Date();
+  t.setHours(0, 0, 0, 0);
+  return t;
+}
+
+/* Le temps ecoule, pas la date. Un barbier ne lit pas « 6 août 2026 », il lit
+   « ça fait trois semaines ». Seules les deux situations qui demandent une
+   action sont colorees ; le cas normal reste neutre, sinon la liste entiere
+   clignote et plus rien ne ressort. */
+function recency(lastVisit) {
+  const d = parseDay(lastVisit);
+  if (!d) return { text: 'Jamais', tone: 'never', title: 'Aucune visite terminée' };
+  const days = Math.round((today0h() - d) / MS_DAY);
+  const title = `Dernier passage le ${formatDateFR(String(lastVisit).slice(0, 10))}`;
+  const tone = days > 90 ? 'late' : days > 45 ? 'warn' : 'ok';
+  if (days <= 0) return { text: "Auj.", tone: 'ok', title };
+  if (days < 7) return { text: `${days} j`, tone, title };
+  if (days < 60) return { text: `${Math.round(days / 7)} sem`, tone, title };
+  return { text: `${Math.round(days / 30)} mois`, tone, title };
+}
+
+/* Un client qui a deja un RDV pose n'est pas a relancer, meme s'il n'est pas
+   venu depuis longtemps. C'est l'information qui evite l'erreur au comptoir. */
+function upcoming(nextVisit) {
+  const d = parseDay(nextVisit);
+  if (!d) return null;
+  const n = Math.round((d - today0h()) / MS_DAY);
+  if (n < 0) return null;
+  if (n === 0) return "RDV aujourd'hui";
+  if (n === 1) return 'RDV demain';
+  if (n < 14) return `RDV dans ${n} j`;
+  return `RDV le ${formatDateFR(String(nextVisit).slice(0, 10))}`;
+}
+
+function initials(c) {
+  const a = (c.first_name || '').trim()[0] || '';
+  const b = (c.last_name || '').trim()[0] || '';
+  return (a + b).toUpperCase() || '?';
+}
+
+function fullName(c) {
+  return `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Sans nom';
+}
+
+/* ---------- Icones ---------- */
+const IconSearch = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+const IconClose = ({ s = 16 }) => (
+  <svg viewBox="0 0 24 24" width={s} height={s} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+const IconDownload = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+const IconPlus = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);
+const IconCalendar = () => (
+  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+const IconNobody = () => (
+  <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="17" y1="8" x2="23" y2="14" /><line x1="23" y1="8" x2="17" y2="14" />
+  </svg>
+);
+
+/* ---------- Marqueurs de statut ---------- */
+function Badges({ c }) {
+  return (
+    <>
+      {c.has_account && <span className="cl-tag cl-tag-member">Membre</span>}
+      {c.visit_count >= 10 && <span className="cl-tag cl-tag-vip">VIP</span>}
+    </>
+  );
+}
+
+function Rhythm({ c }) {
+  const r = recency(c.last_visit);
+  const next = upcoming(c.next_visit);
+  return (
+    <div className="cl-rhythm">
+      <span className={`cl-since cl-since-${r.tone}`} title={r.title}>{r.text}</span>
+      {next && <span className="cl-next"><IconCalendar />{next}</span>}
+    </div>
+  );
+}
 
 export default function Clients() {
   const navigate = useNavigate();
   const isMobile = useMobile();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('last_visit');
-  const [tab, setTab] = useState('all');
-  const [visible, setVisible] = useState(PAGE_SIZE);
+  const [segment, setSegment] = useState('all');
   const [showCreate, setShowCreate] = useState(false);
   const debounceRef = useRef(null);
+  const searchRef = useRef(null);
 
-  // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setDebouncedSearch(search);
-      setVisible(PAGE_SIZE);
-    }, search ? 400 : 0);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(search), search ? 350 : 0);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [search]);
 
-  const clientParams = { sort, order: 'desc', limit: 100 };
-  if (debouncedSearch) clientParams.search = debouncedSearch;
-  if (tab === 'accounts') clientParams.has_account = 'true';
+  const seg = SEGMENTS.find((s) => s.key === segment) || SEGMENTS[0];
 
-  const { data: clientData, isLoading: loading, error } = useClients(clientParams);
-  const clients = clientData?.clients || [];
-  const total = clientData?.total || 0;
-  const hasMore = clients.length < total;
+  const params = useMemo(() => {
+    const p = { sort, order: sort === 'name' ? 'asc' : 'desc', limit: PAGE, ...seg.params };
+    if (debouncedSearch) p.search = debouncedSearch;
+    return p;
+  }, [sort, seg, debouncedSearch]);
 
-  const { data: accountStats } = useAccountStats({ enabled: tab === 'accounts' });
+  const {
+    data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage,
+  } = useClientsPages(params);
+
+  const clients = useMemo(() => (data?.pages || []).flatMap((p) => p.clients || []), [data]);
+  const total = data?.pages?.[0]?.total ?? 0;
+
+  /* Compteurs des segments : une requete de comptage chacun (limit 1), pour que
+     le chiffre affiche sur la pastille soit celui du filtre qu'elle applique. */
+  // Ce comptage coute ~300 ms (NOT EXISTS sur toute la base) et ne bouge pas
+  // d'une minute a l'autre : on le garde 5 minutes plutot que 30 secondes.
+  const { data: lapsedCount } = useClients({ inactive_weeks: 12, limit: 1 }, { staleTime: 5 * 60_000 });
+  const { data: accountStats } = useAccountStats();
+  const counts = {
+    all: segment === 'all' && !debouncedSearch ? total : null,
+    lapsed: lapsedCount?.total ?? null,
+    accounts: accountStats?.total_accounts ?? null,
+  };
 
   function handleExportCSV() {
     if (!clients.length) return;
@@ -49,275 +176,207 @@ export default function Clients() {
       { key: 'phone', label: 'Telephone' },
       { key: 'email', label: 'Email' },
       { key: 'visit_count', label: 'Visites' },
-      { key: 'total_spent', label: 'CA Total (EUR)', transform: (v) => (v / 100).toFixed(2) },
-      { key: 'last_visit', label: 'Derniere visite' },
+      { key: 'total_spent', label: 'Total depense (EUR)', transform: (v) => (v / 100).toFixed(2) },
+      { key: 'last_visit', label: 'Dernier passage' },
+      { key: 'next_visit', label: 'Prochain RDV' },
     ]);
   }
 
-  const shown = clients.slice(0, visible);
+  const openClient = (id) => navigate(`/clients/${id}`);
+  const rowKeys = (id) => (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openClient(id); }
+  };
 
   return (
     <>
       {error && (
-        <div role="alert" style={{ background: '#1c1917', border: '1px solid #dc2626', borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fca5a5' }}>
+        <div className="cl-error" role="alert">
           <span>{error?.message || String(error)}</span>
-          <button onClick={() => window.location.reload()} style={{ background: '#dc2626', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', cursor: 'pointer' }}>Réessayer</button>
+          <button className="btn btn-sm" onClick={() => window.location.reload()}>Réessayer</button>
         </div>
       )}
+
       <div className="page-header">
         <div>
           <h2 className="page-title">Clients</h2>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{total} {tab === 'accounts' ? 'comptes' : 'clients'}</p>
+          <p className="cl-subtitle">
+            {total.toLocaleString('fr-FR')} {seg.key === 'accounts' ? 'comptes' : 'clients'}
+            {debouncedSearch ? ` pour « ${debouncedSearch} »` : ''}
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="cl-actions">
           {!isMobile && (
-            <button className="btn btn-secondary" onClick={handleExportCSV} disabled={!clients.length}>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Exporter CSV
+            <button
+              className="btn btn-secondary"
+              onClick={handleExportCSV}
+              disabled={!clients.length}
+              title={`Exporte les ${clients.length} clients actuellement chargés`}
+            >
+              <IconDownload />
+              Exporter
             </button>
           )}
           <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
+            <IconPlus />
             {isMobile ? 'Ajouter' : 'Ajouter un client'}
           </button>
         </div>
       </div>
 
       <div className="page-body">
-        <div style={{ display: 'flex', gap: 0, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
-          {[{ key: 'all', label: 'Tous' }, { key: 'accounts', label: 'Comptes' }].map((t) => (
-            <button
-              key={t.key}
-              onClick={() => { setTab(t.key); setVisible(PAGE_SIZE); }}
-              style={{
-                padding: '8px 20px',
-                fontSize: 13,
-                fontWeight: tab === t.key ? 700 : 500,
-                color: tab === t.key ? 'var(--text)' : 'var(--text-muted)',
-                background: 'none',
-                border: 'none',
-                borderBottom: tab === t.key ? '2px solid var(--accent, #3b82f6)' : '2px solid transparent',
-                cursor: 'pointer',
-                fontFamily: 'var(--font)',
-                transition: 'all 0.2s',
-              }}
-            >
-              {t.label}
+        {/* La recherche est l'outil principal de cette page : on vient presque
+            toujours ici pour retrouver une personne precise, pas pour parcourir
+            2 500 fiches. Elle passe donc en tete, seule sur sa ligne. */}
+        <div className="cl-search">
+          <span className="cl-search-icon"><IconSearch /></span>
+          <label className="sr-only" htmlFor="cl-q">Chercher un client</label>
+          <input
+            id="cl-q"
+            ref={searchRef}
+            className="cl-search-input"
+            type="search"
+            placeholder={isMobile ? 'Chercher un client' : 'Chercher un nom, un téléphone, un email'}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoComplete="off"
+          />
+          {search && (
+            <button className="cl-search-clear" onClick={() => { setSearch(''); searchRef.current?.focus(); }} aria-label="Effacer la recherche">
+              <IconClose s={15} />
             </button>
-          ))}
+          )}
         </div>
 
-        {tab === 'accounts' && accountStats && (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr 1fr', gap: 10, marginBottom: 20 }}>
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#a78bfa' }}>{accountStats.total_accounts}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total comptes</div>
-            </div>
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#4ade80' }}>+{accountStats.new_this_month}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ce mois</div>
-            </div>
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800 }}>{accountStats.by_salon?.meylan || 0}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Meylan</div>
-            </div>
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800 }}>{accountStats.by_salon?.grenoble || 0}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Grenoble</div>
-            </div>
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', textAlign: 'center', gridColumn: isMobile ? 'span 2' : 'auto' }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#fbbf24' }}>{accountStats.no_booking_yet}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sans RDV</div>
-            </div>
+        <div className="cl-controls">
+          <div className="cl-segments" role="group" aria-label="Filtrer les clients">
+            {SEGMENTS.map((s) => (
+              <button
+                key={s.key}
+                className={`cl-seg${segment === s.key ? ' cl-seg-on' : ''}`}
+                onClick={() => setSegment(s.key)}
+                aria-pressed={segment === s.key}
+              >
+                {isMobile ? s.short : s.label}
+                {counts[s.key] != null && <span className="cl-seg-n">{counts[s.key].toLocaleString('fr-FR')}</span>}
+              </button>
+            ))}
+          </div>
+
+          <div className="cl-sort">
+            <label className="sr-only" htmlFor="cl-sort">Trier par</label>
+            <select id="cl-sort" className="input" value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="last_visit">Dernier passage</option>
+              <option value="name">Nom</option>
+              <option value="total_spent">Total dépensé</option>
+              <option value="visit_count">Nombre de visites</option>
+            </select>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="cl-skeleton">
+            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="cl-skeleton-row" />)}
+          </div>
+        ) : clients.length === 0 ? (
+          <div className="cl-empty">
+            <IconNobody />
+            {debouncedSearch ? (
+              <>
+                <p className="cl-empty-title">Aucun client ne correspond à « {debouncedSearch} »</p>
+                <p className="cl-empty-sub">Vérifiez l&apos;orthographe, ou créez sa fiche.</p>
+                <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
+                  <IconPlus />Ajouter ce client
+                </button>
+              </>
+            ) : segment === 'lapsed' ? (
+              <>
+                <p className="cl-empty-title">Personne ne manque à l&apos;appel</p>
+                <p className="cl-empty-sub">Tous les clients du salon sont passés dans les trois derniers mois.</p>
+              </>
+            ) : (
+              <>
+                <p className="cl-empty-title">Aucun client dans ce segment</p>
+                <p className="cl-empty-sub">Changez de filtre pour voir le reste de la base.</p>
+              </>
+            )}
+          </div>
+        ) : isMobile ? (
+          /* ---------- Mobile ---------- */
+          <div className="cl-cards">
+            {clients.map((c) => (
+              <button key={c.id} className="cl-card" onClick={() => openClient(c.id)}>
+                <span className="cl-mono" aria-hidden="true">{initials(c)}</span>
+                <span className="cl-card-main">
+                  <span className="cl-card-top">
+                    <span className="cl-card-name">{fullName(c)}</span>
+                    <Badges c={c} />
+                  </span>
+                  <span className="cl-card-contact">{formatPhoneWithFlag(c.phone) || 'Sans téléphone'}</span>
+                  <span className="cl-card-stats">
+                    <span className="cl-num">{c.visit_count}</span> visite{c.visit_count > 1 ? 's' : ''}
+                    <span className="cl-dot" />
+                    <span className="cl-num">{formatPrice(c.total_spent)}</span>
+                  </span>
+                </span>
+                <Rhythm c={c} />
+              </button>
+            ))}
+          </div>
+        ) : (
+          /* ---------- Desktop ---------- */
+          <div className="cl-table-wrap">
+            <table className="cl-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Téléphone</th>
+                  <th className="cl-r">Visites</th>
+                  <th className="cl-r">Total dépensé</th>
+                  <th className="cl-r">Dernier passage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((c) => (
+                  <tr
+                    key={c.id}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Ouvrir la fiche de ${fullName(c)}`}
+                    onClick={() => openClient(c.id)}
+                    onKeyDown={rowKeys(c.id)}
+                  >
+                    <td>
+                      <div className="cl-id">
+                        <span className="cl-mono" aria-hidden="true">{initials(c)}</span>
+                        <span className="cl-id-text">
+                          <span className="cl-id-name">
+                            {fullName(c)}
+                            <Badges c={c} />
+                          </span>
+                          {c.email && <span className="cl-id-mail">{c.email}</span>}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="cl-phone">{formatPhoneWithFlag(c.phone) || <span className="cl-none">—</span>}</td>
+                    <td className="cl-r"><span className="cl-num">{c.visit_count}</span></td>
+                    <td className="cl-r"><span className="cl-num">{formatPrice(c.total_spent)}</span></td>
+                    <td className="cl-r"><Rhythm c={c} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 12, marginBottom: 20 }}>
-          <input
-            className="input"
-            placeholder="Rechercher un client..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={isMobile ? {} : { maxWidth: 320 }}
-          />
-          <select className="input" value={sort} onChange={(e) => setSort(e.target.value)} style={isMobile ? {} : { width: 180 }}>
-            <option value="last_visit">Dernière visite</option>
-            <option value="name">Nom</option>
-            <option value="total_spent">CA total</option>
-            <option value="visit_count">Nb visites</option>
-          </select>
-        </div>
-
-        {loading ? (
-          <div className="empty-state">Chargement...</div>
-        ) : clients.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#a8a29e' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>👥</div>
-            <p style={{ margin: 0, fontSize: 15 }}>Aucun client trouvé</p>
-          </div>
-        ) : (
-          <div style={{ position: 'relative' }}>
-            {isMobile ? (
-              /* ---- Mobile: Card list ---- */
-              <div className="mob-card-list">
-                {shown.map((c) => (
-                  <div key={c.id} className="mob-card-item" onClick={() => navigate(`/clients/${c.id}`)}>
-                    <div className="mob-card-left">
-                      <div className="mob-card-title" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        {c.first_name} {c.last_name}
-                        {c.has_account && (
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 3,
-                            fontSize: 9, fontWeight: 700, padding: '1px 6px',
-                            background: 'rgba(34,197,94,0.1)', color: '#22c55e',
-                            borderRadius: 5, border: '1px solid rgba(34,197,94,0.2)',
-                            textTransform: 'uppercase',
-                          }}>
-                            <svg viewBox="0 0 24 24" width="8" height="8" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
-                            Membre
-                          </span>
-                        )}
-                        {c.visit_count >= 10 && <span className="badge-vip">VIP</span>}
-                      </div>
-                      <div className="mob-card-sub">{formatPhoneWithFlag(c.phone)}{c.email ? ` · ${c.email}` : ''}</div>
-                    </div>
-                    <div className="mob-card-right">
-                      <div className="mob-card-value">{formatPrice(c.total_spent)}</div>
-                      <div className="mob-card-meta">{c.visit_count} visites</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+        {clients.length > 0 && (
+          <div className="cl-more">
+            {hasNextPage ? (
+              <button className="cl-more-btn" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+                {isFetchingNextPage ? 'Chargement…' : 'Charger plus'}
+                <span className="cl-more-n">{clients.length} sur {total.toLocaleString('fr-FR')}</span>
+              </button>
             ) : (
-              /* ---- Desktop: Table ---- */
-              <div className="table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Client</th>
-                      <th>Téléphone</th>
-                      <th>Visites</th>
-                      <th>CA Total</th>
-                      <th>{tab === 'accounts' ? 'Inscrit le' : 'Dernière visite'}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {shown.map((c) => (
-                      <tr key={c.id} onClick={() => navigate(`/clients/${c.id}`)} style={{ cursor: 'pointer' }}>
-                        <td>
-                          <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            {c.first_name} {c.last_name}
-                            {c.has_account && (
-                              <span style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 4,
-                                fontSize: 10, fontWeight: 700, padding: '2px 8px',
-                                background: 'rgba(34,197,94,0.1)', color: '#22c55e',
-                                borderRadius: 6, border: '1px solid rgba(34,197,94,0.2)',
-                                letterSpacing: '0.04em', textTransform: 'uppercase',
-                              }}>
-                                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
-                                Membre
-                              </span>
-                            )}
-                            {c.visit_count >= 10 && <span className="badge-vip" style={{ marginLeft: 0 }}>VIP</span>}
-                          </div>
-                          {c.email && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{c.email}</div>}
-                        </td>
-                        <td style={{ fontSize: 13 }}>{formatPhoneWithFlag(c.phone)}</td>
-                        <td>
-                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>
-                            {c.visit_count}
-                          </span>
-                        </td>
-                        <td style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13 }}>
-                          {formatPrice(c.total_spent)}
-                        </td>
-                        <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                          {tab === 'accounts' ? (c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : '-') : formatDateFR(c.last_visit)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Fade overlay + Voir plus */}
-            {visible < clients.length && (
-              <div style={{
-                position: 'relative',
-                marginTop: isMobile ? 0 : -80,
-                paddingTop: isMobile ? 8 : 80,
-                background: isMobile ? 'none' : 'linear-gradient(to bottom, transparent 0%, var(--bg) 70%)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                paddingBottom: 8,
-                pointerEvents: 'none',
-              }}>
-                <button
-                  onClick={() => setVisible((v) => v + PAGE_SIZE)}
-                  style={{
-                    pointerEvents: 'auto',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '10px 28px',
-                    background: 'linear-gradient(165deg, rgba(var(--overlay),0.07), rgba(var(--overlay),0.02))',
-                    border: '1px solid rgba(var(--overlay),0.1)',
-                    borderRadius: 12,
-                    color: 'var(--text)',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    fontFamily: 'var(--font)',
-                    cursor: 'pointer',
-                    transition: 'all 0.25s ease',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = 'rgba(var(--overlay),0.2)';
-                    e.currentTarget.style.background = 'linear-gradient(165deg, rgba(var(--overlay),0.1), rgba(var(--overlay),0.04))';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = 'rgba(var(--overlay),0.1)';
-                    e.currentTarget.style.background = 'linear-gradient(165deg, rgba(var(--overlay),0.07), rgba(var(--overlay),0.02))';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <span>Voir plus</span>
-                  <span style={{
-                    fontSize: 11,
-                    color: 'var(--text-muted)',
-                    fontWeight: 500,
-                  }}>
-                    {visible} / {clients.length}
-                  </span>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </button>
-              </div>
-            )}
-
-            {/* Shown count when all visible */}
-            {visible >= clients.length && clients.length > PAGE_SIZE && (
-              <div style={{
-                textAlign: 'center',
-                padding: '16px 0 4px',
-                fontSize: 12,
-                color: 'var(--text-muted)',
-              }}>
-                {clients.length} clients affiches
-              </div>
+              <p className="cl-more-end">{clients.length.toLocaleString('fr-FR')} client{clients.length > 1 ? 's' : ''} affiché{clients.length > 1 ? 's' : ''}</p>
             )}
           </div>
         )}
@@ -325,6 +384,7 @@ export default function Clients() {
 
       {showCreate && (
         <CreateClientModal
+          initialName={debouncedSearch}
           onClose={() => setShowCreate(false)}
           onCreated={(client) => { setShowCreate(false); navigate(`/clients/${client.id}`); }}
         />
@@ -333,11 +393,14 @@ export default function Clients() {
   );
 }
 
-function CreateClientModal({ onClose, onCreated }) {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
+function CreateClientModal({ onClose, onCreated, initialName = '' }) {
+  // Quand on arrive ici depuis une recherche infructueuse, le nom cherche est
+  // deja saisi : on ne le retape pas.
+  const [first, ...rest] = initialName.trim().split(/\s+/);
+  const [firstName, setFirstName] = useState(/\d|@/.test(initialName) ? '' : (first || ''));
+  const [lastName, setLastName] = useState(/\d|@/.test(initialName) ? '' : rest.join(' '));
+  const [phone, setPhone] = useState(/^[+\d\s.-]+$/.test(initialName.trim()) ? initialName.trim() : '');
+  const [email, setEmail] = useState(initialName.includes('@') ? initialName.trim() : '');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
   const createClient = useCreateClient();
@@ -350,10 +413,9 @@ function CreateClientModal({ onClose, onCreated }) {
     if (email.trim()) body.email = email.trim();
     if (notes.trim()) body.notes = notes.trim();
     try {
-      const client = await createClient.mutateAsync(body);
-      onCreated(client);
+      onCreated(await createClient.mutateAsync(body));
     } catch (err) {
-      setError(err?.message || 'Erreur lors de la création du client');
+      setError(err?.message || 'La fiche n’a pas pu être créée.');
     }
   }
 
@@ -362,50 +424,38 @@ function CreateClientModal({ onClose, onCreated }) {
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
         <div className="modal-header">
           <h3 className="modal-title">Nouveau client</h3>
-          <button className="btn-ghost" onClick={onClose}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-          </button>
+          <button className="btn-ghost" onClick={onClose} aria-label="Fermer"><IconClose s={20} /></button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             {error && <div className="login-error" role="alert" style={{ marginBottom: 16 }}>{error}</div>}
-
             <div className="input-row">
               <div className="form-group">
-                <label className="label">Prénom</label>
-                <input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required autoFocus />
+                <label className="label" htmlFor="cl-fn">Prénom</label>
+                <input id="cl-fn" className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required autoFocus />
               </div>
               <div className="form-group">
-                <label className="label">Nom</label>
-                <input className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+                <label className="label" htmlFor="cl-ln">Nom</label>
+                <input id="cl-ln" className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
               </div>
             </div>
-
             <div className="form-group">
-              <label className="label">Téléphone (optionnel)</label>
-              <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="06 12 34 56 78" />
+              <label className="label" htmlFor="cl-ph">Téléphone (optionnel)</label>
+              <input id="cl-ph" className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="06 12 34 56 78" />
             </div>
-
             <div className="form-group">
-              <label className="label">Email (optionnel)</label>
-              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@exemple.fr" />
+              <label className="label" htmlFor="cl-em">Email (optionnel)</label>
+              <input id="cl-em" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@exemple.fr" />
             </div>
-
             <div className="form-group">
-              <label className="label">Notes (optionnel)</label>
-              <textarea
-                className="input"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                style={{ resize: 'vertical', minHeight: 48, fontFamily: 'inherit' }}
-              />
+              <label className="label" htmlFor="cl-no">Notes (optionnel)</label>
+              <textarea id="cl-no" className="input" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} style={{ resize: 'vertical', minHeight: 48, fontFamily: 'inherit' }} />
             </div>
           </div>
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>Annuler</button>
             <button type="submit" className="btn btn-primary btn-sm" disabled={createClient.isPending}>
-              {createClient.isPending ? 'Création...' : 'Créer'}
+              {createClient.isPending ? 'Création…' : 'Créer la fiche'}
             </button>
           </div>
         </form>

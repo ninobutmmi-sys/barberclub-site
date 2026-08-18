@@ -5214,3 +5214,227 @@ img { max-width: 100%; }
   .bb-skel { animation: none; }
   .bb-carte, .bb-onglets button, .bb-ajout, .bb-ajout-ligne { transition: none; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   CLIENTS
+   La page repond a une seule question dans 9 visites sur 10 : « ou est la
+   fiche de cette personne ? ». La recherche passe donc devant tout le reste,
+   et les compteurs deviennent des filtres cliquables au lieu de vignettes
+   decoratives. La couleur ne sert qu'a deux etats — a surveiller, a relancer.
+════════════════════════════════════════════════════════════════════════════ */
+
+.cl-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.cl-actions { display: flex; gap: 8px; }
+
+.cl-error {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 16px; padding: 12px 16px;
+  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.35);
+  border-radius: var(--r-md); color: var(--ink-danger); font-size: 13px;
+}
+
+/* ── La recherche, en tete et seule sur sa ligne ── */
+.cl-search { position: relative; display: flex; align-items: center; margin-bottom: 14px; }
+.cl-search-icon {
+  position: absolute; left: 16px; display: flex; pointer-events: none;
+  color: var(--text-muted); transition: color 0.2s ease;
+}
+.cl-search-input {
+  width: 100%; height: 52px; padding: 0 46px;
+  background: rgba(var(--overlay),0.04);
+  border: 1px solid rgba(var(--overlay),0.09);
+  border-radius: var(--r-md);
+  color: var(--text); font-family: var(--font); font-size: 15px;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.cl-search-input::placeholder { color: var(--text-muted); }
+.cl-search-input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  background: rgba(var(--overlay),0.06);
+  box-shadow: 0 0 0 4px rgba(var(--overlay),0.04);
+}
+.cl-search:focus-within .cl-search-icon { color: var(--text-secondary); }
+.cl-search-input::-webkit-search-cancel-button { display: none; }
+.cl-search-clear {
+  position: absolute; right: 8px;
+  width: 36px; height: 36px; display: grid; place-items: center;
+  background: none; border: 0; border-radius: var(--r-sm);
+  color: var(--text-muted); cursor: pointer; transition: color 0.2s ease;
+}
+.cl-search-clear:hover { color: var(--text); }
+
+/* ── Segments = filtres ── */
+.cl-controls {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 18px;
+}
+.cl-segments { display: flex; gap: 8px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.cl-segments::-webkit-scrollbar { display: none; }
+.cl-seg {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 38px; padding: 0 15px; flex: 0 0 auto;
+  background: transparent;
+  border: 1px solid rgba(var(--overlay),0.09);
+  border-radius: var(--r-pill);
+  color: var(--text-secondary);
+  font-family: var(--font); font-size: 13px; font-weight: 500;
+  white-space: nowrap; cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.cl-seg:hover { color: var(--text); border-color: rgba(var(--overlay),0.18); }
+.cl-seg-on { background: var(--text); border-color: var(--text); color: var(--bg); font-weight: 600; }
+.cl-seg-on:hover { color: var(--bg); border-color: var(--text); }
+.cl-seg-n { font-family: var(--font-display); font-size: 11px; font-weight: 800; opacity: 0.55; font-variant-numeric: tabular-nums; }
+.cl-sort { flex: 0 0 auto; }
+.cl-sort .input { width: 190px; height: 38px; }
+
+/* ── Monogramme : la meme police d'affichage que le reste du dashboard, pour
+      que la liste reste BarberClub et pas un carnet d'adresses generique ── */
+.cl-mono {
+  flex: 0 0 auto; width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  background: rgba(var(--overlay),0.06);
+  border: 1px solid rgba(var(--overlay),0.07);
+  font-family: var(--font-display); font-weight: 800; font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cl-tag {
+  display: inline-flex; align-items: center;
+  padding: 2px 7px; border-radius: var(--r-xs);
+  font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  white-space: nowrap;
+}
+.cl-tag-vip { background: rgba(245,158,11,0.14); color: var(--ink-warn); }
+.cl-tag-member { background: rgba(34,197,94,0.12); color: var(--ink-good); }
+
+/* ── Le rythme : le temps ecoule, pas la date ── */
+.cl-rhythm { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.cl-since {
+  font-family: var(--font-display); font-weight: 800; font-size: 12px;
+  letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
+  color: var(--text-secondary);
+}
+.cl-since-warn  { color: var(--ink-warn); }
+.cl-since-late  { color: var(--ink-danger); }
+.cl-since-never { color: var(--ink-mute); }
+.cl-next {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--ink-good); white-space: nowrap;
+}
+
+/* ── Tableau (desktop) ── */
+.cl-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(var(--overlay),0.07);
+  border-radius: var(--r-lg);
+  background: rgba(var(--overlay),0.015);
+}
+.cl-table { width: 100%; border-collapse: collapse; }
+.cl-table th {
+  text-align: left; padding: 12px 18px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted);
+  background: rgba(var(--overlay),0.02);
+  border-bottom: 1px solid rgba(var(--overlay),0.07);
+}
+.cl-table th.cl-r, .cl-table td.cl-r { text-align: right; }
+.cl-table td {
+  padding: 11px 18px; font-size: 14px;
+  border-bottom: 1px solid rgba(var(--overlay),0.05);
+  vertical-align: middle;
+}
+.cl-table tbody tr { cursor: pointer; transition: background 0.15s ease; }
+.cl-table tbody tr:hover td { background: rgba(var(--overlay),0.035); }
+.cl-table tbody tr:focus-visible { outline: 2px solid var(--border-focus); outline-offset: -2px; }
+.cl-table tbody tr:last-child td { border-bottom: none; }
+
+.cl-id { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cl-id-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cl-id-name {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  font-size: 14px; font-weight: 600; color: var(--text);
+}
+.cl-id-mail {
+  font-size: 12px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px;
+}
+.cl-phone { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cl-none { color: var(--text-muted); }
+.cl-num { font-family: var(--font-display); font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* ── Cartes (mobile) ── */
+.cl-cards { display: flex; flex-direction: column; gap: 8px; }
+.cl-card {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; min-height: 66px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-family: var(--font); color: var(--text); text-align: left;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.cl-card:active { background: var(--bg-hover); }
+.cl-card-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cl-card-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cl-card-name {
+  font-size: 14px; font-weight: 600; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+}
+.cl-card-contact { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.cl-card-stats { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
+.cl-card-stats .cl-num { font-size: 11px; color: var(--text-secondary); }
+.cl-dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+
+/* ── Charger plus ── */
+.cl-more { display: flex; justify-content: center; padding: 18px 0 4px; }
+.cl-more-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 11px 24px;
+  background: rgba(var(--overlay),0.05);
+  border: 1px solid rgba(var(--overlay),0.1);
+  border-radius: var(--r-md);
+  color: var(--text); font-family: var(--font); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease;
+}
+.cl-more-btn:hover:not(:disabled) { background: rgba(var(--overlay),0.09); border-color: rgba(var(--overlay),0.2); }
+.cl-more-btn:disabled { opacity: 0.55; cursor: default; }
+.cl-more-n { font-size: 11px; font-weight: 500; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.cl-more-end { font-size: 12px; color: var(--text-muted); }
+
+/* ── Vide et chargement ── */
+.cl-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 56px 20px; text-align: center; color: var(--text-muted);
+}
+.cl-empty svg { opacity: 0.4; margin-bottom: 6px; }
+.cl-empty-title { font-size: 15px; font-weight: 600; color: var(--text-secondary); }
+.cl-empty-sub { font-size: 13px; color: var(--text-muted); max-width: 340px; }
+.cl-empty .btn { margin-top: 12px; }
+
+.cl-skeleton { display: flex; flex-direction: column; gap: 8px; }
+.cl-skeleton-row {
+  height: 62px; border-radius: var(--r-md);
+  background: linear-gradient(90deg, rgba(var(--overlay),0.03), rgba(var(--overlay),0.07), rgba(var(--overlay),0.03));
+  background-size: 200% 100%;
+  animation: cl-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes cl-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+@media (max-width: 1023px) {
+  .cl-search-input { height: 50px; }
+  .cl-controls { flex-direction: column; align-items: stretch; gap: 10px; }
+  .cl-segments { margin: 0 -16px; padding: 0 16px; }
+  /* 44 px : le minimum tactile. A 38 px la regle anti-zoom iOS force le texte
+     a 16 px et « Dernier passage » se faisait rogner en bas. */
+  .cl-sort .input { width: 100%; height: 44px; }
+  .cl-seg { height: 44px; }
+  .cl-mono { width: 36px; height: 36px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-skeleton-row { animation: none; }
+  .cl-seg, .cl-card, .cl-more-btn, .cl-search-input, .cl-table tbody tr { transition: none; }
+}

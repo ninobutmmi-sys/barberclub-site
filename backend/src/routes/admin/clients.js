@@ -105,7 +105,13 @@ router.get('/',
                 c.notes, c.created_at,
                 COUNT(b.id) FILTER (WHERE b.status = 'completed') as visit_count,
                 COALESCE(SUM(b.price) FILTER (WHERE b.status = 'completed'), 0) as total_spent,
-                MAX(b.date) FILTER (WHERE b.status IN ('completed', 'confirmed')) as last_visit
+                -- last_visit ne prenait pas 'completed' seul mais aussi 'confirmed' :
+                -- un client avec une recurrence courant jusqu'en 2028 remontait donc
+                -- une date future comme « derniere visite », et le tri par defaut
+                -- placait ces 521 clients en tete de liste. Les deux dates sont
+                -- desormais separees, chacune avec son sens.
+                MAX(b.date) FILTER (WHERE b.status = 'completed') as last_visit,
+                MIN(b.date) FILTER (WHERE b.status = 'confirmed' AND b.date >= CURRENT_DATE) as next_visit
          FROM clients c
          ${bookingJoin}
          WHERE ${whereConditions.join(' AND ')}

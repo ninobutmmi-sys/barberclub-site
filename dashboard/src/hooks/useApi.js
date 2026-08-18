@@ -370,6 +370,23 @@ export function useClients(params, options) {
   });
 }
 
+// Pagination reelle par offset. useClients plafonnait a un seul appel (limit
+// max 100 cote API) : sur une base de 2 536 clients, tout ce qui suivait le
+// centieme etait inatteignable.
+export function useClientsPages(params, options) {
+  return useInfiniteQuery({
+    queryKey: [...keys.clients(params), 'pages'],
+    queryFn: ({ pageParam }) => api.getClients({ ...params, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (derniere, pages) => {
+      const charges = pages.reduce((n, p) => n + (p.clients?.length || 0), 0);
+      return charges > 0 && charges < (derniere.total || 0) ? charges : undefined;
+    },
+    staleTime: 30_000,
+    ...options,
+  });
+}
+
 export function useClient(id, options) {
   return useQuery({
     queryKey: keys.client(id),
