@@ -1569,7 +1569,9 @@ tr:hover td {
 
 .salon-selector-container {
   width: 100%;
-  max-width: 680px;
+  /* 680px suffisait a deux salons. Avec Voiron la troisieme carte tombait
+     seule sur une deuxieme ligne. */
+  max-width: 1040px;
 }
 
 .salon-selector-header {
@@ -1597,7 +1599,9 @@ tr:hover td {
 
 .salon-selector-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* auto-fit plutot qu'un nombre fige : 3 colonnes en large, 2, puis 1,
+     sans avoir a retoucher le CSS au prochain salon. */
+  grid-template-columns: repeat(auto-fit, minmax(272px, 1fr));
   gap: 16px;
 }
 
@@ -1709,6 +1713,51 @@ tr:hover td {
 
 .salon-card:hover .salon-card-arrow svg {
   transform: translateX(4px);
+}
+
+/* ── Salon pas encore ouvert (Voiron) ──
+   La carte est presente pour annoncer l'ouverture, pas pour etre ouverte.
+   Elle ne reagit donc a rien : ni survol, ni clic, ni curseur main. */
+.salon-card-soon {
+  cursor: default;
+}
+
+.salon-card-soon:hover,
+.salon-card-soon:active {
+  border-color: var(--border);
+  box-shadow: none;
+  transform: none;
+}
+
+.salon-card-soon:hover .salon-card-image img {
+  transform: none;
+}
+
+.salon-card-soon .salon-card-image img {
+  filter: brightness(0.72) saturate(0.85);
+}
+
+.salon-card-soon .salon-card-name,
+.salon-card-soon:hover .salon-card-arrow {
+  color: var(--text-secondary);
+}
+
+.salon-card-flag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  line-height: 1;
 }
 
 @media (max-width: 560px) {

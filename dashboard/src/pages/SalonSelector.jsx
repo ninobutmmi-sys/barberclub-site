@@ -1,19 +1,34 @@
 import { useAuth } from '../auth';
 
+// Les equipes sont ecrites en dur : cet ecran s'affiche AVANT le login, donc
+// aucun appel API n'est possible pour les lire. A tenir a jour a la main quand
+// un barbier arrive ou part (source : barbers WHERE is_active, par sort_order).
 const SALONS = [
   {
     id: 'meylan',
     name: 'Meylan',
     address: '26 Av. du Gresivaudan, 38700 Corenc',
-    barbers: ['Lucas', 'Julien'],
+    barbers: ['Alexandre', 'Nathan', 'Lucas', 'Julien'],
     image: '/salons/devanture-meylan.webp',
   },
   {
     id: 'grenoble',
     name: 'Grenoble',
     address: '5 Rue Clot Bey, 38000 Grenoble',
-    barbers: ['Tom', 'Alan', 'Nathan', 'Clement'],
+    barbers: ['Tom', 'Alan', 'Clement', 'Nathan', 'Louay'],
     image: '/salons/comptoir-grenoble.webp',
+  },
+  {
+    // Salon pas encore ouvert : la carte est volontairement non cliquable.
+    // Il n'existe aucun salon_id 'voiron' en base, et l'API admin n'accepte
+    // que meylan et grenoble — le selectionner enfermerait l'utilisateur
+    // sur un dashboard qui repond 403 partout.
+    id: 'voiron',
+    name: 'Voiron',
+    address: '5 Av. Leon et Joanny Tardy, 38500 Voiron',
+    barbers: ['Clement', 'Julien'],
+    image: '/salons/facade-voiron.webp',
+    soon: true,
   },
 ];
 
@@ -58,15 +73,21 @@ export default function SalonSelector() {
         </div>
 
         <div className="salon-selector-grid">
-          {SALONS.map((s) => (
-            <button
+          {SALONS.map((s) => {
+            // Un salon a venir n'est pas un bouton desactive, c'est une annonce.
+            // On rend donc une div : rien a cliquer, rien a tabuler, et le texte
+            // "Prochainement" reste lu normalement.
+            const Card = s.soon ? 'div' : 'button';
+            return (
+            <Card
               key={s.id}
-              className="salon-card"
-              onClick={() => selectSalon(s.id)}
+              className={`salon-card${s.soon ? ' salon-card-soon' : ''}`}
+              onClick={s.soon ? undefined : () => selectSalon(s.id)}
             >
               <div className="salon-card-image">
                 <img src={s.image} alt={s.name} />
                 <div className="salon-card-overlay" />
+                {s.soon && <span className="salon-card-flag">Prochainement</span>}
               </div>
               <div className="salon-card-body">
                 <div className="salon-card-name">{s.name}</div>
@@ -81,12 +102,13 @@ export default function SalonSelector() {
                   </span>
                 </div>
                 <div className="salon-card-arrow">
-                  <span>Gerer ce salon</span>
-                  <ArrowIcon />
+                  <span>{s.soon ? 'Ouverture a venir' : 'Gerer ce salon'}</span>
+                  {!s.soon && <ArrowIcon />}
                 </div>
               </div>
-            </button>
-          ))}
+            </Card>
+            );
+          })}
         </div>
       </div>
     </div>
