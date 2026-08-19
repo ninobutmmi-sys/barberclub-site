@@ -160,6 +160,64 @@ describe('queueReminders', () => {
     );
   });
 
+  test('bascule sur un email pour un FIXE français — le SMS n’y arriverait pas', async () => {
+    // Twilio refuse les lignes fixes (code 21635). Avant ce correctif, un fixe
+    // passait le test isFrenchPhone, partait en SMS, échouait en boucle, et le
+    // client ne recevait RIEN : ni SMS ni email.
+    mockDb.query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT b.id')) {
+        return {
+          rows: [{
+            id: 'booking-fixe',
+            date: '2026-03-05',
+            start_time: '10:00:00',
+            cancel_token: 'tok-fixe',
+            salon_id: 'meylan',
+            phone: '0476180919', // fixe Isère
+            email: 'client@example.fr',
+          }],
+        };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+
+    await queueReminders();
+
+    expect(mockNotification.queueNotification).toHaveBeenCalledTimes(1);
+    expect(mockNotification.queueNotification).toHaveBeenCalledWith(
+      'booking-fixe',
+      'reminder_email',
+      expect.objectContaining({ email: 'client@example.fr', salonId: 'meylan' })
+    );
+  });
+
+  test('envoie bien un SMS sur un mobile amputé de son 0', async () => {
+    mockDb.query.mockImplementation(async (sql) => {
+      if (sql.includes('SELECT b.id')) {
+        return {
+          rows: [{
+            id: 'booking-ampute',
+            date: '2026-03-05',
+            start_time: '10:00:00',
+            cancel_token: 'tok-ampute',
+            salon_id: 'meylan',
+            phone: '+637911292', // 06 saisi sans le 0
+            email: 'client@example.fr',
+          }],
+        };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+
+    await queueReminders();
+
+    expect(mockNotification.queueNotification).toHaveBeenCalledWith(
+      'booking-ampute',
+      'reminder_sms',
+      expect.objectContaining({ salonId: 'meylan' })
+    );
+  });
+
   test('handles no bookings gracefully', async () => {
     mockDb.query.mockResolvedValue({ rows: [] });
 

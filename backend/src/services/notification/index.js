@@ -60,6 +60,7 @@ module.exports = {
   formatDateFR: helpers.formatDateFR,
   formatTime: helpers.formatTime,
   isFrenchPhone: helpers.isFrenchPhone,
+  isFrenchMobile: helpers.isFrenchMobile,
   formatPhoneInternational: helpers.formatPhoneInternational,
   escapeHtml: helpers.escapeHtml,
   emailShell: helpers.emailShell,

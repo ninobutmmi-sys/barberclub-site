@@ -1,6 +1,6 @@
 const db = require('../config/database');
 const config = require('../config/env');
-const { queueNotification, formatDateFR, formatTime, toGSM, isFrenchPhone } = require('../services/notification');
+const { queueNotification, formatDateFR, formatTime, toGSM, isFrenchMobile } = require('../services/notification');
 const logger = require('../utils/logger');
 
 /**
@@ -60,7 +60,11 @@ async function queueReminders() {
       try {
         // SMS for French phones — message court (~95 chars, 1 SMS unit garanti)
         // Format: "BarberClub Meylan - RDV demain Mardi 28 avril a 14:30. A bientot!"
-        if (booking.phone && isFrenchPhone(booking.phone)) {
+        // isFrenchMobile et non isFrenchPhone : un fixe (01-05) est un numéro
+        // français valide mais ne peut pas recevoir de SMS. L'opérateur le
+        // rejette (Twilio 21635) et le client ne recevait alors RIEN, ni SMS
+        // ni email, puisque la branche email ne se déclenchait pas.
+        if (booking.phone && isFrenchMobile(booking.phone)) {
           const salonShort = salonId === 'meylan' ? 'Meylan' : 'Grenoble';
           const message = toGSM(`BarberClub ${salonShort} - RDV ${dateFR} a ${timeFormatted}. A bientot!`);
           await queueNotification(booking.id, 'reminder_sms', {
@@ -69,7 +73,7 @@ async function queueReminders() {
             salonId,
           });
         } else if (booking.email) {
-          // Email reminder ONLY for international phones (no SMS possible)
+          // Repli email : numéros étrangers, fixes français, ou pas de numéro.
           await queueNotification(booking.id, 'reminder_email', {
             email: booking.email,
             salonId,

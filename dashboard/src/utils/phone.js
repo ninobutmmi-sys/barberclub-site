@@ -41,13 +41,30 @@ const DIAL_TO_FLAG = [
 ];
 
 /**
+ * Repare un mobile francais ampute de son 0 initial.
+ *
+ * Sans ca, `+612345678` (un 06 saisi sans le 0) s'affichait avec le drapeau
+ * australien et `+712345678` avec le drapeau russe, sur des clients francais.
+ * L'envoi de SMS repare deja ces numeros a la volee : le dashboard racontait
+ * donc une panne qui n'existait pas, et on a cherche un bug de livraison
+ * pendant que les SMS partaient normalement.
+ *
+ * Sûr : un vrai numero etranger en +6X/+7X compte au moins 10 chiffres apres
+ * le « + ». On ne touche qu'aux 9 chiffres exactement.
+ * Meme regle que backend/src/utils/phone.js — garder les deux alignes.
+ */
+function reparerMobileFrancais(cleaned) {
+  return /^\+[67]\d{8}$/.test(cleaned) ? '+33' + cleaned.slice(1) : cleaned;
+}
+
+/**
  * Get flag emoji for a phone number
  * @param {string} phone - Phone in international format (+33612345678)
  * @returns {string|null} Flag emoji or null if French/unknown
  */
 export function getPhoneFlag(phone) {
   if (!phone) return null;
-  const cleaned = phone.replace(/[\s.-]/g, '');
+  const cleaned = reparerMobileFrancais(phone.replace(/[\s.-]/g, ''));
   if (!cleaned.startsWith('+')) return null;
   // French numbers → no flag (they're local)
   if (/^(\+33|0033)/.test(cleaned)) return null;
@@ -63,6 +80,9 @@ export function getPhoneFlag(phone) {
  */
 export function formatPhoneWithFlag(phone) {
   if (!phone) return '';
-  const flag = getPhoneFlag(phone);
-  return flag ? `${flag} ${phone}` : phone;
+  // On affiche le numero repare, celui qui sera reellement compose, plutot que
+  // la valeur brute stockee.
+  const affiche = reparerMobileFrancais(String(phone).replace(/[\s.-]/g, ''));
+  const flag = getPhoneFlag(affiche);
+  return flag ? `${flag} ${affiche}` : affiche;
 }

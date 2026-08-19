@@ -31,42 +31,15 @@ function formatTime(timeStr) {
   return str.substring(0, 5); // HH:MM
 }
 
-/**
- * Rattrape les mobiles français amputés de leur 0 initial.
- *
- * L'import Timify a stocké des `+6XXXXXXXX` / `+7XXXXXXXX` là où il fallait
- * `+336XXXXXXXX` / `+337XXXXXXXX` : en E.164 ce n'est pas la France, donc Brevo et
- * Twilio rejettent l'envoi et ces clients ne reçoivent jamais leurs SMS.
- *
- * Le rattrapage se fait ici, à l'envoi, plutôt qu'en base : les corrections écrites
- * dans `clients.phone` ne persistent pas (cf. incident du 2026-07-28).
- *
- * Sûr : un vrai numéro en +6X/+7X compte au moins 10 chiffres après le « + »
- * (+61 Australie, +7 Russie…). On ne touche qu'aux 9 chiffres exactement.
- */
-function repairTruncatedFrenchMobile(cleaned) {
-  return /^\+[67]\d{8}$/.test(cleaned) ? '+33' + cleaned.slice(1) : cleaned;
-}
-
-/**
- * Check if a phone number is French (+33 or 0X format)
- */
-function isFrenchPhone(phone) {
-  if (!phone) return false;
-  const cleaned = repairTruncatedFrenchMobile(phone.replace(/[\s.-]/g, ''));
-  return /^(\+33|0033|0)[1-9]\d{8}$/.test(cleaned);
-}
-
-function formatPhoneInternational(phone) {
-  let cleaned = phone.replace(/[\s.-]/g, '');
-  if (cleaned.startsWith('0') && cleaned.length === 10) {
-    cleaned = '+33' + cleaned.substring(1);
-  }
-  if (!cleaned.startsWith('+')) {
-    cleaned = '+' + cleaned;
-  }
-  return repairTruncatedFrenchMobile(cleaned);
-}
+// Le traitement des numéros vit désormais dans utils/phone.js : il sert aussi à
+// l'écriture (middleware) et à l'affichage, pas seulement à l'envoi. Ces
+// ré-exports gardent l'ancienne surface d'appel intacte.
+const {
+  repairTruncatedFrenchMobile,
+  isFrenchPhone,
+  isFrenchMobile,
+  formatPhoneInternational,
+} = require('../../utils/phone');
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -262,6 +235,8 @@ module.exports = {
   formatDateFR,
   formatTime,
   isFrenchPhone,
+  isFrenchMobile,
+  repairTruncatedFrenchMobile,
   formatPhoneInternational,
   escapeHtml,
   htmlToText,

@@ -15,6 +15,7 @@ const { ApiError } = require('./utils/errors');
 const { trackError } = require('./utils/errorTracker');
 const { publicLimiter, adminLimiter } = require('./middleware/rateLimiter');
 const { requireAuth, requireBarber } = require('./middleware/auth');
+const { normalizePhoneFields } = require('./middleware/normalizePhone');
 const { GRACEFUL_SHUTDOWN_TIMEOUT_MS } = require('./constants');
 const { alertCronFailure } = require('./utils/discord');
 const { getParisTodayISO } = require('./utils/date');
@@ -196,6 +197,10 @@ app.use(cookieParser());
 // Body parsing
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: false }));
+
+// Répare les numéros de téléphone avant validation et écriture (voir le
+// middleware pour le détail : un seul point de passage plutôt que six routes).
+app.use(normalizePhoneFields);
 
 // Request logging (non-sensitive)
 app.use((req, res, next) => {

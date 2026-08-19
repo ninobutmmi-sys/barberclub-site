@@ -1,3 +1,5 @@
+const vraiTelephone = require('../../../src/utils/phone');
+
 module.exports = {
   sendConfirmationEmail: jest.fn().mockResolvedValue(true),
   sendCancellationEmail: jest.fn().mockResolvedValue(true),
@@ -15,20 +17,16 @@ module.exports = {
     smsSender: 'TEST',
   }),
   formatPhoneInternational: jest.fn((p) => p),
-  // Logique recopiée de services/notification/helpers.js (repairTruncatedFrenchMobile
-  // + isFrenchPhone). On ne peut pas require() le vrai module ici : il charge
-  // config/env, qui fait process.exit(1) quand les variables d'env manquent.
-  // Sans cette entrée, cron/reminders.js appelle isFrenchPhone === undefined,
-  // le TypeError est avalé par son try/catch et aucun rappel n'est mis en file.
-  repairTruncatedFrenchMobile: jest.fn((cleaned) => (
-    /^\+[67]\d{8}$/.test(cleaned) ? '+33' + cleaned.slice(1) : cleaned
-  )),
-  isFrenchPhone: jest.fn((phone) => {
-    if (!phone) return false;
-    const stripped = phone.replace(/[\s.-]/g, '');
-    const cleaned = /^\+[67]\d{8}$/.test(stripped) ? '+33' + stripped.slice(1) : stripped;
-    return /^(\+33|0033|0)[1-9]\d{8}$/.test(cleaned);
-  }),
+  // Le traitement des numéros vient du VRAI module. On ne peut pas require()
+  // services/notification (il charge config/env, qui fait process.exit(1) sans
+  // variables d'env), mais utils/phone.js est pur : aucune dépendance. La
+  // logique était auparavant recopiée ici à la main, et une copie finit
+  // toujours par diverger de l'original.
+  // Sans ces entrées, cron/reminders.js appelle une fonction undefined, le
+  // TypeError est avalé par son try/catch et aucun rappel n'est mis en file.
+  repairTruncatedFrenchMobile: jest.fn(vraiTelephone.repairTruncatedFrenchMobile),
+  isFrenchPhone: jest.fn(vraiTelephone.isFrenchPhone),
+  isFrenchMobile: jest.fn(vraiTelephone.isFrenchMobile),
   escapeHtml: jest.fn((s) => s),
   formatDateFR: jest.fn((dateStr) => {
     const d = new Date(dateStr + 'T00:00:00');
