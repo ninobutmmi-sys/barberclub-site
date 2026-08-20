@@ -426,6 +426,97 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .rv { opacity: 0; transform: translateY(22px); transition: opacity 0.85s ease, transform 0.85s cubic-bezier(0.16,1,0.3,1); }
 .rv.in { opacity: 1; transform: none; }
 
+/* ════════ L'ÉQUIPE ════════
+   Le dossier caviarde ce qui n'est pas encore public. Deux barbiers ont un
+   visage, deux n'ont qu'un fauteuil : la contrainte devient le sujet.
+   Le bleu froid — la couleur du secret sur cette page — ne sert qu'aux deux
+   qui restent à découvrir. Les révélés prennent des couleurs au survol ; les
+   autres restent gris, parce qu'il n'y a rien à révéler. */
+.eq-lede {
+    margin: -6px 0 22px; max-width: 42ch;
+    font-size: 14px; line-height: 1.6; color: var(--muted);
+}
+
+.eq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+.eq-card {
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;   /* aligne les badges en bas */
+    border: 1px solid var(--line); border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+}
+
+.eq-shot { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: #0a0a0b; }
+.eq-shot img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    filter: grayscale(1) contrast(1.06) brightness(0.88);
+    transition: filter 0.55s ease, transform 0.55s cubic-bezier(0.16,1,0.3,1);
+}
+/* Le visage se révèle quand on le regarde. Réservé à ceux qui en ont un. */
+.eq-card:not(.eq-soon):hover .eq-shot img { filter: none; transform: scale(1.03); }
+
+/* Voile bas pour que le nom tienne sur n'importe quelle photo. */
+.eq-shot::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.18) 38%, transparent 62%);
+}
+
+.eq-body {
+    position: relative; padding: 12px 14px 14px;
+    flex: 1; display: flex; flex-direction: column;
+}
+.eq-name {
+    font-family: 'Orbitron', sans-serif; font-weight: 800;
+    font-size: 15px; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.eq-role { margin-top: 3px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+
+/* margin-top:auto colle le badge au bas de la carte : les quatre s'alignent
+   quel que soit le nombre de lignes du rôle. flex-start pour que la pastille
+   reste sur la première ligne quand le texte passe sur deux. */
+.eq-when {
+    display: flex; align-items: flex-start; gap: 6px; margin-top: auto; padding-top: 12px;
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    font-size: 9.5px; line-height: 1.5; letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+}
+.eq-when::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%; margin-top: 4px;
+    background: rgba(255,255,255,0.45); flex: 0 0 auto;
+}
+
+/* Le gérant : une marque, pas une couleur de plus. */
+.eq-tag {
+    position: absolute; top: 10px; left: 10px; z-index: 1;
+    padding: 4px 8px; border-radius: 5px;
+    background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.18);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(255,255,255,0.82);
+}
+
+/* ── Les deux fauteuils encore vides ── */
+.eq-soon { border-color: rgba(var(--cold), 0.22); }
+.eq-soon .eq-shot img { filter: grayscale(1) brightness(0.7) contrast(1.1); }
+.eq-soon .eq-when { color: rgba(var(--cold), 0.72); }
+.eq-soon .eq-when::before { background: rgba(var(--cold), 0.75); }
+.eq-soon .eq-body::before {
+    content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 1px;
+    background: linear-gradient(to right, rgba(var(--cold),0.4), transparent);
+}
+
+@media (min-width: 760px) {
+    .eq-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .eq-name { font-size: 16px; }
+    .eq-body { padding: 14px 16px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .eq-shot img { transition: none; }
+    .eq-card:not(.eq-soon):hover .eq-shot img { transform: none; }
+}
+
 @media (min-width: 768px) {
     .hero { padding: 110px 24px 96px; }
     .hero-sub { font-size: 15px; max-width: 40ch; }
@@ -513,9 +604,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
             </div>
             <div class="row">
                 <span class="row-key">Équipe</span>
-                <span class="row-val">
-                    <button type="button" class="redacted" data-reveal="██ BARBIERS" aria-label="Composition de l'équipe non communiquée">███████████</button>
-                </span>
+                <span class="row-val">Quatre barbiers<small>Clément à la tête du salon</small></span>
             </div>
             <div class="row">
                 <span class="row-key">Prestations</span>
@@ -528,9 +617,65 @@ a:focus-visible, button:focus-visible, input:focus-visible {
         </div>
         <p class="denied-slot"><span class="denied" id="denied">Accès refusé — le dossier n'est pas encore déclassifié</span></p>
 
-        <!-- ════════ LA GRILLE ════════ -->
+        <!-- ════════ L'ÉQUIPE ════════ -->
         <div class="sec-head rv">
             <span class="sec-kicker">Annoncé aujourd'hui</span>
+            <h2 class="sec-title">L'équipe de Voiron</h2>
+        </div>
+
+        <p class="eq-lede rv">Quatre fauteuils. Deux visages que vous connaissez déjà, deux que vous découvrirez à l'ouverture.</p>
+
+        <div class="eq-grid rv">
+            <article class="eq-card">
+                <span class="eq-tag">Gérant</span>
+                <div class="eq-shot">
+                    <!-- Recadrage : la photo est une scène de salon, Clément est à gauche du cadre. -->
+                    <img src="../../assets/images/barbers/clement.jpg" alt="Clément, responsable du salon de Voiron" loading="lazy" width="1200" height="1682" style="object-position: 32% center;">
+                </div>
+                <div class="eq-body">
+                    <h3 class="eq-name">Clément</h3>
+                    <p class="eq-role">Il ouvre, il ferme, il tient la maison.</p>
+                    <span class="eq-when">Toute la semaine</span>
+                </div>
+            </article>
+
+            <article class="eq-card">
+                <div class="eq-shot">
+                    <img src="../../assets/images/barbers/julien.jpg" alt="Julien, fondateur de BarberClub" loading="lazy" width="1200" height="1682">
+                </div>
+                <div class="eq-body">
+                    <h3 class="eq-name">Julien</h3>
+                    <p class="eq-role">Le fondateur, venu de Meylan.</p>
+                    <span class="eq-when">Deux jours par semaine</span>
+                </div>
+            </article>
+
+            <article class="eq-card eq-soon">
+                <div class="eq-shot">
+                    <img src="../../assets/images/barbers/barber-soon.webp" alt="Fauteuil encore libre — portrait de Jules à venir" loading="lazy" width="900" height="1379">
+                </div>
+                <div class="eq-body">
+                    <h3 class="eq-name">Jules</h3>
+                    <p class="eq-role">Nouveau. Son fauteuil l'attend.</p>
+                    <span class="eq-when">Dès l'ouverture</span>
+                </div>
+            </article>
+
+            <article class="eq-card eq-soon">
+                <div class="eq-shot">
+                    <img src="../../assets/images/barbers/barber-soon.webp" alt="Fauteuil encore libre — portrait de Gab à venir" loading="lazy" width="900" height="1379">
+                </div>
+                <div class="eq-body">
+                    <h3 class="eq-name">Gab</h3>
+                    <p class="eq-role">Nouveau. Son fauteuil l'attend.</p>
+                    <span class="eq-when">Dès l'ouverture</span>
+                </div>
+            </article>
+        </div>
+
+        <!-- ════════ LA GRILLE ════════ -->
+        <div class="sec-head rv">
+            <span class="sec-kicker">Déjà déclassifié</span>
             <h2 class="sec-title">La grille de Voiron</h2>
         </div>
 
