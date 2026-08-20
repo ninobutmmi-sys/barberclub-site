@@ -522,30 +522,71 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 /* Le tag du gérant, posé sur la photo. */
 .eq-tag { z-index: 2; }
 
-/* ── Mobile : carrousel ──
-   Deux colonnes sur un écran de 390 px donnaient des cartes de 170 px, où le
-   texte mangeait la moitié de la hauteur. En carrousel, une seule carte à la
-   fois occupe 76 % de la largeur : le portrait passe de 115 à ~300 px de
-   haut. Le défilement reste natif (scroll-snap), donc le geste est fluide et
-   l'accessibilité clavier conservée ; le script ne fait qu'avancer tout seul. */
+/* ── Mobile : le manège ──
+   Un salon, c'est quatre fauteuils ; un manège, c'est un anneau de sièges qui
+   tourne. Les cartes sont posées sur un cylindre, à 90° l'une de l'autre, et
+   c'est l'anneau entier qui pivote.
+   Limite géométrique assumée : à quatre cartes, les voisines sont vues de
+   tranche et donc invisibles au repos. D'où l'anneau dessiné au sol — la base
+   du manège — qui rend le cercle lisible même à l'arrêt. */
+.eq-ring { position: relative; }
+.eq-floor { display: none; }
+
 @media (max-width: 759px) {
-    .eq-grid {
-        display: flex; gap: 12px;
-        overflow-x: auto; scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        /* déborde des marges du conteneur pour que les cartes touchent les bords */
-        margin: 0 -20px; padding: 2px 20px 4px;
+    .eq-ring {
+        perspective: 900px;
+        margin: 0 -20px;              /* le manège déborde des marges du texte */
+        padding-bottom: 26px;
     }
-    .eq-grid::-webkit-scrollbar { display: none; }
+
+    .eq-grid {
+        display: block; position: relative;
+        height: var(--eq-h, 300px);
+        transform-style: preserve-3d;
+        transform: translateZ(calc(var(--eq-r, 150px) * -1)) rotateY(var(--eq-rot, 0deg));
+        transition: transform 0.95s cubic-bezier(0.32, 0, 0.16, 1);
+        will-change: transform;
+    }
 
     .eq-card {
-        flex: 0 0 76%; aspect-ratio: 2 / 3;
-        scroll-snap-align: center; scroll-snap-stop: always;
+        position: absolute; top: 0; left: 50%;
+        width: var(--eq-w, 215px); margin-left: calc(var(--eq-w, 215px) / -2);
+        aspect-ratio: 3 / 4;
+        transform: rotateY(calc(var(--i) * 90deg)) translateZ(var(--eq-r, 150px));
+        opacity: 0.25;
+        transition: opacity 0.6s ease;
     }
+    .eq-card.is-front { opacity: 1; }
+
+    /* L'anneau au sol : le cercle du manège, vu en perspective. */
+    .eq-floor {
+        display: block; position: absolute; left: 50%; bottom: 8px;
+        width: calc(var(--eq-r, 150px) * 2.1); height: 42px;
+        margin-left: calc(var(--eq-r, 150px) * -1.05);
+        border: 1px solid rgba(var(--cold), 0.18);
+        border-radius: 50%;
+        box-shadow: 0 0 34px rgba(var(--cold), 0.07) inset;
+        pointer-events: none;
+    }
+
     .eq-body { padding: 0 16px 16px; }
     .eq-role { margin-top: 5px; font-size: 12.5px; line-height: 1.45; }
     .eq-when { margin-top: 11px; padding-top: 10px; font-size: 9.5px; }
+}
+
+/* Moins d'animations demandées : pas de manège du tout. On empile les quatre
+   cartes, tout est lisible d'un coup et rien ne bouge. */
+@media (max-width: 759px) and (prefers-reduced-motion: reduce) {
+    .eq-ring { perspective: none; margin: 0; padding-bottom: 0; }
+    .eq-grid {
+        display: grid; grid-template-columns: 1fr; gap: 12px;
+        height: auto; transform: none; transition: none;
+    }
+    .eq-card {
+        position: relative; left: auto; top: auto; width: auto; margin-left: 0;
+        transform: none; opacity: 1; aspect-ratio: 3 / 4;
+    }
+    .eq-floor, .eq-dots { display: none; }
 }
 
 /* Pastilles de position — masquées en desktop, où tout est visible d'un coup. */
@@ -691,7 +732,9 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 
         <p class="eq-lede rv">Quatre fauteuils. Deux visages que vous connaissez déjà, deux que vous découvrirez à l'ouverture.</p>
 
-        <div class="eq-grid rv" id="eqGrid" role="group" aria-label="L'équipe de Voiron">
+        <div class="eq-ring rv" id="eqRing">
+        <div class="eq-floor" aria-hidden="true"></div>
+        <div class="eq-grid" id="eqGrid" role="group" aria-label="L'équipe de Voiron">
             <article class="eq-card">
                 <span class="eq-tag">Gérant</span>
                 <div class="eq-shot">
@@ -737,6 +780,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
                     <span class="eq-when">Dès l'ouverture</span>
                 </div>
             </article>
+        </div>
+
         </div>
 
         <!-- Pastilles du carrousel mobile : remplies par le script, inutiles sans lui. -->
@@ -1018,19 +1063,61 @@ a:focus-visible, button:focus-visible, input:focus-visible {
        4. il ne s'active pas en desktop, où les quatre cartes sont déjà là.
        Le défilement lui-même reste natif (scroll-snap) : sans JavaScript, on
        peut toujours faire glisser à la main. */
-    (function carrouselEquipe() {
-        const rail = document.getElementById('eqGrid');
+    (function manegeEquipe() {
+        const ring = document.getElementById('eqRing');
+        const stage = document.getElementById('eqGrid');
         const dots = document.getElementById('eqDots');
-        if (!rail || !dots) return;
+        if (!ring || !stage || !dots) return;
 
-        const cartes = Array.from(rail.querySelectorAll('.eq-card'));
+        const cartes = Array.from(stage.querySelectorAll('.eq-card'));
         if (cartes.length < 2) return;
 
+        const PAS = 360 / cartes.length;      // 90° pour quatre fauteuils
+        const DELAI = 4000;
+        const REPRISE = 6000;                 // délai avant de reprendre la main
         const mobile = matchMedia('(max-width: 759px)');
-        const DELAI = 4500;
-        let timer = null;
-        let index = 0;
-        let stoppe = false;   // le visiteur a pris la main
+        let timer = null, reprise = null, index = 0, visible = false, enPause = false;
+
+        cartes.forEach((c, i) => c.style.setProperty('--i', i));
+
+        /* Le rayon se calcule sur la largeur réelle : le manège doit tenir sur
+           un iPhone SE comme sur un Pro Max. */
+        function mesurer() {
+            const w = Math.round(ring.clientWidth * 0.58);
+            ring.style.setProperty('--eq-w', w + 'px');
+            ring.style.setProperty('--eq-r', Math.round(w * 0.72) + 'px');
+            ring.style.setProperty('--eq-h', Math.round(w * 4 / 3) + 'px');
+        }
+
+        function placer(i) {
+            index = ((i % cartes.length) + cartes.length) % cartes.length;
+            stage.style.setProperty('--eq-rot', (-index * PAS) + 'deg');
+            cartes.forEach((c, n) => c.classList.toggle('is-front', n === index));
+            Array.from(dots.children).forEach((p, n) =>
+                p.setAttribute('aria-current', String(n === index)));
+        }
+
+        function tourner() { if (!reduced) placer(index + 1); }
+
+        function demarrer() {
+            // enPause verrouille la fenêtre de pause : sans ce garde-fou,
+            // l'observateur de visibilité relançait le manège dans la seconde
+            // qui suit le geste du visiteur, annulant la pause.
+            if (timer || reduced || enPause || !mobile.matches || !visible) return;
+            timer = setInterval(tourner, DELAI);
+        }
+        function suspendre() { if (timer) { clearInterval(timer); timer = null; } }
+
+        /* Pause, pas arrêt définitif. La version précédente se coupait au
+           premier contact — or sur mobile, faire défiler la page verticalement
+           pose le doigt sur les cartes : le manège s'arrêtait dès le premier
+           geste, sans jamais repartir. */
+        function pause() {
+            enPause = true;
+            suspendre();
+            if (reprise) clearTimeout(reprise);
+            reprise = setTimeout(() => { enPause = false; demarrer(); }, REPRISE);
+        }
 
         cartes.forEach((carte, i) => {
             const nom = carte.querySelector('.eq-name');
@@ -1038,66 +1125,44 @@ a:focus-visible, button:focus-visible, input:focus-visible {
             d.type = 'button';
             d.className = 'eq-dot';
             d.setAttribute('aria-label', 'Voir ' + (nom ? nom.textContent.trim() : 'la carte ' + (i + 1)));
-            d.addEventListener('click', () => { arreter(); aller(i); });
+            d.addEventListener('click', () => { pause(); placer(i); });
             dots.appendChild(d);
         });
-        const pastilles = Array.from(dots.children);
 
-        function marquer(i) {
-            pastilles.forEach((p, n) => p.setAttribute('aria-current', String(n === i)));
-        }
-
-        function aller(i) {
-            index = (i + cartes.length) % cartes.length;
-            rail.scrollTo({
-                left: cartes[index].offsetLeft - (rail.clientWidth - cartes[index].clientWidth) / 2,
-                behavior: reduced ? 'auto' : 'smooth',
-            });
-            marquer(index);
-        }
-
-        function demarrer() {
-            if (stoppe || timer || reduced || !mobile.matches) return;
-            timer = setInterval(() => aller(index + 1), DELAI);
-        }
-        function suspendre() {
-            if (timer) { clearInterval(timer); timer = null; }
-        }
-        function arreter() { stoppe = true; suspendre(); }
-
-        // Le geste du visiteur prime : au premier contact, on rend la main.
-        ['pointerdown', 'touchstart', 'wheel', 'keydown'].forEach((ev) =>
-            rail.addEventListener(ev, arreter, { passive: true, once: true }));
-
-        // Suit la position réelle du rail, y compris quand on fait glisser.
-        let tempo = null;
-        rail.addEventListener('scroll', () => {
-            if (tempo) clearTimeout(tempo);
-            tempo = setTimeout(() => {
-                const centre = rail.scrollLeft + rail.clientWidth / 2;
-                let proche = 0, ecart = Infinity;
-                cartes.forEach((c, i) => {
-                    const d = Math.abs(c.offsetLeft + c.clientWidth / 2 - centre);
-                    if (d < ecart) { ecart = d; proche = i; }
-                });
-                index = proche;
-                marquer(index);
-            }, 90);
+        /* Glisser pour tourner. On ne capte le geste que s'il est franchement
+           horizontal, sinon on bloquerait le défilement vertical de la page. */
+        let x0 = null, y0 = null, pris = false;
+        ring.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; pris = false; });
+        ring.addEventListener('pointermove', (e) => {
+            if (x0 === null || pris) return;
+            const dx = e.clientX - x0, dy = e.clientY - y0;
+            if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy)) {
+                pris = true;
+                pause();
+                placer(index + (dx < 0 ? 1 : -1));
+            }
         }, { passive: true });
+        ring.addEventListener('pointerup', () => { x0 = null; });
+        ring.addEventListener('pointercancel', () => { x0 = null; });
 
-        marquer(0);
+        mesurer();
+        placer(0);
+        addEventListener('resize', mesurer, { passive: true });
 
         // Ne tourne que sous les yeux du visiteur.
         if ('IntersectionObserver' in window) {
             new IntersectionObserver((entrees) => {
-                entrees.forEach((e) => (e.isIntersecting ? demarrer() : suspendre()));
-            }, { threshold: 0.35 }).observe(rail);
+                entrees.forEach((e) => {
+                    visible = e.isIntersecting;
+                    if (visible) demarrer(); else suspendre();
+                });
+            }, { threshold: 0.3 }).observe(ring);
         } else {
-            demarrer();
+            visible = true; demarrer();
         }
 
-        // Repasser en desktop remet la grille : plus rien à faire tourner.
         mobile.addEventListener('change', () => {
+            mesurer();
             if (!mobile.matches) suspendre(); else demarrer();
         });
         document.addEventListener('visibilitychange', () => {
