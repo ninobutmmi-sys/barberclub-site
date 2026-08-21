@@ -1,6 +1,7 @@
 #!/bin/bash
 # Deploy site vitrine sur Cloudflare Pages
-# IMPORTANT: exclut backend/, .claude/, .env, docs/ (pitch privé), sources/ (masters
+# IMPORTANT: exclut backend/, .claude/, .env, docs/ (pitch privé), fidelite-club-prive/
+# (dossier de transmission à l'équipe app, pas destiné au public), sources/ (masters
 # non optimisés, ex. le PNG 5,8 Mo dont sort salon-voiron-nuit.webp) et tout fichier sensible
 
 set -e
@@ -23,6 +24,8 @@ rsync -a \
   --exclude='tests' \
   --exclude='docs' \
   --exclude='mockups' \
+  --exclude='fidelite-club-prive' \
+  --exclude='fidelite-club-prive.zip' \
   --exclude='sources' \
   --exclude='.DS_Store' \
   --exclude='playwright.config.js' \

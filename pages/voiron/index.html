@@ -268,6 +268,87 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .row-val { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 0.01em; color: #fff; }
 .row-val small { display: block; margin-top: 5px; font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 400; letter-spacing: 0; color: rgba(255,255,255,0.42); }
 
+/* ════════ COMPTE À REBOURS ════════
+   Repris du composant de offres.html (Grenoble et Meylan). Une seule différence, et c'est
+   le sujet de la page : la case des JOURS est floue. Les heures, minutes et
+   secondes, elles, sont exactes — l'échéance étant fixée à minuit, le temps
+   restant dans la journée ne dépend pas du jour d'ouverture. Seul le nombre
+   de jours est inconnu, et c'est le seul chiffre qu'on ne laisse pas lire. */
+.countdown {
+    display: flex; gap: 9px; align-items: flex-start; justify-content: center;
+    margin: 30px 0 0;
+    opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.75s forwards;
+}
+.cd-unit { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.cd-digit {
+    width: 58px; height: 66px; display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; position: relative; overflow: hidden;
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+}
+.cd-digit::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50%;
+    background: rgba(255,255,255,0.02); pointer-events: none;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.cd-digit::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center 25%, rgba(255,255,255,0.04) 0%, transparent 70%);
+}
+.cd-digit span {
+    font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 27px;
+    letter-spacing: -1px; position: relative; z-index: 1;
+    text-shadow: 0 0 24px rgba(255,255,255,0.1);
+}
+.cd-digit-wide { width: 84px; }
+.cd-digit-wide span { font-size: 24px; letter-spacing: 0; }
+.cd-label { font-size: 8px; font-weight: 600; letter-spacing: 2.4px; text-transform: uppercase; color: rgba(255,255,255,0.2); }
+.cd-sep {
+    font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 23px;
+    color: rgba(255,255,255,0.15); align-self: flex-start; margin-top: 17px;
+}
+/* La case des jours : on voit qu'il y a deux chiffres, on ne les lit pas. */
+.cd-unit.unknown .cd-digit { border-color: rgba(var(--cold), 0.2); background: rgba(var(--cold), 0.05); }
+.cd-unit.unknown .cd-label { color: rgba(var(--cold), 0.42); }
+.cd-digit-blur span {
+    filter: blur(2.6px); opacity: 0.7; text-shadow: none;
+    -webkit-user-select: none; user-select: none;
+    transition: filter 0.5s ease, opacity 0.5s ease;
+}
+@keyframes cdDrift {
+    0%   { opacity: 0.7; transform: translateY(0); }
+    32%  { opacity: 0.2; transform: translateY(-3px); }
+    100% { opacity: 0.7; transform: translateY(0); }
+}
+.cd-digit-blur.drift span { animation: cdDrift 0.45s cubic-bezier(0.4, 0, 0.2, 1); }
+.cd-note {
+    margin: 15px 0 0; font-size: 11px; letter-spacing: 0.02em;
+    color: rgba(255,255,255,0.38);
+    opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.9s forwards;
+}
+@media (min-width: 760px) {
+    .countdown { gap: 12px; margin-top: 34px; }
+    .cd-digit { width: 68px; height: 76px; border-radius: 16px; }
+    .cd-digit span { font-size: 32px; }
+    .cd-digit-wide { width: 100px; }
+    .cd-digit-wide span { font-size: 29px; }
+    .cd-digit-blur span { filter: blur(3.1px); }   /* suit la taille de la case */
+    .cd-sep { font-size: 26px; margin-top: 20px; }
+    .cd-note { font-size: 12px; }
+}
+@media (max-width: 359px) {
+    .cd-digit { width: 50px; height: 58px; }
+    .cd-digit span { font-size: 23px; }
+    .cd-digit-wide { width: 72px; }
+    .cd-digit-wide span { font-size: 20px; }
+    .countdown { gap: 6px; }
+    .cd-digit-blur span { filter: blur(3.1px); }
+    .cd-sep { font-size: 19px; margin-top: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cd-digit-blur.drift span { animation: none; }
+}
+
 .redacted {
     position: relative; display: inline-flex; align-items: center;
     min-height: 44px; padding: 5px 14px;   /* cible tactile */
@@ -296,7 +377,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .denied { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(var(--cold), 0.8); opacity: 0; transform: translateY(-3px); transition: opacity 0.35s ease, transform 0.35s ease; }
 .denied.show { opacity: 1; transform: none; }
 
-/* ════════ TARIFS — même système de cartes que pages/*/prestations.html ════════ */
+/* ════════ TARIFS — même système de cartes que les pages prestations ════════ */
 .tarif-group { margin-top: 30px; }
 .tarif-group:first-of-type { margin-top: 0; }
 .category-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
@@ -677,6 +758,24 @@ a:focus-visible, button:focus-visible, input:focus-visible {
                 Le <strong>troisième BarberClub</strong> ouvre en <strong>octobre 2026</strong>.
                 Les travaux sont en cours, le reste n'est pas encore communicable.
             </p>
+
+            <div class="countdown" aria-label="Date d'ouverture : octobre 2026, le jour n'est pas communiqué">
+                <div class="cd-unit">
+                    <div class="cd-digit cd-digit-wide" id="cdY"><span>2026</span></div>
+                    <div class="cd-label">Année</div>
+                </div>
+                <div class="cd-sep" aria-hidden="true">/</div>
+                <div class="cd-unit">
+                    <div class="cd-digit" id="cdMo"><span>10</span></div>
+                    <div class="cd-label">Mois</div>
+                </div>
+                <div class="cd-sep" aria-hidden="true">/</div>
+                <div class="cd-unit unknown">
+                    <div class="cd-digit cd-digit-blur" id="cdD"><span aria-hidden="true">--</span></div>
+                    <div class="cd-label">Jour</div>
+                </div>
+            </div>
+            <p class="cd-note">Le mois est acté, le jour non. On vise la seconde moitié d'octobre.</p>
         </div>
 
         <a href="#dossier" class="scroll-cue" aria-label="Aller au dossier">
@@ -1184,6 +1283,50 @@ a:focus-visible, button:focus-visible, input:focus-visible {
         }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
         rv.forEach((el) => obs.observe(el));
     }
+
+    /* ═══ Date d'ouverture ═══
+       L'année et le mois sont acquis, le jour non : c'est le seul chiffre
+       qu'on ne laisse pas lire. Il roule dans la fourchette annoncée (seconde
+       moitié d'octobre) derrière un flou — on voit qu'il y a deux chiffres,
+       on n'en lit aucun. */
+    (() => {
+        const jour = document.getElementById('cdD');
+        if (!jour) return;
+        const val = jour.querySelector('span');
+        const MIN = 13, MAX = 31;   // seconde moitié d'octobre
+        const CADENCE = 1700;
+        let dernier = null, visible = true, aLecran = true, timer = null;
+
+        const tirer = () => {
+            let n;
+            do { n = MIN + Math.floor(Math.random() * (MAX - MIN + 1)); } while (n === dernier);
+            dernier = n;
+            val.textContent = String(n).padStart(2, '0');
+            if (reduced) return;
+            jour.classList.remove('drift');
+            void jour.offsetWidth;
+            jour.classList.add('drift');
+        };
+
+        const stop = () => { clearInterval(timer); timer = null; };
+        const demarrer = () => {
+            if (reduced || timer || !visible || !aLecran) return;
+            timer = setInterval(tirer, CADENCE);
+        };
+
+        tirer();
+        if ('IntersectionObserver' in window) {
+            new IntersectionObserver((e) => {
+                aLecran = e[0].isIntersecting;
+                aLecran ? demarrer() : stop();
+            }, { threshold: 0.2 }).observe(jour);
+        }
+        document.addEventListener('visibilitychange', () => {
+            visible = !document.hidden;
+            visible ? demarrer() : stop();
+        });
+        demarrer();
+    })();
 
     /* ═══ Lignes caviardées ═══
        On brouille quelques glyphes puis on retombe sur le bloc : le dossier
