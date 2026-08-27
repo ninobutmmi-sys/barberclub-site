@@ -19,16 +19,14 @@ const SALONS = [
     image: '/salons/comptoir-grenoble.webp',
   },
   {
-    // Salon pas encore ouvert : la carte est volontairement non cliquable.
-    // Il n'existe aucun salon_id 'voiron' en base, et l'API admin n'accepte
-    // que meylan et grenoble — le selectionner enfermerait l'utilisateur
-    // sur un dashboard qui repond 403 partout.
+    // Ouvert au dashboard depuis la migration 071 : le salon existe en base et
+    // l'API accepte salon_id='voiron' partout (SALON_IDS dans config/env.js).
+    // L'equipe et les prestations se saisissent a la main depuis le dashboard.
     id: 'voiron',
     name: 'Voiron',
     address: '5 Av. Leon et Joanny Tardy, 38500 Voiron',
-    barbers: ['Clement', 'Julien'],
+    barbers: [],
     image: '/salons/facade-voiron.webp',
-    soon: true,
   },
 ];
 

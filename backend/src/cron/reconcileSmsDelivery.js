@@ -11,6 +11,7 @@ const db = require('../config/database');
 const logger = require('../utils/logger');
 const { getBrevoConfig, brevoEmail } = require('../services/notification/brevo');
 const { notifySmsFailed } = require('../services/push');
+const { SALON_IDS } = require('../config/env');
 const {
   BREVO_SMS_RECONCILE_LOOKBACK_HOURS,
   BREVO_SMS_DELIVERY_TIMEOUT_MS,
@@ -159,7 +160,7 @@ async function reconcileSmsDelivery() {
   // Brevo" ; en configuration mixte (Meylan Brevo + Grenoble Twilio) c'est le
   // filtre par salon qui fait le travail.
   const providerOf = (id) => (process.env['SMS_PROVIDER_' + String(id).toUpperCase()] || process.env.SMS_PROVIDER || 'brevo').toLowerCase();
-  const brevoSalons = ['meylan', 'grenoble'].filter((s) => providerOf(s) === 'brevo');
+  const brevoSalons = SALON_IDS.filter((s) => providerOf(s) === 'brevo');
   if (brevoSalons.length === 0) return;
 
   // 1. Check if we have any SMS still pending — skip Brevo API call if not

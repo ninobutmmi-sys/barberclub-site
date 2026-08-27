@@ -79,13 +79,52 @@ const SALONS = {
     },
     smsProvider: (process.env.SMS_PROVIDER_GRENOBLE || process.env.SMS_PROVIDER || 'brevo').toLowerCase(),
   },
+  voiron: {
+    name: process.env.SALON_VOIRON_NAME || 'BarberClub Voiron',
+    address: process.env.SALON_VOIRON_ADDRESS || '5 Av. Léon et Joanny Tardy, 38500 Voiron',
+    phone: process.env.SALON_VOIRON_PHONE || '',
+    googleReviewUrl: process.env.GOOGLE_REVIEW_URL_VOIRON || '',
+    bookingPath: '/pages/voiron',
+    mapsUrl: 'https://maps.google.com/?q=5+Av+L%C3%A9on+et+Joanny+Tardy+38500+Voiron',
+    heroImage: '/assets/images/salons/voiron/salon-voiron-nuit.webp',
+    brevo: {
+      apiKey: process.env.BREVO_API_KEY_VOIRON || '',
+      senderEmail: process.env.BREVO_SENDER_EMAIL_VOIRON || 'noreply@barberclub-grenoble.fr',
+      senderName: process.env.BREVO_SENDER_NAME_VOIRON || 'BarberClub Voiron',
+      smsSender: process.env.BREVO_SMS_SENDER_VOIRON || 'BARBERCLUB',
+    },
+    twilio: {
+      accountSid: process.env.TWILIO_ACCOUNT_SID_VOIRON || process.env.TWILIO_ACCOUNT_SID || '',
+      authToken: process.env.TWILIO_AUTH_TOKEN_VOIRON || process.env.TWILIO_AUTH_TOKEN || '',
+      smsSender: process.env.TWILIO_SMS_SENDER_VOIRON || process.env.TWILIO_SMS_SENDER || 'BARBERCLUB',
+      statusCallbackUrl: process.env.TWILIO_STATUS_CALLBACK_URL_VOIRON || process.env.TWILIO_STATUS_CALLBACK_URL || '',
+    },
+    smsProvider: (process.env.SMS_PROVIDER_VOIRON || process.env.SMS_PROVIDER || 'brevo').toLowerCase(),
+  },
 };
 
+// La liste des salons, en un seul endroit. Elle était recopiée à la main dans
+// 21 fichiers sous la forme `isIn(['meylan', 'grenoble'])` : ajouter un salon
+// demandait de n'en oublier aucun, et un oubli se traduisait par un 400 sur
+// une route au hasard.
+const SALON_IDS = Object.keys(SALONS);
+
 function getSalonConfig(salonId) {
-  return SALONS[salonId] || SALONS.meylan;
+  const salon = SALONS[salonId];
+  if (salon) return salon;
+  // Le repli était silencieux : un salon inconnu recevait la configuration de
+  // Meylan, donc son nom, son adresse et son expéditeur Brevo. Un client de
+  // Voiron aurait reçu une confirmation signée « BarberClub Meylan » sans que
+  // rien ne signale l'erreur. On replie toujours, pour ne pas casser un envoi
+  // en cours, mais on le dit fort.
+  // eslint-disable-next-line no-console
+  console.error(`[config] salon inconnu « ${salonId} » — repli sur Meylan. `
+    + `Salons connus : ${SALON_IDS.join(', ')}`);
+  return SALONS.meylan;
 }
 
 module.exports = {
+  SALON_IDS,
   port: parseInt(process.env.PORT, 10) || 3000,
   nodeEnv: process.env.NODE_ENV || 'development',
   databaseUrl: process.env.DATABASE_URL,

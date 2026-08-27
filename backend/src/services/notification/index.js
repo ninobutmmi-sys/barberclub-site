@@ -10,6 +10,7 @@ const helpers = require('./helpers');
 const brevo = require('./brevo');
 const twilio = require('./twilio');
 const config = require('../../config/env');
+const { SALON_IDS } = require('../../config/env');
 const logger = require('../../utils/logger');
 const templates = require('./templates');
 const queue = require('./queue');
@@ -29,7 +30,7 @@ async function sendSMS(phone, content, salonId = 'meylan') {
 }
 
 function getSmsProviderStatus(salonId) {
-  const ids = salonId ? [salonId] : ['meylan', 'grenoble'];
+  const ids = salonId ? [salonId] : SALON_IDS;
   const perSalon = {};
   for (const id of ids) {
     const salon = config.getSalonConfig(id);
@@ -45,7 +46,7 @@ function getSmsProviderStatus(salonId) {
 
 async function checkSmsProviderKeys() {
   // Check Twilio if any salon uses it
-  const anyTwilio = ['meylan', 'grenoble'].some((id) => {
+  const anyTwilio = SALON_IDS.some((id) => {
     const salon = config.getSalonConfig(id);
     return ((salon && salon.smsProvider) || config.smsProvider || 'brevo').toLowerCase() === 'twilio';
   });

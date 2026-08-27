@@ -1,5 +1,6 @@
 const db = require('../../config/database');
 const config = require('../../config/env');
+const { SALON_IDS } = require('../../config/env');
 const logger = require('../../utils/logger');
 const {
   BREVO_CIRCUIT_THRESHOLD,
@@ -111,7 +112,7 @@ function recordBrevoFailure(salonId = 'meylan', statusCode) {
  * Pass a salonId to get only that salon's status; omit to get all salons (internal use).
  */
 function getBrevoStatus(salonId) {
-  const salonIds = salonId ? [salonId] : ['meylan', 'grenoble'];
+  const salonIds = salonId ? [salonId] : SALON_IDS;
   const result = {};
   for (const id of salonIds) {
     const circuit = getCircuit(id);
@@ -135,7 +136,7 @@ function getBrevoStatus(salonId) {
  * Check Brevo API keys on startup -- logs warning if a key is dead
  */
 async function checkBrevoKeys() {
-  for (const salonId of ['meylan', 'grenoble']) {
+  for (const salonId of SALON_IDS) {
     const brevo = getBrevoConfig(salonId);
     if (!brevo.apiKey) {
       logger.warn(`Brevo API key not configured for ${salonId}`);

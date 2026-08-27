@@ -163,7 +163,7 @@ const DRAWER_NAV = [
   { to: '/messages', label: 'Messages', icon: NAV.find(n => n.to === '/messages').icon },
 ];
 
-const SALON_LABELS = { meylan: 'Meylan', grenoble: 'Grenoble' };
+const SALON_LABELS = { meylan: 'Meylan', grenoble: 'Grenoble', voiron: 'Voiron' };
 
 export default function Layout() {
   const { user, salon, logout, clearSalon } = useAuth();

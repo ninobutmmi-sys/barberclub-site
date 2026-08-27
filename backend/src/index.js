@@ -4,6 +4,7 @@
 
 const http = require('http');
 const config = require('./config/env');
+const { SALON_IDS } = require('./config/env');
 const db = require('./config/database');
 const express = require('express');
 const helmet = require('helmet');
@@ -236,7 +237,7 @@ adminRouter.use(requireAuth, requireBarber, adminLimiter);
 // Verify the barber belongs to the requested salon or is a guest there today
 adminRouter.use(async (req, res, next) => {
   const fromRequest = req.query.salon_id || req.body?.salon_id;
-  if (fromRequest && ['meylan', 'grenoble'].includes(fromRequest)) {
+  if (fromRequest && SALON_IDS.includes(fromRequest)) {
     if (fromRequest !== req.user.salon_id) {
       // Check if barber is a guest in the requested salon today
       try {

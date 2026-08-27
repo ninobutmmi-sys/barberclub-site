@@ -6,6 +6,7 @@ const { body, validationResult } = require('express-validator');
 const { publicLimiter } = require('../middleware/rateLimiter');
 const logger = require('../utils/logger');
 const { normalizeEmail } = require('../utils/email');
+const { SALON_IDS } = require('../config/env');
 
 // POST /api/event-alerts — Subscribe to an event alert (public)
 publicRouter.post('/',
@@ -13,7 +14,7 @@ publicRouter.post('/',
   [
     body('email').isEmail().customSanitizer(normalizeEmail).withMessage('Email invalide'),
     body('event_name').trim().notEmpty().isLength({ max: 100 }).withMessage('Événement requis'),
-    body('salon_id').isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    body('salon_id').isIn(SALON_IDS).withMessage('Salon invalide'),
   ],
   async (req, res) => {
     const errors = validationResult(req);

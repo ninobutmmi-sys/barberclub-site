@@ -10,6 +10,7 @@ const { queueNotification } = require('../../services/notification');
 const logger = require('../../utils/logger');
 const db = require('../../config/database');
 const { BCRYPT_ROUNDS } = require('../../constants');
+const { SALON_IDS } = require('../../config/env');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -538,7 +539,7 @@ router.post('/:id/guest-days',
   [
     param('id').matches(uuidRegex),
     body('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide'),
-    body('host_salon_id').isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    body('host_salon_id').isIn(SALON_IDS).withMessage('Salon invalide'),
     body('start_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure debut invalide'),
     body('end_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure fin invalide'),
   ],

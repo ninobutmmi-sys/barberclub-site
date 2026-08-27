@@ -7,6 +7,7 @@ const { ApiError } = require('../utils/errors');
 const db = require('../config/database');
 const logger = require('../utils/logger');
 const { normalizeEmail } = require('../utils/email');
+const { SALON_IDS } = require('../config/env');
 
 const router = Router();
 
@@ -87,7 +88,7 @@ router.put('/profile',
 // GET /api/client/bookings
 // ============================================
 router.get('/bookings',
-  [query('salon_id').optional().isIn(['meylan', 'grenoble'])],
+  [query('salon_id').optional().isIn(SALON_IDS)],
   handleValidation,
   async (req, res, next) => {
   try {

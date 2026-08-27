@@ -325,9 +325,12 @@ describe('POST /api/auth/register', () => {
   });
 
   it('refuse un salon_id inconnu', async () => {
+    // 'voiron' servait ici de salon inexistant. Il existe depuis l'ouverture
+    // du troisième salon : le test vérifiait donc que Voiron était refusé.
+    // On prend un identifiant qui, lui, n'est vraiment pas un salon.
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ ...validRegistration, salon_id: 'voiron' });
+      .send({ ...validRegistration, salon_id: 'chambery' });
 
     expect(res.status).toBe(400);
   });

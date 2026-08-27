@@ -1,5 +1,6 @@
 const db = require('../../config/database');
 const config = require('../../config/env');
+const { SALON_IDS } = require('../../config/env');
 const logger = require('../../utils/logger');
 const {
   BREVO_CIRCUIT_THRESHOLD,
@@ -111,7 +112,7 @@ function recordFailure(salonId = 'meylan', err) {
  * Get Twilio status, scoped to a salon (used by systemHealth + dashboard).
  */
 function getTwilioStatus(salonId) {
-  const salonIds = salonId ? [salonId] : ['meylan', 'grenoble'];
+  const salonIds = salonId ? [salonId] : SALON_IDS;
   const result = {};
   for (const id of salonIds) {
     const c = getCircuit(id);
@@ -133,7 +134,7 @@ function getTwilioStatus(salonId) {
  * Calls accounts.fetch() which fails fast if SID/Token are wrong.
  */
 async function checkTwilioKeys() {
-  for (const salonId of ['meylan', 'grenoble']) {
+  for (const salonId of SALON_IDS) {
     const cfg = getTwilioConfig(salonId);
     if (!cfg.accountSid || !cfg.authToken) {
       logger.warn(`Twilio not configured for ${salonId}`);

@@ -19,6 +19,14 @@ import {
   useNoShowStats,
 } from '../hooks/useApi';
 
+// Les salons affichés dans la répartition. Une seule liste, à compléter le
+// jour où un quatrième salon ouvre.
+const SALON_CARDS = [
+  { id: 'meylan', label: 'Meylan', dot: '#60a5fa' },
+  { id: 'grenoble', label: 'Grenoble', dot: '#f472b6' },
+  { id: 'voiron', label: 'Voiron', dot: '#4ade80' },
+];
+
 // ============================================
 // Helpers
 // ============================================
@@ -967,21 +975,18 @@ function AccountsSection({ stats }) {
       </div>
 
       {/* Per-salon breakdown */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Meylan</div>
-            <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }}>{stats.by_salon?.meylan || 0}</div>
+      {/* Piloté par la liste des salons : une carte codée en dur par salon
+          aurait laissé Voiron hors du compte sans rien signaler. */}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${SALON_CARDS.length}, 1fr)`, gap: 10, marginBottom: 16 }}>
+        {SALON_CARDS.map((s) => (
+          <div key={s.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }}>{stats.by_salon?.[s.id] || 0}</div>
+            </div>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.dot }} />
           </div>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#60a5fa' }} />
-        </div>
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Grenoble</div>
-            <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }}>{stats.by_salon?.grenoble || 0}</div>
-          </div>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f472b6' }} />
-        </div>
+        ))}
       </div>
 
       {/* Monthly trend bars */}

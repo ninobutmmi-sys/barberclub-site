@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { body } = require('express-validator');
 const db = require('../config/database');
 const config = require('../config/env');
+const { SALON_IDS } = require('../config/env');
 const { handleValidation } = require('../middleware/validate');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { generateAccessToken, generateRefreshToken } = require('../middleware/auth');
@@ -50,7 +51,7 @@ router.post('/login',
     body('email').isEmail().withMessage('Email invalide').customSanitizer(normalizeEmail),
     body('password').notEmpty().withMessage('Mot de passe requis'),
     body('type').isIn(['barber', 'client']).withMessage('Type invalide'),
-    body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    body('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
@@ -183,7 +184,7 @@ router.post('/register',
     // Optionnel : la page /mon-compte de la racine est commune aux deux salons
     // et n'a donc rien à envoyer. Depuis pages/meylan/ ou pages/grenoble/, le
     // salon est connu et sert à rattacher le client.
-    body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    body('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
@@ -404,7 +405,7 @@ router.post('/forgot-password',
   authLimiter,
   [
     body('email').isEmail().withMessage('Email invalide').customSanitizer(normalizeEmail),
-    body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    body('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {

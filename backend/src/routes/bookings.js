@@ -10,6 +10,7 @@ const { ApiError } = require('../utils/errors');
 const db = require('../config/database');
 const { MAX_BOOKING_ADVANCE_MONTHS } = require('../constants');
 const ws = require('../services/websocket');
+const { SALON_IDS } = require('../config/env');
 
 const router = Router();
 
@@ -20,7 +21,7 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 // GET /api/barbers — List active barbers
 // ============================================
 router.get('/barbers', publicLimiter,
-  [query('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide')],
+  [query('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide')],
   handleValidation,
   async (req, res, next) => {
   try {
@@ -145,7 +146,7 @@ router.get('/barbers', publicLimiter,
 router.get('/services', publicLimiter,
   [
     query('barber_id').optional().custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide'),
-    query('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    query('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
@@ -229,7 +230,7 @@ router.get('/availability/month',
     query('year').isInt({ min: 2024, max: 2030 }).withMessage('Année invalide'),
     query('month').isInt({ min: 0, max: 11 }).withMessage('Mois invalide (0-11)'),
     query('barber_id').optional().custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide'),
-    query('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    query('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
     query('include_alternatives').optional().isIn(['true', 'false']).withMessage('Valeur invalide'),
   ],
   handleValidation,
@@ -263,7 +264,7 @@ router.get('/availability',
     query('date').matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date invalide (format: YYYY-MM-DD)')
       .custom((val) => !isNaN(new Date(val + 'T00:00:00').getTime())).withMessage('Date invalide'),
     query('barber_id').optional().custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide'),
-    query('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    query('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
@@ -329,7 +330,7 @@ router.post('/bookings',
       }
       return true;
     }),
-    body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    body('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
@@ -376,7 +377,7 @@ router.get('/bookings/lookup',
   [
     query('phone').trim().notEmpty().withMessage('Téléphone requis')
       .matches(/^(\+\d{7,15}|0[1-9]\d{8})$/).withMessage('Numéro invalide'),
-    query('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    query('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
@@ -545,7 +546,7 @@ router.post('/waitlist',
       .matches(/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14}|0[1-9]\d{8})$/).withMessage('Numéro de téléphone invalide'),
     body('preferred_time_start').optional({ values: 'falsy' }).matches(/^([01]\d|2[0-3]):[0-5]\d$/),
     body('preferred_time_end').optional({ values: 'falsy' }).matches(/^([01]\d|2[0-3]):[0-5]\d$/),
-    body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
+    body('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
   ],
   handleValidation,
   async (req, res, next) => {

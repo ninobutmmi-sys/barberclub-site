@@ -49,6 +49,7 @@ const AMPLITUDE_FIN = 20;
 const SALON_OPTIONS = [
   { id: 'grenoble', label: 'Grenoble' },
   { id: 'meylan', label: 'Meylan' },
+  { id: 'voiron', label: 'Voiron' },
 ];
 
 const ONGLETS = [
