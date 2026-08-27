@@ -485,6 +485,11 @@ TEXT_PRIMARY: #FAFAF9 | TEXT_SECONDARY: #A8A29E | TEXT_MUTED: #78716C
 ### Credentials barbers
 - **Meylan** : `barberclubmeylan@gmail.com` / [voir gestionnaire mdp]
 - **Grenoble** : `barberclotbey@gmail.com` / [voir gestionnaire mdp]
+- **Voiron** : `barberclubvoiron@gmail.com` / [voir gestionnaire mdp]
+
+Les trois sont des lignes `barbers` nommees `Admin`, `is_active=false`, ids
+`b2000000-0000-0000-0000-00000000000{2,1,3}`. Le login ne filtre pas sur
+`is_active`, c'est ce qui les rend utilisables.
 
 ---
 
@@ -569,7 +574,11 @@ Le client recoit un email avec un lien `cancel_token` pour gerer son RDV (voir/a
 ### Salons
 - **Meylan** : 26 Av. du Gresivaudan, 38700 Corenc — Lucas, Julien
 - **Grenoble** : 5 Rue Clot Bey, 38000 Grenoble — Tom, Alan, Nathan, Clement
-- Les 2 salons utilisent le meme backend avec `salon_id`
+- **Voiron** : 5 Av. Leon et Joanny Tardy, 38500 Voiron — ouverture octobre 2026,
+  equipe et prestations saisies a la main depuis le dashboard
+- Les 3 salons utilisent le meme backend avec `salon_id`
+- **La liste des salons vit dans `SALON_IDS` (`config/env.js`)**, plus jamais en dur.
+  `getSalonConfig()` replie sur Meylan pour un salon inconnu MAIS le crie dans les logs
 
 ### Clients inactifs
 - Visibles dans Analytics : clients avec **3+ visites** et **90+ jours** sans RDV
