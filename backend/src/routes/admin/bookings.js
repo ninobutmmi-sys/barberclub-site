@@ -11,6 +11,7 @@ const { logAudit } = require('../../middleware/auditLog');
 const ws = require('../../services/websocket');
 const { getParisTodayISO } = require('../../utils/date');
 const { PHONE_REGEX } = require('../../constants');
+const { normalizeEmail } = require('../../utils/email');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -229,7 +230,7 @@ router.post('/',
     body('phone').optional({ values: 'falsy' }).trim()
       .customSanitizer(v => v ? v.replace(/\s/g, '') : '')
       .custom(v => !v || PHONE_REGEX.test(v)).withMessage('Numéro invalide'),
-    body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('email').optional({ values: 'falsy' }).isEmail().customSanitizer(normalizeEmail),
     body('duration').optional().isInt({ min: 5, max: 720 }).toInt(),
     body('color').optional({ values: 'falsy' }).matches(/^#[0-9a-fA-F]{6}$/).withMessage('Couleur invalide'),
     body('recurrence').optional().isObject(),

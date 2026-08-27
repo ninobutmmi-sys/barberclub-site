@@ -6,6 +6,7 @@ const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
 const logger = require('../../utils/logger');
 const { getParisTodayISO } = require('../../utils/date');
+const { normalizeEmail } = require('../../utils/email');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -276,7 +277,7 @@ router.post('/gift-cards',
     body('buyer_name').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
     body('buyer_client_id').optional({ values: 'falsy' }).matches(uuidRegex),
     body('recipient_name').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
-    body('recipient_email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('recipient_email').optional({ values: 'falsy' }).isEmail().customSanitizer(normalizeEmail),
     body('payment_method').isIn(['cb', 'cash', 'lydia', 'other']).withMessage('Methode de paiement invalide'),
     body('sold_by').matches(uuidRegex).withMessage('Vendeur requis'),
     body('expires_at').optional({ values: 'falsy' }).matches(/^\d{4}-\d{2}-\d{2}$/),
@@ -408,7 +409,7 @@ router.put('/gift-cards/:id',
     body('balance').optional().isInt({ min: 0 }),
     body('is_active').optional().isBoolean(),
     body('recipient_name').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
-    body('recipient_email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('recipient_email').optional({ values: 'falsy' }).isEmail().customSanitizer(normalizeEmail),
     body('expires_at').optional({ values: 'falsy' }).matches(/^\d{4}-\d{2}-\d{2}$/),
   ],
   handleValidation,

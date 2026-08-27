@@ -6,6 +6,7 @@ const { requireAuth, requireClient } = require('../middleware/auth');
 const { ApiError } = require('../utils/errors');
 const db = require('../config/database');
 const logger = require('../utils/logger');
+const { normalizeEmail } = require('../utils/email');
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.put('/profile',
   [
     body('first_name').optional().trim().notEmpty().isLength({ max: 100 }),
     body('last_name').optional().trim().notEmpty().isLength({ max: 100 }),
-    body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('email').optional({ values: 'falsy' }).isEmail().customSanitizer(normalizeEmail),
   ],
   handleValidation,
   async (req, res, next) => {
@@ -55,7 +56,7 @@ router.put('/profile',
       if (email) {
         // Check email uniqueness before updating
         const emailCheck = await db.query(
-          'SELECT id FROM clients WHERE email = $1 AND id != $2 AND has_account = true AND deleted_at IS NULL',
+          'SELECT id FROM clients WHERE LOWER(email) = $1 AND id != $2 AND has_account = true AND deleted_at IS NULL',
           [email, req.user.id]
         );
         if (emailCheck.rows.length > 0) {

@@ -10,6 +10,7 @@ const { generateAccessToken, generateRefreshToken } = require('../middleware/aut
 const { ApiError } = require('../utils/errors');
 const { sendResetPasswordEmail } = require('../services/notification');
 const logger = require('../utils/logger');
+const { normalizeEmail } = require('../utils/email');
 const { BCRYPT_ROUNDS, MAX_LOGIN_ATTEMPTS, LOCKOUT_MINUTES, RESET_TOKEN_EXPIRY_MS } = require('../constants');
 
 const router = Router();
@@ -46,7 +47,7 @@ function clearRefreshTokenCookie(res) {
 router.post('/login',
   authLimiter,
   [
-    body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+    body('email').isEmail().withMessage('Email invalide').customSanitizer(normalizeEmail),
     body('password').notEmpty().withMessage('Mot de passe requis'),
     body('type').isIn(['barber', 'client']).withMessage('Type invalide'),
     body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
@@ -66,7 +67,7 @@ router.post('/login',
         `SELECT id, email, password_hash, failed_login_attempts, locked_until,
                 ${type === 'barber' ? 'name, photo_url, salon_id' : 'first_name || \' \' || last_name as name, NULL as photo_url'}
          FROM ${table}
-         WHERE email = $1${salonFilter} AND deleted_at IS NULL`,
+         WHERE LOWER(email) = $1${salonFilter} AND deleted_at IS NULL`,
         params
       );
 
@@ -175,7 +176,7 @@ router.post('/register',
     body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
     body('phone').trim().notEmpty().withMessage('Téléphone requis')
       .matches(/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14}|0[1-9]\d{8})$/).withMessage('Numéro de téléphone invalide'),
-    body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+    body('email').isEmail().withMessage('Email invalide').customSanitizer(normalizeEmail),
     body('password')
       .isLength({ min: 8 }).withMessage('Mot de passe : 8 caractères minimum')
       .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Mot de passe : majuscule, minuscule et chiffre requis'),
@@ -191,7 +192,7 @@ router.post('/register',
 
       // Check if email already used (any account, not just has_account=true)
       const emailCheck = await db.query(
-        'SELECT id, has_account FROM clients WHERE email = $1 AND deleted_at IS NULL',
+        'SELECT id, has_account FROM clients WHERE LOWER(email) = $1 AND deleted_at IS NULL',
         [email]
       );
       if (emailCheck.rows.length > 0 && emailCheck.rows[0].has_account) {
@@ -402,7 +403,7 @@ router.post('/logout', authLimiter, async (req, res, next) => {
 router.post('/forgot-password',
   authLimiter,
   [
-    body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
+    body('email').isEmail().withMessage('Email invalide').customSanitizer(normalizeEmail),
     body('salon_id').optional().isIn(['meylan', 'grenoble']).withMessage('Salon invalide'),
   ],
   handleValidation,
@@ -415,7 +416,12 @@ router.post('/forgot-password',
       const successMsg = 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.';
 
       const result = await db.query(
-        'SELECT id, first_name, email FROM clients WHERE email = $1 AND has_account = true AND deleted_at IS NULL',
+        // Plus de filtre `has_account` : 6 294 clients ont un email chez nous
+        // sans avoir jamais créé de compte (ils réservent en invité). Ils
+        // demandaient un lien, lisaient « un lien a été envoyé », et rien ne
+        // partait. Ils reçoivent maintenant un lien pour choisir un mot de
+        // passe — ce qui crée leur compte au passage.
+        'SELECT id, first_name, email, has_account FROM clients WHERE LOWER(email) = $1 AND deleted_at IS NULL ORDER BY has_account DESC LIMIT 1',
         [email]
       );
 
@@ -445,7 +451,10 @@ router.post('/forgot-password',
       }
 
       // Send email (async, don't block response, with single retry)
-      const resetEmailData = { email: client.email, first_name: client.first_name, resetUrl };
+      // Le message dit la vérité : « réinitialiser » pour qui a déjà un mot
+      // de passe, « créer » pour qui n'en a jamais eu.
+      const resetEmailData = { email: client.email, first_name: client.first_name, resetUrl,
+                               isNew: !client.has_account, salon_id: salonId };
       sendResetPasswordEmail(resetEmailData).catch((err) => {
         logger.error('Reset password email failed, retrying once...', { email, error: err.message });
         sendResetPasswordEmail(resetEmailData).catch((e) => {
@@ -496,8 +505,10 @@ router.post('/reset-password',
 
       // Update password and clear reset token
       await db.query(
-        `UPDATE clients SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL,
-         failed_login_attempts = 0, locked_until = NULL WHERE id = $2`,
+        // has_account passe à true : un invité qui choisit un mot de passe
+        // devient un compte à part entière.
+        `UPDATE clients SET password_hash = $1, has_account = true, reset_token = NULL,
+         reset_token_expires = NULL, failed_login_attempts = 0, locked_until = NULL WHERE id = $2`,
         [passwordHash, client.id]
       );
 

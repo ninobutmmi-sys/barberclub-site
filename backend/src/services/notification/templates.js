@@ -261,7 +261,7 @@ async function sendReviewEmail(data) {
 /**
  * Send password reset email directly (not queued)
  */
-async function sendResetPasswordEmail({ email, first_name, resetUrl, salon_id }) {
+async function sendResetPasswordEmail({ email, first_name, resetUrl, salon_id, isNew }) {
   const salonId = salon_id || 'meylan';
   const brevo = getBrevoConfig(salonId);
   if (!brevo.apiKey) {
@@ -272,15 +272,38 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl, salon_id })
 
   first_name = escapeHtml(first_name);
 
+  // Le même courrier sert deux cas. `isNew` est vrai quand la personne a un
+  // email chez nous sans avoir jamais créé de compte — elle réserve en invité.
+  // Lui parler de « réinitialisation » n'aurait aucun sens : elle n'a jamais
+  // eu de mot de passe.
+  const copy = isNew
+    ? {
+      subject: 'Créez votre mot de passe BarberClub',
+      title: 'Cr&eacute;ez votre mot de passe',
+      intro: 'Vous r&eacute;servez chez nous sans compte. Choisissez un mot de passe pour '
+           + 'retrouver vos rendez-vous et g&eacute;rer vos r&eacute;servations en ligne.',
+      button: 'Choisir mon mot de passe',
+    }
+    : {
+      subject: 'Réinitialisation de votre mot de passe BarberClub',
+      title: 'R&eacute;initialiser votre mot de passe',
+      intro: 'Vous avez demand&eacute; la r&eacute;initialisation de votre mot de passe. '
+           + 'Cliquez sur le bouton ci-dessous pour en choisir un nouveau.',
+      button: 'Nouveau mot de passe',
+    };
+
   const content = loadTemplate('reset-password', {
     ...DESIGN_TOKENS,
     firstNameGreeting: first_name ? ` ${first_name}` : '',
     resetUrl,
+    title: copy.title,
+    intro: copy.intro,
+    buttonLabel: copy.button,
   });
 
   const html = emailShell(content, { showHero: false, salonId });
 
-  await brevoEmail(email, 'Réinitialisation de votre mot de passe BarberClub', html, salonId, {
+  await brevoEmail(email, copy.subject, html, salonId, {
     type: 'reset_password_email',
   });
   logger.info('Reset password email sent', { email, salonId });

@@ -6,6 +6,7 @@ const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
 const { logAudit } = require('../../middleware/auditLog');
 const { PHONE_REGEX } = require('../../constants');
+const { normalizeEmail } = require('../../utils/email');
 
 const router = Router();
 const photoBodyParser = express.json({ limit: '500kb' });
@@ -150,7 +151,7 @@ router.post('/',
     body('first_name').trim().notEmpty().withMessage('Prénom requis').isLength({ max: 100 }),
     body('last_name').trim().notEmpty().withMessage('Nom requis').isLength({ max: 100 }),
     body('phone').optional({ values: 'falsy' }).trim().matches(PHONE_REGEX).withMessage('Numéro de téléphone invalide'),
-    body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('email').optional({ values: 'falsy' }).isEmail().customSanitizer(normalizeEmail),
     body('notes').optional().trim().isLength({ max: 2000 }),
   ],
   handleValidation,
@@ -381,7 +382,7 @@ router.put('/:id',
     body('notes').optional().trim().isLength({ max: 2000 }),
     body('first_name').optional().trim().notEmpty().isLength({ max: 100 }),
     body('last_name').optional().trim().notEmpty().isLength({ max: 100 }),
-    body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
+    body('email').optional({ values: 'falsy' }).isEmail().customSanitizer(normalizeEmail),
     body('phone').optional().trim().matches(PHONE_REGEX).withMessage('Numéro de téléphone invalide'),
     body('preferences').optional({ values: 'null' }).trim().isLength({ max: 1000 }),
     body('birth_date').optional({ values: 'falsy' })
