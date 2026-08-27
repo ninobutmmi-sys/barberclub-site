@@ -259,9 +259,9 @@
       '</div>' +
       '<p class="bc-modal-lead">Ce que le site ne fait pas</p>' +
       '<ul class="bc-modal-list">' +
-        row(0, 'Cumulez des RDV', 'Chaque passage en salon est compté.') +
-        row(1, 'Gagnez des points', 'Ils ouvrent vos récompenses.') +
-        row(2, 'Montez en rang', 'Plus vous venez, plus vous montez.') +
+        row(0, 'Cumulez des points', 'Votre fidélité compte à chaque passage.') +
+        row(1, 'Débloquez des récompenses', 'Vos points s\'échangent contre des avantages.') +
+        row(2, 'Montez en rang', 'De Bronze à Platine, jusqu\'au meilleur rang du club.') +
       '</ul>' +
       '<a class="bc-modal-cta" href="' + href + '" target="_blank" rel="noopener">' +
         GLYPH + '<span>Télécharger</span></a>' +
