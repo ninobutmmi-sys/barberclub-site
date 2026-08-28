@@ -885,6 +885,29 @@
             }
         }
 
+
+        /* Premier jour travaillé d'un barbier qui n'a pas encore commencé.
+           On part de sa date d'arrivée et on avance jusqu'au premier jour
+           qui n'est pas un jour de repos : Eddine arrive un mardi, qui est
+           son repos — son premier créneau tombe le mercredi. Annoncer sa
+           date de contrat aurait envoyé le client sur un jour vide. */
+        function premierJourTravaille(b) {
+            if (!b.contract_start) return null;
+            const debut = new Date(b.contract_start + 'T12:00:00');
+            const aujourdhui = new Date(); aujourdhui.setHours(0, 0, 0, 0);
+            if (debut <= aujourdhui) return null;
+            const repos = (b.off_days || []).map(Number);
+            const d = new Date(debut);
+            for (let i = 0; i < 14; i++) {
+                const jour = (d.getDay() + 6) % 7;   // 0 = lundi, comme en base
+                if (!repos.includes(jour)) break;
+                d.setDate(d.getDate() + 1);
+            }
+            const num = d.getDate();
+            const mois = d.toLocaleDateString('fr-FR', { month: 'long' });
+            return (num === 1 ? '1er' : num) + ' ' + mois;
+        }
+
         function renderBarbers() {
             const grid = $('#barberGrid');
             const checkSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
@@ -919,9 +942,12 @@
                     ? `<img loading="lazy" src="${esc(photoSrc)}" alt="${esc(b.name)}" onerror="this.parentElement.innerHTML='<span class=barber-avatar-placeholder>${esc(initial)}</span>'">`
                     : `<span class="barber-avatar-placeholder">${esc(initial)}</span>`;
 
-                const guestBadge = b.is_guest
-                    ? '<div class="barber-guest-badge">Disponible certains jours</div>'
-                    : '';
+                const arrivee = premierJourTravaille(b);
+                const guestBadge = arrivee
+                    ? `<div class="barber-guest-badge">À partir du ${esc(arrivee)}</div>`
+                    : (b.is_guest
+                        ? '<div class="barber-guest-badge">Disponible certains jours</div>'
+                        : '');
 
                 html += `
                     <div class="barber-card${b.is_guest ? ' guest-barber' : ''}" data-id="${esc(b.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(b.name)}">
