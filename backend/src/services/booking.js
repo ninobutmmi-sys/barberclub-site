@@ -4,6 +4,7 @@ const { ApiError } = require('../utils/errors');
 const availability = require('./availability');
 const notification = require('./notification');
 const logger = require('../utils/logger');
+const { genererCode, lienOffre } = require('../utils/waitlistOffer');
 const config = require('../config/env');
 const { notifyNewBooking, notifyCancellation, notifyReschedule } = require('./push');
 const ws = require('./websocket');
@@ -739,17 +740,34 @@ async function cancelBooking(bookingId, cancelToken) {
 
     for (const entry of waitlistEntries.rows) {
       const firstName = (entry.client_name || '').split(/\s+/)[0];
-      let smsText = notification.toGSM(`BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateFormatted} a ${timeFormatted} avec ${entry.barber_name} pour ${entry.service_name}. Reservez vite au salon ou appelez-nous.`);
-      if (smsText.length > 155 && entry.service_name) {
-        const maxLen = entry.service_name.length - (smsText.length - 155);
-        if (maxLen > 3) {
-          smsText = notification.toGSM(`BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateFormatted} a ${timeFormatted} avec ${entry.barber_name} pour ${entry.service_name.slice(0, maxLen - 3)}.... Reservez vite au salon ou appelez-nous.`);
-        }
+
+      // Un lien court plutot que « appelez-nous ». Mesure avant changement :
+      // 55 % des notifies finissent par reserver, mais avec un delai MEDIAN de
+      // 48 heures — le temps de penser a telephoner. Le code fait 6 caracteres
+      // pour que le message reste sous 155, donc a un seul credit SMS.
+      const code = genererCode();
+      const lien = lienOffre(config.siteUrl, code);
+
+      const corps = (service) =>
+        `BarberClub - Creneau libre le ${dateFormatted} a ${timeFormatted} avec ${entry.barber_name}`
+        + (service ? ` (${service})` : '')
+        + `. Reservez : ${lien}`;
+
+      let smsText = notification.toGSM(corps(entry.service_name));
+      if (smsText.length > 155) {
+        // La prestation est ce qu'on sacrifie en premier : la date, l'heure,
+        // le barbier et le lien sont indispensables.
+        smsText = notification.toGSM(corps(null));
       }
 
       try {
         await notification.sendWaitlistSMS({ phone: entry.client_phone, message: smsText, salon_id: salonId });
-        await db.query("UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1", [entry.id]);
+        await db.query(
+          `UPDATE waitlist SET status = 'notified', notified_at = NOW(),
+                  offer_token = $2, offer_barber_id = $3
+           WHERE id = $1`,
+          [entry.id, code, booking.barber_id]
+        );
         logger.info('Waitlist SMS sent after cancellation', { waitlistId: entry.id, phone: entry.client_phone, salonId });
       } catch (smsErr) {
         logger.error('Direct waitlist SMS failed, queueing for retry', { waitlistId: entry.id, error: smsErr.message });

@@ -5,6 +5,8 @@ const { ApiError } = require('../../utils/errors');
 const db = require('../../config/database');
 const logger = require('../../utils/logger');
 const { queueNotification, toGSM } = require('../../services/notification');
+const config = require('../../config/env');
+const { genererCode, lienOffre } = require('../../utils/waitlistOffer');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -274,23 +276,25 @@ router.post('/:id/notify-sms',
         .toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
       const firstName = (row.client_name || '').split(/\s+/)[0];
 
-      let smsContent = `BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateStr} avec ${row.barber_name} pour ${row.service_name}. Reservez vite au salon ou appelez-nous.`;
+      // Meme lien court que la notification automatique (services/booking.js).
+      // Le message reste sous 155 caracteres, donc a un seul credit SMS.
+      const code = genererCode();
+      const lien = lienOffre(config.siteUrl, code);
 
-      // Truncate service name if SMS > 155 chars to stay under 1 credit
-      if (smsContent.length > 155 && row.service_name) {
-        const maxServiceLen = row.service_name.length - (smsContent.length - 155);
-        if (maxServiceLen > 3) {
-          const truncated = row.service_name.slice(0, maxServiceLen - 3) + '...';
-          smsContent = `BarberClub - Bonne nouvelle ${firstName} ! Un creneau s'est libere le ${dateStr} avec ${row.barber_name} pour ${truncated}. Reservez vite au salon ou appelez-nous.`;
-        }
-      }
+      const corps = (service) =>
+        `BarberClub - Creneau libre le ${dateStr} avec ${row.barber_name}`
+        + (service ? ` (${service})` : '')
+        + `. Reservez : ${lien}`;
 
-      smsContent = toGSM(smsContent);
+      let smsContent = toGSM(corps(row.service_name));
+      if (smsContent.length > 155) smsContent = toGSM(corps(null));
 
       // Update status BEFORE queuing SMS to prevent duplicate sends on retry
       await db.query(
-        `UPDATE waitlist SET status = 'notified', notified_at = NOW() WHERE id = $1`,
-        [row.id]
+        `UPDATE waitlist SET status = 'notified', notified_at = NOW(),
+                offer_token = $2, offer_barber_id = barber_id
+         WHERE id = $1`,
+        [row.id, code]
       );
 
       await queueNotification(null, 'waitlist_sms', {

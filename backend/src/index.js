@@ -299,6 +299,38 @@ app.get('/r/avis', publicLimiter, (req, res) => {
   res.redirect(302, salon.googleReviewUrl || 'https://barberclub-grenoble.fr');
 });
 
+// Lien court du SMS de liste d'attente : /r/w/:code
+// Il ouvre la page de reservation du bon salon, sur le barbier du creneau
+// libere — pas forcement celui que la personne attendait, puisque le second
+// rideau propose aussi les creneaux des autres barbiers.
+app.get('/r/w/:code', publicLimiter, async (req, res) => {
+  const repli = `${config.siteUrl}/`;
+  try {
+    const r = await db.query(
+      `SELECT w.salon_id, b.name AS barber_name
+       FROM waitlist w
+       LEFT JOIN barbers b ON b.id = COALESCE(w.offer_barber_id, w.barber_id)
+       WHERE w.offer_token = $1`,
+      [req.params.code]
+    );
+    if (!r.rows.length) return res.redirect(302, repli);
+
+    // On note le clic pour savoir si le lien sert vraiment, plutot que de le
+    // supposer. Un echec d'ecriture ne doit pas empecher la redirection.
+    db.query('UPDATE waitlist SET offer_clicked_at = NOW() WHERE offer_token = $1 AND offer_clicked_at IS NULL',
+      [req.params.code]).catch(() => {});
+
+    const salon = config.getSalonConfig(r.rows[0].salon_id);
+    const barbier = r.rows[0].barber_name
+      ? `?barber=${encodeURIComponent(r.rows[0].barber_name)}`
+      : '';
+    return res.redirect(302, `${config.siteUrl}${salon.bookingPath}/reserver.html${barbier}`);
+  } catch (err) {
+    logger.error('Waitlist offer link failed', { code: req.params.code, error: err.message });
+    return res.redirect(302, repli);
+  }
+});
+
 app.get('/r/rdv/:id/:token', publicLimiter, async (req, res) => {
   // Fetch booking to determine which salon page to redirect to
   try {
