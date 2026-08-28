@@ -316,6 +316,33 @@ async function createBooking(data) {
 
     const booking = bookingResult.rows[0];
 
+    // ── Clore les inscriptions en liste d'attente que ce RDV satisfait ──
+    // Le statut 'booked' n'était posé nulle part : il n'existait que dans les
+    // validateurs de admin/waitlist.js. Le dashboard affichait donc 1 conversion
+    // sur 744 inscriptions, quand le recoupement des téléphones en montrait 164.
+    // Une fonctionnalité qui marche à 55 % passait pour morte.
+    //
+    // Deux cas distincts :
+    //   'notified' -> la personne a reçu le SMS et réserve : la notification a
+    //                 fait son travail, quelle que soit la date retenue.
+    //   'waiting'  -> personne ne l'a prévenue ; on ne clôt que si elle réserve
+    //                 le jour qu'elle attendait.
+    try {
+      await client.query(
+        `UPDATE waitlist SET status = 'booked'
+         WHERE salon_id = $1
+           AND client_phone = (SELECT phone FROM clients WHERE id = $2)
+           AND (
+             status = 'notified'
+             OR (status = 'waiting' AND preferred_date = $3)
+           )`,
+        [salonId, clientId, data.date]
+      );
+    } catch (wlErr) {
+      // Ne jamais faire échouer une réservation pour une statistique.
+      logger.error('Waitlist status update failed', { error: wlErr.message });
+    }
+
     logger.info('Booking created', {
       bookingId: booking.id,
       barberId,
@@ -665,6 +692,45 @@ async function cancelBooking(bookingId, cancelToken) {
        ORDER BY w.created_at ASC LIMIT 3`,
       [booking.barber_id, booking.date, booking.start_time.slice(0, 5), freedDurationMin, isSaturday]
     );
+
+    // ── Second rideau : les inscrits d'un autre barbier ──
+    // La requête ci-dessus exige le même barbier. Mesuré sur 90 jours : sur
+    // 465 annulations, seules 229 (49 %) trouvent quelqu'un pour ce barbier-là,
+    // alors que 446 (96 %) ont un inscrit ce jour-là, tous barbiers confondus.
+    // On complète donc jusqu'à 3 candidats avec les autres barbiers du salon.
+    // Les prioritaires restent servis en premier : c'est un complément, pas un
+    // remplacement. Le SMS nomme le barbier, la personne voit que ce n'est pas
+    // celui qu'elle avait demandé et reste libre de refuser.
+    if (waitlistEntries.rows.length < 3) {
+      const dejaVus = waitlistEntries.rows.map((r) => r.id);
+      const complement = await db.query(
+        `SELECT w.id, w.client_name, w.client_phone, w.preferred_date,
+                w.preferred_time_start, w.preferred_time_end,
+                b.name as barber_name, s.name as service_name
+         FROM waitlist w
+         JOIN barbers b ON b.id = $1
+         JOIN services s ON w.service_id = s.id
+         LEFT JOIN barber_services bs ON bs.barber_id = $1 AND bs.service_id = w.service_id
+         WHERE w.salon_id = $6 AND w.preferred_date = $2 AND w.status = 'waiting'
+           AND w.barber_id <> $1
+           AND NOT (w.id = ANY($7::uuid[]))
+           AND (w.preferred_time_start IS NULL OR w.preferred_time_start <= $3)
+           AND (w.preferred_time_end IS NULL OR w.preferred_time_end >= $3)
+           AND COALESCE(
+             bs.custom_duration,
+             CASE WHEN $5::boolean AND s.duration_saturday IS NOT NULL THEN s.duration_saturday ELSE s.duration END
+           ) <= $4
+         ORDER BY w.created_at ASC LIMIT $8`,
+        [booking.barber_id, booking.date, booking.start_time.slice(0, 5), freedDurationMin,
+         isSaturday, salonId, dejaVus, 3 - waitlistEntries.rows.length]
+      );
+      if (complement.rows.length) {
+        logger.info('Waitlist widened to other barbers', {
+          salonId, prioritaires: waitlistEntries.rows.length, complement: complement.rows.length,
+        });
+        waitlistEntries.rows.push(...complement.rows);
+      }
+    }
 
     // Format cancelled slot info for SMS
     const dateParts = booking.date.split('-');
