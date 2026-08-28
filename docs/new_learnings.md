@@ -3519,5 +3519,7 @@ C'est exactement le motif que le secteur recommande, et il est déjà en place. 
 
 1. ~~**Poser `booked`**~~ — ✅ fait le 2026-08-28 (`6dc9e75`), à la création du RDV, dans la transaction.
 2. ~~**Lever la contrainte barbier**~~ — ✅ fait le 2026-08-28 (`6dc9e75`). Gain réel mesuré : 39 % → 61 % de couverture, ~1 300 €/trimestre.
-3. **Mettre un lien dans le SMS** — reste à faire. C'est le plus gros levier restant : 55 % réservent malgré « appelez-nous », avec un délai médian de 48 h.
-4. **Geler le créneau 30 minutes** pendant l'offre — reste à faire.
+3. ~~**Mettre un lien dans le SMS**~~ — ✅ fait le 2026-08-28 (`5153ec0`). Code de 6 caractères pour tenir sous 155 (1 crédit) ; pire cas mesuré sur les 121 combinaisons barbier × prestation : 155 pile, aucune au-dessus. `offer_clicked_at` enregistre le clic — on saura si ça sert, au lieu de le supposer.
+4. **Geler le créneau 30 minutes** pendant l'offre — reste à faire. Aujourd'hui on promet la place à trois personnes et n'importe qui peut la prendre entre-temps.
+
+**À mesurer dans un mois** : le délai médian entre notification et réservation, aujourd'hui de 48 h. C'est le seul chiffre qui dira si le lien a servi.
