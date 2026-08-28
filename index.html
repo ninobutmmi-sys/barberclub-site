@@ -614,8 +614,11 @@ html, body {
    3ᵉ SALON — VOIRON (panneau mystère, non cliquable)
    ═══════════════════════════════════════ */
 .salon-mystere .salon-bg {
-  background-image: url('assets/images/salons/salon-nouveau.webp?v=2');
-  background-position: center;
+  /* La vraie devanture de Voiron, de nuit. L'ancienne (salon-nouveau.webp)
+     etait une facade generique : le panneau annoncait un salon sans le
+     montrer. Cadrage sur la vitrine, pas sur le trottoir. */
+  background-image: url('assets/images/salons/Voiron/devanture-voiron-nuit.webp?v=1');
+  background-position: center 42%;
   filter: brightness(0.95) contrast(1.05);
   animation-name: kenBurns2;
 }
@@ -626,7 +629,7 @@ html, body {
 /* desktop : colonne étroite → cadrer sur la devanture + enseigne bien dans le cadre */
 @media (min-width: 768px) {
   /* zoom pour créer de la marge → l'enseigne sort du cadre, devanture mystère uniquement */
-  .salon-mystere .salon-bg { background-size: auto 145%; background-position: 60% 60%; }
+  .salon-mystere .salon-bg { background-size: auto 130%; background-position: 50% 45%; }
 }
 /* halo pulsé derrière le "?" néon */
 .salon-mystere::before {
