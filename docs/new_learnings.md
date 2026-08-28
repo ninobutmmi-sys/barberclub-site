@@ -3371,3 +3371,153 @@ Twilio, Vonage, MessageBird ont tous le même problème : API renvoie OK mais de
 | 4/5 | Booksy Biz | **Objectifs par membre d'équipe** : Booksy laisse fixer et suivre un objectif par barbier. Nous avons la page Objectives — vérifier si elle est par salon ou par barbier. | https://biz.booksy.com/blog/faq-everything-you-need-to-know-about-salon-software |
 | 3/5 | Fresha | Tableau de bord multi-établissements centralisé. Pertinent à l'ouverture de Voiron : notre dashboard force aujourd'hui à choisir un salon et à en sortir pour changer. Une vue consolidée des 3 salons deviendra utile. | https://www.fresha.com/for-business/salon/best-salon-software |
 | 3/5 | Nectarbits | Suivi de stock et rapports de performance cités comme indispensables 2026 — nous avons déjà Boutique + stock_movements + Analytics. Rien à rattraper de ce côté. | https://nectarbits.com/blog/salon-booking-software-solutions-for-businesses/ |
+
+---
+
+## Veille du 2026-08-19 — Cartes de membre & accès prioritaire en barbershop
+
+> Angle demandé par Nino : 50 cartes métalliques pour les 2 ans du salon de Grenoble, avec un code écrit à la main que le client tape en réservant. Que faire de cette carte ?
+
+### Ce qui remet en cause le mécanisme envisagé
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | eMarketer | **72 % des internautes veulent un programme « sans effort »**, où l'avantage s'applique tout seul sans action du client. Et « les clients ne veulent pas une appli de plus ». Or taper un code à chaque réservation *est* un effort, répété à vie. → Faire saisir le code **une seule fois**, le lier au numéro de téléphone, et reconnaître le porteur automatiquement ensuite. | https://www.emarketer.com/content/how-retailers-capture-customer-loyalty-5-charts |
+| 5/5 | Zenoti | La priorité qui a « la plus forte valeur perçue pour le plus faible coût opérationnel » n'est pas l'accès anticipé, c'est **la garantie d'une place le jour même ou le lendemain**. Ce qui est rare pour un client de barbier, ce n'est pas de réserver dans 3 semaines — tout le monde peut — c'est d'avoir une coupe *demain*. | https://www.zenoti.com/thecheckin/barbershop-membership-programme-guide |
+| 5/5 | RestaurantsForKings | Les clubs privés de restaurants vendent exactement ça : décrocher une table **à court préavis**. Le membre paie pour l'urgence, pas pour l'anticipation. Transposable tel quel au barbier. | https://restaurantsforkings.com/blog/private-members-club-restaurants-2026 |
+
+**Conséquence pour BarberClub :** le mécanisme « créneaux gardés qui se libèrent 24 h avant » donne au public exactement les créneaux au moment où ils servent le plus au membre. Le mécanisme inverse est probablement meilleur : garder 2-3 créneaux par jour **fermés à tous**, qui ne s'ouvrent qu'aux porteurs à J-1. Le membre a alors une garantie de dernière minute, et le salon garde un tampon d'urgence pour lui-même.
+
+### L'objet lui-même
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | Pure Metal Cards | **Valeur perçue d'une carte métal : plus de 18 $, contre 2 $ pour du plastique et moins de 1 $ pour du papier.** Durée de vie observée > 5 ans, contre 3-6 mois pour le plastique. L'objet est un actif en soi, indépendamment de ce qu'il débloque. | https://www.puremetalcards.com/blog/membership-cards-that-feel-like-vip-access/ |
+| 4/5 | ICMA | Le marché de la carte métal passe de niche à échelle en 2026, tiré par la personnalisation (numérotation, gravure nominative). | https://icma.com/2026/05/07/metal-for-all-how-personalization-is-expanding-the-metal-card-market |
+| 4/5 | Atticus Li / Cialdini | La rareté ne fonctionne que si **la limite correspond à une contrainte réelle**, pas à une décision marketing arbitraire. « 50 cartes parce qu'on en a fabriqué 50 » est authentique et se raconte ; « places limitées » ne l'est pas. Le titre « membre fondateur » récompense les premiers sans punir les suivants. | https://atticusli.com/blog/posts/scarcity-principle-three-types-time-quantity-access/ |
+
+### Ce qui tue ces programmes
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | ROLLER | « La plupart des programmes échouent **au stade de la conception** : on se précipite pour lancer sans avoir fait le calcul, ni pensé l'offre, ni le parcours client. » Directement applicable : les 2 ans, c'est samedi. | https://www.roller.software/blog/membership-program-mistakes-attraction-venues |
+| 5/5 | Zenoti | Les 48 h après l'adhésion sont le moment critique : **si le membre n'a aucune nouvelle sous 24-48 h, l'enthousiasme retombe** et il décroche dans les 60-90 jours. Or l'envoi groupé SMS/email existe déjà côté dashboard — un message aux 50 porteurs le lendemain des 2 ans coûte quelques euros. | https://www.zenoti.com/thecheckin/membership-management-software-guide |
+| 4/5 | LoyaltyPass | Double piège symétrique : seuil de récompense trop haut (« la 15ᵉ coupe offerte » = 3 ans, le client décroche tout de suite) **et** trop donné trop vite (les coupes offertes ont un coût de main-d'œuvre qui ronge la marge en silence). | https://www.loyaltypass.co/blog/industries/barbershop-loyalty-program |
+| 4/5 | Precia Aesthetics | Les salons qui font ça bien remontent leurs VIP en tête de liste d'attente **sans que les autres clients le sachent**. Le privilège doit être invisible aux autres. | https://preciaaesthetics.com/7-proven-strategies-to-optimize-your-med-spa-booking-system-for-vip-members/ |
+
+### Ce que les clients valorisent vraiment
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 4/5 | LoyaltyLion | **59 %** des consommateurs jugent que les avantages « expérientiels » se sont améliorés, **56 %** se sentent plus attachés émotionnellement à une marque dont ils sont membres. L'expérience prend le pas sur la remise. | https://loyaltylion.com/loyalty-in-2026 |
+| 4/5 | LoyaltyLion | **91 % des meilleurs programmes offrent un accès anticipé ou exclusif** à des ventes ou des nouveautés. C'est la mécanique la plus répandue chez ceux qui réussissent — et chez nous elle est presque gratuite (segment « membres » + envoi groupé déjà en place). | https://loyaltylion.com/loyalty-in-2026 |
+| 3/5 | Precia Aesthetics | Les membres se voient offrir l'**auto-replanification** jusqu'à 6 h avant, contre un délai plus long pour le public. Confirme la piste « annulation assouplie » (nous : 12 h public → 2 h membre). | https://preciaaesthetics.com/7-proven-strategies-to-optimize-your-med-spa-booking-system-for-vip-members/ |
+| 3/5 | Zenoti / SubSeat | Les salons à abonnement croissent 4× plus vite que les autres, +20 % de programmes en 2025. **Chiffres d'éditeurs de logiciels d'abonnement — juge et partie, à prendre avec des pincettes.** | https://www.subseat.co.uk/blog/barber-subscription-plans-usa-2026 |
+
+---
+
+## Veille du 2026-08-27 — Site client & dashboard barbier
+
+> Angle demandé par Nino : ce qu'on pourrait améliorer, côté site client et côté dashboard barbier.
+> **Reddit est inaccessible** (le domaine bloque le robot d'Anthropic) — sources : presse métier, éditeurs de logiciels salon, agrégateurs. Les chiffres BarberClub sont mesurés en base le 2026-08-27, pas repris d'un article.
+
+### 🔴 La trouvaille : la liste d'attente convertit à 41 %, le dashboard affiche 0,1 %
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | **Mesure BarberClub** | Le dashboard compte **1 seule réservation** sur 744 inscriptions en liste d'attente. En croisant les téléphones avec les RDV créés dans les 7 jours suivant la notification : **279 personnes sur 674 ont réservé, soit 41,4 %.** La fonctionnalité est un succès et personne ne le sait. | — |
+| 5/5 | **Lecture du code** | Cause : le statut `'booked'` n'apparaît **que dans des validateurs** (`admin/waitlist.js` lignes 34 et 176). Aucun code ne le pose jamais. Une inscription notifiée reste `notified` puis bascule `expired` par le cron, même quand le client a réservé. Les 388 « expirés » ne sont pas des échecs. | — |
+| 5/5 | Conséquence | Correctif : à la création d'un RDV, basculer en `booked` toute inscription `waiting`/`notified` dont le téléphone et le salon correspondent. Quelques lignes dans `services/booking.js`. Sans ça, un KPI qui dit 0,1 % pousse à supprimer une fonctionnalité qui marche. | — |
+
+### Le walk-in : le premier manque cité par le secteur, et un quart de Meylan
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | Zenoti | **Le modèle hybride est LE point de douleur n°1** des logiciels de barbershop en 2026 : « la plupart des clients passent sans rendez-vous, certains réservent, et le planning doit gérer les deux sans conflit ni fauteuil vide ». Les files d'attente walk-in manquent aux logiciels salon génériques. | https://www.zenoti.com/thecheckin/best-barbershop-software-2026 |
+| 5/5 | **Mesure BarberClub** | Sur 90 jours : **26,1 % des RDV de Meylan et 17,2 % de ceux de Grenoble sont saisis à la main** (1 699 RDV). Dont **445 le jour même** — ce sont des walk-ins tapés par un barbier pendant que le client attend. | — |
+| 4/5 | ScanQueue / WaitQ | Le motif qui s'impose : **QR code à la porte → le client rejoint la file depuis son navigateur, sans compte ni application** → il voit sa position et son attente estimée → il part faire ses courses → SMS quand c'est son tour. « No account, no app download. » | https://scanqueue.com/solutions/barbershops |
+| 4/5 | WaitQ / NextMe | Ce motif se construit **avec des pièces que BarberClub possède déjà** : table `waitlist`, page Liste d'attente au dashboard, réservation invité sans compte (`cancel_token`), SMS transactionnels. Il manque la page publique « rejoindre la file » et l'affichage de la position. | https://waitq.app/blog/best-barbershop-queue-apps |
+| 3/5 | Zenoti | **35 % des appels d'un salon restent sans réponse chaque mois.** Une file en libre-service retire du standard les « vous avez de la place là ? ». | https://www.zenoti.com/thecheckin/barbershop-software-guide |
+
+### Tunnel de réservation : un champ de trop
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | SchedulingKit | **Chaque champ de formulaire au-delà de 3 fait chuter la conversion de 25 %.** | https://schedulingkit.com/statistics/booking-page-conversion-statistics |
+| 5/5 | **Lecture du code** | `reserver.html` demande **4 champs obligatoires** — prénom, nom, téléphone, email — plus la case de consentement. Le nom de famille est le candidat évident : sur 9 905 fiches, **69 seulement n'en ont pas**, et il ne sert ni au SMS, ni à l'email, ni au planning. | — |
+| 4/5 | **Incohérence trouvée** | `bookings.js:321` déclare `last_name` **optionnel** dans le validateur, puis `bookings.js:357` **refuse la réservation** s'il manque. L'API se contredit ; c'est le second test qui gagne. Retirer les deux et le `required` du front fait passer de 4 champs à 3. | — |
+| 4/5 | AB Tasty / RateGain | **80 à 85 % d'abandon sur mobile** contre 73 % sur desktop, tous secteurs de réservation confondus. Et **52 % des abandons sont dus à l'expérience, pas au prix** — l'UX rapporte plus qu'une remise. | https://www.abtasty.com/blog/why-airline-websites-lose-revenue-how-to-reduce-abandonment/ |
+| 3/5 | RateGain | Causes d'abandon citées dans l'ordre : frais surprise, parcours mobile lent, formulaires longs, **création de compte forcée**. BarberClub ne force pas le compte — c'est déjà acquis (cf. veille du 11/08, « no-app movement »). | https://rategain.com/blog/how-to-reduce-booking-engine-abandonment-2026-best-practices/ |
+
+### Dashboard : ce que le secteur considère comme acquis en 2026
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 4/5 | Zenoti | **Commission par barbier et location de fauteuil** citées comme les questions à poser à tout éditeur. BarberClub n'a ni l'une ni l'autre : la caisse enregistre les paiements sans les répartir. Deviendra une vraie question à 3 salons et 10+ barbiers. | https://www.zenoti.com/thecheckin/best-barbershop-software-2026 |
+| 4/5 | Zenoti | **Encaisser produit et prestation dans la même transaction**, avec relance de recommandation produit au moment de payer. Chez nous `payments` et `product_sales` sont deux tables et deux gestes distincts. | https://www.zenoti.com/thecheckin/barbershop-software-guide |
+| 3/5 | Zenoti / Fresha | Reproche récurrent aux gros éditeurs (Vagaro cité nommément) : **la surcharge fonctionnelle**. « Les plateformes paraissent boursouflées pour un salon qui veut juste des outils propres et efficaces. » Argument pour ne pas empiler dans le dashboard. | https://www.fresha.com/for-business/barber/best-barbershop-software |
+
+### Ce qu'on peut classer sans suite
+
+- **Rétention, barème de fidélité, no-show, Reserve with Google** : déjà traités le 2026-08-11, rien de neuf en trois semaines.
+- **Création de compte forcée** : ne nous concerne pas, la réservation invité existe depuis l'origine.
+
+---
+
+## Veille du 2026-08-28 — Liste d'attente : comment la pousser au maximum
+
+> Angle demandé par Nino : veille technique sur le remplissage d'un créneau annulé.
+> Tous les chiffres BarberClub sont mesurés en base le 2026-08-28. Reddit reste inaccessible au robot.
+
+### D'abord : le système fait déjà mieux que ce que je croyais
+
+En lisant `services/booking.js:638-700` plutôt qu'en supposant :
+
+| Score | Constat | Détail |
+|-------|---------|--------|
+| — | **La notification est automatique**, pas manuelle | À l'annulation, `booking.js` cherche les inscrits et envoie le SMS sans intervention |
+| — | **Elle prévient déjà les 3 premiers d'un coup** | `ORDER BY w.created_at ASC LIMIT 3` |
+| — | **L'appariement vérifie la durée** | Un créneau de 20 min n'est pas proposé pour une prestation de 40 |
+
+C'est exactement le motif que le secteur recommande, et il est déjà en place. Ce qui suit ne consiste donc pas à construire, mais à débrider.
+
+### 🔴 Le levier n°1 : la contrainte « même barbier » coûte la moitié des annulations
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | **Mesure BarberClub** | Sur 90 jours : **465 annulations**. Seules **229 (49 %)** ont quelqu'un en attente pour le **même barbier le même jour**. Mais **446 (96 %)** ont quelqu'un en attente **ce jour-là, tous barbiers confondus**. | — |
+| 5/5 | **Conséquence** | La requête exige `w.barber_id = $1`. En proposant aussi le créneau aux inscrits d'un autre barbier — en second rideau, après les prioritaires — la couverture augmente nettement. | — |
+| 5/5 | **⚠️ Chiffre corrigé le 2026-08-28 après implémentation** | Le « 49 % → 96 % » ci-dessus était optimiste : il ne regardait que « quelqu'un attend ce jour-là », sans la plage horaire ni la durée qui doit rentrer dans le créneau libéré. **Rejeu des 466 annulations avec la logique complète : 39 % → 61 %, soit 104 annulations de plus couvertes par trimestre.** À 23,23 € de panier moyen et 55 % de conversion : **≈ 1 300 € par trimestre**, ~5 300 €/an. Implémenté dans `services/booking.js` (commit `6dc9e75`). | — |
+| 4/5 | Zenoti | Le motif recommandé : proposer à plusieurs candidats classés à la fois et prendre la première confirmation. Un candidat « second choix » vaut mieux qu'un fauteuil vide. | https://help.zenoti.com/en/zenoti-driven-growth/utilization/automatic-waitlist-management.html |
+
+### Le levier n°2 : le SMS n'a pas de lien
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | **Lecture du code** | Le SMS se termine par « **Reservez vite au salon ou appelez-nous.** » Aucun lien. Le client doit téléphoner ou se déplacer pour prendre un créneau qu'on vient de lui offrir. | `booking.js:676` |
+| 5/5 | **Mesure BarberClub** | Malgré cette friction : **296 notifiés, 164 ont réservé (55 %)**. Dont **41 en moins de 15 minutes**, 51 en 1 h, 58 en 4 h, 73 en 24 h. Le délai médian est de **48 heures** — l'intention est créée, l'action est repoussée. | — |
+| 5/5 | Acuity / SchedulingKit | Le standard : « les inscrits reçoivent une notification avec un **lien de réservation en premier arrivé** ». Le créneau va au premier qui termine la réservation. | https://acuityscheduling.com/learn/fill-slots-with-waitlist-software |
+| 4/5 | **À faire** | Un lien court vers `reserver.html` pré-rempli (barbier + date + heure + prestation) transformerait une partie des 48 h médianes en minutes. Le `cancel_token` prouve qu'on sait déjà faire des liens porteurs d'état. | — |
+
+### Le levier n°3 : le créneau n'est réservé à personne
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 4/5 | Zenoti | Tant qu'une offre est en cours, le système **bloque la réservation du créneau** par le comptoir et par le public. Sans ça, on promet à trois personnes un créneau qu'un inconnu peut prendre entre-temps. | https://help.zenoti.com/en/zenoti-driven-growth/utilization/automatic-waitlist-management.html |
+| 4/5 | SchedulingKit | Fenêtre d'acceptation : **1 à 4 h en standard**, **15 min en version agressive** pour créer l'urgence et éviter les offres périmées. Passé le délai, le créneau part au suivant. | https://schedulingkit.com/playbooks/waitlist-management |
+| 4/5 | **Mesure BarberClub** | Nos 41 réservations en moins de 15 minutes disent qu'une fenêtre courte est tenable. Une garde de **30 minutes** paraît le bon compromis : elle couvre le quart le plus réactif sans immobiliser le créneau une demi-journée. | — |
+| 3/5 | Zenoti | Plafond recommandé : pas plus de **3 notifications** au même client pour le même créneau, avec un délai minimum entre deux. | https://help.zenoti.com/en/zenoti-driven-growth/utilization/automatic-waitlist-management.html |
+
+### Le levier n°4 : on ne mesure toujours rien
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | **Lecture du code** | `'booked'` n'existe que dans deux validateurs (`admin/waitlist.js:34` et `:176`). **Aucun code ne le pose.** Le dashboard affiche 1 conversion là où il y en a 164. Déjà signalé le 2026-08-27, toujours vrai. | — |
+| 5/5 | **Conséquence** | Sans ce correctif, aucune des améliorations ci-dessus ne sera mesurable. C'est le premier à faire, avant les autres. | — |
+
+### L'ordre à suivre
+
+1. ~~**Poser `booked`**~~ — ✅ fait le 2026-08-28 (`6dc9e75`), à la création du RDV, dans la transaction.
+2. ~~**Lever la contrainte barbier**~~ — ✅ fait le 2026-08-28 (`6dc9e75`). Gain réel mesuré : 39 % → 61 % de couverture, ~1 300 €/trimestre.
+3. **Mettre un lien dans le SMS** — reste à faire. C'est le plus gros levier restant : 55 % réservent malgré « appelez-nous », avec un délai médian de 48 h.
+4. **Geler le créneau 30 minutes** pendant l'offre — reste à faire.
