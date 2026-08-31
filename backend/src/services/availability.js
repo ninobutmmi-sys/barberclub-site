@@ -8,6 +8,49 @@ const {
 } = require('../constants');
 
 /**
+ * Fenetre de contrat (CDD, arrivee future, depart) d'un barber.
+ * contract_start/contract_end sont des DATE renvoyees en string 'YYYY-MM-DD'
+ * (type parser custom, cf. config/database.js) -> comparaison ISO sure.
+ * @param {string} barberId
+ * @param {string} date - YYYY-MM-DD
+ * @param {object} [dbClient] - client pg (dans une transaction) sinon pool
+ * @returns {{ outside: boolean, contract_start: string|null, contract_end: string|null, name: string|null }}
+ */
+async function getContractWindow(barberId, date, dbClient = null) {
+  const runner = dbClient || db;
+  const res = await runner.query(
+    'SELECT name, contract_start, contract_end FROM barbers WHERE id = $1',
+    [barberId]
+  );
+  if (res.rows.length === 0) return { outside: false, contract_start: null, contract_end: null, name: null };
+  const { name, contract_start, contract_end } = res.rows[0];
+  const outside = !!((contract_start && date < contract_start) || (contract_end && date > contract_end));
+  return { outside, contract_start, contract_end, name };
+}
+
+/**
+ * Garde-fou dur : personne (admin inclus) ne pose un RDV hors fenetre de contrat.
+ * Un barber pas encore arrive ou deja parti ne travaille pas, ce n'est pas un
+ * simple horaire qu'on peut forcer depuis le dashboard.
+ */
+async function assertWithinContract(barberId, date, dbClient = null) {
+  const { outside, contract_start, contract_end, name } = await getContractWindow(barberId, date, dbClient);
+  if (!outside) return;
+  const who = name || 'Ce barber';
+  if (contract_start && date < contract_start) {
+    throw ApiError.badRequest(`${who} n'arrive que le ${formatDateFR(contract_start)} — aucun RDV avant cette date`);
+  }
+  throw ApiError.badRequest(`${who} ne travaille plus depuis le ${formatDateFR(contract_end)} — aucun RDV apres cette date`);
+}
+
+/** 'YYYY-MM-DD' -> 'JJ/MM/AAAA' */
+function formatDateFR(iso) {
+  if (!iso || typeof iso !== 'string') return iso;
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/**
  * Check if a barber has a guest assignment on a given date
  * @returns {object|null} { host_salon_id, start_time, end_time } or null
  */
@@ -220,18 +263,9 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
 async function getSlotsForBarber(barberId, date, dayOfWeek, duration, options = {}) {
   const salonId = options.salonId || 'meylan';
 
-  // CDD / saisonnier : barber réservable uniquement dans sa fenêtre de contrat.
-  // contract_start/end sont des DATE (renvoyées en string 'YYYY-MM-DD' → comparaison ISO sûre).
-  const contractRes = await db.query(
-    'SELECT contract_start, contract_end FROM barbers WHERE id = $1',
-    [barberId]
-  );
-  if (contractRes.rows.length > 0) {
-    const { contract_start, contract_end } = contractRes.rows[0];
-    if ((contract_start && date < contract_start) || (contract_end && date > contract_end)) {
-      return [];
-    }
-  }
+  // CDD / arrivée future / départ : barber réservable uniquement dans sa fenêtre de contrat.
+  const { outside: outsideContract } = await getContractWindow(barberId, date);
+  if (outsideContract) return [];
 
   // Check guest assignment for this barber on this date
   const guestAssignment = await getGuestAssignment(barberId, date);
@@ -691,17 +725,8 @@ async function validateBarberSlot(dbClient, barberId, date, startTime, endTime, 
   const jsDay = dateObj.getDay();
   const dayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
 
-  // CDD / saisonnier : refuse toute réservation hors fenêtre de contrat (garde-fou serveur).
-  const contractCheck = await dbClient.query(
-    'SELECT contract_start, contract_end FROM barbers WHERE id = $1',
-    [barberId]
-  );
-  if (contractCheck.rows.length > 0) {
-    const { contract_start, contract_end } = contractCheck.rows[0];
-    if ((contract_start && date < contract_start) || (contract_end && date > contract_end)) {
-      throw ApiError.badRequest('Ce barber ne travaille pas à cette date');
-    }
-  }
+  // CDD / arrivée future / départ : refuse toute réservation hors fenêtre de contrat.
+  await assertWithinContract(barberId, date, dbClient);
 
   // Check guest assignment first
   const gaResult = await dbClient.query(
@@ -1281,6 +1306,8 @@ function getWorkingHours(barberId, dateStr, dayOfWeek, schedulesMap, overridesMa
 
 module.exports = {
   getAvailableSlots,
+  getContractWindow,
+  assertWithinContract,
   isSlotAvailable,
   findBestBarber,
   addMinutesToTime,

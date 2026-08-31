@@ -290,7 +290,7 @@ router.put('/:id',
       const { id } = req.params;
       const { date, start_time, end_time, barber_id, service_id, color, notify_client } = req.body;
 
-      const { addMinutesToTime, resolveServiceDuration } = require('../../services/availability');
+      const { addMinutesToTime, resolveServiceDuration, assertWithinContract } = require('../../services/availability');
 
       // Wrap everything in a transaction with row lock to prevent race conditions
       const txResult = await db.transaction(async (client) => {
@@ -330,6 +330,13 @@ router.put('/:id',
         });
         if (duration === null) throw ApiError.badRequest('Service introuvable');
         const newEndTime = end_time || addMinutesToTime(newStartTime, duration);
+
+        // Fenêtre de contrat : on ne déplace pas un RDV sur un barber qui n'est pas
+        // encore arrivé ou déjà parti. Vérifié seulement si la date ou le barber change,
+        // pour laisser modifiable l'historique d'un contrat terminé (couleur, prestation).
+        if (newDate !== oldDate || newBarberId !== booking.barber_id) {
+          await assertWithinContract(newBarberId, newDate, client);
+        }
 
         // Get new barber name if barber changed
         let newBarberName = oldBarberName;

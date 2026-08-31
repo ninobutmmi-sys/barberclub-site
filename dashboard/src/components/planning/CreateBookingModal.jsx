@@ -65,6 +65,20 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
   const searchTimerRef = useRef(null);
   const searchWrapperRef = useRef(null);
 
+  // Fenetre de contrat : un barber pas encore arrive ou deja parti ne peut pas
+  // recevoir de RDV a cette date (le backend refuse aussi, cf. assertWithinContract).
+  function contractGap(b, dateStr) {
+    if (!b || !dateStr) return null;
+    if (b.contract_start && dateStr < b.contract_start) return { type: 'before', date: b.contract_start };
+    if (b.contract_end && dateStr > b.contract_end) return { type: 'after', date: b.contract_end };
+    return null;
+  }
+  const shortDateFR = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  const selectedGap = useMemo(
+    () => contractGap(barbers.find((b) => b.id === barberId), date),
+    [barbers, barberId, date]
+  );
+
   // Reset service when barber changes (if current service not available)
   useEffect(() => {
     if (filteredServices.length > 0 && !filteredServices.find((s) => s.id === serviceId)) {
@@ -151,6 +165,12 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    if (selectedGap) {
+      setError(selectedGap.type === 'before'
+        ? `Ce barbier arrive le ${shortDateFR(selectedGap.date)} — aucun RDV avant cette date`
+        : `Ce barbier est parti le ${shortDateFR(selectedGap.date)} — aucun RDV apres cette date`);
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -283,17 +303,30 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
 
             {/* Barber chips */}
             <div className="bk-barbers">
-              {barbers.map((b) => (
-                <div
-                  key={b.id}
-                  className={`bk-barber-chip${barberId === b.id ? ' active' : ''}`}
-                  onClick={() => setBarberId(b.id)}
-                >
-                  <div className="bk-avatar">{b.name.charAt(0).toUpperCase()}</div>
-                  {b.name}
-                </div>
-              ))}
+              {barbers.map((b) => {
+                const gap = contractGap(b, date);
+                return (
+                  <div
+                    key={b.id}
+                    className={`bk-barber-chip${barberId === b.id ? ' active' : ''}`}
+                    title={gap ? (gap.type === 'before' ? `Arrive le ${shortDateFR(gap.date)}` : `Parti le ${shortDateFR(gap.date)}`) : undefined}
+                    style={gap ? { opacity: 0.4, cursor: 'not-allowed', textDecoration: 'line-through' } : undefined}
+                    onClick={() => { if (!gap) setBarberId(b.id); }}
+                  >
+                    <div className="bk-avatar">{b.name.charAt(0).toUpperCase()}</div>
+                    {b.name}
+                  </div>
+                );
+              })}
             </div>
+            {selectedGap && (
+              <div className="bk-error" role="alert" style={{ marginTop: 8 }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {selectedGap.type === 'before'
+                  ? `Ce barbier arrive le ${shortDateFR(selectedGap.date)} — aucun RDV avant cette date`
+                  : `Ce barbier est parti le ${shortDateFR(selectedGap.date)} — aucun RDV apres cette date`}
+              </div>
+            )}
 
             {/* Service */}
             <div className="bk-field">
@@ -534,7 +567,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className="bk-btn-cancel" onClick={onClose}>Annuler</button>
-              <button type="submit" className="bk-btn-create" disabled={saving}>
+              <button type="submit" className="bk-btn-create" disabled={saving || !!selectedGap}>
                 {saving ? (
                   <>
                     <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />

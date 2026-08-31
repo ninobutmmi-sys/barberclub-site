@@ -176,6 +176,11 @@ async function createBooking(data) {
       throw ApiError.badRequest(`${barberName} ne travaille pas dans ce salon ce jour-là`);
     }
 
+    // 2c. Fenêtre de contrat — s'applique AUSSI à l'admin. Un barber pas encore arrivé
+    // (contract_start futur) ou déjà parti (contract_end passé) n'est pas un horaire
+    // qu'on peut forcer depuis le dashboard : il ne travaille tout simplement pas.
+    await availability.assertWithinContract(barberId, data.date, client);
+
     // 3. Calculate end time (use admin-provided duration if set, else service default)
     const endTime = availability.addMinutesToTime(data.start_time, effectiveDuration);
 

@@ -40,11 +40,34 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
   const gridH = TOTAL_MINUTES * px;
   const hourH = 60 * px;
 
+  // Fenetre de contrat : un barber pas encore arrive (contract_start futur) ou deja
+  // parti (contract_end passe) ne travaille pas ce jour-la. Le backend refuse le RDV,
+  // la colonne doit donc etre barree comme un jour de repos.
+  // contract_start/end arrivent en string 'YYYY-MM-DD' -> comparaison ISO sure.
+  function getContractGap(barber, dateStr) {
+    if (!barber) return null;
+    if (barber.contract_start && dateStr < barber.contract_start) {
+      return { type: 'before', date: barber.contract_start };
+    }
+    if (barber.contract_end && dateStr > barber.contract_end) {
+      return { type: 'after', date: barber.contract_end };
+    }
+    return null;
+  }
+
+  // 'YYYY-MM-DD' -> 'JJ/MM'
+  function shortDateFR(iso) {
+    return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  }
+
   // Check if a barber is off on a given date (0=Monday convention)
   // Also handles guest assignments: resident away = off, guest without assignment = off
   function isBarberOff(barberId, date) {
     const dateStr = format(date, 'yyyy-MM-dd');
     const barber = barbers.find(b => b.id === barberId);
+
+    // Hors fenetre de contrat -> absent, quel que soit l'horaire hebdo
+    if (getContractGap(barber, dateStr)) return true;
 
     // Check if this barber has a guest assignment on this date
     const ga = (guestAssignments || []).find(g => g.barber_id === barberId && g.date === dateStr);
@@ -158,6 +181,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                 <div style={{ display: 'flex', borderTop: '1px solid rgba(var(--overlay),0.06)' }}>
                   {barbers.map((b) => {
                     const off = isBarberOff(b.id, day);
+                    const gap = getContractGap(b, dayStr);
                     const gi = getGuestInfo(b.id, day);
                     // Resident barber guesting elsewhere
                     const isAway = !b.is_guest && gi;
@@ -168,7 +192,14 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                         {b.photo_url && (
                           <img src={b.photo_url} alt={b.name} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', marginBottom: 1, filter: off ? 'grayscale(1) opacity(0.4)' : 'none', border: isGuestHere ? '2px solid #3b82f6' : 'none' }} />
                         )}
-                        {isAway ? (
+                        {gap ? (
+                          <span title={gap.type === 'before' ? `Arrive le ${shortDateFR(gap.date)}` : `Parti le ${shortDateFR(gap.date)}`}>
+                            <s>{b.name.split(' ')[0]}</s>
+                            <span style={{ display: 'block', fontSize: 8, color: '#f59e0b', fontWeight: 600, lineHeight: 1 }}>
+                              {gap.type === 'before' ? `des ${shortDateFR(gap.date)}` : 'parti'}
+                            </span>
+                          </span>
+                        ) : isAway ? (
                           <span title={`A ${gi.host_salon_id === 'grenoble' ? 'Grenoble' : 'Meylan'}`}>
                             <s>{b.name.split(' ')[0]}</s>
                             <span style={{ display: 'block', fontSize: 8, color: '#f59e0b', fontWeight: 600, lineHeight: 1 }}>
@@ -256,6 +287,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                     const dayBookings = bookingsByDayBarber[key] || [];
                     const dayBlocked = blockedByDayBarber?.[key] || [];
                     const barberIsOff = isBarberOff(barber.id, day);
+                    const barberGap = getContractGap(barber, dayStr);
 
                     return (
                       <div
@@ -316,8 +348,14 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                         {barberIsOff && (
                           <div className="planning-day-off-overlay">
                             <span className="planning-day-off-badge" style={compact ? { fontSize: 7, padding: '2px 5px' } : undefined}>
-                              {!compact && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg>}
-                              Repos
+                              {!compact && (barberGap ? (
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                              ) : (
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg>
+                              ))}
+                              {barberGap
+                                ? (barberGap.type === 'before' ? `Arrive le ${shortDateFR(barberGap.date)}` : `Parti le ${shortDateFR(barberGap.date)}`)
+                                : 'Repos'}
                             </span>
                           </div>
                         )}

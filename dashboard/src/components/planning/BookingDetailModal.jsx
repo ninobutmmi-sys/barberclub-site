@@ -236,8 +236,25 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
     }
   }
 
+  // Fenetre de contrat : interdit de deplacer un RDV sur un barber pas encore
+  // arrive ou deja parti (le backend refuse aussi, cf. assertWithinContract).
+  function contractGap(b, dateStr) {
+    if (!b || !dateStr) return null;
+    if (b.contract_start && dateStr < b.contract_start) return { type: 'before', date: b.contract_start, name: b.name };
+    if (b.contract_end && dateStr > b.contract_end) return { type: 'after', date: b.contract_end, name: b.name };
+    return null;
+  }
+  const shortDateFR = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  const editGap = contractGap(barbers.find((b) => b.id === editBarberId), editDate);
+
   async function handleSave() {
     setSaveError('');
+    if (editGap) {
+      setSaveError(editGap.type === 'before'
+        ? `${editGap.name} arrive le ${shortDateFR(editGap.date)} — aucun RDV avant cette date`
+        : `${editGap.name} est parti le ${shortDateFR(editGap.date)} — aucun RDV apres cette date`);
+      return;
+    }
     setSaving(true);
     try {
       await onReschedule(booking.id, {
@@ -465,7 +482,14 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="label" style={{ fontSize: 11, marginBottom: 5, color: 'var(--text-muted)' }}>Barber</label>
                     <select className="input" value={editBarberId} onChange={(e) => setEditBarberId(e.target.value)} required>
-                      {barbers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      {barbers.map((b) => {
+                        const gap = contractGap(b, editDate);
+                        return (
+                          <option key={b.id} value={b.id} disabled={!!gap && b.id !== booking.barber_id}>
+                            {b.name}{gap ? (gap.type === 'before' ? ` (des le ${shortDateFR(gap.date)})` : ' (parti)') : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
@@ -680,7 +704,15 @@ export default function BookingDetailModal({ booking, barbers, services, onClose
         {/* FOOTER */}
         <div className="modal-footer bk-footer-actions" style={{ gap: 8 }}>
           {isDirty && (
-            <button className="btn btn-primary btn-sm btn-save" onClick={() => { setNotifyClient(false); setSubView('confirm-edit'); }} style={{ marginLeft: 'auto' }}>
+            <button className="btn btn-primary btn-sm btn-save" onClick={() => {
+              if (editGap) {
+                setSaveError(editGap.type === 'before'
+                  ? `${editGap.name} arrive le ${shortDateFR(editGap.date)} — aucun RDV avant cette date`
+                  : `${editGap.name} est parti le ${shortDateFR(editGap.date)} — aucun RDV apres cette date`);
+                return;
+              }
+              setSaveError(''); setNotifyClient(false); setSubView('confirm-edit');
+            }} style={{ marginLeft: 'auto' }}>
               Enregistrer
             </button>
           )}

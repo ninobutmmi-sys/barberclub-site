@@ -9,7 +9,7 @@
 const request = require('supertest');
 const { app, getNextWorkingDate, getLucasDayOff, createTestBooking, cleanupBooking, cleanupTestClients } = require('./helpers');
 const { LUCAS_ID, JULIEN_ID, COUPE_HOMME_ID, db } = require('./setup');
-const { addMinutesToTime, validateBarberSlot, getAvailableSlots, isSlotAvailable } = require('../src/services/availability');
+const { addMinutesToTime, validateBarberSlot, getAvailableSlots, isSlotAvailable, assertWithinContract } = require('../src/services/availability');
 
 const createdBookingIds = [];
 
@@ -19,6 +19,40 @@ afterAll(async () => {
   }
   await cleanupTestClients();
   await db.pool.end();
+});
+
+// ============================================
+// assertWithinContract — fenêtre de contrat (arrivée future / départ)
+// Stub du client pg : la règle est purement une comparaison de dates ISO.
+// ============================================
+
+describe('Availability — assertWithinContract', () => {
+  const stub = (rows) => ({ query: async () => ({ rows }) });
+  const arriveLe15 = stub([{ name: 'Eddine', contract_start: '2026-09-15', contract_end: null }]);
+  const cddTermine = stub([{ name: 'Benj', contract_start: '2026-06-01', contract_end: '2026-08-15' }]);
+  const permanent = stub([{ name: 'Tom', contract_start: null, contract_end: null }]);
+
+  test('refuse un RDV avant la date d\'arrivée', async () => {
+    await expect(assertWithinContract('x', '2026-09-01', arriveLe15))
+      .rejects.toThrow(/n'arrive que le 15\/09\/2026/);
+  });
+
+  test('autorise le jour même de l\'arrivée', async () => {
+    await expect(assertWithinContract('x', '2026-09-15', arriveLe15)).resolves.toBeUndefined();
+  });
+
+  test('refuse un RDV après la fin de contrat', async () => {
+    await expect(assertWithinContract('x', '2026-08-31', cddTermine))
+      .rejects.toThrow(/ne travaille plus depuis le 15\/08\/2026/);
+  });
+
+  test('autorise pendant le contrat', async () => {
+    await expect(assertWithinContract('x', '2026-07-01', cddTermine)).resolves.toBeUndefined();
+  });
+
+  test('barber permanent : aucune borne', async () => {
+    await expect(assertWithinContract('x', '2030-01-01', permanent)).resolves.toBeUndefined();
+  });
 });
 
 // ============================================
