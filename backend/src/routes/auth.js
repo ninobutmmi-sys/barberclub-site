@@ -89,50 +89,57 @@ router.post('/login',
         throw ApiError.unauthorized('Email ou mot de passe incorrect');
       }
 
-      let user = result.rows[0];
-      if (result.rows.length > 1) {
-        for (const candidat of result.rows) {
-          if (!candidat.password_hash) continue;
-          if (await bcrypt.compare(password, candidat.password_hash)) {
-            user = candidat;
-            break;
-          }
-        }
+      // Chaque fiche a son mot de passe : c'est celle qui repond qui est la
+      // bonne. Mais essayer les fiches une a une ne doit pas affaiblir le
+      // verrouillage — sinon un compte bloque au bout de cinq essais se
+      // contournerait en visant ses doublons. Donc : une fiche verrouillee
+      // n'est pas essayee du tout, et chaque fiche essayee compte son echec.
+      const maintenant = Date.now();
+      const candidats = result.rows.filter(function (r) { return r.password_hash; });
+
+      if (candidats.length === 0) {
+        throw ApiError.unauthorized('Ce compte n\'a pas de mot de passe configuré');
       }
 
-      // Check account lockout
-      if (user.locked_until && new Date(user.locked_until) > new Date()) {
-        const minutesLeft = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
+      const verrouillees = candidats.filter(function (c) {
+        return c.locked_until && new Date(c.locked_until).getTime() > maintenant;
+      });
+      const essayables = candidats.filter(function (c) {
+        return !(c.locked_until && new Date(c.locked_until).getTime() > maintenant);
+      });
+
+      if (essayables.length === 0) {
+        const finVerrou = Math.min.apply(null, verrouillees.map(function (c) { return new Date(c.locked_until).getTime(); }));
+        const minutesLeft = Math.max(1, Math.ceil((finVerrou - maintenant) / 60000));
         throw ApiError.tooMany(
           `Compte temporairement verrouillé. Réessayez dans ${minutesLeft} minute${minutesLeft > 1 ? 's' : ''}.`
         );
       }
 
-      // Verify password
-      if (!user.password_hash) {
-        throw ApiError.unauthorized('Ce compte n\'a pas de mot de passe configuré');
-      }
-
-      const validPassword = await bcrypt.compare(password, user.password_hash);
-
-      if (!validPassword) {
-        // Increment failed attempts
-        const newAttempts = (user.failed_login_attempts || 0) + 1;
+      let user = null;
+      let verrouAtteint = false;
+      for (const candidat of essayables) {
+        if (await bcrypt.compare(password, candidat.password_hash)) {
+          user = candidat;
+          break;
+        }
+        const newAttempts = (candidat.failed_login_attempts || 0) + 1;
         const lockUntil = newAttempts >= MAX_LOGIN_ATTEMPTS
           ? new Date(Date.now() + LOCKOUT_MINUTES * 60000)
           : null;
-
         await db.query(
           `UPDATE ${table} SET failed_login_attempts = $1, locked_until = $2 WHERE id = $3`,
-          [newAttempts, lockUntil, user.id]
+          [newAttempts, lockUntil, candidat.id]
         );
+        if (lockUntil) verrouAtteint = true;
+      }
 
-        if (lockUntil) {
+      if (!user) {
+        if (verrouAtteint) {
           throw ApiError.tooMany(
             `Trop de tentatives. Compte verrouillé pour ${LOCKOUT_MINUTES} minutes.`
           );
         }
-
         throw ApiError.unauthorized('Email ou mot de passe incorrect');
       }
 
