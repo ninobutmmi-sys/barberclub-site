@@ -481,3 +481,115 @@
 @media (prefers-reduced-motion: reduce) {
     .barber-monogram { transition: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATION DES CARTES (2026-09)
+
+   Regle suivie partout : on n'anime que `transform` et `opacity`, les deux
+   seules proprietes que le navigateur sait bouger sans repeindre la page.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Tant que le script observe les cartes, elles attendent leur tour. */
+html.cards-observed .barbers .barber-card {
+    opacity: 0;
+    transform: translateY(26px) scale(0.985);
+    transition:
+        opacity 0.7s var(--bc-ease) var(--enter-delay, 0ms),
+        transform 0.7s var(--bc-ease) var(--enter-delay, 0ms);
+}
+html.cards-observed .barbers .barber-card.in-view {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* La photo se pose : elle arrive legerement zoomee et se cale. */
+html.cards-observed .barber-media img,
+html.cards-observed .barber-media video {
+    transform: scale(1.07);
+    transition: transform 1.1s var(--bc-ease) var(--enter-delay, 0ms);
+}
+html.cards-observed .barber-card.in-view .barber-media img,
+html.cards-observed .barber-card.in-view .barber-media video {
+    transform: scale(1);
+}
+
+/* Le nom et la fleche suivent la carte d'un cheveu. */
+html.cards-observed .barber-info {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+        opacity 0.6s var(--bc-ease) calc(var(--enter-delay, 0ms) + 180ms),
+        transform 0.6s var(--bc-ease) calc(var(--enter-delay, 0ms) + 180ms);
+}
+html.cards-observed .barber-card.in-view .barber-info {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Au doigt : la carte s'enfonce, la fleche recule. Rien de plus. */
+.barber-card:active .barber-cta { transform: scale(0.9); }
+.barber-cta { transition: transform 0.25s var(--bc-ease), background 0.25s ease, border-color 0.25s ease; }
+
+/* Le balayage lumineux des cartes en attente : un seul passage a l'arrivee
+   de la carte, puis au toucher. Une boucle infinie sur un element decoratif
+   finit par fatiguer l'oeil. */
+.barber-card--soon .barber-media::before {
+    display: block;
+    animation: none;
+    transform: translateX(-130%);
+}
+.barber-card--soon.in-view .barber-media::before {
+    animation: sheenOnce 1.5s cubic-bezier(0.4, 0, 0.2, 1) calc(var(--enter-delay, 0ms) + 420ms) 1 both;
+}
+.barber-card--soon.tapped .barber-media::before {
+    animation: sheenOnce 1.1s ease 1 both;
+}
+@keyframes sheenOnce {
+    from { transform: translateX(-130%); }
+    to   { transform: translateX(130%); }
+}
+/* L'aura respire plus lentement et moins fort qu'avant. */
+@keyframes soonAura {
+    0%, 100% { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10), 0 0 0 0 rgba(255, 255, 255, 0); }
+    50%      { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24), 0 0 22px -8px rgba(255, 255, 255, 0.20); }
+}
+.barber-card--soon::after { animation-duration: 5.5s; }
+
+/* Derive lente de la photo pendant le defilement — la ou le navigateur sait
+   lier une animation au scroll. Ailleurs, rien ne se passe et rien ne casse. */
+@supports (animation-timeline: view()) {
+    /* Reserve au tactile : sur un ecran avec souris, l'animation prendrait le
+       pas sur le zoom au survol, qui est le retour visuel le plus utile. */
+    @media (hover: none) and (prefers-reduced-motion: no-preference) {
+        .barber-card.in-view .barber-media img,
+        .barber-card.in-view .barber-media video {
+            animation: mediaDrift linear both;
+            animation-timeline: view();
+            animation-range: entry 20% exit 90%;
+        }
+        @keyframes mediaDrift {
+            from { transform: scale(1.08) translateY(-2.2%); }
+            to   { transform: scale(1.08) translateY(2.2%); }
+        }
+    }
+}
+
+@media (min-width: 768px) {
+    /* Meme poids de selecteur que la regle d'entree ci-dessus, sinon le
+       `scale(1)` de la carte posee l'emporte et le survol ne fait rien. */
+    html.cards-observed .barber-card:hover .barber-media img,
+    html.cards-observed .barber-card:hover .barber-media video,
+    .barber-card:hover .barber-media img,
+    .barber-card:hover .barber-media video { transform: scale(1.06); }
+    .barber-card:hover .barber-cta { transform: translateX(3px); }
+    .barber-card:hover .barber-name { transform: translateY(-2px); }
+    .barber-name { transition: transform 0.35s var(--bc-ease); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.cards-observed .barbers .barber-card,
+    html.cards-observed .barber-info { opacity: 1 !important; transform: none !important; }
+    html.cards-observed .barber-media img,
+    html.cards-observed .barber-media video { transform: none !important; animation: none !important; }
+    .barber-card--soon .barber-media::before { animation: none !important; }
+}
