@@ -6,3 +6,10 @@ backend/
 node_modules/
 CLAUDE.md
 .claude/
+
+# Documents de travail internes : rien a faire sur un site public
+docs/
+mockups/
+fidelite-club-prive/
+fidelite-club-prive.zip
+.superpowers/
