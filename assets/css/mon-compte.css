@@ -1844,3 +1844,122 @@ a:focus-visible, button:focus-visible, input:focus-visible {
         padding: 18px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   LE PONT VERS L'APPLICATION
+
+   La carte de fidelite vit dans l'application, pas sur le site. Quelqu'un qui
+   arrive sur son espace fidelite doit pouvoir l'installer sans la chercher.
+   Le bloc apparait deux fois : pour le visiteur qui n'a pas encore de compte,
+   et pour le membre connecte, sous ses rendez-vous.
+   ═══════════════════════════════════════════════════════════ */
+
+.app-install {
+    margin: 26px auto 0;
+    max-width: 420px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 20px;
+    background:
+        radial-gradient(120% 90% at 50% 0%, rgba(255, 255, 255, 0.06), transparent 62%),
+        rgba(255, 255, 255, 0.025);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.app-install-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+.app-install-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+}
+.app-install-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.app-install-sub {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.app-install-perks {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 16px;
+}
+.app-install-perk {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.72);
+}
+.app-install-perk svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.app-stores {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+.app-store {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 50px;
+    padding: 0 18px;
+    border-radius: 14px;
+    background: #fff;
+    color: #000;
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+.app-store svg { width: 19px; height: 19px; flex-shrink: 0; }
+.app-store:active { transform: scale(0.97); }
+
+/* Le magasin qui n'est pas celui du telephone reste accessible, en retrait */
+.app-store-secondary {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    min-height: 44px;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+.app-store-secondary svg { color: rgba(255, 255, 255, 0.6); width: 16px; height: 16px; }
+
+@media (min-width: 640px) {
+    .app-stores { flex-direction: row; }
+    .app-store { flex: 1; }
+    .app-store-secondary { flex: 0 0 auto; }
+    .app-store:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(255, 255, 255, 0.18); }
+    .app-store-secondary:hover { background: rgba(255, 255, 255, 0.06); box-shadow: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-store { transition: none; }
+    .app-store:hover, .app-store:active { transform: none; }
+}
