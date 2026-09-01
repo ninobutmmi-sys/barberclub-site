@@ -317,6 +317,10 @@ export const getNoShowStats = (params) => {
   const qs = params ? new URLSearchParams(params).toString() : '';
   return request(`/admin/analytics/no-shows${qs ? '?' + qs : ''}`);
 };
+export const getOneShotStats = (params) => {
+  const qs = params ? new URLSearchParams(params).toString() : '';
+  return request(`/admin/analytics/one-shot${qs ? '?' + qs : ''}`);
+};
 export const getRevenueHourly = (params) => {
   const qs = params ? new URLSearchParams(params).toString() : '';
   return request(`/admin/analytics/revenue-hourly${qs ? '?' + qs : ''}`);

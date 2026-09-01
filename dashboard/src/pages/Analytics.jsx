@@ -17,7 +17,9 @@ import {
   useTrends,
   useRevenueHourly,
   useNoShowStats,
+  useOneShotStats,
 } from '../hooks/useApi';
+import { exportToCSV } from '../utils/csv';
 
 // Les salons affichés dans la répartition. Une seule liste, à compléter le
 // jour où un quatrième salon ouvre.
@@ -1359,6 +1361,262 @@ function ActivitySection({ serviceStats, peakHours, revenueHourly, monthLabel, i
 // NoShowSection — Bloc Faux Plans
 // ============================================
 
+// ============================================
+// Premiere impression — clients venus une seule fois et jamais revenus,
+// attribues au barbier de cette unique visite.
+// ============================================
+const ONE_SHOT_PERIODS = [
+  { key: '3', label: '3 mois' },
+  { key: '6', label: '6 mois' },
+  { key: '12', label: '12 mois' },
+  { key: 'all', label: 'Tout' },
+];
+
+// Vert sous 25 %, orange jusqu'a 40 %, rouge au-dela : un client sur deux
+// qui ne revient pas, ce n'est plus un hasard.
+function oneShotColor(rate) {
+  if (rate < 25) return '#22c55e';
+  if (rate < 40) return '#f59e0b';
+  return '#ef4444';
+}
+
+function FirstImpressionSection({ data, isMobile, navigate, months, setMonths, loading }) {
+  const [barberFilter, setBarberFilter] = useState('all');
+  const [visible, setVisible] = useState(25);
+
+  const clients = useMemo(() => data?.clients || [], [data]);
+  const byBarber = data?.by_barber || [];
+  const overview = data?.overview || null;
+
+  const filtered = useMemo(
+    () => (barberFilter === 'all' ? clients : clients.filter(c => c.barber_name === barberFilter)),
+    [clients, barberFilter]
+  );
+
+  function handleExport() {
+    exportToCSV(
+      filtered,
+      `clients-jamais-revenus-${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      [
+        { key: 'first_name', label: 'Prenom' },
+        { key: 'last_name', label: 'Nom' },
+        { key: 'phone', label: 'Telephone' },
+        { key: 'email', label: 'Email' },
+        { key: 'visit_date', label: 'Date de la visite' },
+        { key: 'barber_name', label: 'Barbier' },
+        { key: 'service_name', label: 'Prestation' },
+        { key: 'price', label: 'Montant', transform: (v) => (v / 100).toFixed(2).replace('.', ',') },
+        { key: 'days_since', label: 'Jours depuis' },
+      ]
+    );
+  }
+
+  const maxRate = Math.max(...byBarber.map(b => b.rate), 1);
+
+  return (
+    <>
+      <SectionTitle
+        className="a-stagger a-d7"
+        icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5 }}><path d="M18 21a6 6 0 0 0-12 0"/><circle cx="12" cy="11" r="4"/><path d="M3 3l18 18"/></svg>}
+        title="Premiere impression"
+        subtitle={
+          overview
+            ? `${overview.one_shot} client${overview.one_shot > 1 ? 's' : ''} venu${overview.one_shot > 1 ? 's' : ''} une seule fois et jamais revenu${overview.one_shot > 1 ? 's' : ''} (${overview.rate} % des nouveaux)`
+            : 'Chargement...'
+        }
+        right={
+          <div style={{ display: 'flex', gap: 4, background: 'rgba(var(--overlay),0.04)', borderRadius: 8, padding: 3 }}>
+            {ONE_SHOT_PERIODS.map((p) => (
+              <button key={p.key} onClick={() => { setMonths(p.key); setVisible(25); }} style={{
+                padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.02em',
+                background: months === p.key ? 'rgba(var(--overlay),0.12)' : 'transparent',
+                color: months === p.key ? 'var(--text)' : 'var(--text-muted)',
+                transition: 'all 0.15s',
+              }}>{p.label}</button>
+            ))}
+          </div>
+        }
+      />
+
+      <div className="a-stagger a-d7" style={{ marginBottom: 32 }}>
+        {!overview ? (
+          <div className="a-card" style={{ textAlign: 'center', padding: '32px 20px', fontSize: 13, color: 'var(--text-muted)' }}>
+            {loading ? 'Calcul en cours...' : 'Aucune donnee'}
+          </div>
+        ) : (
+          <>
+            {/* KPI */}
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
+              <div className="a-card" style={{ padding: '16px 14px', textAlign: 'center' }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Nouveaux clients</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800 }}>{overview.new_clients}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>1re visite jugeable</div>
+              </div>
+              <div className="a-card" style={{ padding: '16px 14px', textAlign: 'center' }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Jamais revenus</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: '#ef4444' }}>{overview.one_shot}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>1 seule visite</div>
+              </div>
+              <div className="a-card" style={{ padding: '16px 14px', textAlign: 'center' }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Taux de perte</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: oneShotColor(overview.rate) }}>{overview.rate}%</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{formatPriceInt(overview.one_shot_revenue)} encaisses</div>
+              </div>
+              <div className="a-card" style={{ padding: '16px 14px', textAlign: 'center' }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>En attente</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--text-secondary)' }}>{overview.pending}</div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>venus 1 fois, &lt; 2 mois</div>
+              </div>
+            </div>
+
+            {/* Un client vu il y a 3 mois a eu moins de temps pour revenir qu'un
+                client vu il y a un an : sur une periode courte le taux monte
+                mecaniquement. Le dire evite de mal lire le chiffre. */}
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5 }}>
+              Comptes : clients dont l&apos;unique visite remonte a plus de 2 mois et qui n&apos;ont aucun RDV a venir.
+              Plus la periode est courte, plus le taux monte — les clients recents ont eu moins de temps pour revenir.
+            </p>
+
+            {/* Par barbier */}
+            {byBarber.length > 0 && (
+              <div className="a-card" style={{ marginBottom: 16 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Qui ne fidelise pas ?</h4>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 14 }}>
+                  Part des nouveaux clients qui ne sont jamais revenus, par barbier de la premiere visite
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[...byBarber].sort((a, b) => b.rate - a.rate).map((b) => (
+                    <div key={b.barber_name}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>
+                          {b.barber_name}
+                          {/* Sous 30 nouveaux clients, un pourcentage ne veut pas dire grand-chose */}
+                          {b.new_clients < 30 && (
+                            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', marginLeft: 8 }}>
+                              peu de recul
+                            </span>
+                          )}
+                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                            {b.one_shot} / {b.new_clients}
+                          </span>
+                          <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 800, color: oneShotColor(b.rate), minWidth: 46, textAlign: 'right' }}>
+                            {b.rate}%
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ height: 5, background: 'rgba(var(--overlay),0.04)', borderRadius: 3, opacity: b.new_clients < 30 ? 0.45 : 1 }}>
+                        <div style={{
+                          height: '100%', width: `${(b.rate / maxRate) * 100}%`,
+                          background: `linear-gradient(90deg, ${oneShotColor(b.rate)}, ${oneShotColor(b.rate)}80)`,
+                          borderRadius: 3, transition: 'width 0.5s ease',
+                        }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Liste des clients */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {[{ barber_name: 'all' }, ...byBarber].map((b) => (
+                  <button
+                    key={b.barber_name}
+                    onClick={() => { setBarberFilter(b.barber_name); setVisible(25); }}
+                    style={{
+                      padding: '5px 12px', borderRadius: 999, cursor: 'pointer',
+                      fontSize: 11, fontWeight: 700,
+                      border: '1px solid rgba(var(--overlay),0.08)',
+                      background: barberFilter === b.barber_name ? 'rgba(var(--overlay),0.12)' : 'transparent',
+                      color: barberFilter === b.barber_name ? 'var(--text)' : 'var(--text-muted)',
+                    }}
+                  >
+                    {b.barber_name === 'all' ? `Tous (${clients.length})` : `${b.barber_name} (${b.one_shot})`}
+                  </button>
+                ))}
+              </div>
+              {filtered.length > 0 && (
+                <button className="btn btn-secondary btn-sm print-hide" onClick={handleExport} style={{ gap: 6 }}>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export CSV
+                </button>
+              )}
+            </div>
+
+            {filtered.length === 0 ? (
+              <div className="a-card" style={{ textAlign: 'center', padding: '32px 20px', fontSize: 13, color: 'var(--text-muted)' }}>
+                Aucun client perdu sur cette periode
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {filtered.slice(0, visible).map((c) => (
+                    <div
+                      key={c.id}
+                      className="a-inactive-row"
+                      onClick={() => navigate(`/clients/${c.id}`)}
+                      style={{ flexWrap: isMobile ? 'wrap' : 'nowrap' }}
+                    >
+                      <div style={{
+                        width: 36, height: 36, borderRadius: 10,
+                        background: 'rgba(239,68,68,0.08)',
+                        border: '1px solid rgba(239,68,68,0.15)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 700, fontSize: 13, flexShrink: 0, color: '#ef4444',
+                      }}>
+                        {c.first_name?.charAt(0)?.toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, textTransform: 'capitalize' }}>
+                          {c.first_name} {c.last_name}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                          {c.phone}{c.service_name ? ` — ${c.service_name}` : ''}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', flexShrink: 0, fontWeight: 600 }}>
+                        {c.barber_name}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
+                        {format(new Date(c.visit_date), 'd MMM yyyy', { locale: fr })}
+                      </div>
+                      <div style={{
+                        fontSize: 11, fontWeight: 700, color: '#ef4444',
+                        padding: '4px 10px', borderRadius: 6,
+                        background: 'rgba(239,68,68,0.08)', flexShrink: 0,
+                      }}>
+                        {c.days_since}j
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {visible < filtered.length && (
+                  <button
+                    className="btn btn-secondary btn-sm print-hide"
+                    onClick={() => setVisible(v => v + 50)}
+                    style={{ marginTop: 12, width: '100%' }}
+                  >
+                    Afficher plus ({filtered.length - visible} restants)
+                  </button>
+                )}
+                {data.truncated && (
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, textAlign: 'center' }}>
+                    Liste limitee aux 1000 clients les plus recents
+                  </p>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
 function NoShowSection({ data, isMobile, navigate }) {
   if (!data) return null;
 
@@ -1656,6 +1914,7 @@ export default function Analytics() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [barberUnlocked, setBarberUnlocked] = useState(() => sessionStorage.getItem('bc_barber_stats_unlocked') === '1');
   const [pinInput, setPinInput] = useState('');
+  const [oneShotMonths, setOneShotMonths] = useState('6');
   const [pinError, setPinError] = useState(false);
 
   function handlePinSubmit(e) {
@@ -1702,6 +1961,8 @@ export default function Analytics() {
   const trendsQuery = useTrends({ enabled: isCurrentMonth });
   const revenueHourlyQuery = useRevenueHourly(monthParams);
   const noShowQuery = useNoShowStats(monthParams);
+  const oneShotParams = useMemo(() => ({ months: oneShotMonths }), [oneShotMonths]);
+  const oneShotQuery = useOneShotStats(oneShotParams);
 
   const loading = dashboardQuery.isLoading;
   const error = dashboardQuery.error?.message || '';
@@ -1720,6 +1981,7 @@ export default function Analytics() {
   const trends = trendsQuery.data || null;
   const revenueHourly = revenueHourlyQuery.data || null;
   const noShowStats = noShowQuery.data || null;
+  const oneShotStats = oneShotQuery.data || null;
 
   const prev = dashboard?.previous || null;
 
@@ -1737,6 +1999,7 @@ export default function Analytics() {
     trendsQuery.refetch();
     revenueHourlyQuery.refetch();
     noShowQuery.refetch();
+    oneShotQuery.refetch();
   }
 
   const monthBookings = dashboard?.month?.bookings || 0;
@@ -2127,6 +2390,17 @@ export default function Analytics() {
             <div className="a-stagger a-d6" style={{ marginBottom: 32 }}>
               <BarberPerformance data={barberStats} occupancy={occupancy} />
             </div>
+
+            {/* ======== BLOC : PREMIERE IMPRESSION ======== */}
+
+            <FirstImpressionSection
+              data={oneShotStats}
+              isMobile={isMobile}
+              navigate={navigate}
+              months={oneShotMonths}
+              setMonths={setOneShotMonths}
+              loading={oneShotQuery.isLoading}
+            />
 
             {/* ======== BLOC : FAUX PLANS ======== */}
 

@@ -384,6 +384,7 @@ GET    /api/admin/analytics/occupancy   # Taux d'occupation
 GET    /api/admin/analytics/services    # Stats prestations
 GET    /api/admin/analytics/barbers     # Stats barbers
 GET    /api/admin/analytics/members     # Stats adherents
+GET    /api/admin/analytics/one-shot    # Premiere impression : clients venus 1 seule fois, par barbier
 
 # Communication
 POST   /api/admin/sms/send              # Envoyer SMS bulk

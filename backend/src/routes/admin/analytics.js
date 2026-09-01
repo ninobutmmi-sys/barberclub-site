@@ -1360,4 +1360,155 @@ router.get('/accounts', async (req, res, next) => {
   }
 });
 
+// ============================================
+// GET /api/admin/analytics/one-shot
+// « Premiere impression » : clients venus une seule fois et jamais revenus,
+// attribues au barbier de cette unique visite.
+//
+// Cohorte = clients dont la 1re visite terminee date d'au moins `delay_days`
+// (sinon on accuserait un barbier pour un client qui n'a simplement pas encore
+// eu le temps de revenir) et de moins de `months` mois.
+// Perdu = exactement 1 visite terminee dans ce salon ET aucun RDV futur.
+// ============================================
+router.get('/one-shot',
+  [
+    query('delay_days').optional().isInt({ min: 14, max: 365 }),
+    query('months').optional().custom(v => v === 'all' || /^\d{1,2}$/.test(v)),
+    query('limit').optional().isInt({ min: 1, max: 2000 }),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const delayDays = parseInt(req.query.delay_days) || 60;
+      // months = 'all' -> pas de borne haute sur l'anciennete de la 1re visite
+      const months = req.query.months === 'all' ? null : (parseInt(req.query.months) || 12);
+      const limit = parseInt(req.query.limit) || 1000;
+
+      // Cohorte + statut de chaque client, calcules une seule fois.
+      const cohortSql = `
+        WITH visits AS (
+          SELECT b.client_id, b.date, b.start_time, b.barber_id, b.service_id, b.price
+          FROM bookings b
+          WHERE b.salon_id = $1 AND b.status = 'completed'
+            AND b.deleted_at IS NULL AND b.client_id IS NOT NULL
+        ),
+        counts AS (
+          SELECT client_id, COUNT(*)::int AS visit_count, MIN(date) AS first_date
+          FROM visits GROUP BY client_id
+        ),
+        first_visit AS (
+          SELECT DISTINCT ON (v.client_id)
+                 v.client_id, v.date, v.barber_id, v.service_id, v.price
+          FROM visits v
+          ORDER BY v.client_id, v.date, v.start_time
+        ),
+        cohort AS (
+          SELECT f.client_id, f.date AS first_date, f.barber_id, f.service_id, f.price,
+                 c.visit_count,
+                 EXISTS (
+                   SELECT 1 FROM bookings fb
+                   WHERE fb.client_id = f.client_id AND fb.salon_id = $1
+                     AND fb.status = 'confirmed' AND fb.deleted_at IS NULL
+                     AND fb.date >= (NOW() AT TIME ZONE 'Europe/Paris')::date
+                 ) AS has_future
+          FROM first_visit f
+          JOIN counts c ON c.client_id = f.client_id
+          JOIN clients cl ON cl.id = f.client_id AND cl.deleted_at IS NULL
+          WHERE f.date <= (NOW() AT TIME ZONE 'Europe/Paris')::date - make_interval(days => $2::int)
+            AND ($3::int IS NULL OR f.date >= (NOW() AT TIME ZONE 'Europe/Paris')::date - make_interval(months => $3::int))
+        )`;
+
+      const params = [salonId, delayDays, months];
+
+      // 1. Vue d'ensemble
+      const overview = await db.query(
+        `${cohortSql}
+         SELECT COUNT(*)::int AS new_clients,
+                COUNT(*) FILTER (WHERE visit_count = 1 AND NOT has_future)::int AS one_shot,
+                COALESCE(SUM(price) FILTER (WHERE visit_count = 1 AND NOT has_future), 0)::int AS one_shot_revenue
+         FROM cohort`,
+        params
+      );
+
+      // 2. Clients dont l'unique visite est trop recente pour conclure
+      const pending = await db.query(
+        `WITH visits AS (
+           SELECT b.client_id, b.date
+           FROM bookings b
+           WHERE b.salon_id = $1 AND b.status = 'completed'
+             AND b.deleted_at IS NULL AND b.client_id IS NOT NULL
+         ),
+         counts AS (
+           SELECT client_id, COUNT(*)::int AS visit_count, MIN(date) AS first_date
+           FROM visits GROUP BY client_id
+         )
+         SELECT COUNT(*)::int AS pending
+         FROM counts c
+         JOIN clients cl ON cl.id = c.client_id AND cl.deleted_at IS NULL
+         WHERE c.visit_count = 1
+           AND c.first_date > (NOW() AT TIME ZONE 'Europe/Paris')::date - make_interval(days => $2::int)`,
+        [salonId, delayDays]
+      );
+
+      // 3. Par barbier (celui de la premiere visite)
+      const byBarber = await db.query(
+        `${cohortSql}
+         SELECT br.name AS barber_name,
+                COUNT(*)::int AS new_clients,
+                COUNT(*) FILTER (WHERE co.visit_count = 1 AND NOT co.has_future)::int AS one_shot,
+                COALESCE(SUM(co.price) FILTER (WHERE co.visit_count = 1 AND NOT co.has_future), 0)::int AS one_shot_revenue
+         FROM cohort co
+         JOIN barbers br ON br.id = co.barber_id
+         -- groupe par nom : Benji a deux fiches barbers, deux lignes seraient illisibles
+         GROUP BY br.name
+         ORDER BY one_shot DESC`,
+        params
+      );
+
+      // 4. La liste des clients concernes
+      const clients = await db.query(
+        `${cohortSql}
+         SELECT cl.id, cl.first_name, cl.last_name, cl.phone, cl.email,
+                co.first_date AS visit_date, co.price,
+                br.name AS barber_name,
+                s.name AS service_name,
+                ((NOW() AT TIME ZONE 'Europe/Paris')::date - co.first_date)::int AS days_since
+         FROM cohort co
+         JOIN clients cl ON cl.id = co.client_id
+         LEFT JOIN barbers br ON br.id = co.barber_id
+         LEFT JOIN services s ON s.id = co.service_id
+         WHERE co.visit_count = 1 AND NOT co.has_future
+         ORDER BY co.first_date DESC
+         LIMIT $4`,
+        [...params, limit]
+      );
+
+      const o = overview.rows[0];
+      const rate = o.new_clients > 0
+        ? Math.round((o.one_shot / o.new_clients) * 1000) / 10
+        : 0;
+
+      res.json({
+        params: { delay_days: delayDays, months },
+        overview: {
+          new_clients: o.new_clients,
+          one_shot: o.one_shot,
+          rate,
+          one_shot_revenue: o.one_shot_revenue,
+          pending: pending.rows[0].pending,
+        },
+        by_barber: byBarber.rows.map(r => ({
+          ...r,
+          rate: r.new_clients > 0 ? Math.round((r.one_shot / r.new_clients) * 1000) / 10 : 0,
+        })),
+        clients: clients.rows,
+        truncated: clients.rows.length >= limit,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 module.exports = router;

@@ -2432,7 +2432,7 @@ select.input {
 .a-inactive-row {
   display: flex;
   align-items: center;
-  gap: 14;
+  gap: 14px;
   padding: 14px 16px;
   background: rgba(var(--overlay),0.02);
   border: 1px solid rgba(var(--overlay),0.04);
