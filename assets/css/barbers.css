@@ -341,3 +341,143 @@
   .page-transition { z-index: 9999; }
   .cursor-dot, .cursor-ring { z-index: 10001; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   REFONTE — page equipe (2026-09)
+
+   Trois defauts corriges : le titre se coupait en plein mot
+   (« BARBIERS MEYLA / N »), deux cartes affichaient le meme fauteuil
+   mystere — la page ressemblait a un site casse — et « Bientot » ne disait
+   rien alors que les dates d'arrivee existent.
+
+   Les reglages telephone vivent dans un max-width, sinon ils ecrasent le
+   bloc 1024px ecrit plus haut dans ce fichier.
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+    --bc-line: rgba(255, 255, 255, 0.09);
+    --bc-surface: rgba(255, 255, 255, 0.045);
+    --bc-text-2: rgba(255, 255, 255, 0.62);
+    --bc-text-3: rgba(255, 255, 255, 0.38);
+    --bc-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Le titre se coupe entre les mots, jamais au milieu d'un nom de salon */
+.page-title .word {
+    display: inline-block;
+    white-space: nowrap;
+}
+.page-title { text-wrap: balance; }
+
+/* Compte de l'equipe, sous le titre */
+.page-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 6px 14px;
+    border: 1px solid var(--bc-line);
+    border-radius: 999px;
+    background: var(--bc-surface);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bc-text-2);
+}
+.page-meta .dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Monogramme : une initiale vaut mieux que deux fois le meme fauteuil */
+.barber-monogram {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+        radial-gradient(120% 90% at 50% 15%, rgba(255, 255, 255, 0.07), transparent 62%),
+        #0b0b0b;
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(56px, 18vw, 88px);
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.13);
+    letter-spacing: 0.02em;
+    user-select: none;
+}
+.barber-card--soon .barber-media::before { display: none; }  /* balayage retire : trop de mouvement pour une carte d'attente */
+
+/* Date d'arrivee : « Des le 15 septembre » plutot que « Bientot » */
+.barber-when {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+    margin-top: 5px;
+    white-space: nowrap;
+}
+.barber-role { white-space: nowrap; }
+/* Le sablier de la carte d'attente tombait pile sur la date. Il ne disait
+   rien que le badge « Prochainement » ne dise deja. */
+.barber-card--soon .barber-cta { display: none; }
+.barber-monogram { font-size: clamp(50px, 15vw, 76px); }
+
+.barber-card:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+
+@media (max-width: 1023px) {
+    .page-header { padding: 76px 20px 6px; }
+    .page-title { font-size: clamp(30px, 9vw, 44px); letter-spacing: 0.04em; }
+    .page-subtitle { font-size: 10px; letter-spacing: 0.28em; color: var(--bc-text-3); }
+    .page-intro {
+        margin-top: 12px;
+        font-size: 14px;
+        line-height: 1.65;
+        color: var(--bc-text-2);
+        max-width: 34ch;
+    }
+
+    .barbers {
+        gap: 14px;
+        padding: 22px 16px 120px;
+        max-width: 520px;
+    }
+    .barber-card { border-radius: 20px; }
+    .barber-media { aspect-ratio: 4 / 5; }
+    .barber-info { padding: 16px; }
+    .barber-name { font-size: clamp(18px, 5.4vw, 22px); }
+    .barber-role { font-size: 10px; letter-spacing: 0.14em; color: rgba(255, 255, 255, 0.55); }
+    .barber-cta { width: 34px; height: 34px; }
+    .soon-badge { top: 10px; left: 10px; }
+
+    /* Equipe impaire : la derniere carte prend toute la largeur au lieu de
+       laisser un trou a cote d'elle. */
+    .barbers > .barber-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .barbers > .barber-card:last-child:nth-child(odd) .barber-media { aspect-ratio: 16 / 9; }
+}
+
+@media (min-width: 1024px) {
+    /* Cinq barbiers a Grenoble plus deux arrivees : la pellicule a hauteur
+       fixe les comprimait a 210 px. Une grille qui defile les tient tous. */
+    .page { height: auto; overflow: visible; }
+    .barbers {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        max-width: 1080px;
+        gap: 22px;
+        padding: 24px 40px 160px;
+        align-items: stretch;
+    }
+    .barber-card { height: auto; max-width: none; }
+    .barber-media { aspect-ratio: 3 / 4; height: auto; }
+    .barber-name { font-size: 24px; }
+    .barber-when { font-size: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .barber-monogram { transition: none; }
+}

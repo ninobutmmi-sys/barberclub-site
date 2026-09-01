@@ -26,11 +26,8 @@
 .page.loaded .barber-card:nth-child(5) { transition-delay: 0.7s; }
 .page.loaded .barber-card:nth-child(6) { transition-delay: 0.8s; }
 .page.loaded .barber-card:nth-child(7) { transition-delay: 0.9s; }
-@media (min-width: 1024px) {
-  .barbers { gap: 16px; max-width: 1560px; padding: 16px 28px 140px; }
-  .barber-card { max-width: 210px; height: 52vh; }
-  .barber-name { font-size: 22px; }
-}
+/* Les reglages desktop vivent dans barbers.css : la pellicule a hauteur fixe
+   ecrasait les sept cartes sur 210 px de large. */
 </style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BarberShop","name":"BarberClub Grenoble","url":"https://barberclub-grenoble.fr/pages/grenoble/barbers.html","employee":[{"@type":"Person","name":"Tom","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/tom.png?v=3"},{"@type":"Person","name":"Alan","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/alan.jpg?v=3"},{"@type":"Person","name":"Nathan","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/nathan.png?v=3"},{"@type":"Person","name":"Clément","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/clement.jpg?v=3"},{"@type":"Person","name":"Louay","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/louay.jpg"}]}
@@ -55,7 +52,8 @@
   <div class="page-header">
     <h1 class="page-title" data-split>Barbiers Grenoble</h1>
     <p class="page-subtitle">L'équipe BarberClub Grenoble</p>
-    <p class="page-intro">Cinq barbers passionnés t'accueillent au salon BarberClub Grenoble, rue Clôt Bey. Dégradés, fades, taille de barbe, chacun a sa spécialité pour te proposer un résultat sur mesure. Et bientôt, deux nouveaux visages rejoignent l'équipe…</p>
+    <p class="page-intro">Cinq barbiers vous accueillent rue Clot Bey. Dégradés, fades, taille de barbe : chacun sa spécialité, pour un résultat sur mesure.</p>
+    <p class="page-meta"><span>5 barbiers</span><span class="dot" aria-hidden="true"></span><span>2 arrivées</span></p>
   </div>
 
   <div class="barbers">
@@ -152,19 +150,17 @@
       </div>
     </a>
 
-    <div class="barber-card barber-card--soon" data-tilt data-soon role="img" aria-label="Eddine, nouveau barbier — arrive prochainement au salon de Grenoble">
+    <div class="barber-card barber-card--soon" data-tilt data-soon role="img" aria-label="Eddine, nouveau barbier au salon de Grenoble, dès le 15 septembre">
       <span class="soon-badge"><span class="dot" aria-hidden="true"></span>Prochainement</span>
       <div class="barber-media">
-        <picture>
-          <source srcset="../../assets/images/barbers/barber-soon.webp?v=1" type="image/webp">
-          <img src="../../assets/images/barbers/barber-soon.jpg?v=1" alt="Fauteuil de barbier mystère annonçant l'arrivée d'Eddine" loading="lazy">
-        </picture>
+        <div class="barber-monogram" aria-hidden="true">E</div>
         <div class="barber-media-overlay"></div>
       </div>
       <div class="barber-info">
         <div class="barber-details">
           <h2 class="barber-name">Eddine</h2>
-          <p class="barber-role">Nouveau barbier · Bientôt</p>
+          <p class="barber-role">Nouveau</p>
+          <p class="barber-when">Dès le 15 sept.</p>
         </div>
         <div class="barber-cta" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
@@ -172,19 +168,17 @@
       </div>
     </div>
 
-    <div class="barber-card barber-card--soon" data-tilt data-soon role="img" aria-label="Durel, nouveau barbier — arrive prochainement au salon de Grenoble">
+    <div class="barber-card barber-card--soon" data-tilt data-soon role="img" aria-label="Durel, nouveau barbier au salon de Grenoble, dès le 1er octobre">
       <span class="soon-badge"><span class="dot" aria-hidden="true"></span>Prochainement</span>
       <div class="barber-media">
-        <picture>
-          <source srcset="../../assets/images/barbers/barber-soon.webp?v=1" type="image/webp">
-          <img src="../../assets/images/barbers/barber-soon.jpg?v=1" alt="Fauteuil de barbier mystère annonçant l'arrivée de Durel" loading="lazy">
-        </picture>
+        <div class="barber-monogram" aria-hidden="true">D</div>
         <div class="barber-media-overlay"></div>
       </div>
       <div class="barber-info">
         <div class="barber-details">
           <h2 class="barber-name">Durel</h2>
-          <p class="barber-role">Nouveau barbier · Bientôt</p>
+          <p class="barber-role">Nouveau</p>
+          <p class="barber-when">Dès le 1er oct.</p>
         </div>
         <div class="barber-cta" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
@@ -237,15 +231,33 @@
     header.classList.toggle('scrolled', window.scrollY > 50);
   }, { passive: true });
 
-  /* Letter split */
+  /* Letter split — mot par mot, sinon « BARBIERS MEYLAN » se coupe en
+     « BARBIERS MEYLA / N » : chaque lettre etant un inline-block, le
+     navigateur retourne a la ligne n'importe ou. */
   document.querySelectorAll('[data-split]').forEach(el => {
-    const text = el.textContent; el.innerHTML = '';
-    [...text].forEach((ch, i) => {
-      const s = document.createElement('span');
-      s.className = 'letter';
-      s.textContent = ch === ' ' ? '\u00A0' : ch;
-      s.style.transitionDelay = `${0.15 + i * 0.06}s`;
-      el.appendChild(s);
+    const words = el.textContent.split(' ');
+    el.innerHTML = '';
+    let i = 0;
+    words.forEach((word, w) => {
+      const wrap = document.createElement('span');
+      wrap.className = 'word';
+      [...word].forEach(ch => {
+        const s = document.createElement('span');
+        s.className = 'letter';
+        s.textContent = ch;
+        s.style.transitionDelay = `${0.15 + i * 0.06}s`;
+        i++;
+        wrap.appendChild(s);
+      });
+      el.appendChild(wrap);
+      if (w < words.length - 1) {
+        const space = document.createElement('span');
+        space.className = 'letter';
+        space.textContent = '\u00A0';
+        space.style.transitionDelay = `${0.15 + i * 0.06}s`;
+        i++;
+        el.appendChild(space);
+      }
     });
   });
 

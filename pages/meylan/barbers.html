@@ -44,17 +44,15 @@
   <div class="page-header">
     <h1 class="page-title" data-split>Barbiers Meylan</h1>
     <p class="page-subtitle">L'équipe BarberClub Meylan</p>
-    <p class="page-intro">Lucas et Julien, co-fondateurs de BarberClub, t'accueillent au salon de Meylan. Deux barbers complémentaires qui maîtrisent aussi bien les dégradés que les soins barbe premium. Et bientôt, un nouveau visage rejoint l'équipe…</p>
+    <p class="page-intro">Lucas et Julien, co-fondateurs, vous accueillent avec Alex et Daryl. Dégradés, coupes tendance et soins barbe, au 26 avenue du Grésivaudan.</p>
+    <p class="page-meta"><span>4 barbiers</span><span class="dot" aria-hidden="true"></span><span>Salon de Meylan</span></p>
   </div>
 
   <div class="barbers">
 
     <a href="../barbers/barber-lucas.html" class="barber-card" data-tilt>
       <div class="barber-media">
-        <video autoplay muted loop playsinline poster="../../assets/images/barbers/lucas.png?v=3">
-          <source src="../../assets/videos/barbers/lucas.mp4?v=3" type="video/mp4">
-          <img src="../../assets/images/barbers/lucas.png?v=3" alt="Lucas">
-        </video>
+        <img src="../../assets/images/barbers/lucas.png?v=3" alt="Lucas, co-fondateur et barbier au salon de Meylan" loading="lazy">
         <div class="barber-media-overlay"></div>
       </div>
       <div class="barber-info">
@@ -84,18 +82,16 @@
       </div>
     </a>
 
-    <a href="../barbers/barber-alexandre.html" class="barber-card barber-card--soon" data-tilt aria-label="Alex, barbier au salon de Meylan">
+    <a href="../barbers/barber-alexandre.html" class="barber-card" data-tilt aria-label="Alex, barbier au salon de Meylan">
       <div class="barber-media">
-        <picture>
-          <source srcset="../../assets/images/barbers/alexandre.webp?v=1" type="image/webp">
-          <img src="../../assets/images/barbers/alexandre.jpg?v=1" alt="Fauteuil de barbier — le portrait d'Alex arrive bientôt" loading="lazy">
-        </picture>
+        <div class="barber-monogram" aria-hidden="true">A</div>
         <div class="barber-media-overlay"></div>
       </div>
       <div class="barber-info">
         <div class="barber-details">
           <h2 class="barber-name">Alex</h2>
           <p class="barber-role">Barbier</p>
+          <p class="barber-when">Lun &ndash; Sam</p>
         </div>
         <div class="barber-cta" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -103,18 +99,16 @@
       </div>
     </a>
 
-    <a href="../barbers/barber-daryl.html" class="barber-card barber-card--soon" data-tilt aria-label="Daryl, barbier au salon de Meylan">
+    <a href="../barbers/barber-daryl.html" class="barber-card" data-tilt aria-label="Daryl, barbier au salon de Meylan">
       <div class="barber-media">
-        <picture>
-          <source srcset="../../assets/images/barbers/barber-soon.webp?v=1" type="image/webp">
-          <img src="../../assets/images/barbers/barber-soon.jpg?v=1" alt="Fauteuil de barbier — le portrait de Daryl arrive bientôt" loading="lazy">
-        </picture>
+        <div class="barber-monogram" aria-hidden="true">D</div>
         <div class="barber-media-overlay"></div>
       </div>
       <div class="barber-info">
         <div class="barber-details">
           <h2 class="barber-name">Daryl</h2>
           <p class="barber-role">Barbier</p>
+          <p class="barber-when">Mer &middot; Jeu &middot; Sam</p>
         </div>
         <div class="barber-cta" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -167,15 +161,33 @@
     header.classList.toggle('scrolled', window.scrollY > 50);
   }, { passive: true });
 
-  /* Letter split */
+  /* Letter split — mot par mot, sinon « BARBIERS MEYLAN » se coupe en
+     « BARBIERS MEYLA / N » : chaque lettre etant un inline-block, le
+     navigateur retourne a la ligne n'importe ou. */
   document.querySelectorAll('[data-split]').forEach(el => {
-    const text = el.textContent; el.innerHTML = '';
-    [...text].forEach((ch, i) => {
-      const s = document.createElement('span');
-      s.className = 'letter';
-      s.textContent = ch === ' ' ? '\u00A0' : ch;
-      s.style.transitionDelay = `${0.15 + i * 0.06}s`;
-      el.appendChild(s);
+    const words = el.textContent.split(' ');
+    el.innerHTML = '';
+    let i = 0;
+    words.forEach((word, w) => {
+      const wrap = document.createElement('span');
+      wrap.className = 'word';
+      [...word].forEach(ch => {
+        const s = document.createElement('span');
+        s.className = 'letter';
+        s.textContent = ch;
+        s.style.transitionDelay = `${0.15 + i * 0.06}s`;
+        i++;
+        wrap.appendChild(s);
+      });
+      el.appendChild(wrap);
+      if (w < words.length - 1) {
+        const space = document.createElement('span');
+        space.className = 'letter';
+        space.textContent = '\u00A0';
+        space.style.transitionDelay = `${0.15 + i * 0.06}s`;
+        i++;
+        el.appendChild(space);
+      }
     });
   });
 
