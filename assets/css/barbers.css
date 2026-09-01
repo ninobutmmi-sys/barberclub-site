@@ -555,32 +555,62 @@ html.cards-observed .barber-card.in-view .barber-info {
 }
 .barber-card--soon::after { animation-duration: 5.5s; }
 
-/* Derive lente de la photo pendant le defilement — la ou le navigateur sait
-   lier une animation au scroll. Ailleurs, rien ne se passe et rien ne casse. */
-@supports (animation-timeline: view()) {
-    /* Reserve au tactile : sur un ecran avec souris, l'animation prendrait le
-       pas sur le zoom au survol, qui est le retour visuel le plus utile. */
-    @media (hover: none) and (prefers-reduced-motion: no-preference) {
-        .barber-card.in-view .barber-media img,
-        .barber-card.in-view .barber-media video {
-            animation: mediaDrift linear both;
-            animation-timeline: view();
-            animation-range: entry 20% exit 90%;
-        }
-        @keyframes mediaDrift {
-            from { transform: scale(1.08) translateY(-2.2%); }
-            to   { transform: scale(1.08) translateY(2.2%); }
-        }
+/* La photo respire : un lent va-et-vient, propre a chaque carte pour qu'elles
+   ne bougent pas au pas cadence. Uniquement quand la carte est a l'ecran —
+   c'est le script qui pose et retire `is-live`. */
+@keyframes cardBreath {
+    from { transform: scale(1.045) translate3d(-0.9%, -0.9%, 0); }
+    to   { transform: scale(1.075) translate3d(0.9%, 0.9%, 0); }
+}
+@keyframes cardBreathAlt {
+    from { transform: scale(1.075) translate3d(0.8%, -0.7%, 0); }
+    to   { transform: scale(1.045) translate3d(-0.8%, 0.7%, 0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+    html.cards-observed .barber-card.is-live .barber-media img,
+    html.cards-observed .barber-card.is-live .barber-media video {
+        animation: cardBreath var(--breath, 19s) ease-in-out infinite alternate;
+        /* Apres l'entree, sinon la respiration ecrase le zoom qui se pose. */
+        animation-delay: calc(var(--enter-delay, 0ms) + 950ms);
+        will-change: transform;
     }
+    /* Une carte sur deux part dans l'autre sens, avec une autre duree. */
+    html.cards-observed .barber-card.is-live:nth-child(2n) .barber-media img,
+    html.cards-observed .barber-card.is-live:nth-child(2n) .barber-media video {
+        animation-name: cardBreathAlt;
+    }
+    html.cards-observed .barber-card:nth-child(3n) { --breath: 23s; }
+    html.cards-observed .barber-card:nth-child(3n + 1) { --breath: 17s; }
+}
+
+/* Un reflet traverse la carte a son arrivee. Une fois, pas en boucle. */
+.barber-media-overlay::after {
+    content: '';
+    position: absolute;
+    inset: -30%;
+    background: linear-gradient(112deg, transparent 40%, rgba(255, 255, 255, 0.13) 50%, transparent 60%);
+    transform: translateX(-130%);
+    pointer-events: none;
+}
+html.cards-observed .barber-card.in-view .barber-media-overlay::after {
+    animation: sheenOnce 1.4s cubic-bezier(0.4, 0, 0.2, 1) calc(var(--enter-delay, 0ms) + 320ms) 1 both;
 }
 
 @media (min-width: 768px) {
     /* Meme poids de selecteur que la regle d'entree ci-dessus, sinon le
        `scale(1)` de la carte posee l'emporte et le survol ne fait rien. */
-    html.cards-observed .barber-card:hover .barber-media img,
-    html.cards-observed .barber-card:hover .barber-media video,
+    /* Au survol, la photo se fige et s'eclaircit. Un zoom en plus la ferait
+       sauter depuis la position ou la respiration l'avait laissee. */
+    .barber-media img,
+    .barber-media video { transition: filter 0.35s ease; }
     .barber-card:hover .barber-media img,
-    .barber-card:hover .barber-media video { transform: scale(1.06); }
+    .barber-card:hover .barber-media video { filter: brightness(1.08); }
+    /* Meme poids que la regle qui lance la respiration, sinon le raccourci
+       `animation:` la relance aussitot. */
+    html.cards-observed .barber-card.is-live:hover .barber-media img,
+    html.cards-observed .barber-card.is-live:hover .barber-media video {
+        animation-play-state: paused;
+    }
     .barber-card:hover .barber-cta { transform: translateX(3px); }
     .barber-card:hover .barber-name { transform: translateY(-2px); }
     .barber-name { transition: transform 0.35s var(--bc-ease); }
@@ -591,5 +621,6 @@ html.cards-observed .barber-card.in-view .barber-info {
     html.cards-observed .barber-info { opacity: 1 !important; transform: none !important; }
     html.cards-observed .barber-media img,
     html.cards-observed .barber-media video { transform: none !important; animation: none !important; }
+    .barber-media-overlay::after { animation: none !important; opacity: 0; }
     .barber-card--soon .barber-media::before { animation: none !important; }
 }

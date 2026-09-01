@@ -6,9 +6,10 @@
    position. Sur un telephone, celles du bas avaient fini de jouer bien avant
    qu'on arrive dessus : on scrollait vers des cartes deja posees.
 
-   Elles se declenchent maintenant quand elles entrent dans l'ecran, une par
-   une. Le mouvement reduit court-circuite tout : les cartes sont posees
-   d'entree.
+   Elles arrivent maintenant en cascade, une par une, et celles du bas
+   attendent d'entrer dans l'ecran. Une fois visible, la photo derive
+   lentement — et s'arrete des que la carte sort de l'ecran. Le mouvement
+   reduit court-circuite tout : les cartes sont posees d'entree.
    ═══════════════════════════════════════════ */
 (function () {
     'use strict';
@@ -25,18 +26,28 @@
 
     document.documentElement.classList.add('cards-observed');
 
+    // Cascade a l'arrivee : chaque carte part 110 ms apres la precedente. Sur
+    // un telephone ou les quatre cartes tiennent dans la fenetre, elles
+    // etaient toutes posees avant meme que la page s'affiche — on ne voyait
+    // rien bouger.
+    cards.forEach(function (card, i) {
+        card.style.setProperty('--enter-delay', (i * 110) + 'ms');
+    });
+
     var obs = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-            if (!entry.isIntersecting) return;
             var card = entry.target;
-            // Decalage court entre voisines d'une meme rangee : l'oeil suit,
-            // sans que la derniere se fasse attendre.
-            var row = cards.indexOf(card) % 2;
-            card.style.setProperty('--enter-delay', (row * 90) + 'ms');
-            card.classList.add('in-view');
-            obs.unobserve(card);
+            if (entry.isIntersecting) {
+                card.classList.add('in-view');
+                // La derive lente de la photo ne tourne que sur les cartes
+                // visibles : inutile de faire travailler le telephone pour
+                // une image qui n'est pas a l'ecran.
+                card.classList.add('is-live');
+            } else {
+                card.classList.remove('is-live');
+            }
         });
-    }, { threshold: 0.18, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0.15, rootMargin: '0px 0px -30px 0px' });
 
     cards.forEach(function (c) { obs.observe(c); });
 })();
