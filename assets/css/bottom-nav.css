@@ -244,3 +244,127 @@
     .nav-item, .nav-item svg, .nav-cta-btn { transition: none !important; }
     .nav-item:hover, .nav-cta:hover .nav-cta-btn { transform: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   LUMIERE ET MOUVEMENT
+
+   Trois choses, et pas une de plus : un halo qui suit le doigt d'un onglet a
+   l'autre, une lumiere qui fait lentement le tour du liseré, et le bouton de
+   reservation qui respire. Tout en transform et opacity.
+   ═══════════════════════════════════════════════════════════ */
+
+.bottom-nav {
+    /* La barre monte a l'arrivee sur la page. */
+    opacity: 0;
+    transform: translateY(120%);
+    transition: opacity 0.5s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bottom-nav.nav-ready {
+    opacity: 1;
+    transform: translateY(0);
+}
+@media (min-width: 640px) {
+    .bottom-nav { transform: translateX(-50%) translateY(120%); }
+    .bottom-nav.nav-ready { transform: translateX(-50%) translateY(0); }
+}
+
+.nav-row { position: relative; }
+
+/* ─── Le halo qui suit ─── */
+.nav-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    border-radius: 18px;
+    background:
+        radial-gradient(58% 68% at 50% 38%, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.09) 58%, transparent 76%);
+    box-shadow:
+        0 0 28px rgba(255, 255, 255, 0.16),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        transform 0.55s cubic-bezier(0.22, 1, 0.28, 1),
+        width 0.55s cubic-bezier(0.22, 1, 0.28, 1),
+        opacity 0.35s ease;
+    will-change: transform;
+}
+.nav-item, .nav-cta { position: relative; z-index: 1; }
+/* Le fond de l'onglet actif fait double emploi avec le halo. */
+.nav-item.active { background: transparent; }
+
+/* ─── L'onde au toucher ─── */
+.nav-ripple {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    margin: -4px 0 0 -4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+    animation: navRipple 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes navRipple {
+    from { transform: scale(1); opacity: 0.55; }
+    to   { transform: scale(9); opacity: 0; }
+}
+
+/* ─── La lumiere qui fait le tour du liseré ─── */
+.bottom-nav::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+        from var(--rim, 0deg),
+        transparent 0deg,
+        rgba(255, 255, 255, 0.45) 22deg,
+        transparent 58deg,
+        transparent 360deg);
+    /* Le degrade n'habille que le contour : le centre est decoupe. */
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.55;
+    animation: rimTravel 9s linear infinite;
+}
+@property --rim {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+@keyframes rimTravel {
+    to { --rim: 360deg; }
+}
+
+/* ─── Le bouton de reservation respire ─── */
+.nav-cta-btn { position: relative; }
+.nav-cta-btn::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: inherit;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.30), transparent 70%);
+    opacity: 0.5;
+    z-index: -1;
+    animation: ctaHalo 3.6s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes ctaHalo {
+    0%, 100% { transform: scale(1);    opacity: 0.35; }
+    50%      { transform: scale(1.18); opacity: 0.7; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bottom-nav { opacity: 1; transform: none; transition: none; }
+    .bottom-nav.nav-ready { transform: none; }
+    .bottom-nav::before,
+    .nav-cta-btn::before { animation: none !important; opacity: 0.35; }
+    .nav-glow { transition: none !important; }
+    .nav-ripple { display: none; }
+}
