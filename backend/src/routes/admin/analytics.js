@@ -411,74 +411,149 @@ router.get('/occupancy',
 
       const salonId = req.user.salon_id;
 
-      // Count active barbers
-      const barbersResult = await db.query(
-        'SELECT COUNT(*) as count FROM barbers WHERE is_active = true AND deleted_at IS NULL AND salon_id = $1',
-        [salonId]
-      );
-      const barberCount = parseInt(barbersResult.rows[0].count);
+      // ── Taux d'occupation ──
+      // L'ancien calcul comptait « nombre de RDV / (jours x barbiers actifs x 20) ».
+      // Il ignorait les horaires reels : un barbier a mi-temps pesait autant
+      // qu'un plein temps, une arrivee en cours de mois comptait le mois entier
+      // (Daryl commence le 2 septembre, Eddine le 15), une coupe d'une heure
+      // valait autant qu'une de vingt minutes. La capacite vient maintenant des
+      // horaires, et l'occupation se mesure en minutes.
+      const occupancySql = `
+        WITH jours AS (
+          SELECT generate_series($1::date, $2::date, '1 day')::date AS d
+        ),
+        equipe AS (
+          -- Les barbiers en poste, plus ceux qui ont reellement coupe sur la
+          -- periode : la fiche de Benji est desactivee depuis fin juillet, mais
+          -- ses heures de juillet font partie de la capacite de juillet. Sans
+          -- elles, ses coupes gonflaient le taux — Meylan affichait 97 %.
+          SELECT id, contract_start, contract_end
+          FROM barbers
+          WHERE salon_id = $3 AND deleted_at IS NULL
+            AND (
+              is_active = true
+              OR EXISTS (
+                SELECT 1 FROM bookings b
+                WHERE b.barber_id = barbers.id AND b.salon_id = $3
+                  AND b.date >= $1::date AND b.date <= $2::date
+                  AND b.deleted_at IS NULL AND b.status IN ('confirmed', 'completed')
+              )
+            )
+        ),
+        capacite AS (
+          SELECT j.d, e.id AS barber_id,
+                 GREATEST(0,
+                   EXTRACT(EPOCH FROM (sc.end_time - sc.start_time)) / 60
+                   - COALESCE(EXTRACT(EPOCH FROM (sc.break_end - sc.break_start)) / 60, 0)
+                 )::int AS minutes
+          FROM jours j
+          CROSS JOIN equipe e
+          -- 0 = lundi en base, la ou Postgres met 0 = dimanche
+          JOIN LATERAL (
+            SELECT s.start_time, s.end_time, s.break_start, s.break_end
+            FROM schedules s
+            WHERE s.barber_id = e.id
+              AND s.day_of_week = ((EXTRACT(DOW FROM j.d)::int + 6) % 7)
+              AND s.is_working = true
+            LIMIT 1
+          ) sc ON true
+          WHERE (e.contract_start IS NULL OR j.d >= e.contract_start)
+            AND (e.contract_end IS NULL OR j.d <= e.contract_end)
+            AND NOT EXISTS (
+              SELECT 1 FROM schedule_overrides o
+              WHERE o.barber_id = e.id AND o.date = j.d AND o.is_day_off = true
+            )
+        ),
+        renforts AS (
+          -- Les barbiers invites ajoutent leurs heures a la capacite du salon
+          SELECT g.date AS d, g.barber_id,
+                 (EXTRACT(EPOCH FROM (g.end_time - g.start_time)) / 60)::int AS minutes
+          FROM guest_assignments g
+          WHERE g.host_salon_id = $3 AND g.date >= $1::date AND g.date <= $2::date
+        ),
+        pris AS (
+          SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 60), 0)::int AS minutes,
+                 COUNT(*)::int AS rdv
+          FROM bookings
+          WHERE salon_id = $3 AND date >= $1::date AND date <= $2::date
+            AND status IN ('confirmed', 'completed')
+            AND deleted_at IS NULL
+        ),
+        heures_barbier AS (
+          SELECT t.barber_id, SUM(t.minutes)::int AS minutes_ouvertes
+          FROM (SELECT * FROM capacite UNION ALL SELECT * FROM renforts) t
+          GROUP BY t.barber_id
+        ),
+        pris_barbier AS (
+          SELECT bk.barber_id,
+                 SUM(EXTRACT(EPOCH FROM (bk.end_time - bk.start_time)) / 60)::int AS minutes_prises
+          FROM bookings bk
+          WHERE bk.salon_id = $3 AND bk.date >= $1::date AND bk.date <= $2::date
+            AND bk.status IN ('confirmed', 'completed') AND bk.deleted_at IS NULL
+          GROUP BY bk.barber_id
+        ),
+        par_barbier AS (
+          -- Regroupe par nom : les fiches en double (Benji, LOUAY/Louay) ne
+          -- doivent pas faire deux lignes.
+          -- Un barbier qui a coupe plus d'heures que son planning n'en prevoit
+          -- (journee d'invite non saisie) a bien travaille ces heures-la : la
+          -- capacite les inclut, sinon on affiche 235 % d'occupation.
+          SELECT INITCAP(LOWER(br.name)) AS name,
+                 GREATEST(SUM(COALESCE(h.minutes_ouvertes, 0)),
+                          SUM(COALESCE(pb.minutes_prises, 0)))::int AS minutes_ouvertes,
+                 SUM(COALESCE(pb.minutes_prises, 0))::int AS minutes_prises
+          FROM barbers br
+          LEFT JOIN heures_barbier h ON h.barber_id = br.id
+          LEFT JOIN pris_barbier pb ON pb.barber_id = br.id
+          WHERE h.barber_id IS NOT NULL OR pb.barber_id IS NOT NULL
+          GROUP BY INITCAP(LOWER(br.name))
+        )
+        SELECT
+          (SELECT COALESCE(SUM(minutes_ouvertes), 0) FROM par_barbier) AS minutes_ouvertes,
+          (SELECT minutes FROM pris) AS minutes_prises,
+          (SELECT rdv FROM pris) AS rdv,
+          (SELECT COUNT(DISTINCT d) FROM capacite) AS jours_ouverts,
+          (SELECT COALESCE(json_agg(json_build_object(
+             'name', name,
+             'open_minutes', minutes_ouvertes,
+             'booked_minutes', minutes_prises,
+             'occupancy_percent', CASE WHEN minutes_ouvertes > 0
+                                       THEN ROUND(minutes_prises * 100.0 / minutes_ouvertes)
+                                       ELSE 0 END
+           ) ORDER BY minutes_prises DESC), '[]'::json) FROM par_barbier) AS barbiers`;
 
-      // Working hours per day: 9h-19h = 10 hours = 600 minutes
-      // With 30 min average slots = ~20 slots per barber per day
-      const slotsPerBarberPerDay = 20;
-
-      // Count working days in range
-      const daysResult = await db.query(
-        `SELECT COUNT(DISTINCT date) as days
-         FROM bookings
-         WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL AND salon_id = $3`,
-        [fromDate, toDate, salonId]
-      );
-      const workingDays = Math.max(parseInt(daysResult.rows[0].days), 1);
-
-      // Count actual bookings
-      const bookingsResult = await db.query(
-        `SELECT COUNT(*) as count
-         FROM bookings
-         WHERE date >= $1 AND date <= $2
-           AND status IN ('confirmed', 'completed')
-           AND deleted_at IS NULL AND salon_id = $3`,
-        [fromDate, toDate, salonId]
-      );
-
-      const totalBookings = parseInt(bookingsResult.rows[0].count);
-      const totalSlots = workingDays * barberCount * slotsPerBarberPerDay;
-      const occupancyRate = totalSlots > 0 ? Math.round((totalBookings / totalSlots) * 100) : 0;
+      const occ = await db.query(occupancySql, [fromDate, toDate, salonId]);
+      const o = occ.rows[0];
+      const openMinutes = parseInt(o.minutes_ouvertes) || 0;
+      const bookedMinutes = parseInt(o.minutes_prises) || 0;
+      const totalBookings = parseInt(o.rdv) || 0;
+      const workingDays = parseInt(o.jours_ouverts) || 0;
+      const occupancyRate = openMinutes > 0 ? Math.round((bookedMinutes / openMinutes) * 100) : 0;
 
       const response = {
         occupancy_rate: occupancyRate,
         total_bookings: totalBookings,
-        total_available_slots: totalSlots,
+        booked_minutes: bookedMinutes,
+        open_minutes: openMinutes,
         working_days: workingDays,
+        barbers: o.barbiers || [],
         period: { from: fromDate, to: toDate },
       };
 
       if (hasMonthParam) {
-        const prevDaysResult = await db.query(
-          `SELECT COUNT(DISTINCT date) as days
-           FROM bookings
-           WHERE date >= $1 AND date <= $2 AND deleted_at IS NULL AND salon_id = $3`,
-          [prevFrom, prevTo, salonId]
-        );
-        const prevWorkingDays = Math.max(parseInt(prevDaysResult.rows[0].days), 1);
-
-        const prevBookingsResult = await db.query(
-          `SELECT COUNT(*) as count
-           FROM bookings
-           WHERE date >= $1 AND date <= $2
-             AND status IN ('confirmed', 'completed')
-             AND deleted_at IS NULL AND salon_id = $3`,
-          [prevFrom, prevTo, salonId]
-        );
-
-        const prevTotalBookings = parseInt(prevBookingsResult.rows[0].count);
-        const prevTotalSlots = prevWorkingDays * barberCount * slotsPerBarberPerDay;
-        const prevOccupancyRate = prevTotalSlots > 0 ? Math.round((prevTotalBookings / prevTotalSlots) * 100) : 0;
+        const prevOcc = await db.query(occupancySql, [prevFrom, prevTo, salonId]);
+        const po = prevOcc.rows[0];
+        const prevOpen = parseInt(po.minutes_ouvertes) || 0;
+        const prevBooked = parseInt(po.minutes_prises) || 0;
+        const prevTotalBookings = parseInt(po.rdv) || 0;
+        const prevWorkingDays = parseInt(po.jours_ouverts) || 0;
+        const prevOccupancyRate = prevOpen > 0 ? Math.round((prevBooked / prevOpen) * 100) : 0;
 
         response.previous = {
           occupancy_rate: prevOccupancyRate,
           total_bookings: prevTotalBookings,
-          total_available_slots: prevTotalSlots,
+          booked_minutes: prevBooked,
+          open_minutes: prevOpen,
           working_days: prevWorkingDays,
           period: { from: prevFrom, to: prevTo },
         };
@@ -621,19 +696,22 @@ router.get('/barbers',
       }
 
       const salonId = req.user.salon_id;
+      // On part des RDV du salon, pas de sa liste de barbiers : un barbier
+      // invite venu d'un autre salon manquait au tableau, et un barbier maison
+      // parti couper ailleurs y ramenait son chiffre. A Grenoble en aout, les
+      // deux erreurs faisaient 506 € d'ecart avec le CA du salon.
       const result = await db.query(
-        `SELECT br.name,
+        `SELECT INITCAP(LOWER(br.name)) AS name,
                 COUNT(b.id) FILTER (WHERE b.status IN ('confirmed', 'completed')) as booking_count,
                 COALESCE(SUM(b.price) FILTER (WHERE b.status IN ('confirmed', 'completed')), 0) as revenue,
-                COUNT(DISTINCT b.client_id) as unique_clients,
+                COUNT(DISTINCT b.client_id) FILTER (WHERE b.status IN ('confirmed', 'completed')) as unique_clients,
                 COUNT(b.id) FILTER (WHERE b.status = 'no_show') as no_shows
-         FROM barbers br
-         LEFT JOIN bookings b ON br.id = b.barber_id
-           AND b.date >= $1 AND b.date <= $2
+         FROM bookings b
+         JOIN barbers br ON br.id = b.barber_id
+         WHERE b.salon_id = $3 AND b.date >= $1 AND b.date <= $2
            AND b.deleted_at IS NULL
            AND b.status IN ('confirmed', 'completed', 'no_show')
-         WHERE br.deleted_at IS NULL AND br.salon_id = $3
-         GROUP BY br.id, br.name
+         GROUP BY INITCAP(LOWER(br.name))
          ORDER BY revenue DESC`,
         [fromDate, toDate, salonId]
       );
@@ -666,18 +744,17 @@ router.get('/barbers',
 
       if (hasMonthParam) {
         const prevResult = await db.query(
-          `SELECT br.name,
+          `SELECT INITCAP(LOWER(br.name)) AS name,
                   COUNT(b.id) FILTER (WHERE b.status IN ('confirmed', 'completed')) as booking_count,
                   COALESCE(SUM(b.price) FILTER (WHERE b.status IN ('confirmed', 'completed')), 0) as revenue,
-                  COUNT(DISTINCT b.client_id) as unique_clients,
+                  COUNT(DISTINCT b.client_id) FILTER (WHERE b.status IN ('confirmed', 'completed')) as unique_clients,
                   COUNT(b.id) FILTER (WHERE b.status = 'no_show') as no_shows
-           FROM barbers br
-           LEFT JOIN bookings b ON br.id = b.barber_id
-             AND b.date >= $1 AND b.date <= $2
+           FROM bookings b
+           JOIN barbers br ON br.id = b.barber_id
+           WHERE b.salon_id = $3 AND b.date >= $1 AND b.date <= $2
              AND b.deleted_at IS NULL
              AND b.status IN ('confirmed', 'completed', 'no_show')
-           WHERE br.deleted_at IS NULL AND br.salon_id = $3
-           GROUP BY br.id, br.name
+           GROUP BY INITCAP(LOWER(br.name))
            ORDER BY revenue DESC`,
           [prevFrom, prevTo, salonId]
         );
@@ -707,6 +784,7 @@ router.get('/clients', async (req, res, next) => {
          SELECT client_id, MIN(date) as first_date
          FROM bookings
          WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL AND salon_id = $1
+           AND date <= (NOW() AT TIME ZONE 'Europe/Paris')::date
          GROUP BY client_id
        )
        SELECT TO_CHAR(b.date, 'YYYY-MM') as month,
@@ -719,7 +797,7 @@ router.get('/clients', async (req, res, next) => {
               COUNT(DISTINCT b.client_id) as total_clients
        FROM bookings b
        WHERE b.status IN ('confirmed', 'completed') AND b.deleted_at IS NULL AND b.salon_id = $1
-         AND b.date >= CURRENT_DATE - INTERVAL '12 months'
+         AND b.date >= CURRENT_DATE - INTERVAL '12 months' AND b.date <= (NOW() AT TIME ZONE 'Europe/Paris')::date
        GROUP BY TO_CHAR(b.date, 'YYYY-MM')
        ORDER BY month`,
       [salonId]
@@ -734,7 +812,7 @@ router.get('/clients', async (req, res, next) => {
        FROM clients c
        JOIN bookings b ON c.id = b.client_id
        WHERE b.status IN ('confirmed', 'completed') AND b.deleted_at IS NULL AND b.salon_id = $1
-         AND c.deleted_at IS NULL
+         AND c.deleted_at IS NULL AND b.date <= (NOW() AT TIME ZONE 'Europe/Paris')::date
        GROUP BY c.id
        ORDER BY total_spent DESC
        LIMIT 10`,
@@ -748,6 +826,7 @@ router.get('/clients', async (req, res, next) => {
                 LAG(date) OVER (PARTITION BY client_id ORDER BY date) as prev_date
          FROM bookings
          WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL AND salon_id = $1
+           AND date <= (NOW() AT TIME ZONE 'Europe/Paris')::date
        )
        SELECT ROUND(AVG(date - prev_date)) as avg_days_between_visits
        FROM client_visits
@@ -760,7 +839,7 @@ router.get('/clients', async (req, res, next) => {
       `SELECT COUNT(DISTINCT client_id) as count
        FROM bookings
        WHERE status IN ('confirmed', 'completed') AND deleted_at IS NULL AND salon_id = $1
-         AND date >= CURRENT_DATE - INTERVAL '3 months'`,
+         AND date >= CURRENT_DATE - INTERVAL '3 months' AND date <= (NOW() AT TIME ZONE 'Europe/Paris')::date`,
       [salonId]
     );
 
@@ -789,6 +868,7 @@ router.get('/trends', async (req, res, next) => {
               COUNT(*) as bookings
        FROM bookings
        WHERE date >= CURRENT_DATE - INTERVAL '12 months'
+         AND date <= (NOW() AT TIME ZONE 'Europe/Paris')::date
          AND status IN ('confirmed', 'completed')
          AND deleted_at IS NULL AND salon_id = $1
        GROUP BY TO_CHAR(date, 'YYYY-MM')
@@ -796,38 +876,65 @@ router.get('/trends', async (req, res, next) => {
       [salonId]
     );
 
-    // Current month projection
+    // ── Projection de fin de mois ──
+    // L'ancien calcul additionnait deux fois les RDV a venir : « revenue_so_far »
+    // portait sur tout le mois, futur compris, puis on rajoutait le confirme.
+    // Le tout etait ensuite divise par le jour du mois — le 1er, on divisait un
+    // mois entier par 1 — et multiplie par les jours restants. Resultat le
+    // 1er septembre : 161 000 € annonces a Meylan, dont le meilleur mois est
+    // 28 000 €.
     const parisNow = getParisNow();
     const currentMonth = getParisTodayISO().substring(0, 7);
+    const todayISO = getParisTodayISO();
     const dayOfMonth = parisNow.getDate();
     const daysInMonth = new Date(parisNow.getFullYear(), parisNow.getMonth() + 1, 0).getDate();
+    const daysLeft = Math.max(daysInMonth - dayOfMonth, 0);
 
-    const currentMonthData = await db.query(
-      `SELECT COALESCE(SUM(price), 0) as revenue_so_far,
-              COUNT(*) as bookings_so_far
+    // Encaisse : les RDV honores, du 1er a aujourd'hui.
+    const doneResult = await db.query(
+      `SELECT COALESCE(SUM(price), 0) AS revenue, COUNT(*) AS bookings
        FROM bookings
-       WHERE TO_CHAR(date, 'YYYY-MM') = $1
+       WHERE TO_CHAR(date, 'YYYY-MM') = $1 AND date <= $2::date
+         AND status IN ('confirmed', 'completed')
+         AND deleted_at IS NULL AND salon_id = $3`,
+      [currentMonth, todayISO, salonId]
+    );
+
+    // Deja au carnet : les RDV pris pour les jours qui restent.
+    const bookedResult = await db.query(
+      `SELECT COALESCE(SUM(price), 0) AS revenue, COUNT(*) AS bookings
+       FROM bookings
+       WHERE TO_CHAR(date, 'YYYY-MM') = $1 AND date > $2::date
+         AND status = 'confirmed'
+         AND deleted_at IS NULL AND salon_id = $3`,
+      [currentMonth, todayISO, salonId]
+    );
+
+    // Rythme habituel du salon : les 90 derniers jours honores. Un debut de
+    // mois ne dit rien a lui seul, la moyenne longue si.
+    const paceResult = await db.query(
+      `SELECT COALESCE(SUM(price), 0) AS revenue
+       FROM bookings
+       WHERE date >= $1::date - 90 AND date < $1::date
          AND status IN ('confirmed', 'completed')
          AND deleted_at IS NULL AND salon_id = $2`,
-      [currentMonth, salonId]
+      [todayISO, salonId]
     );
 
-    // Future bookings this month
-    const futureBookings = await db.query(
-      `SELECT COALESCE(SUM(price), 0) as future_revenue,
-              COUNT(*) as future_bookings
-       FROM bookings
-       WHERE TO_CHAR(date, 'YYYY-MM') = $1
-         AND date > CURRENT_DATE
-         AND status = 'confirmed'
-         AND deleted_at IS NULL AND salon_id = $2`,
-      [currentMonth, salonId]
-    );
+    const revenueSoFar = parseInt(doneResult.rows[0].revenue);
+    const futureRevenue = parseInt(bookedResult.rows[0].revenue);
+    const paceHistory = Math.round(parseInt(paceResult.rows[0].revenue) / 90);
+    const paceThisMonth = Math.round(revenueSoFar / Math.max(dayOfMonth, 1));
 
-    const revenueSoFar = parseInt(currentMonthData.rows[0].revenue_so_far);
-    const futureRevenue = parseInt(futureBookings.rows[0].future_revenue);
-    const projected = revenueSoFar + futureRevenue +
-      Math.round(((revenueSoFar / Math.max(dayOfMonth, 1)) * (daysInMonth - dayOfMonth)) * 0.5);
+    // Le poids du mois en cours grimpe avec les jours ecoules : le 1er on se fie
+    // a l'historique, apres dix jours au mois lui-meme.
+    const w = Math.min(dayOfMonth / 10, 1);
+    const dailyPace = Math.round(w * paceThisMonth + (1 - w) * paceHistory);
+
+    // Ce qui reste a faire est estime au rythme du salon, et jamais moins que
+    // ce qui est deja au carnet.
+    const remaining = Math.max(dailyPace * daysLeft, futureRevenue);
+    const projected = revenueSoFar + remaining;
 
     // No-show rate evolution
     const noShowRate = await db.query(
@@ -863,6 +970,8 @@ router.get('/trends', async (req, res, next) => {
         projected_total: projected,
         days_elapsed: dayOfMonth,
         days_in_month: daysInMonth,
+        daily_pace: dailyPace,          // rythme retenu, en centimes par jour
+        pace_history: paceHistory,      // moyenne des 90 derniers jours
       },
       no_show_rate: noShowRate.rows,
       no_show_current: {
@@ -914,7 +1023,7 @@ router.get('/members', async (req, res, next) => {
        JOIN clients c ON b.client_id = c.id
        WHERE b.status IN ('confirmed', 'completed')
          AND b.deleted_at IS NULL AND b.salon_id = $1
-         AND b.date >= CURRENT_DATE - INTERVAL '3 months'`,
+         AND b.date >= CURRENT_DATE - INTERVAL '3 months' AND b.date <= (NOW() AT TIME ZONE 'Europe/Paris')::date`,
       [salonId]
     );
 
@@ -927,7 +1036,7 @@ router.get('/members', async (req, res, next) => {
        JOIN clients c ON b.client_id = c.id
        WHERE b.status IN ('confirmed', 'completed')
          AND b.deleted_at IS NULL AND b.salon_id = $1
-         AND b.date >= CURRENT_DATE - INTERVAL '3 months'`,
+         AND b.date >= CURRENT_DATE - INTERVAL '3 months' AND b.date <= (NOW() AT TIME ZONE 'Europe/Paris')::date`,
       [salonId]
     );
 
@@ -942,7 +1051,7 @@ router.get('/members', async (req, res, next) => {
          JOIN bookings b ON c.id = b.client_id
          WHERE b.status IN ('confirmed', 'completed')
            AND b.deleted_at IS NULL AND b.salon_id = $1
-           AND b.date >= CURRENT_DATE - INTERVAL '3 months'
+           AND b.date >= CURRENT_DATE - INTERVAL '3 months' AND b.date <= (NOW() AT TIME ZONE 'Europe/Paris')::date
            AND c.deleted_at IS NULL
          GROUP BY c.id, c.has_account
        ) sub`,

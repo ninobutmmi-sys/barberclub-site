@@ -642,10 +642,15 @@ function TopServices({ data }) {
 // Barber Performance
 // ============================================
 
-function BarberPerformance({ data, occupancy }) {
+function BarberPerformance({ data, occupancy, loading }) {
   const isMobile = useMobile();
+  if (loading && !data) {
+    // Sans ca, un changement de periode affichait « Aucun barber » pendant le
+    // chargement — de quoi croire que le salon n'a personne.
+    return <div className="empty-state">Chargement...</div>;
+  }
   if (!data || !data.barbers || data.barbers.length === 0) {
-    return <div className="empty-state">Aucun barber</div>;
+    return <div className="empty-state">Aucun barber sur cette periode</div>;
   }
 
   const barbers = data.barbers.filter((b) => b.name?.toLowerCase() !== 'admin');
@@ -2467,7 +2472,7 @@ export default function Analytics() {
               }
             />
             <div className="a-stagger a-d6" style={{ marginBottom: 32 }}>
-              <BarberPerformance data={barberStats} occupancy={occupancy} />
+              <BarberPerformance data={barberStats} occupancy={occupancy} loading={barberStatsQuery.isFetching} />
             </div>
 
             {/* ======== BLOC : PREMIERE IMPRESSION ======== */}
