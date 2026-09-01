@@ -62,6 +62,23 @@
     });
 
     var cta = nav.querySelector('.nav-cta');
+
+    // Les lumieres du bouton de reservation sont de vrais elements, empiles
+    // devant le fond de la barre. En pseudo-elements a z-index negatif, ils
+    // passaient derriere le verre depoli de la barre selon les navigateurs, et
+    // il ne restait qu'un liseré qu'on ne voyait pas a bout de bras.
+    if (cta && !cta.querySelector('.nav-cta-fx')) {
+        var fx = document.createElement('span');
+        fx.className = 'nav-cta-fx';
+        fx.setAttribute('aria-hidden', 'true');
+        fx.innerHTML =
+            '<span class="fx-bloom"></span>' +
+            '<span class="fx-ring"></span>' +
+            '<span class="fx-pulse"></span>' +
+            '<span class="fx-pulse fx-pulse-2"></span>';
+        cta.insertBefore(fx, cta.firstChild);
+    }
+
     if (cta) {
         cta.addEventListener('pointerdown', function () {
             // Le bouton central a sa propre lumiere : le halo s'efface pour

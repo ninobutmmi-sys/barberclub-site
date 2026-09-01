@@ -372,94 +372,118 @@
 /* ═══════════════════════════════════════════════════════════
    LE BOUTON DE RESERVATION (telephone)
 
-   C'est le seul geste qui compte sur ces pages : il merite de se voir sans
-   crier. Trois couches sur le meme tempo de 3,4 s — un anneau de lumiere qui
-   tourne, une onde qui s'echappe, le halo qui respire — plus une reponse
-   franche au doigt.
+   Premiere version : des pseudo-elements a z-index negatif derriere le disque
+   blanc. Ca s'affichait — j'ai verifie sur les deux moteurs — mais un croissant
+   flou de neuf pixels autour d'un bouton blanc, a bout de bras, ne se voit pas.
 
-   Tout tourne en `transform` et `opacity`. L'anneau est un degrade conique
-   qu'on fait pivoter : sur un cercle, la rotation est composee par le GPU,
-   contrairement a l'animation d'un angle de degrade.
+   Deuxieme version : de vraies couches, empilees devant le fond de la barre,
+   et une echelle qui se remarque. La lumiere deborde sur la barre au lieu de
+   se cacher sous le bouton.
+
+   Rien que `transform` et `opacity`, et aucun `filter: blur` anime : les
+   degrades font le flou eux-memes, ce qui evite de repeindre a chaque image.
    ═══════════════════════════════════════════════════════════ */
 
-@media (max-width: 1023px) {
-    .nav-cta-btn {
-        /* La pile de lumieres reste rangee derriere le bouton. */
-        isolation: isolate;
-    }
+.nav-cta-fx {
+    position: absolute;
+    top: 28px;                 /* le centre du disque de 56 px */
+    left: 50%;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+.nav-cta-fx > span {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    will-change: transform, opacity;
+}
+.nav-cta-btn { z-index: 1; }
+.nav-cta-label { position: relative; z-index: 1; }
 
-    /* 1. L'anneau qui tourne */
-    .nav-cta-btn::after {
-        content: '';
-        position: absolute;
-        /* Il faut deborder franchement : a 3 px, le disque blanc mangeait
-           l'anneau et il ne restait qu'un liseré invisible. */
-        inset: -9px;
-        z-index: -2;
-        border-radius: 50%;
-        background: conic-gradient(
-            from 0deg,
-            transparent 0deg 200deg,
-            rgba(255, 255, 255, 0.35) 265deg,
-            rgba(255, 255, 255, 0.95) 300deg,
-            rgba(255, 255, 255, 0.35) 335deg,
-            transparent 360deg);
-        filter: blur(3px);
-        animation: ctaOrbit 3.4s linear infinite;
-        pointer-events: none;
-    }
-    @keyframes ctaOrbit {
-        to { transform: rotate(360deg); }
-    }
-
-    /* 2. L'onde qui s'echappe */
-    .nav-cta::before {
-        content: '';
-        position: absolute;
-        /* Le bouton occupe les 56 premiers pixels de .nav-cta : l'onde part
-           de la, pas plus haut. */
-        top: 0;
-        left: 50%;
-        width: 56px;
-        height: 56px;
-        margin-left: -28px;
-        border-radius: 50%;
-        border: 2px solid rgba(255, 255, 255, 0.7);
-        opacity: 0;
-        pointer-events: none;
-        animation: ctaBeacon 3.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-    }
-    @keyframes ctaBeacon {
-        0%        { transform: scale(1);    opacity: 0.7; }
-        60%, 100% { transform: scale(2.1);  opacity: 0; }
-    }
-
-    /* 3. Le halo, plus present qu'avant */
-    .nav-cta-btn::before {
-        inset: -8px;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.42), transparent 70%);
-        animation: ctaHalo 3.4s ease-in-out infinite;
-    }
-
-    /* Au doigt : le bouton s'enfonce, les lumieres se figent une fraction de
-       seconde — on sent le contact. */
-    .nav-cta:active .nav-cta-btn {
-        transform: scale(0.9);
-        box-shadow:
-            0 0 0 6px rgba(10, 10, 10, 0.92),
-            0 2px 10px rgba(0, 0, 0, 0.5),
-            0 0 34px rgba(255, 255, 255, 0.45);
-    }
-    .nav-cta:active .nav-cta-btn::after,
-    .nav-cta:active::before { animation-play-state: paused; }
-    .nav-cta:active .nav-cta-btn::before {
-        animation: none;
-        transform: scale(1.5);
-        opacity: 0.9;
-    }
+/* 1. La nappe de lumiere qui deborde sur la barre */
+.fx-bloom {
+    width: 190px;
+    height: 190px;
+    background: radial-gradient(circle,
+        rgba(255, 255, 255, 0.30) 0%,
+        rgba(255, 255, 255, 0.13) 32%,
+        rgba(255, 255, 255, 0.05) 52%,
+        transparent 70%);
+    animation: fxBloom 3.2s ease-in-out infinite;
+}
+@keyframes fxBloom {
+    0%, 100% { transform: translate(-50%, -50%) scale(0.86); opacity: 0.55; }
+    50%      { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
 }
 
+/* 2. L anneau qui tourne — un degrade conique dont le disque blanc ne laisse
+      voir qu une couronne de 13 px */
+.fx-ring {
+    width: 82px;
+    height: 82px;
+    background: conic-gradient(
+        from 0deg,
+        rgba(255, 255, 255, 0) 0deg,
+        rgba(255, 255, 255, 0) 150deg,
+        rgba(255, 255, 255, 0.28) 215deg,
+        rgba(255, 255, 255, 1) 268deg,
+        rgba(255, 255, 255, 0.28) 320deg,
+        rgba(255, 255, 255, 0) 360deg);
+    animation: fxRing 3.2s linear infinite;
+    opacity: 0.95;
+}
+@keyframes fxRing {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* 3. Deux ondes qui s echappent, decalees */
+.fx-pulse {
+    width: 62px;
+    height: 62px;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    animation: fxPulse 3.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.fx-pulse-2 { animation-delay: 1.6s; }
+@keyframes fxPulse {
+    0%   { transform: translate(-50%, -50%) scale(0.9);  opacity: 0.7; }
+    70%  { transform: translate(-50%, -50%) scale(2.1);  opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(2.1);  opacity: 0; }
+}
+
+/* Le disque lui-meme respire, sinon il a l air pose au milieu du mouvement */
+.nav-cta-btn {
+    animation: fxDisc 3.2s ease-in-out infinite;
+}
+@keyframes fxDisc {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.045); }
+}
+
+/* Au doigt : tout se resserre d un coup */
+.nav-cta:active .nav-cta-btn {
+    animation: none;
+    transform: scale(0.9);
+    box-shadow:
+        0 0 0 6px rgba(10, 10, 10, 0.92),
+        0 2px 10px rgba(0, 0, 0, 0.5),
+        0 0 40px rgba(255, 255, 255, 0.6);
+}
+.nav-cta:active .fx-bloom { animation: none; transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+.nav-cta:active .fx-ring { animation-duration: 0.9s; }
+
+/* ─── Grand ecran : le bouton est une pastille, pas un disque ─── */
+@media (min-width: 1024px) {
+    .nav-cta-fx { display: none; }
+    .nav-cta-btn { animation: none; }
+}
+
+/* ─── Mouvement reduit : plus de mouvement, mais la lumiere reste ─── */
 @media (prefers-reduced-motion: reduce) {
-    .nav-cta-btn::after,
-    .nav-cta::before { animation: none !important; opacity: 0; }
+    .fx-bloom { animation: none !important; opacity: 0.8; }
+    .fx-ring, .fx-pulse { display: none; }
+    .nav-cta-btn { animation: none !important; }
 }

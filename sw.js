@@ -1,6 +1,6 @@
 // BarberClub Service Worker
 // Bump version on each deploy to invalidate stale cache
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 const CACHE_NAME = `barberclub-v${CACHE_VERSION}`;
 const OFFLINE_URL = 'index.html';
 
