@@ -2146,3 +2146,262 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     .app-install-perk { opacity: 1; transform: none; transition: none; }
     .app-store { transition: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   L'ESPACE FIDELITE — refonte
+
+   Trois onglets au lieu de deux, un chemin de recompenses qu'on entrevoit
+   derriere un voile, et la meme lumiere doree que le bloc application : c'est
+   la couleur de la couronne et des rangs de la carte, elle ne sert qu'a ca.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── L'indicateur suit l'onglet par son index ─── */
+.tab-indicator {
+    width: calc((100% - 8px) / 3);
+    transform: translateX(calc(var(--tab-index, 0) * 100%));
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 0 22px rgba(232, 192, 122, 0.18);
+}
+.tab-indicator.right { transform: translateX(calc(var(--tab-index, 0) * 100%)); }
+.tab-btn.active { color: #fff; text-shadow: 0 0 18px rgba(232, 192, 122, 0.35); }
+
+/* Le panneau glisse en arrivant, au lieu d'apparaitre sec */
+.tab-panel.active {
+    animation: panelIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes panelIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* ─── Le chemin, entrevu ─── */
+.loyalty {
+    position: relative;
+    min-height: 580px;
+    border-radius: 22px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(10, 9, 8, 0.4);
+}
+
+.loyalty-path {
+    /* Le chemin occupe toute la carte : la pop-up se pose au milieu et on voit
+       les paliers respirer au-dessus comme en dessous. */
+    position: absolute;
+    inset: 0;
+    padding: 30px 26px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* Le programme se devine, il ne se lit pas : c'est dans l'application
+       qu'on le decouvre. */
+    filter: blur(4.5px) saturate(1.15);
+    opacity: 0.95;
+    transform: scale(1.02);
+    pointer-events: none;
+    user-select: none;
+}
+.loyalty-line {
+    position: absolute;
+    left: 47px;
+    top: 50px;
+    bottom: 50px;
+    width: 2px;
+    background: linear-gradient(180deg,
+        rgba(232, 192, 122, 0.85),
+        rgba(232, 192, 122, 0.35) 35%,
+        rgba(255, 255, 255, 0.10) 70%,
+        rgba(255, 255, 255, 0.04));
+}
+.loyalty-step {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.loyalty-dot {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.45);
+    background: rgba(20, 18, 16, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.loyalty-step.is-done .loyalty-dot {
+    color: #1a1206;
+    background: linear-gradient(140deg, #F3DFB4, #D8A94E);
+    border-color: rgba(255, 240, 210, 0.6);
+    box-shadow: 0 0 26px rgba(232, 192, 122, 0.45);
+}
+.loyalty-step-text b {
+    display: block;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 3px;
+}
+.loyalty-step-text span {
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ─── Le voile et la carte devant ─── */
+.loyalty-lock {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background:
+        radial-gradient(78% 58% at 50% 50%, rgba(10, 9, 8, 0.72) 30%, rgba(8, 7, 6, 0.30) 78%, transparent);
+}
+.loyalty-lock-card {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+    padding: 22px 20px 20px;
+    text-align: center;
+    border-radius: 20px;
+    border: 1px solid rgba(232, 192, 122, 0.22);
+    background: rgba(14, 12, 10, 0.93);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow:
+        0 26px 70px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+    animation: lockIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+@keyframes lockIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+    to   { opacity: 1; transform: none; }
+}
+/* La nappe doree derriere la carte, qui respire */
+.loyalty-lock-glow {
+    position: absolute;
+    inset: -30% -10%;
+    z-index: -1;
+    background: radial-gradient(circle at 50% 35%, rgba(232, 192, 122, 0.35), transparent 62%);
+    filter: blur(28px);
+    animation: lockGlow 5s ease-in-out infinite;
+}
+@keyframes lockGlow {
+    0%, 100% { opacity: 0.55; transform: scale(0.94); }
+    50%      { opacity: 1;    transform: scale(1.08); }
+}
+.loyalty-lock-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 13px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6);
+    animation: iconFloat 5.5s ease-in-out infinite;
+}
+.loyalty-lock-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(232, 192, 122, 0.75);
+    margin-bottom: 7px;
+}
+.loyalty-lock-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
+    background: linear-gradient(100deg, #fff 12%, #F0D9A8 44%, #fff 72%);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: titleSheen 6s ease-in-out infinite;
+}
+.loyalty-lock-text {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.62);
+    margin-bottom: 16px;
+}
+.loyalty-lock-card .app-stores { text-align: left; }
+
+/* ─── L'accueil prend la lumiere ─── */
+.welcome-avatar-ring {
+    border-top-color: rgba(232, 192, 122, 0.55);
+    border-right-color: rgba(232, 192, 122, 0.12);
+}
+.welcome-avatar-ring-2 {
+    border-bottom-color: rgba(232, 192, 122, 0.28);
+    border-left-color: rgba(255, 255, 255, 0.05);
+}
+.welcome-avatar-wrap::after {
+    content: '';
+    position: absolute;
+    inset: -26px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232, 192, 122, 0.30), transparent 68%);
+    z-index: -1;
+    animation: iconGlow 6s ease-in-out infinite;
+    pointer-events: none;
+}
+.welcome-name {
+    background: linear-gradient(100deg, #fff 10%, #F0D9A8 46%, #fff 78%);
+    background-size: 240% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: titleSheen 7s ease-in-out infinite;
+}
+.stat-value {
+    background: linear-gradient(180deg, #fff, #E8D4AC);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Le bouton principal recoit le meme eclat que celui de l'App Store */
+.btn-cta {
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(232, 192, 122, 0.16);
+}
+.btn-cta::after {
+    content: '';
+    position: absolute;
+    top: -60%;
+    bottom: -60%;
+    width: 42px;
+    left: -60px;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+    transform: skewX(-18deg);
+    animation: storeShine 5s ease-in-out infinite;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tab-panel.active,
+    .loyalty-lock-card,
+    .loyalty-lock-glow,
+    .loyalty-lock-icon,
+    .loyalty-lock-title,
+    .welcome-avatar-wrap::after,
+    .welcome-name,
+    .btn-cta::after { animation: none !important; }
+    .welcome-name, .loyalty-lock-title { background-position: 50% 0; }
+}

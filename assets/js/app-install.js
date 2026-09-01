@@ -12,7 +12,10 @@
     'use strict';
 
     var blocs = document.querySelectorAll('.app-install');
-    if (!blocs.length) return;
+    // Tout groupe de boutons de magasin est concerne, y compris celui de la
+    // carte de fidelite qui vit en dehors d'un bloc .app-install.
+    var groupes = document.querySelectorAll('.app-stores');
+    if (!blocs.length && !groupes.length) return;
 
     var ua = navigator.userAgent || '';
     var isIOS = /iPad|iPhone|iPod/.test(ua) ||
@@ -60,17 +63,17 @@
         }
     });
 
-    Array.prototype.forEach.call(blocs, function (bloc) {
-        var ios = bloc.querySelector('.app-store-ios');
-        var android = bloc.querySelector('.app-store-android');
+    Array.prototype.forEach.call(groupes, function (groupe) {
+        var ios = groupe.querySelector('.app-store-ios');
+        var android = groupe.querySelector('.app-store-android');
         if (!ios || !android) return;
 
         if (isIOS) {
             android.classList.add('app-store-secondary');
         } else if (isAndroid) {
-            bloc.querySelector('.app-stores').insertBefore(android, ios);
+            groupe.insertBefore(android, ios);
             ios.classList.add('app-store-secondary');
         }
-        bloc.classList.add('is-ready');
+        groupe.classList.add('is-ready');
     });
 })();
