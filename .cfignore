@@ -7,6 +7,12 @@ node_modules/
 CLAUDE.md
 .claude/
 
+# ATTENTION : `wrangler pages deploy` NE LIT PAS ce fichier (teste le 2026-09-01,
+# wrangler 4.127) — il televerse tout le dossier. La liste ci-dessous ne vaut
+# que comme rappel ; l'exclusion reelle se fait a la main :
+#   rsync -a --exclude docs --exclude mockups --exclude 'fidelite-club-prive*' \
+#         --exclude .superpowers --exclude backend --exclude node_modules \
+#         --exclude .git ./ /tmp/bc-deploy/ && npx wrangler pages deploy /tmp/bc-deploy ...
 # Documents de travail internes : rien a faire sur un site public
 docs/
 mockups/
