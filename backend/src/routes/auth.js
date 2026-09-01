@@ -444,7 +444,16 @@ router.post('/forgot-password',
         // demandaient un lien, lisaient « un lien a été envoyé », et rien ne
         // partait. Ils reçoivent maintenant un lien pour choisir un mot de
         // passe — ce qui crée leur compte au passage.
-        'SELECT id, first_name, email, has_account FROM clients WHERE LOWER(email) = $1 AND deleted_at IS NULL ORDER BY has_account DESC LIMIT 1',
+        // Meme tri que la connexion : quand l'email porte plusieurs fiches, le
+        // lien de reinitialisation doit viser celle qui a l'historique, sinon
+        // le client se retrouve avec un mot de passe tout neuf sur un compte
+        // vide.
+        `SELECT id, first_name, email, has_account FROM clients
+         WHERE LOWER(email) = $1 AND deleted_at IS NULL
+         ORDER BY has_account DESC,
+                  (SELECT COUNT(*) FROM bookings b WHERE b.client_id = clients.id AND b.deleted_at IS NULL) DESC,
+                  created_at ASC
+         LIMIT 1`,
         [email]
       );
 
