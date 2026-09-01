@@ -66,6 +66,10 @@ function SectionTitle({ icon, title, subtitle, right, className = '' }) {
     <div className={className} style={{
       display: 'flex',
       alignItems: 'center',
+      // Sur telephone, les boutons de periode ecrasaient le titre sur trois
+      // lignes : ils passent dessous.
+      flexWrap: isMob ? 'wrap' : 'nowrap',
+      rowGap: isMob ? 12 : 0,
       gap: isMob ? 10 : 14,
       marginBottom: 20,
       paddingBottom: 16,
@@ -84,11 +88,11 @@ function SectionTitle({ icon, title, subtitle, right, className = '' }) {
       }}>
         {icon}
       </div>
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, minWidth: isMob ? 160 : 0 }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.02em' }}>{title}</h3>
         {subtitle && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{subtitle}</p>}
       </div>
-      {right}
+      {right && (isMob ? <div style={{ width: '100%' }}>{right}</div> : right)}
     </div>
   );
 }
@@ -1383,6 +1387,7 @@ function oneShotColor(rate) {
 function FirstImpressionSection({ data, isMobile, navigate, months, setMonths, loading }) {
   const [barberFilter, setBarberFilter] = useState('all');
   const [visible, setVisible] = useState(25);
+  const [methodOpen, setMethodOpen] = useState(false);
 
   const clients = useMemo(() => data?.clients || [], [data]);
   const byBarber = data?.by_barber || [];
@@ -1411,7 +1416,8 @@ function FirstImpressionSection({ data, isMobile, navigate, months, setMonths, l
     );
   }
 
-  const maxRate = Math.max(...byBarber.map(b => b.rate), 1);
+  // « 5 sur 10 » se lit d'un coup d'oeil ; « 47,6 % » demande un effort.
+  const sur10 = overview ? Math.round(overview.rate / 10) : 0;
 
   return (
     <>
@@ -1419,11 +1425,7 @@ function FirstImpressionSection({ data, isMobile, navigate, months, setMonths, l
         className="a-stagger a-d7"
         icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5 }}><path d="M18 21a6 6 0 0 0-12 0"/><circle cx="12" cy="11" r="4"/><path d="M3 3l18 18"/></svg>}
         title="Premiere impression"
-        subtitle={
-          overview
-            ? `${overview.one_shot} client${overview.one_shot > 1 ? 's' : ''} venu${overview.one_shot > 1 ? 's' : ''} une seule fois et jamais revenu${overview.one_shot > 1 ? 's' : ''} (${overview.rate} % des nouveaux)`
-            : 'Chargement...'
-        }
+        subtitle="Les nouveaux clients qui ne sont jamais revenus, et le barbier qui les a coupes"
         right={
           <div style={{ display: 'flex', gap: 4, background: 'rgba(var(--overlay),0.04)', borderRadius: 8, padding: 3 }}>
             {ONE_SHOT_PERIODS.map((p) => (
@@ -1444,83 +1446,160 @@ function FirstImpressionSection({ data, isMobile, navigate, months, setMonths, l
           <div className="a-card" style={{ textAlign: 'center', padding: '32px 20px', fontSize: 13, color: 'var(--text-muted)' }}>
             {loading ? 'Calcul en cours...' : 'Aucune donnee'}
           </div>
+        ) : overview.new_clients === 0 ? (
+          <div className="a-card" style={{ textAlign: 'center', padding: '32px 20px', fontSize: 13, color: 'var(--text-muted)' }}>
+            Pas encore assez de recul sur cette periode
+          </div>
         ) : (
           <>
-            {/* KPI */}
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
-              <div className="a-card" style={{ padding: '16px 14px', textAlign: 'center' }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Nouveaux clients</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800 }}>{overview.new_clients}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>1re visite jugeable</div>
-              </div>
-              <div className="a-card" style={{ padding: '16px 14px', textAlign: 'center' }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Jamais revenus</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: '#ef4444' }}>{overview.one_shot}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>1 seule visite</div>
-              </div>
-              <div className="a-card" style={{ padding: '16px 14px', textAlign: 'center' }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Taux de perte</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: oneShotColor(overview.rate) }}>{overview.rate}%</div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{formatPriceInt(overview.one_shot_revenue)} encaisses</div>
-              </div>
-              <div className="a-card" style={{ padding: '16px 14px', textAlign: 'center' }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>En attente</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: 'var(--text-secondary)' }}>{overview.pending}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>venus 1 fois, &lt; 2 mois</div>
+            {/* ── La phrase, avant les chiffres ── */}
+            <div className="a-card" style={{ padding: isMobile ? '22px 18px' : '28px 26px', marginBottom: 16 }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 18 : 32 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                    Sur 10 nouveaux clients
+                  </div>
+                  <div style={{
+                    fontFamily: 'var(--font-display)', fontWeight: 800,
+                    fontSize: isMobile ? 30 : 38, lineHeight: 1.15, marginBottom: 12,
+                  }}>
+                    <span style={{ color: '#ef4444' }}>{sur10}</span> ne reviennent jamais
+                  </div>
+                  <div style={{ display: 'flex', gap: 7, marginBottom: 14 }}>
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <span key={i} style={{
+                        width: isMobile ? 15 : 18, height: isMobile ? 15 : 18, borderRadius: '50%',
+                        background: i < sur10 ? '#ef4444' : 'transparent',
+                        border: i < sur10 ? 'none' : '1.5px solid rgba(var(--overlay),0.18)',
+                      }} />
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                    <strong style={{ color: 'var(--text-secondary)' }}>{overview.one_shot}</strong> clients perdus
+                    sur <strong style={{ color: 'var(--text-secondary)' }}>{overview.new_clients}</strong> nouvelles tetes
+                    {' '}({overview.rate} %) — {formatPriceInt(overview.one_shot_revenue)} encaisses une seule fois.
+                  </div>
+                </div>
+
+                <div style={{
+                  display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: 10,
+                  minWidth: isMobile ? 0 : 190, width: isMobile ? '100%' : 'auto',
+                }}>
+                  <div style={{
+                    flex: 1, padding: '12px 14px', borderRadius: 12,
+                    background: 'rgba(var(--overlay),0.04)', border: '1px solid rgba(var(--overlay),0.07)',
+                  }}>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Encore en attente</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800 }}>{overview.pending}</div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>venus une fois il y a moins de 2 mois</div>
+                  </div>
+                  <div style={{
+                    flex: 1, padding: '12px 14px', borderRadius: 12,
+                    background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.14)',
+                  }}>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Rattrapes</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#22c55e' }}>{overview.rebooked + overview.moved_salon}</div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>ont repris RDV ou changé de salon</div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Un client vu il y a 3 mois a eu moins de temps pour revenir qu'un
-                client vu il y a un an : sur une periode courte le taux monte
-                mecaniquement. Le dire evite de mal lire le chiffre. */}
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5 }}>
-              Comptes : clients dont l&apos;unique visite remonte a plus de 2 mois et qui n&apos;ont aucun RDV a venir.
-              Plus la periode est courte, plus le taux monte — les clients recents ont eu moins de temps pour revenir.
-            </p>
-
-            {/* Par barbier */}
+            {/* ── Par barbier ── */}
             {byBarber.length > 0 && (
               <div className="a-card" style={{ marginBottom: 16 }}>
                 <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Qui ne fidelise pas ?</h4>
-                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 14 }}>
-                  Part des nouveaux clients qui ne sont jamais revenus, par barbier de la premiere visite
+                <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 18 }}>
+                  Chaque barbier, sur 10 nouveaux clients qu&apos;il a coupes. Moyenne du salon : {sur10} sur 10.
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {[...byBarber].sort((a, b) => b.rate - a.rate).map((b) => (
-                    <div key={b.barber_name}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>
-                          {b.barber_name}
-                          {/* Sous 30 nouveaux clients, un pourcentage ne veut pas dire grand-chose */}
-                          {b.new_clients < 30 && (
-                            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', marginLeft: 8 }}>
-                              peu de recul
-                            </span>
-                          )}
-                        </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                            {b.one_shot} / {b.new_clients}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {[...byBarber].sort((a, b) => b.rate - a.rate).map((b) => {
+                    const n = Math.round(b.rate / 10);
+                    const ecart = Math.round(b.rate - overview.rate);
+                    return (
+                      <div key={b.barber_name}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 7 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700 }}>
+                            {b.barber_name}
+                            {b.new_clients < 30 && (
+                              <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', marginLeft: 8 }}>peu de recul</span>
+                            )}
                           </span>
-                          <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 800, color: oneShotColor(b.rate), minWidth: 46, textAlign: 'right' }}>
-                            {b.rate}%
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
+                            {b.one_shot} perdus sur {b.new_clients}
+                            {Math.abs(ecart) >= 3 && (
+                              <span style={{ color: ecart > 0 ? '#ef4444' : '#22c55e', fontWeight: 700, marginLeft: 8 }}>
+                                {ecart > 0 ? '+' : ''}{ecart} pts
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: b.new_clients < 30 ? 0.55 : 1 }}>
+                          <div style={{ display: 'flex', gap: 5 }}>
+                            {Array.from({ length: 10 }).map((_, i) => (
+                              <span key={i} style={{
+                                width: 13, height: 13, borderRadius: '50%',
+                                background: i < n ? oneShotColor(b.rate) : 'transparent',
+                                border: i < n ? 'none' : '1.5px solid rgba(var(--overlay),0.16)',
+                              }} />
+                            ))}
+                          </div>
+                          <span style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
+                            {n} sur 10 ne reviennent pas
                           </span>
                         </div>
                       </div>
-                      <div style={{ height: 5, background: 'rgba(var(--overlay),0.04)', borderRadius: 3, opacity: b.new_clients < 30 ? 0.45 : 1 }}>
-                        <div style={{
-                          height: '100%', width: `${(b.rate / maxRate) * 100}%`,
-                          background: `linear-gradient(90deg, ${oneShotColor(b.rate)}, ${oneShotColor(b.rate)}80)`,
-                          borderRadius: 3, transition: 'width 0.5s ease',
-                        }} />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Liste des clients */}
+            {/* ── Ce qui n'est pas compte : le chiffre doit etre verifiable ── */}
+            <div className="a-card" style={{ marginBottom: 16, padding: methodOpen ? undefined : '14px 18px' }}>
+              <button
+                onClick={() => setMethodOpen(o => !o)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                  color: 'var(--text-secondary)', fontSize: 12.5, fontWeight: 600, textAlign: 'left',
+                }}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5"
+                     style={{ transform: methodOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+                Ce qui n&apos;est pas compte dans ces chiffres
+              </button>
+              {methodOpen && (
+                <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    [overview.excluded_imported, 'clients repris de Timify', 'Leur fiche existait avant leur premiere visite chez nous : c’etaient deja des habitues, pas des nouvelles tetes.'],
+                    [overview.moved_salon, 'partis dans l’autre salon', 'Ils sont revenus, ailleurs. Perdus pour le barbier, pas pour la maison.'],
+                    [overview.rebooked, 'ont deja un RDV a venir', 'Un client qui a repris rendez-vous n’est pas perdu.'],
+                    [overview.pending, 'venus une fois il y a moins de 2 mois', 'Trop tot pour conclure : on leur laisse le temps de revenir.'],
+                  ].map(([n, titre, pourquoi], i) => (
+                    <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                      <span style={{
+                        fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800,
+                        minWidth: 46, textAlign: 'right', color: 'var(--text-secondary)',
+                      }}>{n}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                        <strong style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{titre}</strong> — {pourquoi}
+                      </span>
+                    </div>
+                  ))}
+                  <p style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.6, marginTop: 4, borderTop: '1px solid rgba(var(--overlay),0.07)', paddingTop: 12 }}>
+                    Deux fiches au meme numero de telephone comptent pour une seule personne.
+                    Seuls les RDV honores comptent — ni annulations ni faux plans.
+                    Plus la periode choisie est courte, plus le taux monte : les clients recents
+                    ont eu moins de temps pour revenir.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* ── La liste ── */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {[{ barber_name: 'all' }, ...byBarber].map((b) => (
