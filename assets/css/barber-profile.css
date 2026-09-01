@@ -528,3 +528,344 @@ a:focus-visible, button:focus-visible {
     }
     .cta-btn::before { animation: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   REFONTE — realisations (2026-09)
+
+   La page racontait le barbier puis, tout en bas, montrait son travail en
+   vignettes de 8 px de gouttiere qu'on ne pouvait pas agrandir. Le travail
+   passe devant : photos plus grandes, ouverture en plein ecran, et un bouton
+   pour reserver qui reste a portee de pouce.
+
+   Tout est ecrit ici plutot que dans les 9 pages : elles partagent cette
+   feuille, la refonte les sert toutes d'un coup.
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+    --bc-line: rgba(255, 255, 255, 0.09);
+    --bc-surface: rgba(255, 255, 255, 0.045);
+    --bc-text-2: rgba(255, 255, 255, 0.62);
+    --bc-text-3: rgba(255, 255, 255, 0.38);
+    --bc-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Ces reglages ne valent que pour le telephone et la tablette : au-dela,
+   c'est le bloc 1024px plus haut dans ce fichier qui commande. Sans ce
+   media query ils l'ecrasaient — ils sont ecrits apres lui. */
+@media (max-width: 1023px) {
+    /* ─── Hero : le portrait respire, le nom s'y pose ─── */
+    .hero-video,
+    .hero-photo {
+        aspect-ratio: 4 / 5;
+        max-height: 74vh;
+    }
+    .hero-gradient {
+        height: 55%;
+        background: linear-gradient(to top, #000 12%, rgba(0, 0, 0, 0.55) 45%, transparent 100%);
+    }
+
+    .profile {
+        margin-top: -104px;
+        padding: 0 20px;
+    }
+    .profile-header {
+        text-align: left;
+        margin-bottom: 22px;
+    }
+    .profile-name {
+        font-size: clamp(44px, 13.5vw, 68px);
+        line-height: 0.92;
+        letter-spacing: 0.01em;
+        margin-bottom: 10px;
+    }
+    .profile-role {
+        font-size: 11px;
+        letter-spacing: 0.28em;
+        color: var(--bc-text-3);
+        margin-bottom: 14px;
+    }
+    .profile-salon {
+        background: var(--bc-surface);
+        border: 1px solid var(--bc-line);
+        padding: 7px 14px;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        color: var(--bc-text-2);
+    }
+
+    /* ─── Bio : une ligne de lecture, pas une boite ─── */
+    .bio-section {
+        background: none;
+        border: none;
+        border-left: 1px solid var(--bc-line);
+        border-radius: 0;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        padding: 2px 0 2px 16px;
+        margin-bottom: 26px;
+    }
+    .bio-title {
+        font-size: 10px;
+        letter-spacing: 0.24em;
+        color: var(--bc-text-3);
+        margin-bottom: 10px;
+    }
+    .bio-text {
+        font-size: 15px;
+        line-height: 1.7;
+        color: var(--bc-text-2);
+        max-width: 62ch;
+    }
+
+    /* ─── CTA : une vraie cible de doigt ─── */
+    .cta-btn {
+        min-height: 56px;
+        border-radius: 16px;
+        font-size: 14px;
+        letter-spacing: 0.06em;
+    }
+
+    /* ─── Titre de section + compte de realisations ─── */
+    .section-title {
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 0.3em;
+        color: var(--bc-text-3);
+        padding: 0 20px;
+        margin-bottom: 18px;
+    }
+    .section-count {
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0;
+        color: var(--bc-text-2);
+        background: var(--bc-surface);
+        border: 1px solid var(--bc-line);
+        border-radius: 999px;
+        padding: 3px 9px;
+        order: 3;
+    }
+
+    /* ─── Galerie : la premiere coupe en pleine largeur, le reste en mosaique ─── */
+    .gallery {
+        column-gap: 10px;
+        padding: 0 14px;
+    }
+    .gallery-item {
+        margin-bottom: 10px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .gallery-item:first-child {
+        column-span: all;
+        border-radius: 20px;
+    }
+    .gallery-item.is-openable {
+        cursor: pointer;
+    }
+    /* L'icone d'agrandissement : discrete, mais elle dit que ca s'ouvre */
+    .gallery-item.is-openable::after {
+        content: '';
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.55) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7'/%3E%3C/svg%3E") center / 14px no-repeat;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        opacity: 0;
+        transform: scale(0.8);
+        transition: opacity 0.3s var(--bc-ease), transform 0.3s var(--bc-ease);
+        pointer-events: none;
+    }
+    .gallery-item.visible.is-openable::after { opacity: 0.85; transform: scale(1); }
+    .gallery-item.is-openable:active { transform: scale(0.985); }
+    .gallery-item:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 3px;
+    }
+    .gallery-section { padding-bottom: 132px; }
+}
+
+/* ─── Barre de reservation collante (mobile) ─── */
+.book-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 120;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 55%, rgba(0, 0, 0, 0));
+    transform: translateY(140%);
+    transition: transform 0.45s var(--bc-ease);
+    pointer-events: none;
+}
+.book-bar.is-visible {
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.book-bar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 54px;
+    border-radius: 16px;
+    background: #fff;
+    color: #000;
+    text-decoration: none;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.65);
+}
+.book-bar-btn svg { width: 18px; height: 18px; }
+.book-bar-btn:active { transform: scale(0.985); }
+
+/* ─── La visionneuse ─── */
+html.viewer-open { overflow: hidden; }
+/* `display: flex` gagne contre l'attribut hidden : sans cette ligne la
+   visionneuse fermee couvre la page et avale tous les clics. */
+.viewer[hidden] { display: none !important; }
+.viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.97);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    opacity: 0;
+    transition: opacity 0.22s ease;
+}
+.viewer.is-open { opacity: 1; }
+.viewer-rail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.08);
+}
+.viewer-rail::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: var(--progress, 0%);
+    background: #fff;
+    transition: width 0.35s var(--bc-ease);
+}
+.viewer-close,
+.viewer-nav {
+    position: absolute;
+    z-index: 2;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--bc-line);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fff;
+    transition: background 0.2s ease, transform 0.2s var(--bc-ease);
+}
+.viewer-close svg, .viewer-nav svg { width: 20px; height: 20px; }
+.viewer-close {
+    top: max(14px, env(safe-area-inset-top));
+    right: 14px;
+}
+.viewer-nav { top: 50%; transform: translateY(-50%); }
+.viewer-prev { left: 14px; }
+.viewer-next { right: 14px; }
+.viewer-close:active, .viewer-nav:active { background: rgba(255, 255, 255, 0.16); }
+@media (max-width: 640px) {
+    /* Au doigt on balaie, les fleches ne font qu'encombrer la photo */
+    .viewer-nav { display: none; }
+}
+.viewer-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 68px 14px 12px;
+    min-height: 0;
+}
+.viewer-media {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    border-radius: 14px;
+    object-fit: contain;
+    transition: opacity 0.3s ease, transform 0.35s var(--bc-ease);
+}
+.viewer-media.is-entering { opacity: 0; transform: scale(0.985); }
+.viewer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--bc-line);
+}
+.viewer-count {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--bc-text-2);
+    flex-shrink: 0;
+}
+.viewer-book {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 48px;
+    padding: 0 22px;
+    border-radius: 14px;
+    background: #fff;
+    color: #000;
+    text-decoration: none;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.viewer-book svg { width: 17px; height: 17px; }
+.viewer-book:active { transform: scale(0.985); }
+
+/* ─── Desktop ─── */
+@media (min-width: 768px) {
+    .gallery-item.is-openable::after { opacity: 0; }
+    .gallery-item.is-openable:hover::after { opacity: 1; transform: scale(1); }
+    .viewer-close:hover, .viewer-nav:hover { background: rgba(255, 255, 255, 0.18); }
+    .viewer-nav:hover { transform: translateY(-50%) scale(1.06); }
+    .viewer-book:hover { box-shadow: 0 10px 30px rgba(255, 255, 255, 0.18); }
+}
+
+@media (min-width: 1024px) {
+    /* La barre collante n'a pas lieu d'etre : le bouton reste visible a gauche */
+    .book-bar { display: none; }
+    .gallery-section { padding-bottom: 100px; }
+    .gallery { grid-auto-rows: 200px; gap: 10px; }
+    .gallery-item:first-child { column-span: unset; }
+    .viewer-stage { padding: 84px 96px 16px; }
+    .viewer-bar { padding: 16px 96px; }
+}
+
+/* ─── Mouvement reduit ─── */
+@media (prefers-reduced-motion: reduce) {
+    .book-bar { transition: none !important; }
+    .viewer, .viewer-media, .viewer-rail::after { transition: none !important; }
+    .gallery-item.is-openable::after { opacity: 0.85 !important; transform: none !important; }
+}
