@@ -1874,6 +1874,9 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     overflow: hidden;
+    /* La page centre tout ; ici les lignes ont deux niveaux, un titre et sa
+       phrase — centrees, elles flottaient au-dessus de leurs coches. */
+    text-align: left;
     /* Le bloc se leve quand on arrive dessus */
     opacity: 0;
     transform: translateY(22px);
@@ -2006,28 +2009,46 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     0%, 100% { background-position: 120% 0; }
     50%      { background-position: -20% 0; }
 }
-.app-install-sub {
+.app-install-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(232, 192, 122, 0.72);
+    margin-bottom: 5px;
+}
+.app-install-lead {
     font-size: 12.5px;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.68);
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 14px;
 }
 
 /* ─── Les trois arguments arrivent l'un apres l'autre ─── */
 .app-install-perks {
+    list-style: none;
+    margin: 0 0 18px;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 9px;
-    margin-bottom: 18px;
+    gap: 13px;
 }
 .app-install-perk {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    align-items: flex-start;
+    gap: 11px;
     font-size: 12.5px;
-    color: rgba(255, 255, 255, 0.88);
+    color: rgba(255, 255, 255, 0.62);
+    line-height: 1.45;
     opacity: 0;
     transform: translateX(-8px);
     transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.app-install-perk b {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.94);
+    margin-bottom: 2px;
 }
 .is-seen .app-install-perk { opacity: 1; transform: none; }
 .is-seen .app-install-perk:nth-child(1) { transition-delay: 0.15s; }
@@ -2037,6 +2058,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     width: 14px;
     height: 14px;
     flex-shrink: 0;
+    margin-top: 3px;
     color: #E8C07A;
 }
 
