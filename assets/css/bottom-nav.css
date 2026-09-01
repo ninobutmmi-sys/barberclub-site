@@ -1,0 +1,246 @@
+/* ═══════════════════════════════════════════
+   BarberClub — Barre de navigation basse
+   Source unique pour les 12 pages de salon (hub, barbiers, prestations,
+   offres, galerie, contact) des trois salons.
+
+   Elle vivait en quatre exemplaires — contact.css, prestations.css,
+   barbers.css, salon-hub.css — deja divergents : le dock passait en rangee
+   horizontale a 768 px sur le hub et a 1024 px ailleurs. Un seul fichier
+   desormais.
+   ═══════════════════════════════════════════ */
+
+.bottom-nav {
+    position: fixed;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    z-index: 50;
+    padding: 6px 6px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    border-radius: 26px;
+    background: rgba(12, 12, 12, 0.82);
+    backdrop-filter: blur(28px) saturate(140%);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.6),
+        0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+.nav-row {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+}
+
+/* ─── Un onglet ─── */
+.nav-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    flex: 1;
+    min-width: 0;
+    min-height: 52px;              /* cible de doigt confortable */
+    padding: 7px 4px 6px;
+    border-radius: 18px;
+    text-decoration: none;
+    /* 0.4 d'opacite sur fond noir tombait sous le seuil de lisibilite ;
+       0.66 passe largement le contraste demande. */
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    transition: color 0.25s ease, background 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nav-item svg {
+    width: 21px;
+    height: 21px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nav-item span,
+.nav-item {
+    line-height: 1.1;
+}
+
+.nav-item:active { transform: scale(0.94); }
+.nav-item:active svg { transform: translateY(-1px); }
+
+/* La page ou l'on se trouve : texte plein et pastille sous l'icone. */
+.nav-item.active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.07);
+}
+.nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 14px;
+    height: 2px;
+    border-radius: 2px;
+    background: #fff;
+    transform: translateX(-50%);
+    opacity: 0.9;
+}
+
+/* ─── Le bouton de reservation ─── */
+.nav-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    flex: 1;
+    min-width: 0;
+    padding-bottom: 6px;
+    margin-top: -26px;
+    text-decoration: none;
+}
+.nav-cta-btn {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #fff;
+    color: #000;
+    /* L'anneau noir decoupe le bouton dans la barre au lieu de le poser
+       dessus : il a l'air encastre, pas colle. */
+    box-shadow:
+        0 0 0 6px rgba(10, 10, 10, 0.92),
+        0 10px 26px rgba(0, 0, 0, 0.55),
+        0 0 22px rgba(255, 255, 255, 0.14);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+.nav-cta-btn svg { width: 23px; height: 23px; }
+.nav-cta:active .nav-cta-btn {
+    transform: scale(0.93);
+    box-shadow:
+        0 0 0 6px rgba(10, 10, 10, 0.92),
+        0 4px 14px rgba(0, 0, 0, 0.5);
+}
+.nav-cta-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #fff;
+    line-height: 1.1;
+}
+
+.nav-item:focus-visible,
+.nav-cta:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+    border-radius: 18px;
+}
+
+/* Le curseur maison couvre toute la page sur les ecrans a souris. */
+@media (pointer: fine) {
+    .nav-item, .nav-cta { cursor: none; }
+}
+
+/* ─── Ecrans a souris ─── */
+@media (hover: hover) and (pointer: fine) {
+    .nav-item:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.09);
+    }
+    .nav-item:hover svg { transform: translateY(-2px); }
+    .nav-cta:hover .nav-cta-btn {
+        transform: translateY(-3px) scale(1.04);
+        box-shadow:
+            0 0 0 6px rgba(10, 10, 10, 0.92),
+            0 16px 34px rgba(0, 0, 0, 0.6),
+            0 0 30px rgba(255, 255, 255, 0.24);
+    }
+}
+
+/* ─── Tablette : la barre se centre au lieu de s'etirer ─── */
+@media (min-width: 640px) {
+    .bottom-nav {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: min(520px, calc(100vw - 32px));
+        bottom: 16px;
+    }
+}
+
+/* ─── Bureau : rangee de pastilles, la reservation en pleine largeur ─── */
+@media (min-width: 1024px) {
+    .bottom-nav {
+        bottom: 26px;
+        /* `auto` sur un element fixe cale a gauche 50 % limite la largeur a la
+           moitie droite de l'ecran : le dernier onglet se faisait couper. */
+        width: max-content;
+        max-width: calc(100vw - 48px);
+        padding: 12px 14px;
+        border-radius: 24px;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(40px) saturate(140%);
+        -webkit-backdrop-filter: blur(40px) saturate(140%);
+    }
+    .nav-row { gap: 10px; }
+    .nav-item {
+        flex: none;
+        flex-direction: row;
+        gap: 10px;
+        min-height: 50px;
+        padding: 14px 22px;
+        white-space: nowrap;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.05);
+        font-family: 'Orbitron', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+    }
+    .nav-item svg { width: 18px; height: 18px; opacity: 0.65; }
+    .nav-item.active {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.22);
+    }
+    .nav-item.active::after { display: none; }
+    .nav-item:hover { transform: translateY(-3px); border-color: rgba(255, 255, 255, 0.25); }
+    .nav-item:hover svg { opacity: 1; transform: none; }
+
+    .nav-cta {
+        flex: none;
+        flex-direction: row;
+        gap: 10px;
+        margin-top: 0;
+        padding: 0;
+    }
+    .nav-cta-btn {
+        width: auto;
+        height: auto;
+        padding: 15px 30px;
+        border-radius: 16px;
+        gap: 10px;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        box-shadow: 0 10px 30px rgba(255, 255, 255, 0.12);
+    }
+    .nav-cta-btn::after { content: 'Rendez-vous'; }
+    .nav-cta-btn svg { width: 18px; height: 18px; }
+    .nav-cta-label { display: none; }
+    .nav-cta:hover .nav-cta-btn {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 40px rgba(255, 255, 255, 0.2);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-item, .nav-item svg, .nav-cta-btn { transition: none !important; }
+    .nav-item:hover, .nav-cta:hover .nav-cta-btn { transform: none !important; }
+}

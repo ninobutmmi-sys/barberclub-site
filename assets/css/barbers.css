@@ -4,6 +4,9 @@
    Requires: base.css loaded first
    ═══════════════════════════════════════════ */
 
+/* La barre de navigation basse vit dans assets/css/bottom-nav.css,
+   chargee apres cette feuille sur chaque page. */
+
 /* ═══ CURSOR: FINE POINTER ═══ */
 @media (pointer: fine) { .back-btn { cursor: none; } }
 
@@ -167,46 +170,6 @@
 .barber-card--soon.tapped .soon-badge { animation: soonNudge 0.5s ease; }
 @keyframes soonNudge { 0%,100% { transform: none; } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 
-/* ═══ BOTTOM NAV ═══ */
-.bottom-nav {
-  position: fixed; bottom: 12px; left: 12px; right: 12px; z-index: 50;
-  background: rgba(10,10,10,0.95);
-  backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 24px;
-  padding: 8px 4px; padding-bottom: max(8px, env(safe-area-inset-bottom));
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  opacity: 0; transition: opacity 0.6s ease;
-}
-.page.loaded .bottom-nav { opacity: 1; transition-delay: 0.7s; }
-.nav-row {
-  display: flex; justify-content: space-around; align-items: flex-end;
-}
-.nav-item {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  color: rgba(255,255,255,0.4); text-decoration: none;
-  font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em;
-  transition: color 0.3s ease; padding: 4px 8px;
-}
-@media (pointer: fine) { .nav-item { cursor: none; } }
-.nav-item.active { color: #fff; }
-.nav-item svg { width: 20px; height: 20px; }
-.nav-cta {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  text-decoration: none; margin-top: -26px;
-}
-@media (pointer: fine) { .nav-cta { cursor: none; } }
-.nav-cta-btn {
-  width: 52px; height: 52px;
-  display: flex; align-items: center; justify-content: center;
-  background: #fff; border-radius: 50%; color: #000;
-  box-shadow: 0 4px 20px rgba(255,255,255,0.3);
-  transition: all 0.3s ease;
-}
-.nav-cta-btn svg { width: 22px; height: 22px; }
-.nav-cta:active .nav-cta-btn { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255,255,255,0.2); }
-.nav-cta-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; }
-
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ═══ DESKTOP 768px ═══ */
@@ -216,7 +179,7 @@
   .barber-name { font-size: clamp(18px, 3vw, 22px); }
   .back-btn:hover { background: rgba(255,255,255,0.15); }
   .logo { height: 50px; }
-  .bottom-nav { left: 50%; right: auto; transform: translateX(-50%); width: 500px; border-radius: 28px; bottom: 16px; }
+  
 }
 
 /* ═══ REDUCED MOTION ═══ */
@@ -284,58 +247,6 @@
   .barber-info { padding: 20px; }
   .barber-cta { width: 36px; height: 36px; }
   .barber-cta svg { width: 16px; height: 16px; }
-
-  /* Floating dock nav — same style as hub */
-  .bottom-nav {
-    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-    width: auto; z-index: 50;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 24px;
-    padding: 14px 20px;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.3);
-  }
-  .nav-row { gap: 12px; }
-  .nav-item {
-    flex-direction: row; gap: 10px;
-    padding: 16px 24px; flex-shrink: 0; white-space: nowrap;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 12px; font-weight: 600;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: #fff;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .nav-item.active { color: #fff; }
-  .nav-item svg { width: 18px; height: 18px; opacity: 0.6; }
-  .nav-item:hover {
-    transform: translateY(-4px);
-    background: rgba(255,255,255,0.12);
-    border-color: rgba(255,255,255,0.25);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-  }
-  .nav-item:hover svg { opacity: 1; }
-  .nav-cta { margin-top: 0; flex-direction: row; gap: 10px; }
-  .nav-cta-btn {
-    width: auto; height: auto;
-    padding: 16px 32px; flex-shrink: 0; white-space: nowrap;
-    border-radius: 16px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 13px; font-weight: 800;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    box-shadow: 0 8px 32px rgba(255,255,255,0.12);
-    display: flex; align-items: center; gap: 10px;
-  }
-  .nav-cta-btn svg { width: 18px; height: 18px; }
-  .nav-cta-label { display: none; }
-  .nav-cta-btn::after { content: 'Rendez-vous'; }
-  .nav-cta:hover .nav-cta-btn {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(255,255,255,0.15);
-  }
 
   .grain { z-index: 9000; }
   .page-transition { z-index: 9999; }
@@ -443,7 +354,7 @@
 
     .barbers {
         gap: 14px;
-        padding: 22px 16px 120px;
+        padding: 22px 16px 148px;   /* la barre plus le bouton qui depasse */
         max-width: 520px;
     }
     .barber-card { border-radius: 20px; }

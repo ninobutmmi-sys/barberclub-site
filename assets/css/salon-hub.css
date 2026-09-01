@@ -4,6 +4,9 @@
    Requires: base.css loaded first
    ═══════════════════════════════════════════ */
 
+/* La barre de navigation basse vit dans assets/css/bottom-nav.css,
+   chargee apres cette feuille sur chaque page. */
+
 /* ═══ PAGE ═══ */
 .page {
   min-height: 100vh; min-height: 100dvh;
@@ -133,80 +136,13 @@
 }
 @keyframes sepTravel { 0% { left: 0%; opacity: 0.3; } 50% { left: 90%; opacity: 1; } 100% { left: 0%; opacity: 0.3; } }
 
-/* ═══ NAV ═══ */
-.bottom-nav {
-  position: fixed; bottom: 12px; left: 12px; right: 12px;
-  background: rgba(10,10,10,0.95); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
-  padding: 8px 4px; padding-bottom: max(8px, env(safe-area-inset-bottom));
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 50;
-}
-.nav-row { display: flex; justify-content: space-around; align-items: flex-end; }
-.nav-item {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  color: rgba(255,255,255,0.4); text-decoration: none; font-size: 9px;
-  font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em;
-  transition: color 0.3s ease; padding: 4px 8px;
-}
-.nav-item svg { width: 20px; height: 20px; }
-.nav-cta {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  text-decoration: none; margin-top: -26px;
-}
-.nav-cta-btn {
-  width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;
-  background: #fff; border-radius: 50%; color: #000;
-  box-shadow: 0 4px 20px rgba(255,255,255,0.3); transition: all 0.3s ease;
-}
-.nav-cta-btn svg { width: 22px; height: 22px; }
-.nav-cta:active .nav-cta-btn { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255,255,255,0.2); }
-.nav-cta-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; }
-@media (pointer: fine) { .nav-item, .nav-cta { cursor: none; } }
-
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ═══ DESKTOP ═══ */
 @media (min-width: 768px) {
-  .bottom-nav {
-    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-    width: auto; z-index: 50;
-    background: rgba(0,0,0,0.4); backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
-    border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
-    padding: 14px 20px; box-shadow: 0 8px 40px rgba(0,0,0,0.3);
-  }
-  .nav-row { gap: 12px; }
-  .nav-item {
-    flex-direction: row; gap: 10px;
-    padding: 16px 24px; flex-shrink: 0; white-space: nowrap;
-    font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 600;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px; transition: all 0.3s ease;
-  }
-  .nav-item svg { width: 18px; height: 18px; opacity: 0.6; }
-  .nav-item:hover { transform: translateY(-4px); background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.25); }
-  .nav-item:hover svg { opacity: 1; }
-  .nav-cta {
-    margin-top: 0; flex-direction: row; gap: 10px;
-    padding: 16px 32px; flex-shrink: 0; white-space: nowrap;
-    font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 600;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    background: #fff; color: #000;
-    border: none; border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(255,255,255,0.15);
-    position: relative; overflow: hidden;
-  }
-  .nav-cta::before {
-    content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    animation: ctaShimmer 3s ease-in-out infinite;
-  }
+
   @keyframes ctaShimmer { 0%, 100% { left: -100%; } 50% { left: 100%; } }
-  .nav-cta-btn { width: auto; height: auto; background: none; border-radius: 0; box-shadow: none; color: #000; }
-  .nav-cta-btn svg { width: 18px; height: 18px; }
-  .nav-cta-label { font-size: 13px; color: #000; }
-  .nav-cta:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 12px 40px rgba(255,255,255,0.25); }
-  .nav-cta:hover .nav-cta-btn { transform: none; box-shadow: none; }
+
   .header-logo img:last-child { height: 60px; }
   .back-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
 }
