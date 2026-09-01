@@ -20,6 +20,46 @@
         (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
     var isAndroid = /Android/.test(ua);
 
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    Array.prototype.forEach.call(blocs, function (bloc) {
+        // Les nappes de couleur sont des elements a part : en pseudo-elements
+        // il n'y en aurait qu'un seul par bloc, et il en faut deux qui derivent
+        // chacune a son rythme.
+        if (!bloc.querySelector('.app-aurora')) {
+            var aurora = document.createElement('div');
+            aurora.className = 'app-aurora';
+            aurora.setAttribute('aria-hidden', 'true');
+            aurora.innerHTML = '<span></span><span></span>';
+            bloc.insertBefore(aurora, bloc.firstChild);
+        }
+
+        // L'icone recoit son halo : il lui faut un parent a lui.
+        var icon = bloc.querySelector('.app-install-icon');
+        if (icon && !icon.parentNode.classList.contains('app-install-icon-wrap')) {
+            var wrap = document.createElement('div');
+            wrap.className = 'app-install-icon-wrap';
+            icon.parentNode.insertBefore(wrap, icon);
+            wrap.appendChild(icon);
+        }
+
+        // Le bloc se leve quand il entre dans l'ecran, pas au chargement : il
+        // est sous la ligne de flottaison, l'animation serait passee sans temoin.
+        if (reduceMotion || !('IntersectionObserver' in window)) {
+            bloc.classList.add('is-seen');
+        } else {
+            var obs = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting) {
+                        e.target.classList.add('is-seen');
+                        obs.unobserve(e.target);
+                    }
+                });
+            }, { threshold: 0.25 });
+            obs.observe(bloc);
+        }
+    });
+
     Array.prototype.forEach.call(blocs, function (bloc) {
         var ios = bloc.querySelector('.app-store-ios');
         var android = bloc.querySelector('.app-store-android');
