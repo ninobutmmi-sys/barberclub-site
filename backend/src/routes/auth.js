@@ -64,11 +64,24 @@ router.post('/login',
       // Find user by email (barbers are salon-specific, clients are global)
       const salonFilter = type === 'barber' ? ' AND salon_id = $2' : '';
       const params = type === 'barber' ? [email, salonId] : [email];
+      // Plusieurs fiches peuvent porter le meme email — 29 cas en base, dont
+      // une adresse a onze fiches. Sans tri ni limite, Postgres rendait
+      // n'importe laquelle en premier, et le client atterrissait dans un compte
+      // vide pendant que son historique dormait dans l'autre. Pire : l'ordre
+      // change apres chaque ecriture, donc d'une connexion a l'autre on ne
+      // tombait pas au meme endroit.
+      // On classe par historique — celle qui a des rendez-vous d'abord, puis la
+      // plus ancienne — et on essaie le mot de passe sur chacune : chaque fiche
+      // a le sien, c'est celle dont le mot de passe repond qui est la bonne.
+      const historique = type === 'barber'
+        ? ''
+        : `, (SELECT COUNT(*) FROM bookings b WHERE b.client_id = ${table}.id AND b.deleted_at IS NULL) AS nb_rdv`;
+      const tri = type === 'barber' ? '' : ' ORDER BY nb_rdv DESC, created_at ASC';
       const result = await db.query(
         `SELECT id, email, password_hash, failed_login_attempts, locked_until,
-                ${type === 'barber' ? 'name, photo_url, salon_id' : 'first_name || \' \' || last_name as name, NULL as photo_url'}
+                ${type === 'barber' ? 'name, photo_url, salon_id' : 'first_name || \' \' || last_name as name, NULL as photo_url'}${historique}
          FROM ${table}
-         WHERE LOWER(email) = $1${salonFilter} AND deleted_at IS NULL`,
+         WHERE LOWER(email) = $1${salonFilter} AND deleted_at IS NULL${tri}`,
         params
       );
 
@@ -76,7 +89,16 @@ router.post('/login',
         throw ApiError.unauthorized('Email ou mot de passe incorrect');
       }
 
-      const user = result.rows[0];
+      let user = result.rows[0];
+      if (result.rows.length > 1) {
+        for (const candidat of result.rows) {
+          if (!candidat.password_hash) continue;
+          if (await bcrypt.compare(password, candidat.password_hash)) {
+            user = candidat;
+            break;
+          }
+        }
+      }
 
       // Check account lockout
       if (user.locked_until && new Date(user.locked_until) > new Date()) {
