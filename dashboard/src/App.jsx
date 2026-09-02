@@ -50,6 +50,7 @@ const Oney = lazy(() => import('./pages/Oney'));
 const Waitlist = lazy(() => import('./pages/Waitlist'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const System = lazy(() => import('./pages/System'));
+const Interesses = lazy(() => import('./pages/Interesses'));
 const PageLoader = () => (
   <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a8a29e' }}>
     Chargement...
@@ -97,6 +98,9 @@ function AppRoutes() {
         <Route path="waitlist" element={<Suspense fallback={<PageLoader />}><Waitlist /></Suspense>} />
         <Route path="tasks" element={<Suspense fallback={<PageLoader />}><Tasks /></Suspense>} />
         <Route path="system" element={<Suspense fallback={<PageLoader />}><System /></Suspense>} />
+        {/* Voiron n'a pas encore de clients : sa page a lui, ce sont les gens
+            qui attendent l'ouverture. */}
+        <Route path="interesses" element={<Suspense fallback={<PageLoader />}><Interesses /></Suspense>} />
         {/* Les objectifs vivent dans Analytics depuis la fusion. Les onglets
             laissés ouverts sur l'ancienne adresse tombaient sur une page vide. */}
         <Route path="objectives" element={<Navigate to="/analytics" replace />} />

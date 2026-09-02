@@ -440,6 +440,12 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .alert-title { position: relative; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.02em; }
 .alert-desc { position: relative; margin: 12px auto 22px; max-width: 36ch; font-size: 12.5px; line-height: 1.7; color: rgba(255,255,255,0.52); }
 .alert-form { position: relative; display: flex; gap: 8px; max-width: 390px; margin: 0 auto; }
+/* Prénom au-dessus, numéro et bouton sur une ligne : trois champs cote a cote
+   sur un telephone, chacun devient trop etroit et le numero se coupe.
+   Le selecteur est double a dessein — `.alert-input` est declare plus bas et
+   remettrait son propre `flex` sinon. */
+.alert-form--tel { flex-wrap: wrap; }
+.alert-form--tel .alert-input--prenom { flex: 1 1 100%; min-width: 100%; }
 .alert-input {
     flex: 1; min-width: 0; height: 50px; padding: 0 16px;
     border: 1px solid rgba(255,255,255,0.14); border-radius: 13px;
@@ -1037,25 +1043,27 @@ a:focus-visible, button:focus-visible, input:focus-visible {
         </div>
         <!-- ════════ ALERTE ════════ -->
         <div class="sec-head rv">
-            <span class="sec-kicker">Un seul email</span>
+            <span class="sec-kicker">Un seul SMS</span>
             <h2 class="sec-title">Soyez les premiers prévenus</h2>
         </div>
 
         <div class="alert-card rv">
             <div class="alert-title">Le jour de l'ouverture</div>
-            <p class="alert-desc">Nous vous écrivons une seule fois, le jour de l'ouverture. Pas de newsletter, pas de relance.</p>
+            <p class="alert-desc">Laissez votre numéro : un SMS le jour de l'ouverture, avec le lien pour réserver. Une seule fois, pas de relance.</p>
 
-            <form class="alert-form" id="alertForm" novalidate>
-                <label for="alertEmail" class="skip-to-content">Votre adresse email</label>
-                <input type="email" id="alertEmail" class="alert-input" placeholder="votre@email.fr" required autocomplete="email" inputmode="email">
-                <button type="submit" class="alert-submit" id="alertSubmit" aria-label="Recevoir l'alerte d'ouverture">
+            <form class="alert-form alert-form--tel" id="alertForm" novalidate>
+                <label for="alertPrenom" class="skip-to-content">Votre prénom</label>
+                <input type="text" id="alertPrenom" class="alert-input alert-input--prenom" placeholder="Prénom" autocomplete="given-name" maxlength="60">
+                <label for="alertTel" class="skip-to-content">Votre numéro de téléphone</label>
+                <input type="tel" id="alertTel" class="alert-input" placeholder="06 12 34 56 78" required autocomplete="tel" inputmode="tel">
+                <button type="submit" class="alert-submit" id="alertSubmit" aria-label="Être prévenu de l'ouverture">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                 </button>
             </form>
 
             <div class="alert-done" id="alertDone" role="status">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                C'est noté. Merci pour votre confiance — nous vous écrivons le jour J.
+                C'est noté. Merci pour votre confiance — vous recevez un SMS le jour J.
             </div>
             <p class="alert-err" id="alertErr" role="alert"></p>
         </div>
@@ -1368,7 +1376,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 
     /* ═══ Alerte ouverture ═══ */
     const form = document.getElementById('alertForm');
-    const input = document.getElementById('alertEmail');
+    const input = document.getElementById('alertTel');
+    const prenom = document.getElementById('alertPrenom');
     const submit = document.getElementById('alertSubmit');
     const done = document.getElementById('alertDone');
     const err = document.getElementById('alertErr');
@@ -1376,21 +1385,27 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         err.textContent = '';
-        const email = input.value.trim();
-        if (!email || !input.checkValidity()) {
-            err.textContent = 'Adresse email invalide.';
+        // On accepte le numéro tel qu'il se tape : espaces, points, tirets.
+        const tel = input.value.replace(/[\s.\-()]/g, '');
+        if (!/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14}|0[1-9]\d{8})$/.test(tel)) {
+            err.textContent = 'Numéro invalide — exemple : 06 12 34 56 78';
             input.focus();
             return;
         }
         submit.disabled = true;
         try {
-            // salon_id : l'API n'accepte que meylan|grenoble. Voiron n'existe pas
-            // encore en base — les inscrits sont rattachés à Grenoble, le salon le
-            // plus proche, et distingués par event_name.
+            // Voiron existe désormais en base : les inscrits lui sont rattachés
+            // directement. Les premiers, enregistrés sous Grenoble avant son
+            // ouverture, restent visibles côté dashboard par event_name.
             const res = await fetch(`${window.BARBERCLUB_API}/event-alerts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, event_name: 'ouverture_voiron', salon_id: 'grenoble' }),
+                body: JSON.stringify({
+                    phone: tel,
+                    first_name: prenom.value.trim() || undefined,
+                    event_name: 'ouverture_voiron',
+                    salon_id: 'voiron',
+                }),
             });
             if (res.ok) {
                 form.style.display = 'none';

@@ -96,6 +96,12 @@ const NAV_GROUPS = [
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
       },
       {
+        // Voiron n'ouvre qu'en octobre : pas de clients, pas de planning, mais
+        // une liste de gens qui attendent. L'entree n'apparait que pour lui.
+        to: '/interesses', label: 'Intéressés', salons: ['voiron'],
+        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6"/><path d="M19 8v6"/></svg>,
+      },
+      {
         to: '/waitlist', label: 'Liste d\'attente', badge: true,
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>,
       },
@@ -419,7 +425,11 @@ export default function Layout() {
           {NAV_GROUPS.map((group, gi) => (
             <div key={gi} className="sidebar-nav-group">
               {group.label && <div className="sidebar-nav-group-label">{group.label}</div>}
-              {group.items.map((item) => (
+              {group.items
+                // Une entree peut etre reservee a un salon (Voiron et ses
+                // interesses) : ailleurs, elle n'existe pas.
+                .filter((item) => !item.salons || item.salons.includes(salon))
+                .map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}

@@ -310,6 +310,10 @@ export const getBarberStats = (params) => {
   const qs = new URLSearchParams(params).toString();
   return request(`/admin/analytics/barbers?${qs}`);
 };
+export const getEventAlerts = (params) => {
+  const qs = params ? new URLSearchParams(params).toString() : '';
+  return request(`/admin/event-alerts${qs ? '?' + qs : ''}`);
+};
 export const getMemberStats = () => request('/admin/analytics/members');
 export const getAccountStats = () => request('/admin/analytics/accounts');
 export const getTrends = () => request('/admin/analytics/trends');
