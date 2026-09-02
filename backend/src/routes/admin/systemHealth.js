@@ -68,6 +68,30 @@ router.get('/health', async (req, res, next) => {
     const emailTotal30d = emailSent30d + emailFailed30d;
     const emailDeliveryRate = emailTotal30d > 0 ? Math.round((emailSent30d / emailTotal30d) * 10000) / 100 : null;
 
+    // 4c. Ce que les mails deviennent apres Brevo.
+    // `status = sent` veut seulement dire que Brevo a accepte le message ; le
+    // taux calcule dessus affiche 100 % pendant que des clients ne recoivent
+    // rien. Les vrais retours arrivent par le webhook de remise.
+    const remiseEmail = await db.query(`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE nq.delivery_status = 'delivered')::int AS delivres,
+        COUNT(*) FILTER (WHERE nq.delivery_status = 'opened')::int AS ouverts,
+        COUNT(*) FILTER (WHERE nq.delivery_status = 'soft_bounce')::int AS rebonds_mous,
+        COUNT(*) FILTER (WHERE nq.delivery_status = 'hard_bounce')::int AS rebonds_durs,
+        COUNT(*) FILTER (WHERE nq.delivery_status = 'rejected')::int AS bloques,
+        COUNT(*) FILTER (WHERE nq.delivery_status = 'spam')::int AS signales,
+        COUNT(*) FILTER (WHERE nq.delivery_status IS NULL)::int AS sans_retour
+      FROM notification_queue nq
+      LEFT JOIN bookings b ON b.id = nq.booking_id
+      WHERE nq.channel = 'email' AND nq.status = 'sent'
+        AND nq.created_at >= NOW() - INTERVAL '30 days'
+        AND (b.salon_id = $1 OR b.salon_id IS NULL)
+    `, [salonId]);
+    const remise = remiseEmail.rows[0] || {};
+    const avecRetour = (remise.delivres || 0) + (remise.ouverts || 0) + (remise.rebonds_mous || 0)
+      + (remise.rebonds_durs || 0) + (remise.bloques || 0) + (remise.signales || 0);
+
     // 5. Recent failed notifications (last 10)
     const recentErrors = await db.query(`
       SELECT nq.id, nq.type, nq.status, nq.attempts, nq.last_error,
@@ -154,6 +178,17 @@ router.get('/health', async (req, res, next) => {
         email_pending: parseInt(stats30d.email_pending || 0),
         email_delivery_rate: emailDeliveryRate,
         last_email_sent: stats30d.last_email_sent || null,
+        // Remise reelle, telle que Brevo la rapporte (30 jours)
+        email_delivery: {
+          total: remise.total || 0,
+          delivered: (remise.delivres || 0) + (remise.ouverts || 0),
+          soft_bounce: remise.rebonds_mous || 0,
+          hard_bounce: remise.rebonds_durs || 0,
+          blocked: remise.bloques || 0,
+          spam: remise.signales || 0,
+          no_feedback: remise.sans_retour || 0,
+          tracked: avecRetour,
+        },
       },
       recent_errors: recentErrors.rows,
     });

@@ -243,6 +243,33 @@ export default function SystemHealth({ embedded } = {}) {
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                   Dernier envoi : {notifs.last_email_sent ? timeAgo(notifs.last_email_sent) : 'Aucun'}
                 </div>
+
+                {/* « Envoyé » veut dire « Brevo a accepté ». Ce bloc-ci dit ce
+                    que le mail est devenu ensuite — la seule mesure qui répond
+                    à « mon client n'a rien reçu ». */}
+                {notifs.email_delivery && (
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(var(--overlay),0.07)' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 10 }}>
+                      Réellement remis (30 j)
+                    </div>
+                    {notifs.email_delivery.tracked === 0 ? (
+                      <div style={{ fontSize: 11.5, color: '#f59e0b', lineHeight: 1.5 }}>
+                        Aucun retour sur {notifs.email_delivery.total} mails : le webhook de remise
+                        n&apos;est pas encore branché chez Brevo. Tant qu&apos;il ne l&apos;est pas, un rebond
+                        ou un classement en indésirable passe inaperçu.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <MiniStat label="Remis" value={notifs.email_delivery.delivered} />
+                        <MiniStat label="Sans retour" value={notifs.email_delivery.no_feedback} />
+                        <MiniStat label="Rebonds" value={notifs.email_delivery.hard_bounce + notifs.email_delivery.soft_bounce}
+                          alert={(notifs.email_delivery.hard_bounce || 0) > 0} />
+                        <MiniStat label="Bloqués / spam" value={notifs.email_delivery.blocked + notifs.email_delivery.spam}
+                          alert={(notifs.email_delivery.blocked + notifs.email_delivery.spam) > 0} />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
