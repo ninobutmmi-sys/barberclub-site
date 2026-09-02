@@ -183,7 +183,11 @@ router.get('/services', publicLimiter,
       }
 
       queryText = `
-        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color,
+        SELECT s.id, s.name,
+               -- Le prix du barbier prime sur celui de la prestation. Zero est
+               -- une valeur, pas un manque : COALESCE la respecte.
+               COALESCE(bs.custom_price, s.price) AS price,
+               s.duration, s.duration_saturday, s.description, s.color,
                bs.custom_duration
         FROM services s
         JOIN barber_services bs ON s.id = bs.service_id

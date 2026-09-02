@@ -81,6 +81,37 @@ async function getBarberHomeSalon(barberId) {
  * @param {string} params.date - YYYY-MM-DD
  * @returns {Promise<number|null>} duration in minutes, or null if service not found
  */
+/**
+ * Prix d'une prestation pour un barbier donne.
+ *
+ * Jumeau de resolveServiceDuration : le prix vit sur la prestation, sauf si le
+ * barbier a le sien dans barber_services. Zero est une valeur legitime — les
+ * coupes de Daryl sont offertes le temps de sa mise en route — donc on teste
+ * `IS NOT NULL` et jamais la verite du nombre.
+ */
+async function resolveServicePrice({ client, serviceId, barberId }) {
+  const queryFn = client ? client.query.bind(client) : db.query;
+
+  const svcResult = await queryFn(
+    'SELECT price FROM services WHERE id = $1 AND deleted_at IS NULL',
+    [serviceId]
+  );
+  if (svcResult.rows.length === 0) return null;
+  let price = svcResult.rows[0].price;
+
+  if (barberId && barberId !== 'any') {
+    const customResult = await queryFn(
+      'SELECT custom_price FROM barber_services WHERE barber_id = $1 AND service_id = $2 AND custom_price IS NOT NULL',
+      [barberId, serviceId]
+    );
+    if (customResult.rows.length > 0) {
+      price = customResult.rows[0].custom_price;
+    }
+  }
+
+  return price;
+}
+
 async function resolveServiceDuration({ client, serviceId, barberId, date }) {
   const queryFn = client ? client.query.bind(client) : db.query;
 
@@ -1314,4 +1345,5 @@ module.exports = {
   validateBarberSlot,
   getMonthAvailabilitySummary,
   resolveServiceDuration,
+  resolveServicePrice,
 };

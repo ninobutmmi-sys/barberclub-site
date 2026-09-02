@@ -290,7 +290,7 @@ router.put('/:id',
       const { id } = req.params;
       const { date, start_time, end_time, barber_id, service_id, color, notify_client } = req.body;
 
-      const { addMinutesToTime, resolveServiceDuration, assertWithinContract } = require('../../services/availability');
+      const { addMinutesToTime, resolveServiceDuration, resolveServicePrice, assertWithinContract } = require('../../services/availability');
 
       // Wrap everything in a transaction with row lock to prevent race conditions
       const txResult = await db.transaction(async (client) => {
@@ -320,11 +320,14 @@ router.put('/:id',
         const newBarberId = barber_id || booking.barber_id;
         const newServiceId = service_id || booking.service_id;
 
-        // Get service price/name (duration resolved via helper to honor custom_duration)
+        // Nom de la prestation ; prix et duree passent par les resolveurs, qui
+        // tiennent compte du tarif et du rythme propres au barbier.
         const serviceResult = await client.query('SELECT price, name FROM services WHERE id = $1', [newServiceId]);
         if (serviceResult.rows.length === 0) throw ApiError.badRequest('Service introuvable');
 
-        const price = serviceResult.rows[0].price;
+        const price = await resolveServicePrice({
+          client, serviceId: newServiceId, barberId: newBarberId,
+        });
         const duration = await resolveServiceDuration({
           client, serviceId: newServiceId, barberId: newBarberId, date: newDate,
         });

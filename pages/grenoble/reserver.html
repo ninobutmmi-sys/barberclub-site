@@ -813,6 +813,9 @@
 
         // ---- HELPERS ----
         function formatPrice(cents) {
+            // Un prix a zero n'est pas « 0,00 € » : c'est offert. Les coupes de
+            // Daryl le sont le temps de sa mise en route.
+            if (Number(cents) === 0) return 'Offert';
             const euros = (cents / 100).toFixed(2);
             return euros.replace('.', ',') + ' €';
         }
