@@ -68,18 +68,20 @@ adminRouter.get('/', async (req, res) => {
   const salon_id = req.user.salon_id;
 
   try {
-    // Les premieres inscriptions de Voiron ont ete rattachees a Grenoble : le
-    // salon n'existait pas encore en base. Quand on demande un evenement
-    // precis, il prime donc sur le salon — sinon ces gens-la disparaissent.
-    let query, params;
+    // Le salon du compte connecte borne toujours la lecture : ces lignes
+    // portent des noms, des numeros et des adresses. `event_name` filtre a
+    // l'interieur de ce perimetre, il ne le remplace jamais — sans quoi
+    // n'importe quel barbier pourrait lire la liste d'un autre salon en
+    // devinant un nom d'evenement.
+    // (Les inscrits de Voiron enregistres sous Grenoble avant l'existence du
+    // salon ont ete rattaches par la migration 081.)
+    let query = `SELECT id, email, phone, first_name, event_name, salon_id, created_at, notified_at
+                 FROM event_alerts WHERE salon_id = $1`;
+    const params = [salon_id];
+
     if (event_name) {
-      query = `SELECT id, email, phone, first_name, event_name, salon_id, created_at, notified_at
-               FROM event_alerts WHERE event_name = $1`;
-      params = [event_name];
-    } else {
-      query = `SELECT id, email, phone, first_name, event_name, salon_id, created_at, notified_at
-               FROM event_alerts WHERE salon_id = $1`;
-      params = [salon_id];
+      params.push(event_name);
+      query += ` AND event_name = $${params.length}`;
     }
 
     query += ' ORDER BY created_at DESC';

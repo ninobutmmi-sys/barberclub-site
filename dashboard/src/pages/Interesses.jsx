@@ -13,8 +13,9 @@ import { formatPhoneWithFlag } from '../utils/phone';
 // tape pas une adresse — le formulaire demande maintenant un numero, et cette
 // page rassemble tout le monde au meme endroit.
 //
-// Les premieres inscriptions ont ete enregistrees sous Grenoble, avant que
-// Voiron existe en base : on interroge donc par evenement, pas par salon.
+// Les premieres inscriptions avaient ete enregistrees sous Grenoble, avant que
+// Voiron existe en base ; la migration 081 les a rattachees. La lecture reste
+// bornee au salon connecte cote serveur, l'evenement n'est qu'un filtre de plus.
 // ============================================
 
 const EVENEMENT = 'ouverture_voiron';
