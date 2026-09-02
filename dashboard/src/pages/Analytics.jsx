@@ -1499,7 +1499,8 @@ function oneShotColor(rate) {
 
 function FirstImpressionSection({ data, isMobile, navigate, months, setMonths, loading }) {
   const [barberFilter, setBarberFilter] = useState('all');
-  const [visible, setVisible] = useState(25);
+  // Sur telephone, vingt-cinq fiches font trois ecrans a elles seules.
+  const [visible, setVisible] = useState(isMobile ? 6 : 25);
   const [methodOpen, setMethodOpen] = useState(false);
 
   const clients = useMemo(() => data?.clients || [], [data]);
@@ -1718,7 +1719,7 @@ function FirstImpressionSection({ data, isMobile, navigate, months, setMonths, l
                 {[{ barber_name: 'all' }, ...byBarber].map((b) => (
                   <button
                     key={b.barber_name}
-                    onClick={() => { setBarberFilter(b.barber_name); setVisible(25); }}
+                    onClick={() => { setBarberFilter(b.barber_name); setVisible(isMobile ? 6 : 25); }}
                     style={{
                       padding: '5px 12px', borderRadius: 999, cursor: 'pointer',
                       fontSize: 11, fontWeight: 700,
@@ -1789,7 +1790,7 @@ function FirstImpressionSection({ data, isMobile, navigate, months, setMonths, l
                 {visible < filtered.length && (
                   <button
                     className="btn btn-secondary btn-sm print-hide"
-                    onClick={() => setVisible(v => v + 50)}
+                    onClick={() => setVisible(v => v + (isMobile ? 10 : 50))}
                     style={{ marginTop: 12, width: '100%' }}
                   >
                     Afficher plus ({filtered.length - visible} restants)
@@ -2099,6 +2100,47 @@ const BARBER_STATS_PIN = 'Jiinx211211@';
 // Main Analytics Page
 // ============================================
 
+// ============================================
+// Regroupement mobile
+//
+// La page fait 12 000 pixels sur un telephone — quatorze ecrans a faire
+// defiler pour arriver aux clients inactifs. Julien s'en est plaint, et il a
+// raison : personne ne scrolle quatorze ecrans pour verifier un chiffre.
+//
+// Sur telephone, la page se lit donc par groupes, un a la fois. Sur grand
+// ecran rien ne change : la place existe, et la vue d'ensemble a de la valeur.
+// A l'impression aussi, tout est rendu — un PDF partiel ne servirait a rien.
+// ============================================
+const GROUPES = [
+  { cle: 'resume', label: 'Résumé' },
+  { cle: 'equipe', label: 'Équipe' },
+  { cle: 'clients', label: 'Clients' },
+  { cle: 'fauxplans', label: 'Faux plans' },
+];
+
+function Groupe({ actif, cle, children }) {
+  const isMobile = useMobile();
+  if (!isMobile || actif === cle) return <>{children}</>;
+  // Rendu quand meme pour l'impression, masque a l'ecran.
+  return <div className="a-groupe-print">{children}</div>;
+}
+
+function GroupeNav({ actif, onChange }) {
+  return (
+    <div className="a-groupe-nav print-hide">
+      {GROUPES.map((g) => (
+        <button
+          key={g.cle}
+          onClick={() => { onChange(g.cle); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          className={actif === g.cle ? 'is-actif' : ''}
+        >
+          {g.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function Analytics() {
   const isMobile = useMobile();
   const navigate = useNavigate();
@@ -2107,6 +2149,8 @@ export default function Analytics() {
   const [barberUnlocked, setBarberUnlocked] = useState(() => sessionStorage.getItem('bc_barber_stats_unlocked') === '1');
   const [pinInput, setPinInput] = useState('');
   const [oneShotMonths, setOneShotMonths] = useState('6');
+  const [groupe, setGroupe] = useState('resume');
+  const [inactifsVisibles, setInactifsVisibles] = useState(isMobile ? 5 : 20);
   const [pinError, setPinError] = useState(false);
 
   function handlePinSubmit(e) {
@@ -2359,6 +2403,9 @@ export default function Analytics() {
           </div>
         ) : (
           <>
+            <GroupeNav actif={groupe} onChange={setGroupe} />
+
+            <Groupe actif={groupe} cle="resume">
             {/* ======== BLOC 1 : AUJOURD'HUI (mois courant uniquement) ======== */}
             {isCurrentMonth && (
               <TodayHero
@@ -2554,6 +2601,9 @@ export default function Analytics() {
               )}
             </div>
 
+            </Groupe>
+
+            <Groupe actif={groupe} cle="equipe">
             {/* ======== BLOC 3 : BARBERS ======== */}
 
             <SectionTitle
@@ -2583,6 +2633,9 @@ export default function Analytics() {
               <BarberPerformance data={barberStats} occupancy={occupancy} loading={barberStatsQuery.isFetching} />
             </div>
 
+            </Groupe>
+
+            <Groupe actif={groupe} cle="clients">
             {/* ======== BLOC : PREMIERE IMPRESSION ======== */}
 
             <FirstImpressionSection
@@ -2594,10 +2647,16 @@ export default function Analytics() {
               loading={oneShotQuery.isLoading}
             />
 
+            </Groupe>
+
+            <Groupe actif={groupe} cle="fauxplans">
             {/* ======== BLOC : FAUX PLANS ======== */}
 
             <NoShowSection data={noShowStats} isMobile={isMobile} navigate={navigate} />
 
+            </Groupe>
+
+            <Groupe actif={groupe} cle="equipe">
             {/* ======== BLOC : OBJECTIFS (ex-page dédiée) ======== */}
             {/* Même sélecteur de mois que le reste de la page : les trophées
                 suivaient leur propre mois, il fallait le régler deux fois. */}
@@ -2612,6 +2671,9 @@ export default function Analytics() {
               <ObjectivesSection monthStr={monthStr} monthLabel={monthLabel} />
             </div>
 
+            </Groupe>
+
+            <Groupe actif={groupe} cle="resume">
             {/* ======== BLOC 4 : ACTIVITE (onglets) ======== */}
 
             <ActivitySection
@@ -2622,6 +2684,9 @@ export default function Analytics() {
               isMobile={isMobile}
             />
 
+            </Groupe>
+
+            <Groupe actif={groupe} cle="clients">
             {/* ======== BLOC 5 : CLIENTS (fusion membres + inactifs) ======== */}
 
             <SectionTitle
@@ -2665,7 +2730,7 @@ export default function Analytics() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {inactiveClients.map((c) => (
+                  {inactiveClients.slice(0, inactifsVisibles).map((c) => (
                     <div
                       key={c.id}
                       className="a-inactive-row"
@@ -2705,9 +2770,19 @@ export default function Analytics() {
                       </div>
                     </div>
                   ))}
+                  {inactifsVisibles < inactiveClients.length && (
+                    <button
+                      className="btn btn-secondary btn-sm print-hide"
+                      onClick={() => setInactifsVisibles(v => v + (isMobile ? 10 : 50))}
+                      style={{ marginTop: 6, width: '100%' }}
+                    >
+                      Afficher plus ({inactiveClients.length - inactifsVisibles} restants)
+                    </button>
+                  )}
                 </div>
               )}
             </div>
+            </Groupe>
           </>
         )}
       </div>

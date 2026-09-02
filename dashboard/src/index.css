@@ -5438,3 +5438,59 @@ img { max-width: 100%; }
   .cl-skeleton-row { animation: none; }
   .cl-seg, .cl-card, .cl-more-btn, .cl-search-input, .cl-table tbody tr { transition: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ANALYTICS — navigation par groupes sur telephone
+
+   La page faisait 12 000 px de haut sur un telephone : quatorze ecrans avant
+   d'atteindre les clients inactifs. Les groupes la ramenent a deux ou trois
+   ecrans chacun, et la barre reste sous la main pendant qu'on descend.
+   ═══════════════════════════════════════════════════════════ */
+.a-groupe-nav { display: none; }
+.a-groupe-print { display: contents; }
+
+@media (max-width: 1023px) {
+  .a-groupe-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    gap: 6px;
+    margin: 0 0 18px;
+    padding: 8px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: var(--bg);
+    box-shadow: 0 10px 16px -12px var(--bg);
+  }
+  .a-groupe-nav::-webkit-scrollbar { display: none; }
+  .a-groupe-nav button {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 11px;
+    border: 1px solid rgba(var(--overlay), 0.08);
+    background: rgba(var(--overlay), 0.04);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  }
+  .a-groupe-nav button.is-actif {
+    background: rgba(var(--overlay), 0.13);
+    border-color: rgba(var(--overlay), 0.2);
+    color: var(--text);
+  }
+  .a-groupe-nav button:active { transform: scale(0.97); }
+
+  /* Hors ecran mais present pour l'impression. */
+  .a-groupe-print { display: none; }
+}
+
+@media print {
+  .a-groupe-nav { display: none !important; }
+  .a-groupe-print { display: block !important; }
+}
