@@ -46,6 +46,7 @@ const objectivesRoutes = require('./routes/admin/objectives');
 const tasksRoutes = require('./routes/admin/tasks');
 const { publicRouter: eventAlertPublicRoutes, adminRouter: eventAlertAdminRoutes } = require('./routes/eventAlerts');
 const brevoSmsWebhookRoutes = require('./routes/webhooks/brevoSms');
+const brevoEmailWebhookRoutes = require('./routes/webhooks/brevoEmail');
 const twilioWebhookRoutes = require('./routes/webhooks/twilio');
 
 // Cron job imports
@@ -287,6 +288,7 @@ app.use('/api/track', campaignTrackRoutes);
 
 // SMS delivery webhooks (no auth — token in URL)
 app.use('/api/webhooks', brevoSmsWebhookRoutes);
+app.use('/api/webhooks', brevoEmailWebhookRoutes);
 app.use('/api/webhooks', twilioWebhookRoutes);
 
 // ============================================

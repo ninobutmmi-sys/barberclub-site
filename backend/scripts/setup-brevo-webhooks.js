@@ -24,6 +24,12 @@ const SECRET = process.env.BREVO_WEBHOOK_SECRET || '';
 // (blocked, error, replied, unsubscribed, request are NOT accepted on SMS channel)
 const EVENTS = ['delivered', 'sent', 'accepted', 'softBounce', 'hardBounce', 'rejected', 'blacklisted'];
 
+// Cote email, Brevo accepte d'autres noms. On demande ce qui sert a repondre a
+// « le client dit ne pas avoir recu » : arrive, rebond, refus, signalement.
+// Les ouvertures et les clics ne sont pas demandes — ils multiplieraient les
+// appels sans rien apprendre sur la remise.
+const EVENTS_EMAIL = ['delivered', 'hardBounce', 'softBounce', 'blocked', 'spam', 'invalid', 'deferred', 'unsubscribed'];
+
 const SALONS = {
   meylan: process.env.BREVO_API_KEY,
   grenoble: process.env.BREVO_API_KEY_GRENOBLE,
@@ -39,6 +45,7 @@ if (!SECRET) {
 }
 
 const webhookUrl = `${API_URL.replace(/\/$/, '')}/api/webhooks/brevo/sms?token=${encodeURIComponent(SECRET)}`;
+const webhookUrlEmail = `${API_URL.replace(/\/$/, '')}/api/webhooks/brevo/email?token=${encodeURIComponent(SECRET)}`;
 
 async function listWebhooks(apiKey) {
   const resp = await fetch('https://api.brevo.com/v3/webhooks?type=transactional', {
@@ -59,7 +66,8 @@ async function listWebhooks(apiKey) {
   }
 }
 
-async function createWebhook(apiKey) {
+async function createWebhook(apiKey, canal = 'sms') {
+  const email = canal === 'email';
   const resp = await fetch('https://api.brevo.com/v3/webhooks', {
     method: 'POST',
     headers: {
@@ -68,15 +76,15 @@ async function createWebhook(apiKey) {
       'accept': 'application/json',
     },
     body: JSON.stringify({
-      url: webhookUrl,
+      url: email ? webhookUrlEmail : webhookUrl,
       type: 'transactional',
-      channel: 'sms', // body field — silently ignored when set to "domain"
-      events: EVENTS,
-      description: 'BarberClub SMS delivery tracking',
+      channel: canal, // body field — silently ignored when set to "domain"
+      events: email ? EVENTS_EMAIL : EVENTS,
+      description: email ? 'BarberClub email delivery tracking' : 'BarberClub SMS delivery tracking',
     }),
   });
   const text = await resp.text();
-  if (!resp.ok) throw new Error(`Create webhook failed: ${resp.status} ${text}`);
+  if (!resp.ok) throw new Error(`Create ${canal} webhook failed: ${resp.status} ${text}`);
   return JSON.parse(text);
 }
 
@@ -102,41 +110,49 @@ async function setupForSalon(salonId, apiKey, db) {
   const webhooks = Array.isArray(list) ? list : (list.webhooks || []);
   const ours = webhooks.filter(w =>
     (w.description || '').includes('BarberClub') ||
-    (w.url || '').includes('/api/webhooks/brevo/sms')
+    (w.url || '').includes('/api/webhooks/brevo/')
   );
 
-  // Clean up stale ones (wrong URL OR wrong channel — we only want SMS)
+  // Deux webhooks nous appartiennent desormais : un par canal. Le menage ne
+  // doit supprimer que ce qui ne correspond ni a l'un ni a l'autre — sinon
+  // chaque execution effacait celui du canal oppose.
+  const voulus = [
+    { canal: 'sms', url: webhookUrl, events: EVENTS },
+    { canal: 'email', url: webhookUrlEmail, events: EVENTS_EMAIL },
+  ];
+
   for (const w of ours) {
-    if (w.url !== webhookUrl || w.channel !== 'sms') {
+    const garde = voulus.some(v => w.url === v.url && w.channel === v.canal);
+    if (!garde) {
       console.log(`[${salonId}] Deleting stale webhook id=${w.id} url=${w.url} channel=${w.channel}`);
       await deleteWebhook(apiKey, w.id);
     }
   }
 
-  // Check if our exact URL + sms channel is already there
-  const existing = ours.find(w => w.url === webhookUrl && w.channel === 'sms');
-  let webhookId;
-  if (existing) {
-    console.log(`[${salonId}] Webhook already exists id=${existing.id}`);
-    webhookId = existing.id;
-  } else {
-    console.log(`[${salonId}] Creating webhook -> ${webhookUrl}`);
-    const created = await createWebhook(apiKey);
-    webhookId = created.id;
-    console.log(`[${salonId}] Created webhook id=${webhookId}`);
-  }
+  for (const v of voulus) {
+    const existing = ours.find(w => w.url === v.url && w.channel === v.canal);
+    let webhookId;
+    if (existing) {
+      console.log(`[${salonId}] ${v.canal} : webhook deja en place id=${existing.id}`);
+      webhookId = existing.id;
+    } else {
+      console.log(`[${salonId}] ${v.canal} : creation -> ${v.url}`);
+      const created = await createWebhook(apiKey, v.canal);
+      webhookId = created.id;
+      console.log(`[${salonId}] ${v.canal} : cree id=${webhookId}`);
+    }
 
-  // Persist in DB for tracking
-  await db.query(
-    `INSERT INTO brevo_webhooks (salon_id, webhook_id, webhook_url, events)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (salon_id) DO UPDATE
-       SET webhook_id = EXCLUDED.webhook_id,
-           webhook_url = EXCLUDED.webhook_url,
-           events = EXCLUDED.events,
-           created_at = NOW()`,
-    [salonId, webhookId, webhookUrl, EVENTS]
-  );
+    await db.query(
+      `INSERT INTO brevo_webhooks (salon_id, channel, webhook_id, webhook_url, events)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (salon_id, channel) DO UPDATE
+         SET webhook_id = EXCLUDED.webhook_id,
+             webhook_url = EXCLUDED.webhook_url,
+             events = EXCLUDED.events,
+             created_at = NOW()`,
+      [salonId, v.canal, webhookId, v.url, v.events]
+    );
+  }
 }
 
 (async () => {
