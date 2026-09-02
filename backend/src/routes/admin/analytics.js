@@ -306,6 +306,106 @@ router.get('/peak-hours',
         fromDate = req.query.from || getDefaultFrom('month');
       }
 
+      // ── Taux de remplissage par creneau ──
+      // Compter les RDV ne dit rien : trois RDV le mardi a 9h avec un seul
+      // barbier de service, c'est plein ; trois le samedi a 11h avec quatre
+      // barbiers, c'est un quart de la capacite. On compare donc les minutes
+      // vendues aux minutes ouvertes, creneau par creneau.
+      const remplissage = await db.query(
+        `WITH jours AS (
+           SELECT generate_series($1::date, $2::date, '1 day')::date AS d
+         ),
+         heures AS (SELECT generate_series(8, 20) AS h),
+         equipe AS (
+           SELECT id, contract_start, contract_end
+           FROM barbers
+           WHERE salon_id = $3 AND deleted_at IS NULL
+             AND (is_active = true OR EXISTS (
+               SELECT 1 FROM bookings b WHERE b.barber_id = barbers.id AND b.salon_id = $3
+                 AND b.date >= $1::date AND b.date <= $2::date AND b.deleted_at IS NULL
+                 AND b.status IN ('confirmed', 'completed')))
+         ),
+         ouvert AS (
+           SELECT ((EXTRACT(DOW FROM j.d)::int + 6) % 7) AS jour, hr.h AS heure,
+                  SUM(
+                    GREATEST(0, EXTRACT(EPOCH FROM (
+                      LEAST(sc.end_time, make_time(hr.h + 1, 0, 0)) - GREATEST(sc.start_time, make_time(hr.h, 0, 0))
+                    )) / 60)
+                    -- La pause dejeuner ne se vend pas. Le CASE est
+                    -- indispensable : LEAST et GREATEST ignorent les NULL, donc
+                    -- sans pause enregistree ils renvoyaient les bornes de
+                    -- l'heure et comptaient soixante minutes de pause pour tout
+                    -- le monde — de quoi annuler exactement le temps ouvert.
+                    - CASE WHEN sc.break_start IS NOT NULL AND sc.break_end IS NOT NULL
+                        THEN GREATEST(0, EXTRACT(EPOCH FROM (
+                          LEAST(sc.break_end, make_time(hr.h + 1, 0, 0)) - GREATEST(sc.break_start, make_time(hr.h, 0, 0))
+                        )) / 60)
+                        ELSE 0 END
+                  )::int AS minutes
+           FROM jours j
+           CROSS JOIN equipe e
+           CROSS JOIN heures hr
+           JOIN LATERAL (
+             SELECT s.start_time, s.end_time, s.break_start, s.break_end
+             FROM schedules s
+             WHERE s.barber_id = e.id
+               AND s.day_of_week = ((EXTRACT(DOW FROM j.d)::int + 6) % 7)
+               AND s.is_working = true
+             LIMIT 1
+           ) sc ON true
+           WHERE (e.contract_start IS NULL OR j.d >= e.contract_start)
+             AND (e.contract_end IS NULL OR j.d <= e.contract_end)
+             AND NOT EXISTS (
+               SELECT 1 FROM schedule_overrides o
+               WHERE o.barber_id = e.id AND o.date = j.d AND o.is_day_off = true
+             )
+           GROUP BY 1, 2
+         ),
+         renforts AS (
+           -- Les barbiers invites ouvrent aussi du temps : sans eux, le samedi
+           -- de Meylan depassait 120 % de remplissage.
+           SELECT ((EXTRACT(DOW FROM g.date)::int + 6) % 7) AS jour, hr.h AS heure,
+                  SUM(GREATEST(0, EXTRACT(EPOCH FROM (
+                    LEAST(g.end_time, make_time(hr.h + 1, 0, 0)) - GREATEST(g.start_time, make_time(hr.h, 0, 0))
+                  )) / 60))::int AS minutes
+           FROM guest_assignments g
+           CROSS JOIN heures hr
+           WHERE g.host_salon_id = $3 AND g.date >= $1::date AND g.date <= $2::date
+           GROUP BY 1, 2
+         ),
+         capacite AS (
+           SELECT jour, heure, SUM(minutes)::int AS minutes
+           FROM (SELECT * FROM ouvert UNION ALL SELECT * FROM renforts) t
+           GROUP BY 1, 2
+         ),
+         vendu AS (
+           SELECT ((EXTRACT(DOW FROM b.date)::int + 6) % 7) AS jour, hr.h AS heure,
+                  SUM(GREATEST(0, EXTRACT(EPOCH FROM (
+                    LEAST(b.end_time, make_time(hr.h + 1, 0, 0)) - GREATEST(b.start_time, make_time(hr.h, 0, 0))
+                  )) / 60))::int AS minutes,
+                  COUNT(*) FILTER (WHERE EXTRACT(HOUR FROM b.start_time) = hr.h)::int AS rdv
+           FROM bookings b
+           CROSS JOIN heures hr
+           WHERE b.salon_id = $3 AND b.date >= $1 AND b.date <= $2
+             AND b.status IN ('confirmed', 'completed') AND b.deleted_at IS NULL
+             AND b.start_time < make_time(hr.h + 1, 0, 0) AND b.end_time > make_time(hr.h, 0, 0)
+           GROUP BY 1, 2
+         )
+         SELECT o.jour, o.heure,
+                -- Un creneau ou l'on a coupe plus que le planning ne prevoit a
+                -- bien ete travaille : la capacite ne peut pas etre inferieure
+                -- au temps vendu, sinon on affiche 129 % de remplissage.
+                GREATEST(o.minutes, COALESCE(v.minutes, 0)) AS open_minutes,
+                COALESCE(v.minutes, 0) AS booked_minutes,
+                COALESCE(v.rdv, 0) AS bookings,
+                ROUND(COALESCE(v.minutes, 0) * 100.0 / NULLIF(GREATEST(o.minutes, COALESCE(v.minutes, 0)), 0)) AS fill_rate
+         FROM capacite o
+         LEFT JOIN vendu v ON v.jour = o.jour AND v.heure = o.heure
+         WHERE o.minutes > 0
+         ORDER BY o.jour, o.heure`,
+        [fromDate, toDate, salonId]
+      );
+
       // Bookings by day of week and hour
       const result = await db.query(
         `SELECT
@@ -339,6 +439,15 @@ router.get('/peak-hours',
       const response = {
         heatmap: result.rows,
         best_days: bestDays.rows,
+        // 0 = lundi, heure locale du salon, taux en pourcentage
+        fill: remplissage.rows.map(r => ({
+          day: parseInt(r.jour),
+          hour: parseInt(r.heure),
+          open_minutes: parseInt(r.open_minutes),
+          booked_minutes: parseInt(r.booked_minutes),
+          bookings: parseInt(r.bookings),
+          fill_rate: r.fill_rate === null ? 0 : parseInt(r.fill_rate),
+        })),
       };
 
       if (hasMonthParam) {

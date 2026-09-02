@@ -771,87 +771,195 @@ function BarberPerformance({ data, occupancy, loading }) {
 // Peak Hours Heatmap
 // ============================================
 
+// ============================================
+// Heures de pointe — taux de remplissage
+//
+// L'ancienne grille affichait le nombre de RDV sur une echelle relative : le
+// creneau le plus charge etait fonce, les autres plus clairs, et on ne savait
+// pas si « fonce » voulait dire plein ou juste moins vide. Trois RDV le mardi a
+// 9h avec un seul barbier de service, c'est complet ; trois le samedi avec
+// quatre barbiers, c'est un quart de la capacite.
+//
+// On affiche donc la part du temps de l'equipe qui est vendue, creneau par
+// creneau. L'echelle est absolue — 0 a 100 % — donc une couleur veut dire la
+// meme chose partout, d'un mois a l'autre et d'un salon a l'autre.
+// ============================================
+
+// Une seule teinte, du clair au fonce : c'est la regle des echelles de
+// grandeur. Un arc-en-ciel ferait croire a des categories.
+const FILL_STEPS = [
+  { min: 80, bg: 'rgba(245,158,11,0.92)', ink: '#1a1206', label: '80 % et plus' },
+  { min: 60, bg: 'rgba(245,158,11,0.62)', ink: '#1a1206', label: '60 – 79 %' },
+  { min: 40, bg: 'rgba(245,158,11,0.36)', ink: 'rgba(255,255,255,0.92)', label: '40 – 59 %' },
+  { min: 20, bg: 'rgba(245,158,11,0.18)', ink: 'rgba(255,255,255,0.72)', label: '20 – 39 %' },
+  { min: 0,  bg: 'rgba(var(--overlay),0.045)', ink: 'rgba(255,255,255,0.45)', label: 'moins de 20 %' },
+];
+function fillStep(rate) {
+  return FILL_STEPS.find(s => rate >= s.min) || FILL_STEPS[FILL_STEPS.length - 1];
+}
+
 function PeakHoursHeatmap({ data }) {
-  if (!data || !data.heatmap || data.heatmap.length === 0) {
-    return <div className="empty-state">Aucune donnee</div>;
+  const isMobile = useMobile();
+  const cells = data?.fill || [];
+
+  if (cells.length === 0) {
+    return <div className="empty-state">Pas encore assez de rendez-vous sur cette p\u00e9riode</div>;
   }
 
-  // PostgreSQL EXTRACT(DOW) returns 0=Sunday,1=Monday,...,6=Saturday
-  // BarberClub convention: 0=Lundi,...,5=Samedi,6=Dimanche
-  // Convert: pgDow => (pgDow + 6) % 7
-  const heatmap = {};
-  let maxCount = 0;
-  data.heatmap.forEach((row) => {
-    const pgDay = parseInt(row.day_of_week);
-    const bbDay = (pgDay + 6) % 7;
-    const hour = parseInt(row.hour);
-    const count = parseInt(row.count);
-    if (!heatmap[bbDay]) heatmap[bbDay] = {};
-    heatmap[bbDay][hour] = (heatmap[bbDay][hour] || 0) + count;
-    if (heatmap[bbDay][hour] > maxCount) maxCount = heatmap[bbDay][hour];
+  const hours = [...new Set(cells.map(c => c.hour))].sort((a, b) => a - b);
+  const days = [...new Set(cells.map(c => c.day))].sort((a, b) => a - b);
+  const grid = {};
+  cells.forEach(c => {
+    if (!grid[c.day]) grid[c.day] = {};
+    grid[c.day][c.hour] = c;
   });
 
-  const hours = [];
-  for (let h = 9; h <= 19; h++) hours.push(h);
-  const days = [0, 1, 2, 3, 4, 5]; // Lun-Sam
-
-  function getCellColor(count) {
-    if (!count || maxCount === 0) return 'rgba(var(--overlay),0.02)';
-    const t = count / maxCount;
-    if (t < 0.33) return `rgba(245,158,11,${0.08 + t * 0.3})`;
-    if (t < 0.66) return `rgba(245,158,11,${0.18 + t * 0.35})`;
-    return `rgba(245,158,11,${0.35 + t * 0.4})`;
+  // Moyenne d'un jour : ponderee par le temps ouvert, sinon une heure ou un
+  // seul barbier travaille pese autant qu'une heure a quatre.
+  function moyenne(liste) {
+    const ouvert = liste.reduce((a, c) => a + c.open_minutes, 0);
+    const vendu = liste.reduce((a, c) => a + c.booked_minutes, 0);
+    return ouvert > 0 ? Math.round((vendu / ouvert) * 100) : 0;
   }
 
+  const parJour = days.map(d => ({ day: d, rate: moyenne(cells.filter(c => c.day === d)) }));
+  const meilleurJour = [...parJour].sort((a, b) => b.rate - a.rate)[0];
+  const plein = [...cells].sort((a, b) => b.fill_rate - a.fill_rate)[0];
+  // Le creux ne compte que les creneaux ou le salon est reellement ouvert en
+  // nombre : une heure a un seul barbier fausserait la lecture.
+  const creuxCandidats = cells.filter(c => c.open_minutes >= 120);
+  const creux = (creuxCandidats.length ? creuxCandidats : cells).slice().sort((a, b) => a.fill_rate - b.fill_rate)[0];
+  // Les jours entiers ou l'on frole le complet, nommes en toutes lettres :
+  // « Les lundis et samedis » se lit mieux que « Les Lun, Sam ».
+  const NOMS_JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  const pleins = parJour.filter(j => j.rate >= 90).map(j => NOMS_JOURS[j.day] + 's');
+  const phraseJours = pleins.length === 0 ? null
+    : pleins.length === 1 ? `Le ${pleins[0].slice(0, -1)}`
+      : `Les ${pleins.slice(0, -1).join(', ')} et ${pleins[pleins.length - 1]}`;
+
+  const largeurCol = isMobile ? 46 : 0;
+
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: `56px repeat(${hours.length}, 1fr)`, gap: 4 }}>
-        <div />
-        {hours.map((h) => (
-          <div key={h} style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, padding: '4px 0' }}>
-            {h}h
-          </div>
-        ))}
+    <div>
+      {/* La phrase avant la grille : elle dit ce qu'il faut retenir. */}
+      <div style={{
+        display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 8,
+        fontSize: 13.5, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.5,
+      }}>
+        <span>
+          Votre cr&eacute;neau le plus demand&eacute; :{' '}
+          <strong style={{ color: 'var(--text)' }}>
+            {DAY_LABELS[plein.day]} {plein.hour}h — {plein.fill_rate} %
+          </strong>{' '}
+          du temps de l&apos;&eacute;quipe vendu.
+          {phraseJours && (
+            <> <strong style={{ color: 'var(--text)' }}>{phraseJours}</strong>, vous &ecirc;tes quasiment complet toute la journ&eacute;e.</>
+          )}
+        </span>
+      </div>
 
-        {days.map((day) => (
-          <div key={day} style={{ display: 'contents' }}>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', paddingRight: 8 }}>
-              {DAY_LABELS[day]}
+      <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: `44px repeat(${hours.length}, minmax(${isMobile ? 40 : 0}px, 1fr)) 52px`,
+          gap: 3,
+          minWidth: isMobile ? hours.length * (largeurCol + 3) + 100 : 0,
+        }}>
+          <div />
+          {hours.map(h => (
+            <div key={h} style={{ textAlign: 'center', fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 600, paddingBottom: 4 }}>
+              {h}h
             </div>
-            {hours.map((h) => {
-              const count = heatmap[day]?.[h] || 0;
-              return (
-                <div
-                  key={h}
-                  className="a-heatcell"
-                  title={`${DAY_LABELS[day]} ${h}h: ${count} RDV`}
-                  style={{
-                    height: 36,
-                    background: getCellColor(count),
-                    border: '1px solid rgba(var(--overlay),0.03)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 700,
-                    color: count > 0 ? (count / maxCount > 0.5 ? '#fbbf24' : 'var(--text-secondary)') : 'transparent',
-                  }}
-                >
-                  {count > 0 ? count : ''}
+          ))}
+          <div style={{ textAlign: 'center', fontSize: 9.5, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', paddingBottom: 4 }}>
+            Jour
+          </div>
+
+          {days.map(day => {
+            const jour = parJour.find(j => j.day === day);
+            return (
+              <div key={day} style={{ display: 'contents' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                  {DAY_LABELS[day]}
                 </div>
-              );
-            })}
+                {hours.map(h => {
+                  const c = grid[day]?.[h];
+                  if (!c) {
+                    return <div key={h} style={{ height: 38, borderRadius: 7, background: 'transparent' }} title={`${DAY_LABELS[day]} ${h}h — ferm\u00e9`} />;
+                  }
+                  const step = fillStep(c.fill_rate);
+                  const estLePlein = c.day === plein.day && c.hour === plein.hour;
+                  return (
+                    <div
+                      key={h}
+                      title={`${DAY_LABELS[day]} ${h}h — ${c.fill_rate} % du temps vendu : ${Math.round(c.booked_minutes / 60)} h vendues sur ${Math.round(c.open_minutes / 60)} h ouvertes, ${c.bookings} RDV`}
+                      style={{
+                        height: 38, borderRadius: 7,
+                        background: step.bg,
+                        border: estLePlein ? '1.5px solid rgba(255,255,255,0.85)' : '1px solid rgba(var(--overlay),0.04)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 700, color: step.ink,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {c.fill_rate}
+                    </div>
+                  );
+                })}
+                <div style={{
+                  height: 38, borderRadius: 7,
+                  background: 'rgba(var(--overlay),0.05)',
+                  border: '1px solid rgba(var(--overlay),0.07)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11.5, fontWeight: 800, fontFamily: 'var(--font-display)',
+                  color: jour.rate >= 80 ? '#fbbf24' : 'var(--text-secondary)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}>
+                  {jour.rate}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* L'echelle est fixe : la meme couleur veut dire la meme chose partout. */}
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginTop: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Temps vendu</span>
+          {[...FILL_STEPS].reverse().map((s, i) => (
+            <span key={i} title={s.label} style={{
+              width: 22, height: 14, borderRadius: 4, background: s.bg,
+              border: '1px solid rgba(var(--overlay),0.06)',
+            }} />
+          ))}
+          <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>0 &rarr; 100 %</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginTop: 14 }}>
+        {[
+          ['#fbbf24', 'Le plus plein', `${DAY_LABELS[plein.day]} ${plein.hour}h`, `${plein.fill_rate} % — ${plein.bookings} RDV`],
+          ['var(--text-muted)', 'Le plus creux', `${DAY_LABELS[creux.day]} ${creux.hour}h`, `${creux.fill_rate} % — ${creux.bookings} RDV`],
+        ].map(([couleur, titre, quand, detail], i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'baseline', gap: 10,
+            padding: '11px 14px', borderRadius: 11,
+            background: 'rgba(var(--overlay),0.03)', border: '1px solid rgba(var(--overlay),0.06)',
+          }}>
+            <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', minWidth: 84 }}>{titre}</span>
+            <span style={{ fontWeight: 700, fontSize: 13, color: couleur }}>{quand}</span>
+            <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{detail}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, justifyContent: 'flex-end' }}>
-        <span style={{ fontSize: 10, color: 'var(--text-muted)', marginRight: 4 }}>Moins</span>
-        {[0.03, 0.12, 0.25, 0.4, 0.6].map((op, i) => (
-          <div key={i} style={{
-            width: 16, height: 16, borderRadius: 4,
-            background: `rgba(245,158,11,${op})`,
-          }} />
-        ))}
-        <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 4 }}>Plus</span>
-      </div>
+      <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.55 }}>
+        Chaque case montre la part du temps de travail de l&apos;&eacute;quipe qui a &eacute;t&eacute; vendue sur ce
+        cr&eacute;neau{meilleurJour ? ` — ${NOMS_JOURS[meilleurJour.day]} affiche ${meilleurJour.rate} % sur la journ\u00e9e` : ''}.
+        Au-dessus de 90 %, un cr&eacute;neau ne peut plus absorber de nouveaux clients : c&apos;est l&agrave;
+        qu&apos;il faut ouvrir des heures ou mettre quelqu&apos;un de plus.
+      </p>
     </div>
   );
 }
