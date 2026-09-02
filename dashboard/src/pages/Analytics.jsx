@@ -1,9 +1,10 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { format, startOfWeek, addMonths, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import useMobile from '../hooks/useMobile';
 import ObjectivesSection from '../components/ObjectivesSection';
+import CreneauxCreux from '../components/CreneauxCreux';
 import {
   useDashboard,
   useRevenue,
@@ -785,185 +786,6 @@ function BarberPerformance({ data, occupancy, loading }) {
 // meme chose partout, d'un mois a l'autre et d'un salon a l'autre.
 // ============================================
 
-// Une seule teinte, du clair au fonce : c'est la regle des echelles de
-// grandeur. Un arc-en-ciel ferait croire a des categories.
-const FILL_STEPS = [
-  { min: 80, bg: 'rgba(245,158,11,0.92)', ink: '#1a1206', label: '80 % et plus' },
-  { min: 60, bg: 'rgba(245,158,11,0.62)', ink: '#1a1206', label: '60 – 79 %' },
-  { min: 40, bg: 'rgba(245,158,11,0.36)', ink: 'rgba(255,255,255,0.92)', label: '40 – 59 %' },
-  { min: 20, bg: 'rgba(245,158,11,0.18)', ink: 'rgba(255,255,255,0.72)', label: '20 – 39 %' },
-  { min: 0,  bg: 'rgba(var(--overlay),0.045)', ink: 'rgba(255,255,255,0.45)', label: 'moins de 20 %' },
-];
-function fillStep(rate) {
-  return FILL_STEPS.find(s => rate >= s.min) || FILL_STEPS[FILL_STEPS.length - 1];
-}
-
-function PeakHoursHeatmap({ data }) {
-  const isMobile = useMobile();
-  const cells = data?.fill || [];
-
-  if (cells.length === 0) {
-    return <div className="empty-state">Pas encore assez de rendez-vous sur cette p\u00e9riode</div>;
-  }
-
-  const hours = [...new Set(cells.map(c => c.hour))].sort((a, b) => a - b);
-  const days = [...new Set(cells.map(c => c.day))].sort((a, b) => a - b);
-  const grid = {};
-  cells.forEach(c => {
-    if (!grid[c.day]) grid[c.day] = {};
-    grid[c.day][c.hour] = c;
-  });
-
-  // Moyenne d'un jour : ponderee par le temps ouvert, sinon une heure ou un
-  // seul barbier travaille pese autant qu'une heure a quatre.
-  function moyenne(liste) {
-    const ouvert = liste.reduce((a, c) => a + c.open_minutes, 0);
-    const vendu = liste.reduce((a, c) => a + c.booked_minutes, 0);
-    return ouvert > 0 ? Math.round((vendu / ouvert) * 100) : 0;
-  }
-
-  const parJour = days.map(d => ({ day: d, rate: moyenne(cells.filter(c => c.day === d)) }));
-  const meilleurJour = [...parJour].sort((a, b) => b.rate - a.rate)[0];
-  const plein = [...cells].sort((a, b) => b.fill_rate - a.fill_rate)[0];
-  // Le creux ne compte que les creneaux ou le salon est reellement ouvert en
-  // nombre : une heure a un seul barbier fausserait la lecture.
-  const creuxCandidats = cells.filter(c => c.open_minutes >= 120);
-  const creux = (creuxCandidats.length ? creuxCandidats : cells).slice().sort((a, b) => a.fill_rate - b.fill_rate)[0];
-  // Les jours entiers ou l'on frole le complet, nommes en toutes lettres :
-  // « Les lundis et samedis » se lit mieux que « Les Lun, Sam ».
-  const NOMS_JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-  const pleins = parJour.filter(j => j.rate >= 90).map(j => NOMS_JOURS[j.day] + 's');
-  const phraseJours = pleins.length === 0 ? null
-    : pleins.length === 1 ? `Le ${pleins[0].slice(0, -1)}`
-      : `Les ${pleins.slice(0, -1).join(', ')} et ${pleins[pleins.length - 1]}`;
-
-  const largeurCol = isMobile ? 46 : 0;
-
-  return (
-    <div>
-      {/* La phrase avant la grille : elle dit ce qu'il faut retenir. */}
-      <div style={{
-        display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 8,
-        fontSize: 13.5, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.5,
-      }}>
-        <span>
-          Votre cr&eacute;neau le plus demand&eacute; :{' '}
-          <strong style={{ color: 'var(--text)' }}>
-            {DAY_LABELS[plein.day]} {plein.hour}h — {plein.fill_rate} %
-          </strong>{' '}
-          du temps de l&apos;&eacute;quipe vendu.
-          {phraseJours && (
-            <> <strong style={{ color: 'var(--text)' }}>{phraseJours}</strong>, vous &ecirc;tes quasiment complet toute la journ&eacute;e.</>
-          )}
-        </span>
-      </div>
-
-      <div style={{ overflowX: 'auto', paddingBottom: 4 }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: `44px repeat(${hours.length}, minmax(${isMobile ? 40 : 0}px, 1fr)) 52px`,
-          gap: 3,
-          minWidth: isMobile ? hours.length * (largeurCol + 3) + 100 : 0,
-        }}>
-          <div />
-          {hours.map(h => (
-            <div key={h} style={{ textAlign: 'center', fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 600, paddingBottom: 4 }}>
-              {h}h
-            </div>
-          ))}
-          <div style={{ textAlign: 'center', fontSize: 9.5, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', paddingBottom: 4 }}>
-            Jour
-          </div>
-
-          {days.map(day => {
-            const jour = parJour.find(j => j.day === day);
-            return (
-              <div key={day} style={{ display: 'contents' }}>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center' }}>
-                  {DAY_LABELS[day]}
-                </div>
-                {hours.map(h => {
-                  const c = grid[day]?.[h];
-                  if (!c) {
-                    return <div key={h} style={{ height: 38, borderRadius: 7, background: 'transparent' }} title={`${DAY_LABELS[day]} ${h}h — ferm\u00e9`} />;
-                  }
-                  const step = fillStep(c.fill_rate);
-                  const estLePlein = c.day === plein.day && c.hour === plein.hour;
-                  return (
-                    <div
-                      key={h}
-                      title={`${DAY_LABELS[day]} ${h}h — ${c.fill_rate} % du temps vendu : ${Math.round(c.booked_minutes / 60)} h vendues sur ${Math.round(c.open_minutes / 60)} h ouvertes, ${c.bookings} RDV`}
-                      style={{
-                        height: 38, borderRadius: 7,
-                        background: step.bg,
-                        border: estLePlein ? '1.5px solid rgba(255,255,255,0.85)' : '1px solid rgba(var(--overlay),0.04)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, fontWeight: 700, color: step.ink,
-                        fontVariantNumeric: 'tabular-nums',
-                      }}
-                    >
-                      {c.fill_rate}
-                    </div>
-                  );
-                })}
-                <div style={{
-                  height: 38, borderRadius: 7,
-                  background: 'rgba(var(--overlay),0.05)',
-                  border: '1px solid rgba(var(--overlay),0.07)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11.5, fontWeight: 800, fontFamily: 'var(--font-display)',
-                  color: jour.rate >= 80 ? '#fbbf24' : 'var(--text-secondary)',
-                  fontVariantNumeric: 'tabular-nums',
-                }}>
-                  {jour.rate}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* L'echelle est fixe : la meme couleur veut dire la meme chose partout. */}
-      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginTop: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Temps vendu</span>
-          {[...FILL_STEPS].reverse().map((s, i) => (
-            <span key={i} title={s.label} style={{
-              width: 22, height: 14, borderRadius: 4, background: s.bg,
-              border: '1px solid rgba(var(--overlay),0.06)',
-            }} />
-          ))}
-          <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>0 &rarr; 100 %</span>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginTop: 14 }}>
-        {[
-          ['#fbbf24', 'Le plus plein', `${DAY_LABELS[plein.day]} ${plein.hour}h`, `${plein.fill_rate} % — ${plein.bookings} RDV`],
-          ['var(--text-muted)', 'Le plus creux', `${DAY_LABELS[creux.day]} ${creux.hour}h`, `${creux.fill_rate} % — ${creux.bookings} RDV`],
-        ].map(([couleur, titre, quand, detail], i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'baseline', gap: 10,
-            padding: '11px 14px', borderRadius: 11,
-            background: 'rgba(var(--overlay),0.03)', border: '1px solid rgba(var(--overlay),0.06)',
-          }}>
-            <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', minWidth: 84 }}>{titre}</span>
-            <span style={{ fontWeight: 700, fontSize: 13, color: couleur }}>{quand}</span>
-            <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{detail}</span>
-          </div>
-        ))}
-      </div>
-
-      <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.55 }}>
-        Chaque case montre la part du temps de travail de l&apos;&eacute;quipe qui a &eacute;t&eacute; vendue sur ce
-        cr&eacute;neau{meilleurJour ? ` — ${NOMS_JOURS[meilleurJour.day]} affiche ${meilleurJour.rate} % sur la journ\u00e9e` : ''}.
-        Au-dessus de 90 %, un cr&eacute;neau ne peut plus absorber de nouveaux clients : c&apos;est l&agrave;
-        qu&apos;il faut ouvrir des heures ou mettre quelqu&apos;un de plus.
-      </p>
-    </div>
-  );
-}
-
 // ============================================
 // Revenue Hourly Heatmap (barber x hour)
 // ============================================
@@ -1328,8 +1150,11 @@ function TodayHero({ todayRevenue, todayBookings, nextBookings }) {
 // ActivitySection — Bloc 4 (onglets)
 // ============================================
 
-function ActivitySection({ serviceStats, peakHours, revenueHourly, monthLabel, isMobile }) {
-  const [tab, setTab] = useState('services');
+function ActivitySection({ serviceStats, peakHours, revenueHourly, monthLabel, isMobile, vue }) {
+  // Prestations et creneaux ont chacun leur page : la vue vient de l'adresse.
+  // Les onglets internes ne servent plus que si personne ne l'impose.
+  const [tabInterne, setTab] = useState('services');
+  const tab = vue || tabInterne;
   const [showBarberHeatmap, setShowBarberHeatmap] = useState(false);
 
   const services = serviceStats?.services || [];
@@ -1349,10 +1174,10 @@ function ActivitySection({ serviceStats, peakHours, revenueHourly, monthLabel, i
     <>
       <SectionTitle
         className="a-stagger a-d8"
-        icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.5 }}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>}
-        title="Activite"
-        subtitle="Prestations et heures de pointe"
-        right={
+        icon={<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>{ICONES[tab === 'peak' ? 'creneaux' : 'prestations']}</svg>}
+        title={tab === 'peak' ? 'Cr\u00e9neaux' : 'Prestations'}
+        subtitle={tab === 'peak' ? 'O\u00f9 reste-t-il de la place' : 'Ce qui se vend, et ce qui ne se vend plus'}
+        right={vue ? null : (
           <div className="a-tab-bar">
             <button
               className={tab === 'services' ? 'active' : ''}
@@ -1367,7 +1192,7 @@ function ActivitySection({ serviceStats, peakHours, revenueHourly, monthLabel, i
               Heures de pointe
             </button>
           </div>
-        }
+        )}
       />
 
       <div className="a-stagger a-d8" style={{ marginBottom: 32 }}>
@@ -1412,26 +1237,7 @@ function ActivitySection({ serviceStats, peakHours, revenueHourly, monthLabel, i
         ) : (
           <>
             <div className="a-card" style={{ marginBottom: showBarberHeatmap && revenueHourly?.length > 0 ? 16 : 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  {monthLabel} — Lundi a Samedi
-                </div>
-                {peakHours?.best_days && peakHours.best_days.length > 0 && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '5px 12px', borderRadius: 8,
-                    background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.12)',
-                  }}>
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f59e0b" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b' }}>
-                      {DAY_LABELS[(parseInt(peakHours.best_days[0].day_of_week) + 6) % 7]}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="a-heatmap-scroll">
-                <PeakHoursHeatmap data={peakHours} />
-              </div>
+              <CreneauxCreux data={peakHours} monthLabel={monthLabel} />
             </div>
 
             {revenueHourly && revenueHourly.length > 0 && (
@@ -2101,40 +1907,98 @@ const BARBER_STATS_PIN = 'Jiinx211211@';
 // ============================================
 
 // ============================================
-// Regroupement mobile
+// Le menu Analytics
 //
-// La page fait 12 000 pixels sur un telephone — quatorze ecrans a faire
-// defiler pour arriver aux clients inactifs. Julien s'en est plaint, et il a
-// raison : personne ne scrolle quatorze ecrans pour verifier un chiffre.
+// La page faisait 12 000 pixels de haut sur un telephone — quatorze ecrans a
+// faire defiler pour arriver aux clients inactifs. Julien s'en est plaint, et
+// il avait raison : personne ne parcourt quatorze ecrans pour verifier un
+// chiffre.
 //
-// Sur telephone, la page se lit donc par groupes, un a la fois. Sur grand
-// ecran rien ne change : la place existe, et la vue d'ensemble a de la valeur.
-// A l'impression aussi, tout est rendu — un PDF partiel ne servirait a rien.
+// Analytics est donc devenue un menu de six pages. Chacune repond a une seule
+// question et tient dans un ecran ou deux ; on ouvre celle qu'on veut au lieu
+// de traverser les autres. Les donnees d'une page ne sont chargees que
+// lorsqu'on l'ouvre — la page d'accueil ne reclame plus quatorze requetes.
+// A l'impression, tout est rendu d'un bloc : un PDF partiel ne servirait a rien.
 // ============================================
-const GROUPES = [
-  { cle: 'resume', label: 'Résumé' },
-  { cle: 'equipe', label: 'Équipe' },
-  { cle: 'clients', label: 'Clients' },
-  { cle: 'fauxplans', label: 'Faux plans' },
+
+const ICONES = {
+  resume: <><path d="M3 3v18h18" /><polyline points="19 9 13 15 9 11 5 15" /></>,
+  creneaux: <><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15.5 14" /></>,
+  prestations: <><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line x1="14.47" y1="14.48" x2="20" y2="20" /><line x1="8.12" y1="8.12" x2="12" y2="12" /></>,
+  equipe: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>,
+  clients: <><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></>,
+  fauxplans: <><circle cx="12" cy="12" r="9" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></>,
+};
+
+const SECTIONS = [
+  { cle: 'resume', label: 'Résumé', desc: 'Le jour, le mois, la courbe', couleur: '#3b82f6' },
+  { cle: 'creneaux', label: 'Créneaux', desc: 'Où reste-t-il de la place', couleur: '#f59e0b' },
+  { cle: 'prestations', label: 'Prestations', desc: 'Ce qui se vend, ce qui ne se vend plus', couleur: '#a78bfa' },
+  { cle: 'equipe', label: 'Équipe', desc: 'Chiffre par barbier, objectifs', couleur: '#22c55e' },
+  { cle: 'clients', label: 'Clients', desc: 'Retour des nouveaux, clients perdus de vue', couleur: '#38bdf8' },
+  { cle: 'fauxplans', label: 'Faux plans', desc: 'Les rendez-vous non honorés', couleur: '#ef4444' },
 ];
 
-function Groupe({ actif, cle, children }) {
-  const isMobile = useMobile();
-  if (!isMobile || actif === cle) return <>{children}</>;
-  // Rendu quand meme pour l'impression, masque a l'ecran.
-  return <div className="a-groupe-print">{children}</div>;
+function Section({ actif, cle, tout, children }) {
+  if (tout || actif === cle) return <>{children}</>;
+  return null;
 }
 
-function GroupeNav({ actif, onChange }) {
+// Le menu : une ligne par page, avec son chiffre du moment quand il est deja
+// connu. Rien n'est charge pour l'afficher — ce qui est en cache s'affiche,
+// le reste attend qu'on ouvre la page.
+function AnalyticsMenu({ chiffres, onOuvrir }) {
   return (
-    <div className="a-groupe-nav print-hide">
-      {GROUPES.map((g) => (
+    <div className="a-menu">
+      {SECTIONS.map((s) => {
+        const chiffre = chiffres[s.cle];
+        return (
+          <button key={s.cle} className="a-menu-card" onClick={() => onOuvrir(s.cle)}>
+            <span
+              className="a-menu-icone"
+              style={{ background: `${s.couleur}1a`, border: `1px solid ${s.couleur}33` }}
+            >
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke={s.couleur} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {ICONES[s.cle]}
+              </svg>
+            </span>
+            <span className="a-menu-texte">
+              <span className="a-menu-label">{s.label}</span>
+              <span className="a-menu-desc">{s.desc}</span>
+            </span>
+            {chiffre && (
+              <span className="a-menu-chiffre" style={{ color: s.couleur }}>
+                {chiffre.valeur}
+                <small>{chiffre.legende}</small>
+              </span>
+            )}
+            <svg className="a-menu-fleche" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SectionNav({ actif, onChange }) {
+  return (
+    <div className="a-sect-nav print-hide">
+      <button className="a-sect-menu" onClick={() => onChange(null)} aria-label="Revenir au menu Analytics">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+        Menu
+      </button>
+      <span className="a-sect-nav-sep" aria-hidden="true" />
+      {SECTIONS.map((s) => (
         <button
-          key={g.cle}
-          onClick={() => { onChange(g.cle); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-          className={actif === g.cle ? 'is-actif' : ''}
+          key={s.cle}
+          onClick={() => onChange(s.cle)}
+          className={actif === s.cle ? 'is-actif' : ''}
         >
-          {g.label}
+          {s.label}
         </button>
       ))}
     </div>
@@ -2149,7 +2013,11 @@ export default function Analytics() {
   const [barberUnlocked, setBarberUnlocked] = useState(() => sessionStorage.getItem('bc_barber_stats_unlocked') === '1');
   const [pinInput, setPinInput] = useState('');
   const [oneShotMonths, setOneShotMonths] = useState('6');
-  const [groupe, setGroupe] = useState('resume');
+  const { section } = useParams();
+  const vue = SECTIONS.some((s) => s.cle === section) ? section : null;
+  // Le PDF doit contenir tout le mois, pas seulement la page ouverte : le temps
+  // de l'impression, chaque section est montee et chaque requete autorisee.
+  const [imprimer, setImprimer] = useState(false);
   const [inactifsVisibles, setInactifsVisibles] = useState(isMobile ? 5 : 20);
   const [pinError, setPinError] = useState(false);
 
@@ -2183,22 +2051,27 @@ export default function Analytics() {
     return { month: monthStr };
   }, [barberPeriod, monthStr]);
 
+  // Une page ne demande que ses propres chiffres. Le menu, lui, n'en demande
+  // aucun de plus : il affiche ce qui est deja en cache et rien d'autre.
+  const sur = useCallback((...cles) => imprimer || cles.includes(vue), [imprimer, vue]);
+
   const dashboardQuery = useDashboard(monthParams);
-  const revenueQuery = useRevenue({ period: 'day', month: monthStr });
+  const revenueQuery = useRevenue({ period: 'day', month: monthStr }, { enabled: sur('resume') });
   const prevMonthStr = useMemo(() => format(subMonths(selectedMonth, 1), 'yyyy-MM'), [selectedMonth]);
-  const prevRevenueQuery = useRevenue({ period: 'day', month: prevMonthStr });
-  const serviceStatsQuery = useServiceStats(monthParams);
-  const barberStatsQuery = useBarberStats(barberStatsParams);
+  const prevRevenueQuery = useRevenue({ period: 'day', month: prevMonthStr }, { enabled: sur('resume') });
+  const serviceStatsQuery = useServiceStats(monthParams, { enabled: sur('prestations') });
+  const barberStatsQuery = useBarberStats(barberStatsParams, { enabled: sur('equipe') });
+  // Les creneaux servent aussi de chiffre d'accueil : une requete legere, gardee.
   const peakHoursQuery = usePeakHours(monthParams);
-  const occupancyQuery = useOccupancy(monthParams);
-  const inactiveQuery = useInactiveClients();
-  const memberStatsQuery = useMemberStats();
-  const accountStatsQuery = useAccountStats();
-  const trendsQuery = useTrends({ enabled: isCurrentMonth });
-  const revenueHourlyQuery = useRevenueHourly(monthParams);
-  const noShowQuery = useNoShowStats(monthParams);
+  const occupancyQuery = useOccupancy(monthParams, { enabled: sur('equipe') });
+  const inactiveQuery = useInactiveClients({ enabled: sur('clients') });
+  const memberStatsQuery = useMemberStats({ enabled: sur('clients') });
+  const accountStatsQuery = useAccountStats({ enabled: sur('clients') });
+  const trendsQuery = useTrends({ enabled: isCurrentMonth && sur('resume') });
+  const revenueHourlyQuery = useRevenueHourly(monthParams, { enabled: sur('creneaux') });
+  const noShowQuery = useNoShowStats(monthParams, { enabled: sur('fauxplans') });
   const oneShotParams = useMemo(() => ({ months: oneShotMonths }), [oneShotMonths]);
-  const oneShotQuery = useOneShotStats(oneShotParams);
+  const oneShotQuery = useOneShotStats(oneShotParams, { enabled: sur('clients') });
 
   const loading = dashboardQuery.isLoading;
   const error = dashboardQuery.error?.message || '';
@@ -2220,6 +2093,63 @@ export default function Analytics() {
   const oneShotStats = oneShotQuery.data || null;
 
   const prev = dashboard?.previous || null;
+
+  // Les chiffres du menu : uniquement ce qui est deja connu. Une page qu'on
+  // n'a pas ouverte n'affiche pas de chiffre plutot que d'aller en chercher un.
+  const chiffresMenu = useMemo(() => {
+    const c = {};
+    if (dashboard?.month) {
+      c.resume = { valeur: formatPriceInt(dashboard.month.revenue || 0), legende: 'ce mois' };
+      c.prestations = { valeur: dashboard.month.bookings || 0, legende: 'RDV' };
+      c.clients = { valeur: dashboard.month.new_clients || 0, legende: 'nouveaux' };
+    }
+    const cases = peakHours?.fill || [];
+    if (cases.length > 0) {
+      const ouvert = cases.reduce((a, x) => a + x.open_minutes, 0);
+      const vendu = cases.reduce((a, x) => a + x.booked_minutes, 0);
+      if (ouvert > 0) c.creneaux = { valeur: `${Math.round((vendu / ouvert) * 100)} %`, legende: 'temps vendu' };
+    }
+    if (occupancy?.barbers?.length > 0) {
+      const taux = Math.round(
+        occupancy.barbers.reduce((a, b) => a + (parseFloat(b.occupancy_percent) || 0), 0) / occupancy.barbers.length
+      );
+      if (Number.isFinite(taux)) c.equipe = { valeur: `${taux} %`, legende: 'occupation' };
+    }
+    if (noShowStats?.overview) {
+      c.fauxplans = { valeur: noShowStats.overview.count || 0, legende: 'ce mois' };
+    }
+    return c;
+  }, [dashboard, peakHours, occupancy, noShowStats]);
+
+  const toutesLesRequetes = [
+    dashboardQuery, revenueQuery, prevRevenueQuery, serviceStatsQuery, barberStatsQuery,
+    peakHoursQuery, occupancyQuery, inactiveQuery, memberStatsQuery, accountStatsQuery,
+    trendsQuery, revenueHourlyQuery, noShowQuery, oneShotQuery,
+  ];
+  const chargementEnCours = toutesLesRequetes.some((q) => q.isFetching);
+
+  // On demande l'impression, les sections manquantes se chargent, et le
+  // navigateur n'ouvre sa fenetre que lorsque la derniere est arrivee.
+  // Filet de securite : si une requete tarde ou echoue, on imprime quand meme
+  // au bout de huit secondes plutot que de laisser le bouton sans effet.
+  useEffect(() => {
+    if (!imprimer) return;
+    let fait = false;
+    const lancer = () => {
+      if (fait) return;
+      fait = true;
+      window.print();
+      setImprimer(false);
+    };
+    const limite = setTimeout(lancer, 8000);
+    const t = chargementEnCours ? null : setTimeout(lancer, 500);
+    return () => { clearTimeout(limite); if (t) clearTimeout(t); };
+  }, [imprimer, chargementEnCours]);
+
+  function allerA(cle) {
+    navigate(cle ? `/analytics/${cle}` : '/analytics');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   function loadAll() {
     dashboardQuery.refetch();
@@ -2374,7 +2304,7 @@ export default function Analytics() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-secondary btn-sm print-hide" onClick={() => window.print()} style={{ gap: 6 }}>
+          <button className="btn btn-secondary btn-sm print-hide" onClick={() => setImprimer(true)} disabled={imprimer} style={{ gap: 6 }}>
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             PDF
           </button>
@@ -2403,9 +2333,13 @@ export default function Analytics() {
           </div>
         ) : (
           <>
-            <GroupeNav actif={groupe} onChange={setGroupe} />
+            {vue === null && !imprimer ? (
+              <AnalyticsMenu chiffres={chiffresMenu} onOuvrir={allerA} />
+            ) : (
+              <SectionNav actif={vue} onChange={allerA} />
+            )}
 
-            <Groupe actif={groupe} cle="resume">
+            <Section tout={imprimer} actif={vue} cle="resume">
             {/* ======== BLOC 1 : AUJOURD'HUI (mois courant uniquement) ======== */}
             {isCurrentMonth && (
               <TodayHero
@@ -2601,9 +2535,9 @@ export default function Analytics() {
               )}
             </div>
 
-            </Groupe>
+            </Section>
 
-            <Groupe actif={groupe} cle="equipe">
+            <Section tout={imprimer} actif={vue} cle="equipe">
             {/* ======== BLOC 3 : BARBERS ======== */}
 
             <SectionTitle
@@ -2633,9 +2567,9 @@ export default function Analytics() {
               <BarberPerformance data={barberStats} occupancy={occupancy} loading={barberStatsQuery.isFetching} />
             </div>
 
-            </Groupe>
+            </Section>
 
-            <Groupe actif={groupe} cle="clients">
+            <Section tout={imprimer} actif={vue} cle="clients">
             {/* ======== BLOC : PREMIERE IMPRESSION ======== */}
 
             <FirstImpressionSection
@@ -2647,16 +2581,16 @@ export default function Analytics() {
               loading={oneShotQuery.isLoading}
             />
 
-            </Groupe>
+            </Section>
 
-            <Groupe actif={groupe} cle="fauxplans">
+            <Section tout={imprimer} actif={vue} cle="fauxplans">
             {/* ======== BLOC : FAUX PLANS ======== */}
 
             <NoShowSection data={noShowStats} isMobile={isMobile} navigate={navigate} />
 
-            </Groupe>
+            </Section>
 
-            <Groupe actif={groupe} cle="equipe">
+            <Section tout={imprimer} actif={vue} cle="equipe">
             {/* ======== BLOC : OBJECTIFS (ex-page dédiée) ======== */}
             {/* Même sélecteur de mois que le reste de la page : les trophées
                 suivaient leur propre mois, il fallait le régler deux fois. */}
@@ -2671,22 +2605,33 @@ export default function Analytics() {
               <ObjectivesSection monthStr={monthStr} monthLabel={monthLabel} />
             </div>
 
-            </Groupe>
+            </Section>
 
-            <Groupe actif={groupe} cle="resume">
-            {/* ======== BLOC 4 : ACTIVITE (onglets) ======== */}
-
+            {/* ======== CRENEAUX : ou reste-t-il de la place ======== */}
+            <Section tout={imprimer} actif={vue} cle="creneaux">
             <ActivitySection
+              vue="peak"
               serviceStats={serviceStats}
               peakHours={peakHours}
               revenueHourly={revenueHourly}
               monthLabel={monthLabel}
               isMobile={isMobile}
             />
+            </Section>
 
-            </Groupe>
+            {/* ======== PRESTATIONS : ce qui se vend ======== */}
+            <Section tout={imprimer} actif={vue} cle="prestations">
+            <ActivitySection
+              vue="services"
+              serviceStats={serviceStats}
+              peakHours={peakHours}
+              revenueHourly={revenueHourly}
+              monthLabel={monthLabel}
+              isMobile={isMobile}
+            />
+            </Section>
 
-            <Groupe actif={groupe} cle="clients">
+            <Section tout={imprimer} actif={vue} cle="clients">
             {/* ======== BLOC 5 : CLIENTS (fusion membres + inactifs) ======== */}
 
             <SectionTitle
@@ -2782,7 +2727,7 @@ export default function Analytics() {
                 </div>
               )}
             </div>
-            </Groupe>
+            </Section>
           </>
         )}
       </div>

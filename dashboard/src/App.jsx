@@ -85,6 +85,9 @@ function AppRoutes() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Suspense fallback={<PageLoader />}><Planning /></Suspense>} />
         <Route path="analytics" element={<Suspense fallback={<PageLoader />}><Analytics /></Suspense>} />
+        {/* Analytics se lit par sections depuis un menu : la page unique
+            faisait quatorze ecrans de haut sur un telephone. */}
+        <Route path="analytics/:section" element={<Suspense fallback={<PageLoader />}><Analytics /></Suspense>} />
         <Route path="planning" element={<Suspense fallback={<PageLoader />}><Planning /></Suspense>} />
         <Route path="services" element={<Suspense fallback={<PageLoader />}><Services /></Suspense>} />
         <Route path="boutique" element={<Suspense fallback={<PageLoader />}><Boutique /></Suspense>} />

@@ -2565,7 +2565,9 @@ select.input {
 @media (max-width: 1023px) {
   .sidebar { display: none; }
   .main-content, .main-content.sidebar-is-collapsed { margin-left: 0; padding-bottom: 72px; overflow-x: hidden; }
-  .page-header { padding: 14px 16px; }
+  /* Le mois, le titre et les boutons ne tiennent pas sur une ligne de
+     telephone : la barre se replie au lieu de sortir de l'ecran. */
+  .page-header { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
   .page-body { padding: 14px 16px; overflow-x: hidden; }
   .page-title { font-size: 16px; }
   .input-row { grid-template-columns: 1fr; }
@@ -5440,57 +5442,383 @@ img { max-width: 100%; }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ANALYTICS — navigation par groupes sur telephone
+   ANALYTICS — le menu et ses pages
 
    La page faisait 12 000 px de haut sur un telephone : quatorze ecrans avant
-   d'atteindre les clients inactifs. Les groupes la ramenent a deux ou trois
-   ecrans chacun, et la barre reste sous la main pendant qu'on descend.
+   d'atteindre les clients inactifs. Analytics se lit maintenant par pages,
+   choisies depuis un menu — une question par page, un ou deux ecrans chacune.
    ═══════════════════════════════════════════════════════════ */
-.a-groupe-nav { display: none; }
-.a-groupe-print { display: contents; }
+.a-menu {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
 
-@media (max-width: 1023px) {
-  .a-groupe-nav {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    display: flex;
-    gap: 6px;
-    margin: 0 0 18px;
-    padding: 8px 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-    background: var(--bg);
-    box-shadow: 0 10px 16px -12px var(--bg);
-  }
-  .a-groupe-nav::-webkit-scrollbar { display: none; }
-  .a-groupe-nav button {
-    flex: 0 0 auto;
-    min-height: 40px;
-    padding: 0 16px;
-    border-radius: 11px;
-    border: 1px solid rgba(var(--overlay), 0.08);
-    background: rgba(var(--overlay), 0.04);
-    color: var(--text-muted);
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-  }
-  .a-groupe-nav button.is-actif {
-    background: rgba(var(--overlay), 0.13);
-    border-color: rgba(var(--overlay), 0.2);
-    color: var(--text);
-  }
-  .a-groupe-nav button:active { transform: scale(0.97); }
+.a-menu-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  min-height: 72px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(var(--overlay), 0.028);
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.a-menu-card:hover { background: rgba(var(--overlay), 0.07); border-color: rgba(var(--overlay), 0.18); }
+.a-menu-card:active { background: rgba(var(--overlay), 0.1); }
+.a-menu-card:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 
-  /* Hors ecran mais present pour l'impression. */
-  .a-groupe-print { display: none; }
+.a-menu-icone {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.a-menu-texte { flex: 1; min-width: 0; }
+.a-menu-label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.a-menu-desc { display: block; font-size: 11.5px; color: var(--text-muted); line-height: 1.4; }
+.a-menu-chiffre {
+  flex-shrink: 0;
+  text-align: right;
+  font-family: var(--font-display, inherit);
+  font-size: 17px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.a-menu-chiffre small {
+  display: block;
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+.a-menu-fleche { flex-shrink: 0; color: var(--text-muted); }
+
+/* La barre de sections : presente sur toutes les pages, pour passer de l'une
+   a l'autre sans repasser par le menu. */
+.a-sect-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 18px;
+  padding: 8px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--bg);
+  box-shadow: 0 10px 16px -12px var(--bg);
+}
+.a-sect-nav::-webkit-scrollbar { display: none; }
+.a-sect-nav button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 15px;
+  border-radius: 11px;
+  border: 1px solid rgba(var(--overlay), 0.08);
+  background: rgba(var(--overlay), 0.04);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+.a-sect-nav button:hover { background: rgba(var(--overlay), 0.08); color: var(--text-secondary); }
+.a-sect-nav button.is-actif {
+  background: rgba(var(--overlay), 0.13);
+  border-color: rgba(var(--overlay), 0.2);
+  color: var(--text);
+}
+.a-sect-nav button:active { transform: scale(0.97); }
+.a-sect-nav .a-sect-menu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 13px 0 11px;
+}
+.a-sect-nav-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  margin: 0 2px;
+}
+
+@media (min-width: 1024px) {
+  .a-menu { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .a-menu-card { min-height: 84px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .a-menu-card, .a-sect-nav button { transition: none; }
+  .a-sect-nav button:active { transform: none; }
 }
 
 @media print {
-  .a-groupe-nav { display: none !important; }
-  .a-groupe-print { display: block !important; }
+  .a-sect-nav, .a-menu { display: none !important; }
+}
+
+/* ============================================
+   Creneaux — ou reste-t-il de la place ?
+   ============================================
+   L'ancienne grille demandait de faire defiler l'ecran sur le cote pour lire
+   un mois. Ici la lecture est verticale : les heures a remplir, puis une
+   journee a la fois, la grille en dernier et repliee sur telephone. */
+
+.cx-resume {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0 0 18px;
+}
+.cx-resume strong { color: var(--text); font-weight: 700; }
+
+.cx-bloc { margin-bottom: 22px; }
+
+.cx-bloc-titre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  margin: 0 0 12px;
+}
+.cx-bloc-titre svg { opacity: 0.55; flex-shrink: 0; }
+
+/* ---- Les heures a remplir ---- */
+.cx-bloc--remplir {
+  padding: 16px;
+  border-radius: var(--radius);
+  background: rgba(59,130,246,0.05);
+  border: 1px solid rgba(59,130,246,0.16);
+}
+.cx-remplir-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+
+.cx-remplir-item {
+  display: grid;
+  grid-template-columns: 62px 1fr 42px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(var(--overlay), 0.035);
+}
+.cx-remplir-quand { font-size: 13px; font-weight: 700; color: var(--text); }
+.cx-remplir-jauge { display: flex; }
+.cx-remplir-taux {
+  font-size: 12.5px; font-weight: 700; text-align: right;
+  color: var(--text-secondary); font-variant-numeric: tabular-nums;
+}
+.cx-remplir-detail {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.cx-note {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin: 12px 0 0;
+}
+.cx-note--bas { margin-top: 4px; }
+
+/* ---- Le choix du jour ---- */
+.cx-jours {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.cx-jour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 62px;
+  padding: 8px 2px 7px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(var(--overlay), 0.025);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.cx-jour:hover { background: rgba(var(--overlay), 0.06); }
+.cx-jour:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.cx-jour.is-actif {
+  background: rgba(var(--overlay), 0.09);
+  border-color: rgba(var(--overlay), 0.22);
+  color: var(--text);
+}
+.cx-jour-nom { font-size: 11.5px; font-weight: 700; }
+.cx-jour-taux { font-size: 10.5px; font-variant-numeric: tabular-nums; opacity: 0.75; }
+.cx-jour-barre {
+  width: 78%;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(var(--overlay), 0.09);
+  display: block;
+}
+.cx-jour-barre > span { display: block; height: 100%; border-radius: 2px; }
+
+.cx-jour-entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.cx-jour-entete-nom {
+  font-family: var(--font-display, inherit);
+  font-size: 15px; font-weight: 800; text-transform: capitalize; color: var(--text);
+}
+.cx-jour-entete-detail { font-size: 11.5px; color: var(--text-muted); }
+
+/* ---- Une heure = une ligne ---- */
+.cx-heures { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+
+.cx-heure {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(var(--overlay), 0.025);
+  border: 1px solid transparent;
+}
+.cx-heure.is-creux {
+  background: rgba(59,130,246,0.055);
+  border-color: rgba(59,130,246,0.16);
+}
+.cx-heure-label {
+  font-size: 12.5px; font-weight: 700; color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.cx-heure-corps { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cx-heure-ligne { display: flex; align-items: center; gap: 10px; }
+.cx-heure-taux {
+  font-size: 12.5px; font-weight: 700; color: var(--text);
+  min-width: 38px; text-align: right; font-variant-numeric: tabular-nums;
+}
+.cx-heure-detail { font-size: 11px; color: var(--text-muted); line-height: 1.35; }
+.cx-heure-detail strong { color: var(--text-secondary); font-weight: 700; }
+
+.cx-jauge-barre { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* ---- La grille complete ---- */
+.cx-grille-bascule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: rgba(var(--overlay), 0.025);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.cx-grille-bascule:hover { background: rgba(var(--overlay), 0.06); }
+.cx-grille-bascule:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.cx-grille-sous { font-weight: 500; font-size: 11.5px; color: var(--text-muted); margin-left: auto; }
+
+.cx-grille-defile { overflow-x: auto; padding: 14px 0 6px; -webkit-overflow-scrolling: touch; }
+.cx-grille { display: grid; gap: 3px; min-width: 100%; }
+.cx-grille-heure {
+  text-align: center; font-size: 10.5px; font-weight: 600;
+  color: var(--text-muted); padding-bottom: 4px;
+}
+.cx-grille-jourcol { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+.cx-grille-jour {
+  display: flex; align-items: center;
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+}
+.cx-case {
+  height: 36px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(var(--overlay), 0.05);
+}
+.cx-case--ferme { background: transparent; border-color: transparent; }
+.cx-case--total {
+  background: rgba(var(--overlay), 0.05);
+  border-color: rgba(var(--overlay), 0.08);
+  font-family: var(--font-display, inherit);
+  font-size: 11.5px; font-weight: 800;
+}
+.cx-case.is-plein { border: 1.5px solid rgba(var(--overlay), 0.85); }
+
+.cx-echelle {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 7px;
+  margin-top: 14px; font-size: 10.5px; color: var(--text-muted);
+}
+.cx-echelle-case {
+  width: 22px; height: 14px; border-radius: 4px;
+  border: 1px solid rgba(var(--overlay), 0.06);
+}
+
+@media (max-width: 480px) {
+  .cx-remplir-item { grid-template-columns: 58px 1fr 40px; gap: 8px; padding: 8px; }
+  .cx-grille-sous { display: none; }
+  .cx-grille-defile { padding-top: 10px; }
+  .cx-case { height: 30px; font-size: 10px; border-radius: 6px; }
+  .cx-grille-jour { font-size: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-jauge-barre, .cx-jour, .cx-grille-bascule { transition: none; }
+}
+
+.cx-complet {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0 0 20px;
+  padding: 13px 15px;
+  border-radius: var(--radius);
+  background: rgba(34,197,94,0.06);
+  border: 1px solid rgba(34,197,94,0.16);
+}
+
+/* Sur grand ecran, les barres n'ont pas besoin de 1 300 px de large : les deux
+   premiers blocs se placent cote a cote et la grille garde toute la largeur. */
+@media (min-width: 1024px) {
+  .cx {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 26px;
+    align-items: start;
+  }
+  .cx-resume, .cx-complet, .cx-note--bas, .cx > .cx-bloc:last-of-type { grid-column: 1 / -1; }
+  .cx-jours { grid-auto-columns: minmax(0, 104px); justify-content: start; }
+  .cx-heures { max-height: none; }
 }
