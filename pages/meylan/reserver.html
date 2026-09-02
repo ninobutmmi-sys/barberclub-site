@@ -945,6 +945,12 @@
                     ? `<img loading="lazy" src="${esc(photoSrc)}" alt="${esc(b.name)}" onerror="this.parentElement.innerHTML='<span class=barber-avatar-placeholder>${esc(initial)}</span>'">`
                     : `<span class="barber-avatar-placeholder">${esc(initial)}</span>`;
 
+                // La mention d'offre passe avant la date d'arrivee : « coupe
+                // gratuite » interesse plus le client que « a partir du 2 ».
+                const offerBadge = b.offer_label
+                    ? `<div class="barber-offer-badge"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 12 20 22 4 22 4 12\"/><rect x=\"2\" y=\"7\" width=\"20\" height=\"5\"/><line x1=\"12\" y1=\"22\" x2=\"12\" y2=\"7\"/><path d=\"M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z\"/><path d=\"M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z\"/></svg>${esc(b.offer_label)}</div>`
+                    : '';
+
                 const arrivee = premierJourTravaille(b);
                 const guestBadge = arrivee
                     ? `<div class="barber-guest-badge">À partir du ${esc(arrivee)}</div>`
@@ -957,6 +963,7 @@
                         <div class="barber-avatar">${avatarContent}</div>
                         <div class="barber-info">
                             <div class="barber-name">${esc(b.name)}</div>
+                            ${offerBadge}
                             ${guestBadge}
                         </div>
                         <div class="barber-check">${checkSVG}</div>
@@ -1058,6 +1065,17 @@
             Object.values(grouped).forEach(arr => arr.sort((a, b) => a.price - b.price));
 
             let html = '';
+            // Le client voit des prix a zero : on lui dit pourquoi, ici, au
+            // moment ou il les regarde.
+            const barbier = state.selectedBarber;
+            if (barbier && barbier.offer_label) {
+                html += `<div class="service-offer-note"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 12 20 22 4 22 4 12\"/><rect x=\"2\" y=\"7\" width=\"20\" height=\"5\"/><line x1=\"12\" y1=\"22\" x2=\"12\" y2=\"7\"/><path d=\"M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z\"/><path d=\"M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z\"/></svg>
+                    <div>
+                        <b>${esc(barbier.offer_label)}</b>
+                        <span>${esc(barbier.name)} se forme aupr&egrave;s de l&rsquo;&eacute;quipe : ses prestations sont offertes.</span>
+                    </div>
+                </div>`;
+            }
             for (const cat of categories) {
                 if (grouped[cat.key].length === 0) continue;
                 html += `<div class="service-category">
@@ -1074,7 +1092,7 @@
                             ${s.description ? `<div class="service-desc">${esc(s.description)}</div>` : ''}
                         </div>
                         <div class="service-right">
-                            <div class="service-price">${formatPrice(s.price)}</div>
+                            <div class="service-price${Number(s.price) === 0 ? ' is-free' : ''}">${formatPrice(s.price)}</div>
                             <div class="service-check">${checkSVG}</div>
                         </div>
                     </div>`;
@@ -1536,7 +1554,14 @@
                 slotTime = "Liste d'attente — Toute la journée";
             }
 
+            // Rappelee au moment de confirmer : c'est la que le client verifie
+            // ce qu'il va payer.
+            const offre = state.selectedBarber && state.selectedBarber.offer_label
+                ? `<div class="summary-offer"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 12 20 22 4 22 4 12\"/><rect x=\"2\" y=\"7\" width=\"20\" height=\"5\"/><line x1=\"12\" y1=\"22\" x2=\"12\" y2=\"7\"/><path d=\"M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z\"/><path d=\"M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z\"/></svg>${esc(state.selectedBarber.offer_label)}</div>`
+                : '';
+
             $('#summaryCard').innerHTML = `
+                ${offre}
                 <div class="summary-row">
                     <span class="summary-label">Barber</span>
                     <span class="summary-value">${esc(barberName)}</span>

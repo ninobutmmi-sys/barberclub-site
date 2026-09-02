@@ -2849,3 +2849,90 @@ a:focus-visible, button:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 2px;
 }
+
+/* ═══════════════════════════════════════════
+   MENTION D'OFFRE SUR UN BARBIER
+   Un prix a zero se voit (« Offert »), mais il n'explique rien. La mention dit
+   pourquoi : Daryl est en formation, ses coupes sont offertes. Elle prend l'or
+   du logo — la seule couleur du site — pour se distinguer du gris des autres
+   informations sans hurler.
+   ═══════════════════════════════════════════ */
+.barber-offer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid rgba(232, 192, 122, 0.35);
+    background: linear-gradient(120deg, rgba(232, 192, 122, 0.16), rgba(232, 192, 122, 0.05));
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #F0D9A8;
+    white-space: nowrap;
+}
+.barber-offer-badge svg { width: 11px; height: 11px; flex-shrink: 0; }
+
+/* Le bandeau de l'etape prestations : la meme information, en grand, au moment
+   ou le client regarde des prix a zero. */
+.service-offer-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(232, 192, 122, 0.28);
+    background:
+        radial-gradient(120% 140% at 0% 0%, rgba(232, 192, 122, 0.14), transparent 60%),
+        rgba(255, 255, 255, 0.03);
+    animation: offerNoteIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes offerNoteIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+}
+.service-offer-note svg {
+    width: 18px; height: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: #E8C07A;
+}
+.service-offer-note b {
+    display: block;
+    font-size: 13px;
+    color: #F0D9A8;
+    margin-bottom: 3px;
+}
+.service-offer-note span {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.62);
+}
+
+/* Un prix offert ne se lit pas comme un prix : il s'annonce. */
+.service-price.is-free {
+    color: #F0D9A8;
+    text-shadow: 0 0 18px rgba(232, 192, 122, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .service-offer-note { animation: none; }
+}
+
+/* La mention repetee dans le recapitulatif, juste avant de confirmer. */
+.summary-offer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -4px 0 14px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(232, 192, 122, 0.28);
+    background: rgba(232, 192, 122, 0.09);
+    font-size: 12px;
+    font-weight: 700;
+    color: #F0D9A8;
+}
+.summary-offer svg { width: 14px; height: 14px; flex-shrink: 0; }
