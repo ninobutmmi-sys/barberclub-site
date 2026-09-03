@@ -5894,28 +5894,9 @@ img { max-width: 100%; }
 }
 .cx-rang-libre em { font-style: normal; color: var(--ink-warn); font-weight: 600; }
 
-/* ── Le tableau chiffre ───────────────────────────────────── */
+/* ── Le tableau de la semaine ─────────────────────────────── */
 
-.cx-tableau-bascule {
-  display: flex; align-items: center; gap: 8px;
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: var(--r-sm);
-  border: 1px solid rgba(var(--overlay), 0.07);
-  background: rgba(var(--overlay), 0.025);
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background var(--dur-1) var(--ease);
-}
-.cx-tableau-bascule:hover { background: rgba(var(--overlay), 0.06); }
-.cx-tableau-bascule:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
-.cx-tableau-bascule svg { transition: transform var(--dur-1) var(--ease); flex-shrink: 0; }
-.cx-tableau-sous { font-weight: 500; font-size: 11.5px; color: var(--text-muted); margin-left: auto; }
-
-.cx-tableau-defile { overflow-x: auto; padding: 14px 0 6px; -webkit-overflow-scrolling: touch; }
+.cx-tableau-defile { overflow-x: auto; padding: 4px 0 6px; -webkit-overflow-scrolling: touch; }
 .cx-tableau { border-collapse: separate; border-spacing: 3px; width: 100%; }
 .cx-tableau thead th {
   font-size: 9.5px; font-weight: 700; color: var(--text-muted);
@@ -5931,6 +5912,20 @@ img { max-width: 100%; }
   font-size: 11.5px; font-weight: 700; color: var(--text-secondary);
   text-align: left; white-space: nowrap;
 }
+/* La colonne des jours reste en place pendant le defilement lateral : sur un
+   telephone, on voit sinon une ligne de chiffres sans savoir de quel jour. */
+.cx-tableau thead th:first-child,
+.cx-tableau tbody th {
+  position: sticky; left: 0; z-index: 1;
+  /* Pas var(--bg-card) : la carte qui porte ce tableau est un degrade
+     translucide pose sur le fond de page, pas une surface opaque. Peindre la
+     colonne en blanc pur y dessinait une bande claire. On recompose la teinte
+     que l'oeil voit — le milieu du degrade de .a-card sur le fond.
+     L'ombre la prolonge par-dessus les 3 px de border-spacing, sinon un bout
+     de chiffre passe dans l'interstice pendant le defilement. */
+  background: color-mix(in srgb, rgb(var(--overlay)) 3%, var(--bg));
+  box-shadow: 3px 0 0 color-mix(in srgb, rgb(var(--overlay)) 3%, var(--bg));
+}
 .cx-tableau tbody th i {
   display: inline-block; vertical-align: middle;
   width: 7px; height: 7px; border-radius: 2px;
@@ -5945,29 +5940,48 @@ img { max-width: 100%; }
 }
 
 .cx-case {
-  height: 34px; min-width: 30px;
+  height: 34px; min-width: 32px;
   border-radius: var(--r-xs);
-  border: 1px solid rgba(var(--overlay), 0.03);
   text-align: center; vertical-align: middle;
-  font-size: 11px; font-weight: 700;
+  font-size: 11.5px; font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.cx-case--ferme { background: transparent; border-color: transparent; }
+
+/* Trois couleurs, un seul sens de lecture. Le chiffre est dans la case : la
+   couleur ne fait que le doubler, elle ne porte rien toute seule.
+   L'orange est un vrai orange (#f97316) et pas l'ambre du reste du dashboard :
+   a 24 % sur du noir, l'ambre perd sa chroma et vire au brun olive. */
+.est-rouge  { background: rgba(239, 68, 68, 0.24);  color: #fca5a5; }
+.est-orange { background: rgba(249, 115, 22, 0.26); color: #fdba74; }
+.est-vert   { background: rgba(34, 197, 94, 0.22);  color: #86efac; }
+
+/* Sur blanc, les versions claires tombent sous 4,5:1 : on fonce l'encre et on
+   garde un fond assez tenu pour que la teinte se voie quand meme. */
+[data-theme="light"] .est-rouge  { background: rgba(239, 68, 68, 0.16);  color: #b91c1c; }
+[data-theme="light"] .est-orange { background: rgba(249, 115, 22, 0.20); color: #9a3412; }
+[data-theme="light"] .est-vert   { background: rgba(34, 197, 94, 0.18);  color: #15803d; }
+
+/* Un jour ferme n'est pas un jour a zero : il n'a pas de couleur du tout. */
+.cx-case--ferme { background: transparent; color: var(--text-muted); opacity: 0.35; }
 .cx-case--total {
-  background: rgba(var(--overlay), 0.05);
+  background: rgba(var(--overlay), 0.06);
   color: var(--text-secondary);
   font-weight: 800;
 }
-.cx-case.is-plein { border: 1.5px solid rgba(var(--overlay), 0.85); }
 
 .cx-echelle {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 7px;
-  margin-top: 6px; font-size: 10.5px; color: var(--text-muted);
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 18px;
+  margin-top: 10px; font-size: 11px; color: var(--text-muted);
 }
-.cx-echelle-case {
-  width: 22px; height: 14px; border-radius: 4px;
-  border: 1px solid rgba(var(--overlay), 0.06);
+.cx-echelle-item { display: inline-flex; align-items: center; gap: 7px; }
+.cx-echelle-item i {
+  width: 22px; height: 14px; border-radius: 4px; flex-shrink: 0;
 }
+/* Une pastille de legende n'a pas de chiffre pour la porter : il lui faut
+   plus de matiere qu'a une case du tableau pour se voir. */
+.cx-echelle-item i.est-rouge  { background: rgba(239, 68, 68, 0.55); }
+.cx-echelle-item i.est-orange { background: rgba(249, 115, 22, 0.60); }
+.cx-echelle-item i.est-vert   { background: rgba(34, 197, 94, 0.55); }
 
 .cx-complet {
   font-size: 12.5px;
@@ -5984,15 +5998,13 @@ img { max-width: 100%; }
   .cx-bloc-sous { display: none; }
   .cx-remplir-item { grid-template-columns: 72px 1fr 44px; gap: 8px; padding: 8px; }
   .cx-rang { grid-template-columns: 72px 1fr 46px; gap: 8px; padding: 8px; }
-  .cx-tableau-sous { display: none; }
   .cx-case { height: 30px; min-width: 26px; font-size: 10px; }
   .cx-tableau tbody th { height: 30px; font-size: 11px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cx-jauge-barre, .cx-puce, .cx-rang, .cx-rang-barre > span,
-  .cx-tableau-bascule, .cx-tableau-bascule svg { transition: none; }
-  .cx-trace--actif path { animation: none; stroke-dasharray: none; }
+    .cx-trace--actif path { animation: none; stroke-dasharray: none; }
 }
 
 /* A l'impression, une courbe encore en train de se tracer sort a moitie vide.

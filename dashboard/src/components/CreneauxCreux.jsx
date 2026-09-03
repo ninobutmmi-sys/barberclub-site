@@ -37,18 +37,18 @@ const couleurJour = (d) => `var(--jour-${d})`;
 const SEUIL_CREUX = 40;
 const SEUIL_SATURE = 85;
 
-// L'echelle du tableau chiffre. Une seule teinte du clair au fonce : c'est la
-// regle des echelles de grandeur, un arc-en-ciel ferait croire a des categories.
-const PALIERS = [
-  { min: 80, bg: 'rgba(245,158,11,0.92)', ink: '#1a1206' },
-  { min: 60, bg: 'rgba(245,158,11,0.62)', ink: '#1a1206' },
-  { min: 40, bg: 'rgba(245,158,11,0.36)', ink: 'var(--text)' },
-  { min: 20, bg: 'rgba(245,158,11,0.18)', ink: 'var(--text-secondary)' },
-  { min: 0, bg: 'rgba(var(--overlay),0.05)', ink: 'var(--text-muted)' },
-];
-function palier(taux) {
-  return PALIERS.find((p) => taux >= p.min) || PALIERS[PALIERS.length - 1];
+// Le feu tricolore du tableau. Trois couleurs, un seul sens de lecture :
+// rouge il manque des clients, orange ça se remplit, vert c'est plein.
+// Le pourcentage reste ecrit dans chaque case — la couleur ne fait que le
+// doubler, donc rien n'est perdu pour qui ne distingue pas le rouge du vert.
+const SEUIL_PLEIN = 70;
+function niveau(taux) {
+  if (taux >= SEUIL_PLEIN) return 'vert';
+  if (taux >= SEUIL_CREUX) return 'orange';
+  return 'rouge';
 }
+
+const SEMAINE = [0, 1, 2, 3, 4, 5, 6];
 
 // « 1 h 30 » se lit mieux que « 90 min », et « 45 min » mieux que « 0 h 45 ».
 function dureeCourte(minutes) {
@@ -109,18 +109,14 @@ function cheminLisse(pts) {
   return d;
 }
 
-// La barre porte la teinte de son jour, pas celle de l'echelle ambre : sur
-// fond blanc, « 18 % d'ambre » ne se distingue plus de la piste vide.
+// La barre porte la teinte de son jour : c'est la meme couleur que sa courbe
+// et que sa pastille, donc on relie les trois blocs sans y penser.
 function Jauge({ taux, couleur, hauteur = 8 }) {
   return (
     <div className="cx-jauge" style={{ height: hauteur, borderRadius: hauteur / 2 }}>
       <div
         className="cx-jauge-barre"
-        style={{
-          width: `${Math.min(taux, 100)}%`,
-          borderRadius: hauteur / 2,
-          background: couleur || palier(taux).bg,
-        }}
+        style={{ width: `${Math.min(taux, 100)}%`, borderRadius: hauteur / 2, background: couleur }}
       />
     </div>
   );
@@ -428,10 +424,6 @@ export default function CreneauxCreux({ data, monthLabel }) {
 
   const aujourdhui = (new Date().getDay() + 6) % 7;
   const [jourChoisi, setJourChoisi] = useState(aujourdhui);
-  // Ouvert sur grand ecran : c'est ce qui part dans l'export PDF, et un PDF
-  // sans les chiffres ne sert a rien. Replie sur telephone, ou il ferait
-  // defiler trois ecrans avant la suite.
-  const [tableauOuvert, setTableauOuvert] = useState(!isMobile);
 
   const calcul = useMemo(() => {
     if (cellules.length === 0) return null;
@@ -556,6 +548,90 @@ export default function CreneauxCreux({ data, monthLabel }) {
         </p>
       </section>
 
+      {/* ---- La semaine, heure par heure ----
+          Un vrai <table> : c'est l'alternative accessible aux courbes, et la
+          seule vue ou l'on compare deux cases precises. Les sept jours y sont
+          toujours, meme fermes — une semaine avec un jour manquant se relit
+          mal. */}
+      <section className="cx-bloc cx-bloc--large" aria-labelledby="cx-semaine-titre">
+        <h4 id="cx-semaine-titre" className="cx-bloc-titre">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M3 15h18M9 3v18" />
+          </svg>
+          La semaine, heure par heure
+          <span className="cx-bloc-sous">en % du temps de l&apos;&eacute;quipe vendu</span>
+        </h4>
+
+        <div className="cx-tableau-defile">
+          <table className="cx-tableau">
+            <caption className="sr-only">
+              Part du temps de travail vendue, par jour et par heure, en pourcentage
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Jour</th>
+                {heures.map((h) => (
+                  <th key={h} scope="col">{h} h</th>
+                ))}
+                <th scope="col" className="cx-tableau-total">Moy.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {SEMAINE.map((d) => {
+                const j = parJour.find((p) => p.day === d);
+                return (
+                  <tr key={d} className={d === jourActif ? 'is-actif' : ''}>
+                    <th scope="row" style={{ '--teinte': couleurJour(d) }}>
+                      <i aria-hidden="true" />
+                      {JOURS_COURTS[d]}
+                    </th>
+                    {heures.map((h) => {
+                      const c = grille[d]?.[h];
+                      if (!c) {
+                        return (
+                          <td key={h} className="cx-case cx-case--ferme">
+                            <span className="sr-only">ferm&eacute;</span>
+                            <span aria-hidden="true">&middot;</span>
+                          </td>
+                        );
+                      }
+                      const info = avecLibre.find((a) => a.day === d && a.hour === h);
+                      return (
+                        <td
+                          key={h}
+                          className={`cx-case est-${niveau(c.fill_rate)}`}
+                          title={`${JOURS_LONGS[d]} ${h} h — ${c.fill_rate} % : ${dureeCourte(c.booked_minutes)} vendues sur ${dureeCourte(c.open_minutes)} ouvertes, ${c.bookings} RDV, ${dureeCourte(info?.libre ?? 0)} de libre`}
+                        >
+                          {c.fill_rate}
+                        </td>
+                      );
+                    })}
+                    <td className={`cx-case ${j ? 'cx-case--total' : 'cx-case--ferme'}`}>
+                      {j ? j.taux : <span aria-hidden="true">&middot;</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="cx-echelle">
+          <span className="cx-echelle-item">
+            <i className="est-rouge" aria-hidden="true" />
+            moins de {SEUIL_CREUX} % &mdash; la place est l&agrave;, il manque les clients
+          </span>
+          <span className="cx-echelle-item">
+            <i className="est-orange" aria-hidden="true" />
+            {SEUIL_CREUX} &agrave; {SEUIL_PLEIN - 1} %
+          </span>
+          <span className="cx-echelle-item">
+            <i className="est-vert" aria-hidden="true" />
+            {SEUIL_PLEIN} % et plus &mdash; c&apos;est plein
+          </span>
+        </div>
+      </section>
+
       {/* ---- Les heures a remplir ---- */}
       {aRemplir.length === 0 ? (
         <p className="cx-complet">
@@ -640,91 +716,6 @@ export default function CreneauxCreux({ data, monthLabel }) {
         </ul>
       </section>
 
-      {/* ---- Le tableau chiffre ----
-          Un vrai <table> : c'est l'alternative accessible aux courbes, et la
-          seule vue ou l'on peut comparer deux cases precises. */}
-      <section className="cx-bloc cx-bloc--large">
-        <button
-          className="cx-tableau-bascule"
-          onClick={() => setTableauOuvert((v) => !v)}
-          aria-expanded={tableauOuvert}
-        >
-          <svg
-            viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5"
-            aria-hidden="true" style={{ transform: tableauOuvert ? 'rotate(90deg)' : 'none' }}
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-          Tous les chiffres
-          <span className="cx-tableau-sous">
-            {jours.length} jours &times; {heures.length} heures, en pourcentage
-          </span>
-        </button>
-
-        {tableauOuvert && (
-          <>
-            <div className="cx-tableau-defile">
-              <table className="cx-tableau">
-                <caption className="sr-only">
-                  Part du temps de travail vendue, par jour et par heure, en pourcentage
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Jour</th>
-                    {heures.map((h) => (
-                      <th key={h} scope="col">{h} h</th>
-                    ))}
-                    <th scope="col" className="cx-tableau-total">Moy.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {jours.map((d) => {
-                    const j = parJour.find((p) => p.day === d);
-                    return (
-                      <tr key={d} className={d === jourActif ? 'is-actif' : ''}>
-                        <th scope="row" style={{ '--teinte': couleurJour(d) }}>
-                          <i aria-hidden="true" />
-                          {JOURS_COURTS[d]}
-                        </th>
-                        {heures.map((h) => {
-                          const c = grille[d]?.[h];
-                          if (!c) {
-                            return (
-                              <td key={h} className="cx-case cx-case--ferme">
-                                <span className="sr-only">ferm&eacute;</span>
-                              </td>
-                            );
-                          }
-                          const p = palier(c.fill_rate);
-                          const info = avecLibre.find((a) => a.day === d && a.hour === h);
-                          return (
-                            <td
-                              key={h}
-                              className={`cx-case${c === plein ? ' is-plein' : ''}`}
-                              style={{ background: p.bg, color: p.ink }}
-                              title={`${JOURS_LONGS[d]} ${h} h — ${c.fill_rate} % : ${dureeCourte(c.booked_minutes)} vendues sur ${dureeCourte(c.open_minutes)} ouvertes, ${c.bookings} RDV, ${dureeCourte(info?.libre ?? 0)} de libre`}
-                            >
-                              {c.fill_rate}
-                            </td>
-                          );
-                        })}
-                        <td className="cx-case cx-case--total">{j.taux}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className="cx-echelle">
-              <span>Temps vendu</span>
-              {[...PALIERS].reverse().map((p, i) => (
-                <span key={i} className="cx-echelle-case" style={{ background: p.bg }} />
-              ))}
-              <span>0 &rarr; 100 %</span>
-            </div>
-          </>
-        )}
-      </section>
     </div>
   );
 }
