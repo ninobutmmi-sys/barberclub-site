@@ -32,10 +32,10 @@
 .bg { background-image: url('../../assets/images/salons/grenoble/salon-grenoble.jpg?v=3'); }
 .hero-title { font-size: clamp(36px, 11vw, 90px); letter-spacing: 0.04em; }
 </style>
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
-<div class="page-transition" aria-hidden="true"></div>
 <div class="cursor-dot" aria-hidden="true"></div>
 <div class="cursor-ring" aria-hidden="true"></div>
 
@@ -166,14 +166,6 @@
   }
 
   /* Page transition */
-  const trans = document.querySelector('.page-transition');
-  window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
-  document.querySelectorAll('.nav-item,.nav-cta,.back-btn').forEach(link => {
-    link.addEventListener('click', function(e) {
-      e.preventDefault(); trans.classList.add('active');
-      setTimeout(() => { window.location.href = this.getAttribute('href'); }, 700);
-    });
-  });
 })();
 </script>
 <script src="../../assets/js/bottom-nav.js" defer></script>

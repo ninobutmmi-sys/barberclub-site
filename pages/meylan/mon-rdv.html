@@ -16,11 +16,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../assets/css/base.css">
     <link rel="stylesheet" href="../../assets/css/mon-rdv.css">
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
 </head>
 
 <body>
     <div class="grain" aria-hidden="true"></div>
-    <div class="page-transition" aria-hidden="true"></div>
     <div class="cursor-dot" aria-hidden="true"></div>
     <div class="cursor-ring" aria-hidden="true"></div>
     <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
@@ -747,15 +747,6 @@
         document.querySelectorAll('a, button, .booking-card, .action-btn').forEach(el => {
             el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
             el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
-        });
-    }
-    const trans = document.querySelector('.page-transition');
-    if (trans) {
-        window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
-        document.querySelectorAll('a[href]').forEach(a => {
-            const href = a.getAttribute('href');
-            if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto') || href.startsWith('tel') || a.target === '_blank' || a.getAttribute('onclick')) return;
-            a.addEventListener('click', e => { e.preventDefault(); trans.classList.add('active'); setTimeout(() => { window.location.href = a.href; }, 700); });
         });
     }
 </script>

@@ -799,11 +799,11 @@
         }
     </style>
 <link rel="stylesheet" href="../../assets/css/bottom-nav.css">
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
 </head>
 
 <body>
     <div class="grain"></div>
-    <div class="page-transition"></div>
     <div class="cursor-dot"></div>
     <div class="cursor-ring"></div>
     <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
@@ -1229,18 +1229,6 @@
     }
 
     /* --- PAGE TRANSITION --- */
-    const trans = document.querySelector('.page-transition');
-    window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
-    document.querySelectorAll('a[href]').forEach(a => {
-        const href = a.getAttribute('href');
-        if (!href || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto') || href.startsWith('tel') || a.target === '_blank') return;
-        a.addEventListener('click', e => {
-            e.preventDefault();
-            trans.classList.add('active');
-            setTimeout(() => { window.location.href = a.href; }, 700);
-        });
-    });
-
     /* --- HEADER SCROLL --- */
     const header = document.getElementById('header');
     window.addEventListener('scroll', () => {

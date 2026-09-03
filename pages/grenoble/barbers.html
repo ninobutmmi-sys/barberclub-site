@@ -33,10 +33,10 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BarberShop","name":"BarberClub Grenoble","url":"https://barberclub-grenoble.fr/pages/grenoble/barbers.html","employee":[{"@type":"Person","name":"Tom","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/tom.png?v=3"},{"@type":"Person","name":"Alan","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/alan.jpg?v=3"},{"@type":"Person","name":"Nathan","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/nathan.png?v=3"},{"@type":"Person","name":"Clément","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/clement.jpg?v=3"},{"@type":"Person","name":"Louay","jobTitle":"Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/louay.jpg"}]}
 </script>
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
-<div class="page-transition" aria-hidden="true"></div>
 <div class="cursor-dot" aria-hidden="true"></div>
 <div class="cursor-ring" aria-hidden="true"></div>
 
@@ -304,16 +304,6 @@
   }
 
   /* Page transition — reset on back/forward nav */
-  const trans = document.querySelector('.page-transition');
-  window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
-  document.querySelectorAll('a[href]').forEach(link => {
-    const href = link.getAttribute('href');
-    if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
-    link.addEventListener('click', function(e) {
-      e.preventDefault(); trans.classList.add('active');
-      setTimeout(() => { window.location.href = href; }, 700);
-    });
-  });
 })();
 </script>
 <script src="../../assets/js/barbers-cards.js" defer></script>

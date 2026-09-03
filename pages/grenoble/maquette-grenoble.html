@@ -270,10 +270,10 @@ html, body {
 }
 a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px; border-radius: 4px; }
 </style>
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
-<div class="page-transition" aria-hidden="true"></div>
 <div class="cursor-dot" aria-hidden="true"></div>
 <div class="cursor-ring" aria-hidden="true"></div>
 
@@ -435,13 +435,6 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
   });
 
   /* Page transition */
-  const trans = document.querySelector('.page-transition');
-  document.querySelectorAll('.nav-item,.back-btn').forEach(link => {
-    link.addEventListener('click', function(e) {
-      e.preventDefault(); trans.classList.add('active');
-      setTimeout(() => { window.location.href = this.getAttribute('href'); }, 700);
-    });
-  });
 })();
 </script>
 </body>

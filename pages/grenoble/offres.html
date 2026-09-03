@@ -744,11 +744,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: #000; color:
 a:focus-visible, button:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px; border-radius: 4px; }
 </style>
 <link rel="stylesheet" href="../../assets/css/bottom-nav.css">
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
 </head>
 
 <body>
 <div class="grain" aria-hidden="true"></div>
-<div class="page-transition" aria-hidden="true"></div>
 <div class="cursor-dot" aria-hidden="true"></div>
 <div class="cursor-ring" aria-hidden="true"></div>
 <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
@@ -929,18 +929,6 @@ a:focus-visible, button:focus-visible { outline: 2px solid rgba(255,255,255,0.5)
     }
 
     /* ═══ PAGE TRANSITION ═══ */
-    const trans = document.querySelector('.page-transition');
-    window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
-    document.querySelectorAll('a[href]').forEach(a => {
-        const href = a.getAttribute('href');
-        if (!href || href === '#' || href.startsWith('javascript') || href.startsWith('mailto') || href.startsWith('tel') || a.target === '_blank' || a.id === 'notifyBtn') return;
-        a.addEventListener('click', e => {
-            e.preventDefault();
-            trans.classList.add('active');
-            setTimeout(() => { window.location.href = a.href; }, 700);
-        });
-    });
-
     /* ═══ HEADER SCROLL ═══ */
     const header = document.getElementById('header');
     window.addEventListener('scroll', () => {

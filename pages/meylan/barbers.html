@@ -25,10 +25,10 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BarberShop","name":"BarberClub Meylan","url":"https://barberclub-grenoble.fr/pages/meylan/barbers.html","employee":[{"@type":"Person","name":"Lucas","jobTitle":"Co-Fondateur & Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/lucas.png?v=3"},{"@type":"Person","name":"Julien","jobTitle":"Co-Fondateur & Barbier","image":"https://barberclub-grenoble.fr/assets/images/barbers/julien.jpg?v=3"}]}
 </script>
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
-<div class="page-transition" aria-hidden="true"></div>
 <div class="cursor-dot" aria-hidden="true"></div>
 <div class="cursor-ring" aria-hidden="true"></div>
 
@@ -234,16 +234,6 @@
   }
 
   /* Page transition — reset on back/forward nav */
-  const trans = document.querySelector('.page-transition');
-  window.addEventListener('pageshow', e => { if (e.persisted) trans.classList.remove('active'); });
-  document.querySelectorAll('a[href]').forEach(link => {
-    const href = link.getAttribute('href');
-    if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
-    link.addEventListener('click', function(e) {
-      e.preventDefault(); trans.classList.add('active');
-      setTimeout(() => { window.location.href = href; }, 700);
-    });
-  });
 })();
 </script>
 <script src="../../assets/js/barbers-cards.js" defer></script>

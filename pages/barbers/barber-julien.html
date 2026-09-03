@@ -48,6 +48,7 @@
         }
     }
     </script>
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
 </head>
 
 <body>
@@ -60,7 +61,6 @@
     </svg>
 
     <!-- PAGE TRANSITION -->
-    <div class="page-transition" id="pageTransition"></div>
 
     <!-- CUSTOM CURSOR -->
     <div class="cursor-dot" id="cursorDot"></div>
@@ -183,13 +183,8 @@
             }, { passive: true });
 
             // --- PAGE TRANSITION ---
-            var trans = document.getElementById('pageTransition');
             var page = document.getElementById('page');
 
-            // bfcache fix
-            window.addEventListener('pageshow', function(e) {
-                if (e.persisted) trans.classList.remove('active');
-            });
 
             // Trigger loaded state for entrance animations
             requestAnimationFrame(function() {
@@ -197,18 +192,6 @@
             });
 
             // Intercept links with transition
-            document.querySelectorAll('.transition-link').forEach(function(link) {
-                link.addEventListener('click', function(e) {
-                    var href = this.getAttribute('href');
-                    if (!href || href.startsWith('#') || href.startsWith('javascript')) return;
-                    e.preventDefault();
-                    trans.classList.add('active');
-                    setTimeout(function() {
-                        window.location.href = href;
-                    }, 700);
-                });
-            });
-
             // --- LETTER REVEAL ---
             document.querySelectorAll('[data-split]').forEach(function(el) {
                 var text = el.textContent;

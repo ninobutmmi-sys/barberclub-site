@@ -1,0 +1,82 @@
+/* ═══════════════════════════════════════════
+   BarberClub — Transitions entre les pages
+
+   Avant : chaque lien interne etait intercepte en JavaScript, l'ecran fondait
+   au noir pendant 700 a 800 ms, et la page suivante n'etait demandee qu'apres.
+   Sept dixiemes de seconde d'ecran noir ajoutes a chaque navigation, avant
+   meme le temps de chargement reel.
+
+   Maintenant : le navigateur s'en charge. L'API View Transitions garde
+   l'ancienne page a l'ecran pendant que la nouvelle arrive, puis fait le
+   fondu lui-meme — la requete part au moment du clic, plus apres. C'est a la
+   fois plus doux et plus rapide.
+
+   Sur un navigateur qui ne connait pas encore ces regles (Firefox), rien ne
+   casse : la page change simplement, sans animation.
+   ═══════════════════════════════════════════ */
+
+@view-transition {
+    navigation: auto;
+}
+
+/* L'ancienne page s'efface vite : c'est la nouvelle qu'on veut voir. */
+::view-transition-old(root) {
+    animation: bc-page-sortie 140ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* La nouvelle arrive en montant de quelques pixels — le mouvement d'une carte
+   qu'on pose, pas d'un panneau qui glisse. */
+::view-transition-new(root) {
+    animation: bc-page-entree 340ms cubic-bezier(0.16, 1, 0.3, 1) 40ms both;
+}
+
+@keyframes bc-page-sortie {
+    to { opacity: 0; }
+}
+
+@keyframes bc-page-entree {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Le dock et l'en-tete ne suivent pas la page : ils sont le cadre, ils
+   restent en place pendant que le contenu change. Sans cela, toute
+   l'interface glisse d'un bloc et l'on retombe sur une impression de site
+   web plutot que d'application. */
+.bottom-nav {
+    view-transition-name: bc-dock;
+}
+
+.header {
+    view-transition-name: bc-entete;
+}
+
+/* Ils gardent le fondu par defaut — l'onglet actif change d'une page a
+   l'autre, et le voir se deplacer en douceur fait partie du plaisir — mais
+   plus court que celui de la page. */
+::view-transition-group(bc-dock),
+::view-transition-group(bc-entete) {
+    animation-duration: 220ms;
+}
+
+/* Sur grand ecran, pas de mouvement vertical : un fondu net suffit. Le geste
+   de montee a du sens au pouce, pas a la souris. */
+@media (min-width: 769px) {
+    ::view-transition-new(root) {
+        animation: bc-page-fondu 260ms cubic-bezier(0.4, 0, 0.2, 1) 40ms both;
+    }
+}
+
+@keyframes bc-page-fondu {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Mouvement reduit : on bascule d'une page a l'autre, sans animation. */
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
+    }
+}
