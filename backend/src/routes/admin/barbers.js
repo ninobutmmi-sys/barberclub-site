@@ -23,14 +23,14 @@ router.get('/', async (req, res, next) => {
     const salonId = req.user.salon_id;
     // Resident barbers
     const result = await db.query(
-      `SELECT id, name, role, photo_url, email, is_active, sort_order, salon_id, contract_start, contract_end, FALSE as is_guest
+      `SELECT id, name, role, photo_url, email, is_active, exclude_from_any, sort_order, salon_id, contract_start, contract_end, FALSE as is_guest
        FROM barbers WHERE deleted_at IS NULL AND salon_id = $1
        ORDER BY sort_order`,
       [salonId]
     );
     // Guest barbers with future assignments in this salon
     const guestResult = await db.query(
-      `SELECT DISTINCT b.id, b.name, b.role, b.photo_url, b.email, b.is_active, b.sort_order, b.salon_id, TRUE as is_guest
+      `SELECT DISTINCT b.id, b.name, b.role, b.photo_url, b.email, b.is_active, b.exclude_from_any, b.sort_order, b.salon_id, TRUE as is_guest
        FROM barbers b
        JOIN guest_assignments ga ON b.id = ga.barber_id
        WHERE b.is_active = true AND b.deleted_at IS NULL
@@ -294,6 +294,7 @@ router.put('/:id',
     body('photo_url').optional({ nullable: true }).trim().isLength({ max: 3000000 }),
     body('email').optional().trim().isEmail().withMessage('Email invalide'),
     body('is_active').optional().isBoolean(),
+    body('exclude_from_any').optional().isBoolean(),
     body('sort_order').optional().isInt({ min: 0, max: 999 }).toInt(),
     body('contract_start').optional({ nullable: true }).matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de début invalide'),
     body('contract_end').optional({ nullable: true }).matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de fin invalide'),
@@ -302,7 +303,7 @@ router.put('/:id',
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { name, role, photo_url, email, is_active, sort_order, contract_start, contract_end } = req.body;
+      const { name, role, photo_url, email, is_active, exclude_from_any, sort_order, contract_start, contract_end } = req.body;
 
       if (email !== undefined) {
         // L'adresse sert d'identifiant de connexion. Changer la sienne depuis
@@ -326,6 +327,7 @@ router.put('/:id',
       if (photo_url !== undefined) { fields.push(`photo_url = $${paramIndex++}`); values.push(photo_url || null); }
       if (email !== undefined) { fields.push(`email = $${paramIndex++}`); values.push(email); }
       if (is_active !== undefined) { fields.push(`is_active = $${paramIndex++}`); values.push(is_active); }
+      if (exclude_from_any !== undefined) { fields.push(`exclude_from_any = $${paramIndex++}`); values.push(exclude_from_any); }
       if (sort_order !== undefined) { fields.push(`sort_order = $${paramIndex++}`); values.push(sort_order); }
       if (contract_start !== undefined) { fields.push(`contract_start = $${paramIndex++}`); values.push(contract_start || null); }
       if (contract_end !== undefined) { fields.push(`contract_end = $${paramIndex++}`); values.push(contract_end || null); }
@@ -338,7 +340,7 @@ router.put('/:id',
       const result = await db.query(
         `UPDATE barbers SET ${fields.join(', ')}
          WHERE id = $${paramIndex} AND salon_id = $${paramIndex + 1} AND deleted_at IS NULL
-         RETURNING id, name, role, photo_url, email, is_active, sort_order, contract_start, contract_end`,
+         RETURNING id, name, role, photo_url, email, is_active, exclude_from_any, sort_order, contract_start, contract_end`,
         values
       );
 

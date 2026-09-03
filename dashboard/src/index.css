@@ -4945,7 +4945,11 @@ img { max-width: 100%; }
 }
 .bb-tag.invite { background: rgba(59, 130, 246, 0.13); color: #60a5fa; }
 .bb-tag.cdd { background: rgba(245, 158, 11, 0.13); color: var(--ink-warn); }
+/* Retire de l'attribution automatique — mais toujours reservable nommement,
+   donc un ton neutre plutot qu'une alerte. */
+.bb-tag.hors-auto { background: rgba(167, 139, 250, 0.14); color: #a78bfa; }
 [data-theme="light"] .bb-tag.invite { color: #1d4ed8; }
+[data-theme="light"] .bb-tag.hors-auto { color: #6d28d9; }
 
 /* ── Le semainier ──
    Sept colonnes de 8h à 20h. La barre couvre l'amplitude travaillée : on lit

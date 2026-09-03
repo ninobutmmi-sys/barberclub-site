@@ -182,11 +182,14 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
     );
     const equivalentServiceIds = equivResult.rows.map(r => r.id);
 
-    // Resident barbers that offer any equivalent service
+    // Resident barbers that offer any equivalent service.
+    // exclude_from_any : un barbier peut etre reservable nommement sans entrer
+    // dans l'attribution automatique (barbier en formation, coupes offertes).
     const barbersResult = await db.query(
       `SELECT DISTINCT b.id FROM barbers b
        JOIN barber_services bs ON b.id = bs.barber_id
        WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
+         AND b.exclude_from_any = false
        ORDER BY b.id`,
       [equivalentServiceIds, salonId]
     );
@@ -200,7 +203,8 @@ async function getAvailableSlots(barberId, serviceId, date, options = {}) {
        JOIN barber_services bs ON b.id = bs.barber_id
        WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL
          AND ga.host_salon_id = $2 AND ga.date = $3
-         AND b.salon_id != $2`,
+         AND b.salon_id != $2
+         AND b.exclude_from_any = false`,
       [equivalentServiceIds, salonId, date]
     );
     const guestIds = guestResult.rows.map((r) => r.id);
@@ -591,6 +595,7 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
     `SELECT DISTINCT b.id, b.name, b.sort_order FROM barbers b
      JOIN barber_services bs ON b.id = bs.barber_id
      WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
+       AND b.exclude_from_any = false
      ORDER BY b.sort_order, b.id`,
     [equivalentServiceIds, salonId]
   );
@@ -602,7 +607,8 @@ async function findBestBarber(serviceId, date, startTime, duration, salonId = 'm
      JOIN barber_services bs ON b.id = bs.barber_id
      WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL
        AND ga.host_salon_id = $2 AND ga.date = $3
-       AND b.salon_id != $2`,
+       AND b.salon_id != $2
+       AND b.exclude_from_any = false`,
     [equivalentServiceIds, salonId, date]
   );
 
@@ -885,6 +891,7 @@ async function getMonthAvailabilitySummary(serviceId, year, month, barberId, sal
       `SELECT DISTINCT b.id, b.name, b.salon_id FROM barbers b
        JOIN barber_services bs ON b.id = bs.barber_id
        WHERE bs.service_id = ANY($1) AND b.is_active = true AND b.deleted_at IS NULL AND b.salon_id = $2
+         AND b.exclude_from_any = false
        ORDER BY b.id`,
       [equivalentServiceIds, salonId]
     );

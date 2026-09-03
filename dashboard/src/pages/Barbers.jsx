@@ -292,6 +292,7 @@ function CarteBarbier({ barber, semaine, onOuvrir }) {
 
       <div className="bb-etiquettes">
         {barber.is_guest && <span className="bb-tag invite">Invité</span>}
+        {barber.exclude_from_any && <span className="bb-tag hors-auto">Hors « peu importe »</span>}
         {barber.contract_end && (
           <span className="bb-tag cdd">
             Contrat jusqu’au {barber.contract_end.slice(8, 10)}/{barber.contract_end.slice(5, 7)}
@@ -486,6 +487,16 @@ function SectionIdentite({ barber, onClose }) {
     }
   };
 
+  const basculerHorsAuto = async () => {
+    const valeur = !barber.exclude_from_any;
+    try {
+      await mutation.mutateAsync({ id: barber.id, data: { exclude_from_any: valeur } });
+      flash('success', valeur ? `${barber.name} ne sera plus attribué automatiquement` : `${barber.name} rentre dans « peu importe »`);
+    } catch (err) {
+      flash('error', err.message);
+    }
+  };
+
   const changerPriorite = async (delta) => {
     const valeur = Math.max(0, (barber.sort_order || 0) + delta);
     try {
@@ -565,17 +576,40 @@ function SectionIdentite({ barber, onClose }) {
       </div>
 
       <h3 className="bb-titre-bloc">Priorité « peu importe »</h3>
+
+      {/* Désactiver quelqu’un le retire du site entier. Ce réglage-ci ne le
+          retire que de l’attribution automatique : il reste dans la liste et
+          réservable par un client qui le demande nommément. */}
       <div className="bb-ligne-reglage">
+        <div>
+          <div className="bb-reglage-nom">Le retirer de « peu importe »</div>
+          <p className="bb-aide">
+            {barber.exclude_from_any
+              ? <>Aujourd’hui, {barber.name} n’est <strong>jamais</strong> choisi automatiquement. Il reste dans la liste et réservable par un client qui le demande.</>
+              : <>{barber.name} peut être attribué à un client qui n’a pas choisi de barbier.</>}
+          </p>
+        </div>
+        <button
+          type="button"
+          className={`toggle ${barber.exclude_from_any ? 'active' : ''}`}
+          onClick={() => basculerHorsAuto()}
+          aria-pressed={!!barber.exclude_from_any}
+          aria-label={`Retirer ${barber.name} de « peu importe »`}
+        />
+      </div>
+
+      <div className="bb-ligne-reglage" style={barber.exclude_from_any ? { opacity: 0.45 } : undefined}>
         <div>
           <div className="bb-reglage-nom">Niveau {barber.sort_order || 0}</div>
           <p className="bb-aide">
-            Quand le client ne choisit pas de barbier, le plus haut niveau passe devant. À égalité, c’est celui
-            qui a le moins de rendez-vous ce jour-là.
+            {barber.exclude_from_any
+              ? 'Sans effet tant qu’il est retiré de « peu importe ».'
+              : 'Quand le client ne choisit pas de barbier, le plus haut niveau passe devant. À égalité, c’est celui qui a le moins de rendez-vous ce jour-là.'}
           </p>
         </div>
         <div className="bb-stepper">
-          <button type="button" onClick={() => changerPriorite(-1)} disabled={(barber.sort_order || 0) <= 0} aria-label="Baisser la priorité">−</button>
-          <button type="button" onClick={() => changerPriorite(1)} aria-label="Monter la priorité">+</button>
+          <button type="button" onClick={() => changerPriorite(-1)} disabled={barber.exclude_from_any || (barber.sort_order || 0) <= 0} aria-label="Baisser la priorité">−</button>
+          <button type="button" onClick={() => changerPriorite(1)} disabled={barber.exclude_from_any} aria-label="Monter la priorité">+</button>
         </div>
       </div>
 
