@@ -36,6 +36,7 @@ export default [
         URL: 'readonly',
         FileReader: 'readonly',
         MutationObserver: 'readonly',
+        ResizeObserver: 'readonly',
         Image: 'readonly',
         sessionStorage: 'readonly',
       },
