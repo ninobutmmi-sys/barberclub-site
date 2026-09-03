@@ -37,6 +37,7 @@ restoreCache(queryClient);
 const SalonSelector = lazy(() => import('./pages/SalonSelector'));
 const Login = lazy(() => import('./pages/Login'));
 const Analytics = lazy(() => import('./pages/Analytics'));
+const Guide = lazy(() => import('./pages/Guide'));
 const Planning = lazy(() => import('./pages/Planning'));
 const Services = lazy(() => import('./pages/Services'));
 const Barbers = lazy(() => import('./pages/Barbers'));
@@ -89,6 +90,9 @@ function AppRoutes() {
             faisait quatorze ecrans de haut sur un telephone. */}
         <Route path="analytics/:section" element={<Suspense fallback={<PageLoader />}><Analytics /></Suspense>} />
         <Route path="planning" element={<Suspense fallback={<PageLoader />}><Planning /></Suspense>} />
+        {/* Les regles de la maison : on recrute, et deux gestes du quotidien
+            ne s'apprennent pas en regardant les autres travailler. */}
+        <Route path="guide" element={<Suspense fallback={<PageLoader />}><Guide /></Suspense>} />
         <Route path="services" element={<Suspense fallback={<PageLoader />}><Services /></Suspense>} />
         <Route path="boutique" element={<Suspense fallback={<PageLoader />}><Boutique /></Suspense>} />
         <Route path="oney" element={<Suspense fallback={<PageLoader />}><Oney /></Suspense>} />
