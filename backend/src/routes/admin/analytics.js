@@ -325,9 +325,11 @@ router.get('/peak-hours',
                  AND b.date >= $1::date AND b.date <= $2::date AND b.deleted_at IS NULL
                  AND b.status IN ('confirmed', 'completed')))
          ),
-         ouvert AS (
-           SELECT ((EXTRACT(DOW FROM j.d)::int + 6) % 7) AS jour, hr.h AS heure,
-                  SUM(
+         ouvert_detail AS (
+           -- On garde le barbier et la date : un blocage vise quelqu'un un jour
+           -- precis, on ne peut pas le retrancher d'une somme deja agregee.
+           SELECT e.id AS barber_id, j.d AS d, hr.h AS heure,
+                  (
                     GREATEST(0, EXTRACT(EPOCH FROM (
                       LEAST(sc.end_time, make_time(hr.h + 1, 0, 0)) - GREATEST(sc.start_time, make_time(hr.h, 0, 0))
                     )) / 60)
@@ -359,6 +361,32 @@ router.get('/peak-hours',
                SELECT 1 FROM schedule_overrides o
                WHERE o.barber_id = e.id AND o.date = j.d AND o.is_day_off = true
              )
+         ),
+         blocages AS (
+           -- Pauses, absences, ecole : du temps ou le barbier figure a
+           -- l'horaire mais n'est pas vendable. Sans cette soustraction il
+           -- gonflait la capacite et ecrasait le taux — le jeudi de Meylan
+           -- tombait a 13 % parce qu'un barbier bloque 9 h-19 h comptait
+           -- comme une journee entiere de disponible.
+           SELECT e.id AS barber_id, bs.date AS d, hr.h AS heure,
+                  SUM(GREATEST(0, EXTRACT(EPOCH FROM (
+                    LEAST(bs.end_time, make_time(hr.h + 1, 0, 0)) - GREATEST(bs.start_time, make_time(hr.h, 0, 0))
+                  )) / 60))::int AS minutes
+           FROM blocked_slots bs
+           CROSS JOIN heures hr
+           -- barber_id NULL = salon ferme : le blocage vaut pour tout le monde.
+           JOIN equipe e ON (bs.barber_id = e.id OR bs.barber_id IS NULL)
+           WHERE bs.salon_id = $3 AND bs.date >= $1::date AND bs.date <= $2::date
+             AND bs.start_time < make_time(hr.h + 1, 0, 0)
+             AND bs.end_time > make_time(hr.h, 0, 0)
+           GROUP BY 1, 2, 3
+         ),
+         ouvert AS (
+           SELECT ((EXTRACT(DOW FROM od.d)::int + 6) % 7) AS jour, od.heure,
+                  SUM(GREATEST(0, od.minutes - COALESCE(bl.minutes, 0)))::int AS minutes
+           FROM ouvert_detail od
+           LEFT JOIN blocages bl
+             ON bl.barber_id = od.barber_id AND bl.d = od.d AND bl.heure = od.heure
            GROUP BY 1, 2
          ),
          renforts AS (
@@ -549,11 +577,25 @@ router.get('/occupancy',
               )
             )
         ),
+        blocages AS (
+          -- Meme raison qu'ailleurs : une pause, une absence ou une journee
+          -- d'ecole reste inscrite a l'horaire hebdomadaire. La compter comme
+          -- du temps ouvert fait baisser le taux d'occupation sans qu'aucun
+          -- creneau vendable ait ete perdu.
+          SELECT bs.date AS d, e.id AS barber_id,
+                 SUM(EXTRACT(EPOCH FROM (bs.end_time - bs.start_time)) / 60)::int AS minutes
+          FROM blocked_slots bs
+          -- barber_id NULL = salon ferme : le blocage vaut pour tout le monde.
+          JOIN equipe e ON (bs.barber_id = e.id OR bs.barber_id IS NULL)
+          WHERE bs.salon_id = $3 AND bs.date >= $1::date AND bs.date <= $2::date
+          GROUP BY 1, 2
+        ),
         capacite AS (
           SELECT j.d, e.id AS barber_id,
                  GREATEST(0,
                    EXTRACT(EPOCH FROM (sc.end_time - sc.start_time)) / 60
                    - COALESCE(EXTRACT(EPOCH FROM (sc.break_end - sc.break_start)) / 60, 0)
+                   - COALESCE(bl.minutes, 0)
                  )::int AS minutes
           FROM jours j
           CROSS JOIN equipe e
@@ -566,6 +608,7 @@ router.get('/occupancy',
               AND s.is_working = true
             LIMIT 1
           ) sc ON true
+          LEFT JOIN blocages bl ON bl.barber_id = e.id AND bl.d = j.d
           WHERE (e.contract_start IS NULL OR j.d >= e.contract_start)
             AND (e.contract_end IS NULL OR j.d <= e.contract_end)
             AND NOT EXISTS (
