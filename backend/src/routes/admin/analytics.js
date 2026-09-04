@@ -325,28 +325,30 @@ router.get('/peak-hours',
                  AND b.date >= $1::date AND b.date <= $2::date AND b.deleted_at IS NULL
                  AND b.status IN ('confirmed', 'completed')))
          ),
-         ouvert_detail AS (
-           -- On garde le barbier et la date : un blocage vise quelqu'un un jour
-           -- precis, on ne peut pas le retrancher d'une somme deja agregee.
-           SELECT e.id AS barber_id, j.d AS d, hr.h AS heure,
+         dispo AS (
+           -- Le temps vendable d'un barbier, un jour donne, exprime en plages
+           -- de minutes plutot qu'en durees : horaire, moins la pause
+           -- hebdomadaire, moins les blocages du planning.
+           --
+           -- Soustraire des durees donnait de faux comptes des que les
+           -- intervalles se chevauchaient. Un blocage 19 h-21 h chez un barbier
+           -- qui finit a 19 h retirait deux heures jamais ouvertes ; un blocage
+           -- qui recouvrait la pause dejeuner la retirait deux fois. Sur la
+           -- base : 244 blocages du premier cas, 108 du second.
+           SELECT e.id AS barber_id, j.d AS d,
                   (
-                    GREATEST(0, EXTRACT(EPOCH FROM (
-                      LEAST(sc.end_time, make_time(hr.h + 1, 0, 0)) - GREATEST(sc.start_time, make_time(hr.h, 0, 0))
-                    )) / 60)
-                    -- La pause dejeuner ne se vend pas. Le CASE est
-                    -- indispensable : LEAST et GREATEST ignorent les NULL, donc
-                    -- sans pause enregistree ils renvoyaient les bornes de
-                    -- l'heure et comptaient soixante minutes de pause pour tout
-                    -- le monde — de quoi annuler exactement le temps ouvert.
+                    int4multirange(int4range(
+                      (EXTRACT(HOUR FROM sc.start_time) * 60 + EXTRACT(MINUTE FROM sc.start_time))::int,
+                      (EXTRACT(HOUR FROM sc.end_time) * 60 + EXTRACT(MINUTE FROM sc.end_time))::int))
                     - CASE WHEN sc.break_start IS NOT NULL AND sc.break_end IS NOT NULL
-                        THEN GREATEST(0, EXTRACT(EPOCH FROM (
-                          LEAST(sc.break_end, make_time(hr.h + 1, 0, 0)) - GREATEST(sc.break_start, make_time(hr.h, 0, 0))
-                        )) / 60)
-                        ELSE 0 END
-                  )::int AS minutes
+                        THEN int4multirange(int4range(
+                          (EXTRACT(HOUR FROM sc.break_start) * 60 + EXTRACT(MINUTE FROM sc.break_start))::int,
+                          (EXTRACT(HOUR FROM sc.break_end) * 60 + EXTRACT(MINUTE FROM sc.break_end))::int))
+                        ELSE int4multirange() END
+                    - COALESCE(bl.plages, int4multirange())
+                  ) AS plages
            FROM jours j
            CROSS JOIN equipe e
-           CROSS JOIN heures hr
            JOIN LATERAL (
              SELECT s.start_time, s.end_time, s.break_start, s.break_end
              FROM schedules s
@@ -355,6 +357,15 @@ router.get('/peak-hours',
                AND s.is_working = true
              LIMIT 1
            ) sc ON true
+           LEFT JOIN LATERAL (
+             -- barber_id NULL = salon ferme : le blocage vaut pour tout le monde.
+             SELECT range_agg(int4range(
+                      (EXTRACT(HOUR FROM bs.start_time) * 60 + EXTRACT(MINUTE FROM bs.start_time))::int,
+                      (EXTRACT(HOUR FROM bs.end_time) * 60 + EXTRACT(MINUTE FROM bs.end_time))::int)) AS plages
+             FROM blocked_slots bs
+             WHERE bs.salon_id = $3 AND bs.date = j.d
+               AND (bs.barber_id = e.id OR bs.barber_id IS NULL)
+           ) bl ON true
            WHERE (e.contract_start IS NULL OR j.d >= e.contract_start)
              AND (e.contract_end IS NULL OR j.d <= e.contract_end)
              AND NOT EXISTS (
@@ -362,31 +373,14 @@ router.get('/peak-hours',
                WHERE o.barber_id = e.id AND o.date = j.d AND o.is_day_off = true
              )
          ),
-         blocages AS (
-           -- Pauses, absences, ecole : du temps ou le barbier figure a
-           -- l'horaire mais n'est pas vendable. Sans cette soustraction il
-           -- gonflait la capacite et ecrasait le taux — le jeudi de Meylan
-           -- tombait a 13 % parce qu'un barbier bloque 9 h-19 h comptait
-           -- comme une journee entiere de disponible.
-           SELECT e.id AS barber_id, bs.date AS d, hr.h AS heure,
-                  SUM(GREATEST(0, EXTRACT(EPOCH FROM (
-                    LEAST(bs.end_time, make_time(hr.h + 1, 0, 0)) - GREATEST(bs.start_time, make_time(hr.h, 0, 0))
-                  )) / 60))::int AS minutes
-           FROM blocked_slots bs
-           CROSS JOIN heures hr
-           -- barber_id NULL = salon ferme : le blocage vaut pour tout le monde.
-           JOIN equipe e ON (bs.barber_id = e.id OR bs.barber_id IS NULL)
-           WHERE bs.salon_id = $3 AND bs.date >= $1::date AND bs.date <= $2::date
-             AND bs.start_time < make_time(hr.h + 1, 0, 0)
-             AND bs.end_time > make_time(hr.h, 0, 0)
-           GROUP BY 1, 2, 3
-         ),
          ouvert AS (
-           SELECT ((EXTRACT(DOW FROM od.d)::int + 6) % 7) AS jour, od.heure,
-                  SUM(GREATEST(0, od.minutes - COALESCE(bl.minutes, 0)))::int AS minutes
-           FROM ouvert_detail od
-           LEFT JOIN blocages bl
-             ON bl.barber_id = od.barber_id AND bl.d = od.d AND bl.heure = od.heure
+           SELECT ((EXTRACT(DOW FROM dp.d)::int + 6) % 7) AS jour, hr.h AS heure,
+                  SUM((
+                    SELECT COALESCE(SUM(upper(r) - lower(r)), 0)
+                    FROM unnest(dp.plages * int4multirange(int4range(hr.h * 60, (hr.h + 1) * 60))) r
+                  ))::int AS minutes
+           FROM dispo dp
+           CROSS JOIN heures hr
            GROUP BY 1, 2
          ),
          renforts AS (
@@ -419,18 +413,23 @@ router.get('/peak-hours',
              AND b.start_time < make_time(hr.h + 1, 0, 0) AND b.end_time > make_time(hr.h, 0, 0)
            GROUP BY 1, 2
          )
-         SELECT o.jour, o.heure,
+         SELECT COALESCE(o.jour, v.jour) AS jour, COALESCE(o.heure, v.heure) AS heure,
                 -- Un creneau ou l'on a coupe plus que le planning ne prevoit a
                 -- bien ete travaille : la capacite ne peut pas etre inferieure
                 -- au temps vendu, sinon on affiche 129 % de remplissage.
-                GREATEST(o.minutes, COALESCE(v.minutes, 0)) AS open_minutes,
+                GREATEST(COALESCE(o.minutes, 0), COALESCE(v.minutes, 0)) AS open_minutes,
                 COALESCE(v.minutes, 0) AS booked_minutes,
                 COALESCE(v.rdv, 0) AS bookings,
-                ROUND(COALESCE(v.minutes, 0) * 100.0 / NULLIF(GREATEST(o.minutes, COALESCE(v.minutes, 0)), 0)) AS fill_rate
+                ROUND(COALESCE(v.minutes, 0) * 100.0 / NULLIF(GREATEST(COALESCE(o.minutes, 0), COALESCE(v.minutes, 0)), 0)) AS fill_rate
+         -- FULL JOIN, pas LEFT : une coupe faite hors du planning — un invite
+         -- reste tard, un barbier depanne un jour de repos — tombait dans une
+         -- case sans capacite, et la case entiere disparaissait de la grille
+         -- avec la vente qu'elle contenait. Un peu plus d'un pour cent du temps
+         -- vendu de Meylan en aout s'evaporait ainsi.
          FROM capacite o
-         LEFT JOIN vendu v ON v.jour = o.jour AND v.heure = o.heure
-         WHERE o.minutes > 0
-         ORDER BY o.jour, o.heure`,
+         FULL JOIN vendu v ON v.jour = o.jour AND v.heure = o.heure
+         WHERE GREATEST(COALESCE(o.minutes, 0), COALESCE(v.minutes, 0)) > 0
+         ORDER BY 1, 2`,
         [fromDate, toDate, salonId]
       );
 
@@ -577,26 +576,25 @@ router.get('/occupancy',
               )
             )
         ),
-        blocages AS (
-          -- Meme raison qu'ailleurs : une pause, une absence ou une journee
-          -- d'ecole reste inscrite a l'horaire hebdomadaire. La compter comme
-          -- du temps ouvert fait baisser le taux d'occupation sans qu'aucun
-          -- creneau vendable ait ete perdu.
-          SELECT bs.date AS d, e.id AS barber_id,
-                 SUM(EXTRACT(EPOCH FROM (bs.end_time - bs.start_time)) / 60)::int AS minutes
-          FROM blocked_slots bs
-          -- barber_id NULL = salon ferme : le blocage vaut pour tout le monde.
-          JOIN equipe e ON (bs.barber_id = e.id OR bs.barber_id IS NULL)
-          WHERE bs.salon_id = $3 AND bs.date >= $1::date AND bs.date <= $2::date
-          GROUP BY 1, 2
-        ),
         capacite AS (
+          -- Meme calcul par plages que la grille horaire : horaire, moins la
+          -- pause hebdomadaire, moins les blocages du planning. Retrancher des
+          -- durees se trompait des que ces intervalles se chevauchaient.
           SELECT j.d, e.id AS barber_id,
-                 GREATEST(0,
-                   EXTRACT(EPOCH FROM (sc.end_time - sc.start_time)) / 60
-                   - COALESCE(EXTRACT(EPOCH FROM (sc.break_end - sc.break_start)) / 60, 0)
-                   - COALESCE(bl.minutes, 0)
-                 )::int AS minutes
+                 (
+                   SELECT COALESCE(SUM(upper(r) - lower(r)), 0)::int
+                   FROM unnest(
+                     int4multirange(int4range(
+                       (EXTRACT(HOUR FROM sc.start_time) * 60 + EXTRACT(MINUTE FROM sc.start_time))::int,
+                       (EXTRACT(HOUR FROM sc.end_time) * 60 + EXTRACT(MINUTE FROM sc.end_time))::int))
+                     - CASE WHEN sc.break_start IS NOT NULL AND sc.break_end IS NOT NULL
+                         THEN int4multirange(int4range(
+                           (EXTRACT(HOUR FROM sc.break_start) * 60 + EXTRACT(MINUTE FROM sc.break_start))::int,
+                           (EXTRACT(HOUR FROM sc.break_end) * 60 + EXTRACT(MINUTE FROM sc.break_end))::int))
+                         ELSE int4multirange() END
+                     - COALESCE(bl.plages, int4multirange())
+                   ) r
+                 ) AS minutes
           FROM jours j
           CROSS JOIN equipe e
           -- 0 = lundi en base, la ou Postgres met 0 = dimanche
@@ -608,7 +606,14 @@ router.get('/occupancy',
               AND s.is_working = true
             LIMIT 1
           ) sc ON true
-          LEFT JOIN blocages bl ON bl.barber_id = e.id AND bl.d = j.d
+          LEFT JOIN LATERAL (
+            SELECT range_agg(int4range(
+                     (EXTRACT(HOUR FROM bs.start_time) * 60 + EXTRACT(MINUTE FROM bs.start_time))::int,
+                     (EXTRACT(HOUR FROM bs.end_time) * 60 + EXTRACT(MINUTE FROM bs.end_time))::int)) AS plages
+            FROM blocked_slots bs
+            WHERE bs.salon_id = $3 AND bs.date = j.d
+              AND (bs.barber_id = e.id OR bs.barber_id IS NULL)
+          ) bl ON true
           WHERE (e.contract_start IS NULL OR j.d >= e.contract_start)
             AND (e.contract_end IS NULL OR j.d <= e.contract_end)
             AND NOT EXISTS (
