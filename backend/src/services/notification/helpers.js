@@ -92,7 +92,7 @@ function getSalonLabel(salonId) {
 
 /**
  * Build barber photo URL from barber name
- * Maps: "Lucas" -> /assets/images/barbers/lucas.png, "Julien" -> julien.jpg, etc.
+ * Maps: "Lucas" -> /assets/images/barbers/lucas.jpg, "Julien" -> julien.jpg, etc.
  */
 function getBarberPhotoUrl(barberName) {
   if (!barberName) return null;
