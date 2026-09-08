@@ -3,6 +3,15 @@
    Requires: base.css loaded first
    ═══════════════════════════════════════════ */
 
+/* La teinte froide vient de la carte tarifs de Voiron, ou elle est definie
+   avec sa regle : « le halo froid [...] elle ne sert qu'a ce qui n'est pas
+   encore public ». Ici elle prend le relais de l'or partout ou celui-ci ne
+   parlait pas de fidelite — l'or reste sur la carte, ses rangs et le bloc
+   application, ou il veut dire quelque chose. */
+:root {
+    --froid: 168, 205, 255;
+}
+
 /* ======== BODY OVERRIDE ======== */
 body {
     display: flex;
@@ -2163,10 +2172,10 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     box-shadow:
         0 4px 16px rgba(0, 0, 0, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.06),
-        0 0 22px rgba(232, 192, 122, 0.18);
+        0 0 22px rgba(var(--froid), 0.22);
 }
 .tab-indicator.right { transform: translateX(calc(var(--tab-index, 0) * 100%)); }
-.tab-btn.active { color: #fff; text-shadow: 0 0 18px rgba(232, 192, 122, 0.35); }
+.tab-btn.active { color: #fff; text-shadow: 0 0 18px rgba(var(--froid), 0.40); }
 
 /* Le panneau glisse en arrivant, au lieu d'apparaitre sec */
 .tab-panel.active {
@@ -2342,11 +2351,11 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 
 /* ─── L'accueil prend la lumiere ─── */
 .welcome-avatar-ring {
-    border-top-color: rgba(232, 192, 122, 0.55);
-    border-right-color: rgba(232, 192, 122, 0.12);
+    border-top-color: rgba(var(--froid), 0.55);
+    border-right-color: rgba(var(--froid), 0.12);
 }
 .welcome-avatar-ring-2 {
-    border-bottom-color: rgba(232, 192, 122, 0.28);
+    border-bottom-color: rgba(var(--froid), 0.28);
     border-left-color: rgba(255, 255, 255, 0.05);
 }
 .welcome-avatar-wrap::after {
@@ -2354,13 +2363,13 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     position: absolute;
     inset: -26px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(232, 192, 122, 0.30), transparent 68%);
+    background: radial-gradient(circle, rgba(var(--froid), 0.30), transparent 68%);
     z-index: -1;
     animation: iconGlow 6s ease-in-out infinite;
     pointer-events: none;
 }
 .welcome-name {
-    background: linear-gradient(100deg, #fff 10%, #F0D9A8 46%, #fff 78%);
+    background: linear-gradient(100deg, #fff 10%, #CFE3FF 46%, #fff 78%);
     background-size: 240% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -2368,7 +2377,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     animation: titleSheen 7s ease-in-out infinite;
 }
 .stat-value {
-    background: linear-gradient(180deg, #fff, #E8D4AC);
+    background: linear-gradient(180deg, #fff, #C9DDF7);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -2378,7 +2387,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .btn-cta {
     position: relative;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(232, 192, 122, 0.16);
+    box-shadow: 0 10px 30px rgba(var(--froid), 0.18);
 }
 .btn-cta::after {
     content: '';
