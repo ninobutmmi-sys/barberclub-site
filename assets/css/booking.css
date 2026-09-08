@@ -236,90 +236,183 @@ body::after {
 /* ========================================
    STEP 1: BARBER SELECT
    ======================================== */
+/* ═══════════════════════════════════════════
+   ETAPE 1 : LE CHOIX DU BARBIER
+
+   La liste verticale demandait 834 px pour sept barbiers plus « Peu importe ».
+   Un iPhone en offre 569 une fois l'en-tete, le fil d'etapes et le bouton
+   deduits : Tom, Alan et Clement tombaient sous la ligne de flottaison, et on
+   choisit mal ce qu'on ne voit pas.
+
+   Trois colonnes de tuiles portrait tiennent en 552 px. La photo n'y perd
+   rien, au contraire : 114 x 152 px de visage contre un rond de 60 px de
+   diametre, six fois la surface. C'est la liste qui gaspillait la largeur.
+   ═══════════════════════════════════════════ */
 .barber-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
 }
 
 .barber-card {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 18px;
+    display: block;
+    padding: 0;
+    overflow: hidden;
     background: rgba(255, 255, 255, 0.03);
     /* Liquid Glass 2.0 depth */
     backdrop-filter: blur(24px) saturate(160%);
     -webkit-backdrop-filter: blur(24px) saturate(160%);
     border: 1.5px solid rgba(255, 255, 255, 0.07);
-    border-radius: 18px;
+    border-radius: 14px;
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.3),
         0 6px 24px rgba(0, 0, 0, 0.3);
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.15s ease;
     -webkit-user-select: none;
     user-select: none;
 }
 
 .barber-card:active {
-    transform: scale(0.98);
+    transform: scale(0.97);
 }
 
 .barber-card.selected {
     border-color: rgba(255, 255, 255, 0.9);
     background: rgba(255, 255, 255, 0.09);
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 26px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.barber-avatar {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.06);
-    flex-shrink: 0;
+.barber-card:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+/* La photo. Le cadrage vise le tiers haut : le shooting place les tetes en
+   haut du cadre, un centrage classique leur couperait le front. */
+.barber-media {
+    position: relative;
+    aspect-ratio: 3 / 4;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
+    overflow: hidden;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
 }
 
-.barber-card.selected .barber-avatar {
-    border-color: #fff;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.25), 0 0 40px rgba(255, 255, 255, 0.08);
-    animation: avatarGlow 2s ease-in-out infinite;
-}
-
-@keyframes avatarGlow {
-    0%, 100% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.25), 0 0 40px rgba(255, 255, 255, 0.08); }
-    50% { box-shadow: 0 0 28px rgba(255, 255, 255, 0.35), 0 0 50px rgba(255, 255, 255, 0.12); }
-}
-
-.barber-avatar img {
+.barber-media img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center 22%;
+    display: block;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .barber-avatar-placeholder {
-    font-size: 22px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.4);
-}
-
-.barber-info {
-    flex: 1;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.32);
 }
 
 .barber-name {
     font-family: 'Orbitron', sans-serif;
-    font-size: 15px;
+    font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    text-align: center;
+    padding: 8px 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Selectionne : le bandeau du nom s'inverse. La couleur seule ne suffit pas a
+   dire l'etat, le contraste inverse se voit meme en plein soleil. */
+.barber-card.selected .barber-name {
+    background: #fff;
+    color: #000;
+}
+
+/* La mention d'arrivee passe sur la photo : lisible, et sans hauteur en plus.
+   La reserve a droite laisse la place a la pastille de validation. */
+.barber-media .barber-guest-badge {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 12px 28px 5px 7px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+    color: #f5c46a;
+    text-align: left;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.88), transparent);
+}
+
+.barber-media .barber-check {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.55);
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.barber-card.selected .barber-media .barber-check {
+    opacity: 1;
+    transform: scale(1);
+    background: #fff;
+    border-color: #fff;
+}
+
+.barber-check svg {
+    width: 11px;
+    height: 11px;
+    color: #000;
+}
+
+/* ── « Peu importe » ──────────────────────────
+   Ce n'est pas un barbier de plus, c'est une autre facon de reserver. Il garde
+   la pleine largeur et la forme d'une ligne, pour que la difference se voie
+   avant qu'on ait lu. */
+.barber-card.any-barber {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 12px 14px;
+    margin-bottom: 2px;
+    border-style: dashed;
+}
+
+.barber-card.any-barber .barber-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.barber-card.any-barber .barber-name {
+    font-size: 14px;
+    text-align: left;
+    padding: 0;
+    background: none;
+    color: inherit;
 }
 
 .barber-role {
@@ -328,51 +421,34 @@ body::after {
     margin-top: 3px;
 }
 
-.barber-guest-badge {
-    font-size: 10px;
-    color: #f59e0b;
-    margin-top: 4px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-}
-
-.barber-check {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
+.barber-card.any-barber .barber-check {
+    position: static;
+    width: 22px;
+    height: 22px;
     flex-shrink: 0;
+    opacity: 1;
+    transform: none;
+    background: none;
+    border: 2px solid rgba(255, 255, 255, 0.15);
 }
 
-.barber-card.selected .barber-check {
-    background: #fff;
-    border-color: #fff;
-}
-
-.barber-check svg {
-    width: 14px;
-    height: 14px;
-    color: #000;
+.barber-card.any-barber .barber-check svg {
     opacity: 0;
     transition: opacity 0.2s ease;
 }
 
-.barber-card.selected .barber-check svg {
+.barber-card.any-barber.selected .barber-check {
+    background: #fff;
+    border-color: #fff;
+}
+
+.barber-card.any-barber.selected .barber-check svg {
     opacity: 1;
 }
 
-/* "Peu importe" card */
-.barber-card.any-barber {
-    border-style: dashed;
-}
-
 .any-icon {
-    width: 56px;
-    height: 56px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.04);
     border: 2px dashed rgba(255, 255, 255, 0.15);
@@ -389,8 +465,8 @@ body::after {
 }
 
 .any-icon svg {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
     color: rgba(255, 255, 255, 0.4);
 }
 
@@ -2303,6 +2379,12 @@ body::after {
             0 12px 34px rgba(0, 0, 0, 0.4);
     }
 
+    /* C'est la photo qui repond au survol, pas la tuile : le meme geste que
+       sur la page equipe, et la grille ne bouge pas. */
+    .barber-card:hover .barber-media img {
+        transform: scale(1.05);
+    }
+
     .service-card:hover:not(.selected) {
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(255, 255, 255, 0.14);
@@ -2546,29 +2628,23 @@ body::after {
         margin-top: 18px;
     }
 
-    /* Step 1: Barber cards — 2 columns */
+    /* Etape 1 : le panneau ne fait plus que la moitie de l'ecran, on reste a
+       trois colonnes — les tuiles y gagnent en taille, pas en nombre. */
     .barber-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
         gap: 12px;
     }
 
-    .barber-card {
-        padding: 18px;
-        border-radius: 18px;
-    }
-
-    .barber-avatar {
-        width: 56px;
-        height: 56px;
-    }
-
     .barber-name {
+        font-size: 12px;
+        padding: 9px 6px;
+    }
+
+    .barber-card.any-barber .barber-name {
         font-size: 15px;
     }
 
-    .barber-role {
-        font-size: 12px;
+    .barber-media .barber-guest-badge {
+        font-size: 10px;
     }
 
     /* Step 2: Service cards — single column list */
@@ -2756,17 +2832,16 @@ body::after {
         padding: 28px 64px 32px;
     }
 
+    /* Au-dela de 1280 px le panneau depasse 640 px : une quatrieme colonne
+       evite des tuiles trop hautes, et fait tenir sept barbiers en deux
+       rangees. */
     .barber-grid {
-        gap: 16px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
     }
 
-    .barber-card {
-        padding: 22px;
-    }
-
-    .barber-avatar {
-        width: 68px;
-        height: 68px;
+    .barber-card.any-barber {
+        padding: 14px 18px;
     }
 
     .service-list {
@@ -2873,6 +2948,29 @@ a:focus-visible, button:focus-visible {
     white-space: nowrap;
 }
 .barber-offer-badge svg { width: 11px; height: 11px; flex-shrink: 0; }
+
+/* Sur la tuile, la mention se pose en haut de la photo : c'est le premier
+   endroit ou l'oeil arrive, et elle ne coute pas de hauteur. */
+.barber-media .barber-offer-badge {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    padding: 3px 5px;
+    border-radius: 7px;
+    font-size: 9px;
+    line-height: 1.3;
+    text-align: center;
+    white-space: normal;
+    background: linear-gradient(120deg, rgba(232, 192, 122, 0.22), rgba(0, 0, 0, 0.72));
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+
+.barber-media .barber-offer-badge svg { width: 9px; height: 9px; }
 
 /* Le bandeau de l'etape prestations : la meme information, en grand, au moment
    ou le client regarde des prix a zero. */

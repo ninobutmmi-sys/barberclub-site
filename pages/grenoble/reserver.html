@@ -170,16 +170,9 @@
                 margin-top: 6px;
             }
 
-            /* Barber grid: single column */
-            .barber-grid {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .barber-card {
-                border-radius: 16px;
-            }
+            /* La grille des barbiers vit dans booking.css : Grenoble la
+               forcait ici en colonne unique, ce qui rendait le scroll
+               inevitable des sept barbiers, meme sur un grand ecran. */
 
             /* Slots: 3 columns */
             .slots-grid {
@@ -1040,6 +1033,18 @@
            qui n'est pas un jour de repos : Eddine arrive un mardi, qui est
            son repos — son premier créneau tombe le mercredi. Annoncer sa
            date de contrat aurait envoyé le client sur un jour vide. */
+        // Les mois longs ne tiennent pas sur une tuile de 114 px : « septembre »
+        // devient « sept. ». Les abreviations sont celles de l'usage francais,
+        // pas une troncature — « octo. » et « dece. » ne s'ecrivent nulle part.
+        const MOIS_COURTS = {
+            janvier: 'janv.', février: 'févr.', mars: 'mars', avril: 'avr.',
+            mai: 'mai', juin: 'juin', juillet: 'juil.', août: 'août',
+            septembre: 'sept.', octobre: 'oct.', novembre: 'nov.', décembre: 'déc.',
+        };
+        function abregeMois(date) {
+            return date.replace(/[a-zéû]+$/, (m) => MOIS_COURTS[m] || m);
+        }
+
         function premierJourTravaille(b) {
             if (!b.contract_start) return null;
             const debut = new Date(b.contract_start + 'T12:00:00');
@@ -1055,6 +1060,17 @@
             const num = d.getDate();
             const mois = d.toLocaleDateString('fr-FR', { month: 'long' });
             return (num === 1 ? '1er' : num) + ' ' + mois;
+        }
+
+        // Combien de tuiles par rangee, a cet instant et a cette largeur ? On le
+        // lit dans la position des elements : « Peu importe » occupe toute la
+        // ligne, et le nombre de colonnes change selon l'ecran.
+        function colonnesAffichees(grid, cartes) {
+            const tuiles = cartes.filter(c => !c.classList.contains('any-barber'));
+            if (tuiles.length < 2) return 1;
+            const haut = tuiles[0].offsetTop;
+            const n = tuiles.filter(t => t.offsetTop === haut).length;
+            return n > 0 ? n : 1;
         }
 
         function renderBarbers() {
@@ -1087,8 +1103,11 @@
                 const photoSrc = b.photo_url
                     ? (/^(data:|https?:)/.test(b.photo_url) ? b.photo_url : `../../assets/images${b.photo_url}`)
                     : '';
+                // Le repli remplace l'image seule, pas tout le bloc : la photo a
+                // desormais pour voisines la mention d'offre, la date d'arrivee
+                // et la coche, qu'un innerHTML sur le parent effacerait.
                 const avatarContent = photoSrc
-                    ? `<img loading="lazy" src="${esc(photoSrc)}" alt="${esc(b.name)}" onerror="this.parentElement.innerHTML='<span class=barber-avatar-placeholder>${esc(initial)}</span>'">`
+                    ? `<img loading="lazy" src="${esc(photoSrc)}" alt="${esc(b.name)}" onerror="this.outerHTML='<span class=barber-avatar-placeholder>${esc(initial)}</span>'">`
                     : `<span class="barber-avatar-placeholder">${esc(initial)}</span>`;
 
                 // La mention d'offre passe avant la date d'arrivee : « coupe
@@ -1097,22 +1116,28 @@
                     ? `<div class="barber-offer-badge"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 12 20 22 4 22 4 12\"/><rect x=\"2\" y=\"7\" width=\"20\" height=\"5\"/><line x1=\"12\" y1=\"22\" x2=\"12\" y2=\"7\"/><path d=\"M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z\"/><path d=\"M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z\"/></svg>${esc(b.offer_label)}</div>`
                     : '';
 
+                // Sur une tuile de 114 px, « À partir du 16 septembre » prend
+                // trois lignes et mange la photo. Le mois s'abrege, la formule
+                // se raccourcit : l'information tient, le visage reste.
                 const arrivee = premierJourTravaille(b);
                 const guestBadge = arrivee
-                    ? `<div class="barber-guest-badge">À partir du ${esc(arrivee)}</div>`
+                    ? `<div class="barber-guest-badge">Dès le ${esc(abregeMois(arrivee))}</div>`
                     : (b.is_guest
-                        ? '<div class="barber-guest-badge">Disponible certains jours</div>'
+                        ? '<div class="barber-guest-badge">Certains jours</div>'
                         : '');
 
+                // La photo remplit la tuile, le nom se pose dessous, et les
+                // mentions se superposent a l'image : elles ne coutent plus de
+                // hauteur, ce qui est tout l'enjeu de cette etape.
                 html += `
                     <div class="barber-card${b.is_guest ? ' guest-barber' : ''}" data-id="${esc(b.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(b.name)}">
-                        <div class="barber-avatar">${avatarContent}</div>
-                        <div class="barber-info">
-                            <div class="barber-name">${esc(b.name)}</div>
+                        <div class="barber-media">
+                            ${avatarContent}
                             ${offerBadge}
                             ${guestBadge}
+                            <div class="barber-check">${checkSVG}</div>
                         </div>
-                        <div class="barber-check">${checkSVG}</div>
+                        <div class="barber-name">${esc(b.name)}</div>
                     </div>
                 `;
             }
@@ -1145,7 +1170,19 @@
                 }
                 card.addEventListener('click', selectBarber);
                 card.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectBarber(); }
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectBarber(); return; }
+                    // La liste est devenue une grille : les fleches doivent
+                    // pouvoir monter et descendre, pas seulement suivre l'ordre
+                    // du DOM. On compte les colonnes reellement affichees plutot
+                    // que de les supposer — elles changent avec la largeur.
+                    const pas = { ArrowRight: 1, ArrowDown: 'col', ArrowLeft: -1, ArrowUp: '-col' }[e.key];
+                    if (pas === undefined) return;
+                    e.preventDefault();
+                    const cartes = [...grid.querySelectorAll('.barber-card')];
+                    const cols = colonnesAffichees(grid, cartes);
+                    const delta = pas === 'col' ? cols : pas === '-col' ? -cols : pas;
+                    const cible = cartes[Math.max(0, Math.min(cartes.length - 1, cartes.indexOf(card) + delta))];
+                    if (cible && cible !== card) cible.focus();
                 });
             });
         }
