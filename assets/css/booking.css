@@ -840,8 +840,10 @@ body::after {
 }
 
 .calendar-nav-btn {
-    width: 36px;
-    height: 36px;
+    /* 36 px, sous les 44 recommandes pour le pouce — et changer de mois est
+       le geste le plus repete de cet ecran. */
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -936,20 +938,67 @@ body::after {
     font-weight: 800;
     transform: scale(1.1);
     box-shadow: 0 0 16px rgba(255, 255, 255, 0.15), 0 0 40px rgba(255, 255, 255, 0.05);
+    /* La meme onde que sur les tuiles et les prestations : choisir produit
+       toujours le meme geste dans ce tunnel. */
+    animation: haloChoix 0.5s ease-out;
 }
 
 .calendar-day:not(.empty):not(.past):not(.disabled):not(.selected):hover {
     background: rgba(255, 255, 255, 0.06);
 }
 
+/* La pastille dit l'etat de la journee. Vert contre orange est la paire que
+   distinguent le moins les daltoniens : la taille et le remplissage portent
+   donc la meme information en parallele — pleine et large quand il reste de
+   la place, pleine et petite quand ca se remplit, creuse quand c'est complet. */
 .cal-dot {
     position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
-    width: 4px; height: 4px; border-radius: 50%;
-    transition: background 0.3s;
+    border-radius: 50%;
+    width: 5px; height: 5px;
+    transition: background 0.3s, width 0.3s, height 0.3s;
 }
-.cal-dot--available { background: rgba(34, 197, 94, 0.7); }
-.cal-dot--low { background: rgba(251, 146, 60, 0.8); }
-.cal-dot--full { background: rgba(255, 255, 255, 0.15); }
+.cal-dot--available {
+    background: rgba(52, 211, 153, 0.85);
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.45);
+}
+.cal-dot--low {
+    width: 3.5px; height: 3.5px;
+    background: rgba(251, 146, 60, 0.9);
+    box-shadow: 0 0 5px rgba(251, 146, 60, 0.4);
+}
+.cal-dot--full {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: none;
+}
+
+/* ── La legende ──
+   Sans elle, trois couleurs de pastilles ne veulent rien dire. */
+.cal-legend {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin: 16px 0 0;
+    padding: 12px 4px 0;
+    list-style: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.cal-legend li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.45);
+    white-space: nowrap;
+}
+/* Dans la legende, les pastilles quittent leur position absolue. */
+.cal-legend .cal-dot {
+    position: static;
+    transform: none;
+    flex-shrink: 0;
+}
 .calendar-day.selected .cal-dot,
 .calendar-day.past .cal-dot,
 .calendar-day.disabled .cal-dot { display: none; }
@@ -1218,12 +1267,24 @@ body::after {
     opacity: 0.8;
 }
 
+/* « Selectionnez une date pour voir les creneaux disponibles » flottait seul
+   au milieu du vide. Une icone lui donne un point d'ancrage, et la phrase
+   dit ce qu'on attend du lecteur plutot que de decrire l'ecran. */
 .slots-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
     text-align: center;
-    padding: 30px 16px;
+    padding: 34px 16px;
     color: rgba(255, 255, 255, 0.35);
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 13.5px;
+    line-height: 1.5;
+}
+.slots-empty svg {
+    width: 30px;
+    height: 30px;
+    opacity: 0.42;
 }
 
 .slots-loading {

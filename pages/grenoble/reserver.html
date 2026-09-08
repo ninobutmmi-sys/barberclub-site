@@ -384,10 +384,22 @@
                         <span class="calendar-weekday">Dim</span>
                     </div>
                     <div class="calendar-days" id="calDays"></div>
+                    <!-- Les pastilles portaient l'etat de chaque journee sans que
+                         rien ne l'explique : trois couleurs, aucune legende. Et
+                         vert contre orange est la pire paire pour un daltonien,
+                         d'ou la taille qui varie aussi. -->
+                    <ul class="cal-legend" aria-label="Signification des pastilles">
+                        <li><span class="cal-dot cal-dot--available" aria-hidden="true"></span>Bien dispo</li>
+                        <li><span class="cal-dot cal-dot--low" aria-hidden="true"></span>Ça se remplit</li>
+                        <li><span class="cal-dot cal-dot--full" aria-hidden="true"></span>Complet</li>
+                    </ul>
                 </div>
 
                 <div class="slots-section" id="slotsSection">
-                    <p class="slots-empty">Sélectionnez une date pour voir les créneaux disponibles</p>
+                    <p class="slots-empty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Choisissez un jour pour voir ses horaires
+                    </p>
                 </div>
             </div>
 
@@ -2365,7 +2377,7 @@
                     state.selectedDate = null;
                     state.selectedSlot = null;
                     renderCalendar();
-                    $('#slotsSection').innerHTML = '<p class="slots-empty">Sélectionnez une date pour voir les créneaux disponibles</p>';
+                    $('#slotsSection').innerHTML = '<p class="slots-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Choisissez un jour pour voir ses horaires</p>';
                     goToStep(3);
                     // Load quick suggestions + month availability in background (non-blocking)
                     loadQuickSuggestions();
