@@ -5,9 +5,9 @@
 
 /* La teinte froide vient de la carte tarifs de Voiron, ou elle est definie
    avec sa regle : « le halo froid [...] elle ne sert qu'a ce qui n'est pas
-   encore public ». Ici elle prend le relais de l'or partout ou celui-ci ne
-   parlait pas de fidelite — l'or reste sur la carte, ses rangs et le bloc
-   application, ou il veut dire quelque chose. */
+   encore public ». Elle a remplace l'or sur toute la page, fidelite comprise :
+   le site ne porte plus aucun dore. Restent les couleurs d'etat — vert, orange,
+   rouge — qui ne sont pas une identite mais un feu tricolore. */
 :root {
     --froid: 168, 205, 255;
 }
@@ -1205,7 +1205,7 @@ body {
 .booking-card.past { opacity: 0.55; }
 .booking-card.past:hover { opacity: 0.7; }
 
-/* ---- Legacy detail rows (for prochain RDV gold card) ---- */
+/* ---- Legacy detail rows (carte du prochain RDV) ---- */
 .detail-row {
     display: flex;
     justify-content: space-between;
@@ -1863,10 +1863,11 @@ a:focus-visible, button:focus-visible, input:focus-visible {
    et pour le membre connecte, sous ses rendez-vous.
 
    LA COULEUR. Le site est noir et blanc du sol au plafond. Celle-ci ne sort
-   pas d'une palette a la mode : c'est l'or de la couronne du logo, et celui
-   des rangs de la carte — Bronze, Silver. Elle n'apparait qu'ici, sur le seul
-   bloc qui parle de fidelite, et elle reste sourde : deux nappes floues qui
-   derivent derriere le verre, et un faisceau qui fait le tour du cadre.
+   pas d'une palette a la mode : c'est le bleu froid de la carte de Voiron,
+   celui qui dit « pas encore la » — et la fidelite se joue dans une
+   application qu'il faut encore installer. Elle reste sourde : deux nappes
+   floues qui derivent derriere le verre, et un faisceau qui fait le tour du
+   cadre.
    ═══════════════════════════════════════════════════════════ */
 
 .app-install {
@@ -1912,7 +1913,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .app-aurora span:nth-child(1) {
     left: 4%;
     top: 12%;
-    background: radial-gradient(circle, rgba(232, 192, 122, 0.55), rgba(200, 150, 62, 0.16) 55%, transparent 72%);
+    background: radial-gradient(circle, rgba(168, 205, 255, 0.55), rgba(96, 140, 200, 0.16) 55%, transparent 72%);
     animation: auroraA 13s ease-in-out infinite alternate;
 }
 .app-aurora span:nth-child(2) {
@@ -1941,9 +1942,9 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     background: conic-gradient(
         from var(--beam, 0deg),
         transparent 0deg 40deg,
-        rgba(232, 192, 122, 0.65) 78deg,
-        rgba(255, 245, 228, 0.95) 96deg,
-        rgba(232, 192, 122, 0.45) 116deg,
+        rgba(168, 205, 255, 0.65) 78deg,
+        rgba(240, 248, 255, 0.95) 96deg,
+        rgba(168, 205, 255, 0.45) 116deg,
         transparent 160deg 360deg);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -1977,7 +1978,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     position: absolute;
     inset: -14px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(232, 192, 122, 0.45), transparent 68%);
+    background: radial-gradient(circle, rgba(168, 205, 255, 0.45), transparent 68%);
     z-index: -1;
     animation: iconGlow 5.5s ease-in-out infinite;
 }
@@ -2006,8 +2007,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     letter-spacing: 0.04em;
     text-transform: uppercase;
     margin-bottom: 5px;
-    /* Le titre prend la lumiere de l'or, sans la crier */
-    background: linear-gradient(100deg, #fff 12%, #F0D9A8 42%, #fff 70%);
+    /* Le titre prend la lumiere du bleu, sans la crier */
+    background: linear-gradient(100deg, #fff 12%, #CFE3FF 42%, #fff 70%);
     background-size: 220% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -2023,7 +2024,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     font-weight: 600;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: rgba(232, 192, 122, 0.72);
+    color: rgba(168, 205, 255, 0.72);
     margin-bottom: 5px;
 }
 .app-install-lead {
@@ -2068,7 +2069,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     height: 14px;
     flex-shrink: 0;
     margin-top: 3px;
-    color: #E8C07A;
+    color: #A8CDFF;
 }
 
 /* ─── Les boutons ─── */
@@ -2095,7 +2096,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     font-size: 13.5px;
     font-weight: 700;
     letter-spacing: 0.01em;
-    box-shadow: 0 10px 30px rgba(232, 192, 122, 0.16);
+    box-shadow: 0 10px 30px rgba(168, 205, 255, 0.16);
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
 }
 /* Un eclat traverse le bouton, comme une main qui passe sur du metal */
@@ -2137,7 +2138,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     .app-store-secondary { flex: 0 0 auto; }
     .app-store:hover {
         transform: translateY(-2px);
-        box-shadow: 0 14px 34px rgba(232, 192, 122, 0.3);
+        box-shadow: 0 14px 34px rgba(168, 205, 255, 0.3);
     }
     .app-store-secondary:hover { background: rgba(255, 255, 255, 0.08); }
 }
@@ -2160,7 +2161,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
    L'ESPACE FIDELITE — refonte
 
    Trois onglets au lieu de deux, un chemin de recompenses qu'on entrevoit
-   derriere un voile, et la meme lumiere doree que le bloc application : c'est
+   derriere un voile, et la meme lumiere froide que le bloc application : c'est
    la couleur de la couronne et des rangs de la carte, elle ne sert qu'a ca.
    ═══════════════════════════════════════════════════════════ */
 
@@ -2220,8 +2221,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     bottom: 50px;
     width: 2px;
     background: linear-gradient(180deg,
-        rgba(232, 192, 122, 0.85),
-        rgba(232, 192, 122, 0.35) 35%,
+        rgba(168, 205, 255, 0.85),
+        rgba(168, 205, 255, 0.35) 35%,
         rgba(255, 255, 255, 0.10) 70%,
         rgba(255, 255, 255, 0.04));
 }
@@ -2248,9 +2249,9 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 }
 .loyalty-step.is-done .loyalty-dot {
     color: #1a1206;
-    background: linear-gradient(140deg, #F3DFB4, #D8A94E);
-    border-color: rgba(255, 240, 210, 0.6);
-    box-shadow: 0 0 26px rgba(232, 192, 122, 0.45);
+    background: linear-gradient(140deg, #DCEBFF, #6E9FD8);
+    border-color: rgba(235, 245, 255, 0.6);
+    box-shadow: 0 0 26px rgba(168, 205, 255, 0.45);
 }
 .loyalty-step-text b {
     display: block;
@@ -2285,7 +2286,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     padding: 22px 20px 20px;
     text-align: center;
     border-radius: 20px;
-    border: 1px solid rgba(232, 192, 122, 0.22);
+    border: 1px solid rgba(168, 205, 255, 0.22);
     background: rgba(14, 12, 10, 0.93);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -2298,12 +2299,12 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     from { opacity: 0; transform: translateY(14px) scale(0.97); }
     to   { opacity: 1; transform: none; }
 }
-/* La nappe doree derriere la carte, qui respire */
+/* La nappe froide derriere la carte, qui respire */
 .loyalty-lock-glow {
     position: absolute;
     inset: -30% -10%;
     z-index: -1;
-    background: radial-gradient(circle at 50% 35%, rgba(232, 192, 122, 0.35), transparent 62%);
+    background: radial-gradient(circle at 50% 35%, rgba(168, 205, 255, 0.35), transparent 62%);
     filter: blur(28px);
     animation: lockGlow 5s ease-in-out infinite;
 }
@@ -2325,7 +2326,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     font-weight: 600;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: rgba(232, 192, 122, 0.75);
+    color: rgba(168, 205, 255, 0.75);
     margin-bottom: 7px;
 }
 .loyalty-lock-title {
@@ -2334,7 +2335,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
     font-weight: 800;
     letter-spacing: 0.02em;
     margin-bottom: 10px;
-    background: linear-gradient(100deg, #fff 12%, #F0D9A8 44%, #fff 72%);
+    background: linear-gradient(100deg, #fff 12%, #CFE3FF 44%, #fff 72%);
     background-size: 220% 100%;
     -webkit-background-clip: text;
     background-clip: text;
