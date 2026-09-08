@@ -984,9 +984,15 @@
             const JOURS_AVANT_MISE_EN_AVANT = 7;
             const joursAvantArrivee = (b) => {
                 if (!b.contract_start) return null;
+                // Midi puis minuit : l'heure de midi evite les surprises de
+                // changement d'heure, mais la comparer a minuit ajoutait une
+                // demi-journee que `Math.ceil` arrondissait a un jour entier.
+                // Eddine, a exactement sept jours, en comptait huit et restait
+                // en retrait le jour ou il aurait du passer devant.
                 const debut = new Date(b.contract_start + 'T12:00:00');
+                debut.setHours(0, 0, 0, 0);
                 const aujourdhui = new Date(); aujourdhui.setHours(0, 0, 0, 0);
-                const jours = Math.ceil((debut - aujourdhui) / 86400000);
+                const jours = Math.round((debut - aujourdhui) / 86400000);
                 return jours > 0 ? jours : null;
             };
 
