@@ -3379,6 +3379,13 @@ a:focus-visible, button:focus-visible {
    ═══════════════════════════════════════════ */
 .barber-grid { --froid: 168, 205, 255; }
 
+/* Le fauteuil vide, pour qui n'a pas encore de photo. Son point
+   d'interrogation est au centre du cadre, pas dans le tiers haut comme un
+   visage : il garde son propre cadrage. */
+.barber-media img.barber-mystere {
+    object-position: center;
+}
+
 /* Loin : en retrait. La tuile reste cliquable — reserver pour le mois
    prochain est legitime — mais elle cesse de rivaliser avec ceux qui coupent
    aujourd'hui. */
@@ -3406,6 +3413,14 @@ a:focus-visible, button:focus-visible {
 .barber-card.barber-a-venir .barber-media .barber-guest-badge {
     color: rgba(var(--froid), 0.92);
 }
+/* Le fauteuil est deja sombre et sans couleur : le desaturer et le descendre
+   a 0,42 le ferait disparaitre, comme l'initiale avant lui. Il s'attenue
+   moins, et pas du tout en gris. */
+.barber-card.barber-a-venir .barber-media img.barber-mystere {
+    opacity: 0.66;
+    filter: none;
+}
+
 .barber-card.barber-a-venir:hover .barber-media img,
 .barber-card.barber-a-venir.selected .barber-media img,
 .barber-card.barber-a-venir:focus-visible .barber-media img {

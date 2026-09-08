@@ -1160,9 +1160,15 @@
                 // Le repli remplace l'image seule, pas tout le bloc : la photo a
                 // desormais pour voisines la mention d'offre, la date d'arrivee
                 // et la coche, qu'un innerHTML sur le parent effacerait.
+                //
+                // Sans photo, la tuile n'affichait qu'une initiale sur du vide.
+                // Le fauteuil au point d'interrogation existe deja et dit la
+                // meme chose ailleurs — la page equipe l'utilise pour annoncer
+                // Eddine et Durel, la page Voiron pour Gab. L'initiale reste le
+                // dernier recours si l'image ne charge pas.
                 const avatarContent = photoSrc
                     ? `<img loading="lazy" src="${esc(photoSrc)}" alt="${esc(b.name)}" onerror="this.outerHTML='<span class=barber-avatar-placeholder>${esc(initial)}</span>'">`
-                    : `<span class="barber-avatar-placeholder">${esc(initial)}</span>`;
+                    : `<img loading="lazy" class="barber-mystere" src="../../assets/images/barbers/barber-soon.webp" alt="Fauteuil de barbier mystère — la photo de ${esc(b.name)} arrive" onerror="this.outerHTML='<span class=barber-avatar-placeholder>${esc(initial)}</span>'">`;
 
                 // La mention d'offre passe avant la date d'arrivee : « coupe
                 // gratuite » interesse plus le client que « a partir du 2 ».
