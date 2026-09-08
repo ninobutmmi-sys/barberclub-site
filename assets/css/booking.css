@@ -2287,19 +2287,21 @@ body::after {
     to   { transform: translate3d(-16%, -10%, 0) scale(0.92); }
 }
 
-/* ─── La couronne ─── */
-.policy-crown {
+/* ─── Le logo ───
+   C'etait la couronne, et elle ne se voyait pas : `couronne.png` est une
+   couronne noire — 9 de luminosite moyenne sur 255. Posee a 45 % d'opacite
+   sur un panneau presque noir, elle disparaissait. Le logo blanc, lui, est
+   fait pour ce fond.
+
+   Il ne bouge pas : le faisceau et les nappes animent deja ce panneau, et une
+   marque qui flotte se remarque pour de mauvaises raisons. */
+.policy-logo {
     position: relative;
     display: block;
-    width: 22px; height: auto;
-    margin: 0 auto 9px;
-    opacity: 0.45;
-    animation: crownFloat 5s ease-in-out infinite;
-}
-@keyframes crownFloat {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    25%      { transform: translateY(-3px) rotate(1deg); }
-    75%      { transform: translateY(-1.5px) rotate(-0.5deg); }
+    width: 126px; height: auto;
+    margin: 0 auto 12px;
+    opacity: 0.92;
+    filter: drop-shadow(0 0 22px rgba(255,255,255,0.28));
 }
 
 /* ─── Le titre ───
@@ -2478,8 +2480,7 @@ body::after {
    verre, ce qui suffit. */
 @media (prefers-reduced-motion: reduce) {
     .policy-card::before,
-    .policy-aurora span,
-    .policy-crown { animation: none; }
+    .policy-aurora span { animation: none; }
 }
 
 .loading-spinner {
