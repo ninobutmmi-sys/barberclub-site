@@ -1196,7 +1196,10 @@
                             ${s.description ? `<div class="service-desc">${esc(s.description)}</div>` : ''}
                         </div>
                         <div class="service-right">
-                            <div class="service-price${Number(s.price) === 0 ? ' is-free' : ''}">${formatPrice(s.price)}</div>
+                            <div class="service-pricing">
+                                <div class="service-price${Number(s.price) === 0 ? ' is-free' : ''}">${formatPrice(s.price)}</div>
+                                <div class="service-duration">${clockSVG}${s.duration} min</div>
+                            </div>
                             <div class="service-check">${checkSVG}</div>
                         </div>
                     </div>`;

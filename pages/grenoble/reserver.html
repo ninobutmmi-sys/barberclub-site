@@ -1336,7 +1336,10 @@
                             ${s.description ? `<div class="service-desc">${esc(s.description)}</div>` : ''}
                         </div>
                         <div class="service-right">
-                            <div class="service-price${Number(s.price) === 0 ? ' is-free' : ''}">${formatPrice(s.price)}</div>
+                            <div class="service-pricing">
+                                <div class="service-price${Number(s.price) === 0 ? ' is-free' : ''}">${formatPrice(s.price)}</div>
+                                <div class="service-duration">${clockSVG}${s.duration} min</div>
+                            </div>
                             <div class="service-check">${checkSVG}</div>
                         </div>
                     </div>`;
@@ -1357,7 +1360,13 @@
                         <div class="service-card-note">Appelez le salon au 09 56 30 93 86</div>
                     </div>
                     <div class="service-right">
-                        <div class="service-price">40,00 €</div>
+                        <div class="service-pricing">
+                            <div class="service-price">40,00 €</div>
+                            <div class="service-duration">sur devis</div>
+                        </div>
+                        <!-- Espace reserve : sans lui, ce prix se calait 34 px
+                             plus a droite que les autres et cassait la colonne. -->
+                        <div class="service-check" aria-hidden="true" style="visibility:hidden"></div>
                     </div>
                 </div>
             </div>`;

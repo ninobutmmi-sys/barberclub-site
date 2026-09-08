@@ -565,6 +565,17 @@ body::after {
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
+/* Le prix prend le cyan de la carte tarifs de Voiron — celui qui y tient deja
+   les prix. L'oeil est sur cette colonne au moment du choix : c'est la que la
+   confirmation doit arriver. */
+.service-card.selected .service-price {
+    color: #7FD8F7;
+    text-shadow: 0 0 16px rgba(96, 203, 245, 0.45);
+}
+.service-card.selected .service-duration {
+    color: rgba(127, 216, 247, 0.7);
+}
+
 .service-card.disabled {
     cursor: default;
     opacity: 0.55;
@@ -596,8 +607,11 @@ body::after {
 }
 
 .service-duration {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.35);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.42);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    transition: color 0.3s ease;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -606,16 +620,32 @@ body::after {
 .service-right {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     flex-shrink: 0;
+}
+
+/* Le prix flottait au milieu de la carte, au meme poids que le nom, et sa
+   hauteur bougeait selon la longueur de la description : impossible de
+   comparer deux lignes d'un coup d'oeil. Il a maintenant sa colonne, calee a
+   droite, avec la duree dessous. */
+.service-pricing {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    min-width: 62px;
 }
 
 .service-price {
     font-family: 'Orbitron', sans-serif;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 800;
     white-space: nowrap;
-    color: rgba(255, 255, 255, 0.9);
+    color: #fff;
+    /* Les chiffres s'alignent en colonne : 20,00 et 30,00 tombent l'un sous
+       l'autre au lieu de danser. */
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
 }
 
 .service-check {
@@ -661,26 +691,25 @@ body::after {
 .service-category-header {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 10px;
+    margin-top: 4px;
 }
 
+/* L'icone sort de son carre arrondi : une pastille grise par titre alourdit
+   la colonne sans rien apprendre. Elle devient un signe, a la taille du
+   texte. */
 .service-category-icon {
-    width: 32px;
-    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 9px;
     flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .service-category-icon svg {
-    width: 15px;
-    height: 15px;
-    opacity: 0.7;
+    width: 14px;
+    height: 14px;
 }
 
 .service-category-title {
