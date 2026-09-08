@@ -97,7 +97,7 @@ function getSalonLabel(salonId) {
 function getBarberPhotoUrl(barberName) {
   if (!barberName) return null;
   const name = barberName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-  const known = ['lucas', 'julien', 'tom', 'alan', 'nathan', 'clement', 'eddine'];
+  const known = ['lucas', 'julien', 'tom', 'alan', 'nathan', 'clement', 'eddine', 'daryl'];
   if (!known.includes(name)) return null;
   // Use /email/ subfolder with real JPEG files (originals are AVIF with wrong extension)
   return `${ASSETS_BASE}/assets/images/barbers/email/${name}.jpg`;
