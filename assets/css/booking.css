@@ -1321,9 +1321,16 @@ body::after {
     pointer-events: none;
 }
 
+/* Le reflet glissait en animant `left` : une propriete de mise en page, donc
+   un recalcul a chaque image, en boucle et sans fin. `transform` fait le meme
+   trajet sur le compositeur, sans reveiller la mise en page.
+
+   La course se recalcule : le depart reste `left: -100%`, et `translateX` se
+   mesure sur la largeur du reflet (60 % du parent). Parcourir les 240 % de
+   parent d'origine demande donc 400 % de sa propre largeur. */
 @keyframes shimmerSlide {
-    0%, 100% { left: -100%; }
-    50% { left: 140%; }
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(400%); }
 }
 
 .auth-signup-card-content {
@@ -3034,3 +3041,65 @@ a:focus-visible, button:focus-visible {
     color: #F0D9A8;
 }
 .summary-offer svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════
+   LE MOUVEMENT DU PARCOURS
+
+   Le tunnel ne manquait pas d'animation — quatorze sequences, quarante-huit
+   transitions. Il en manquait a deux endroits precis, et c'est la seule raison
+   d'en ajouter : les listes arrivaient d'un bloc, et choisir ne se voyait pas.
+
+   Deux gestes, donc, pas trois. La regle tient en une ligne : un ecran anime
+   une ou deux choses, pas tout ce qui peut bouger.
+   ═══════════════════════════════════════════ */
+
+/* 1. L'arrivee d'une liste.
+   Trente-cinq millisecondes entre chaque element : assez pour que l'oeil
+   parcoure la liste de haut en bas au lieu de la prendre en bloc, trop peu
+   pour qu'on attende. Le retard se plafonne au dixieme element, sinon le
+   dernier creneau d'un samedi arriverait une seconde et demie apres le
+   premier.
+
+   `backwards` et non `both` : l'element garde l'etat de depart pendant son
+   retard, puis rend la main. Avec `both`, le `transform: none` final resterait
+   accroche et neutraliserait le survol et l'appui. */
+@keyframes entreeListe {
+    from { opacity: 0; transform: translateY(9px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.barber-card,
+.service-card,
+.slot-btn {
+    animation: entreeListe 0.34s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 35ms);
+}
+
+/* 2. Le halo du choix.
+   Une onde qui part du bord et s'eteint. Elle remplace le battement continu
+   qui pulsait sous l'ancien avatar : un halo perpetuel finit par ne plus rien
+   dire, et le guide reserve l'animation sans fin aux chargements. Celle-ci se
+   declenche au clic et se tait.
+
+   Les deux ombres du keyframe portent la lueur de repos de chaque carte, pour
+   que la fin de l'onde ne fasse pas clignoter l'etat selectionne. */
+@keyframes haloChoix {
+    from { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45), 0 0 26px rgba(255, 255, 255, 0.08); }
+    to   { box-shadow: 0 0 0 13px rgba(255, 255, 255, 0), 0 0 26px rgba(255, 255, 255, 0.08); }
+}
+
+.barber-card.selected,
+.service-card.selected,
+.slot-btn.selected {
+    animation: haloChoix 0.5s ease-out;
+}
+
+/* Sans mouvement, une liste ne doit pas attendre son tour pour exister : le
+   bloc global ecrasait les durees mais pas les retards, et un element retarde
+   de 315 ms serait reste invisible tout ce temps. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-delay: 0ms !important;
+        transition-delay: 0ms !important;
+    }
+}

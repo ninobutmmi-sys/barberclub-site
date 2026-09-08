@@ -1065,6 +1065,15 @@
         // Combien de tuiles par rangee, a cet instant et a cette largeur ? On le
         // lit dans la position des elements : « Peu importe » occupe toute la
         // ligne, et le nombre de colonnes change selon l'ecran.
+        // Numerote les elements d'une liste pour que leur entree se decale. Le
+        // plafond a dix evite qu'un samedi charge fasse attendre son dernier
+        // creneau une seconde et demie apres le premier.
+        function cascade(racine, selecteur) {
+            racine.querySelectorAll(selecteur).forEach((el, i) => {
+                el.style.setProperty('--i', Math.min(i, 9));
+            });
+        }
+
         function colonnesAffichees(grid, cartes) {
             const tuiles = cartes.filter(c => !c.classList.contains('any-barber'));
             if (tuiles.length < 2) return 1;
@@ -1143,6 +1152,7 @@
             }
 
             grid.innerHTML = html;
+            cascade(grid, '.barber-card');
 
             // Event listeners
             grid.querySelectorAll('.barber-card').forEach((card) => {
@@ -1302,6 +1312,7 @@
             </div>`;
 
             list.innerHTML = html;
+            cascade(list, '.service-card');
 
             list.querySelectorAll('.service-card').forEach((card) => {
                 function selectService() {
@@ -1694,6 +1705,7 @@
 
             html += '</div>';
             slotsSection.innerHTML = html;
+            cascade(slotsSection, '.slot-btn');
 
             slotsSection.querySelectorAll('.slot-btn').forEach((btn) => {
                 btn.addEventListener('click', () => {
