@@ -101,6 +101,7 @@ body::after {
    PROGRESS BAR (Breadcrumb Stepper)
    ======================================== */
 .progress-bar {
+    --froid: 168, 205, 255;
     display: flex;
     align-items: flex-start;
     justify-content: center;
@@ -119,17 +120,21 @@ body::after {
 }
 
 .progress-circle {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 12px;
     font-weight: 700;
-    border: 2px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.03);
-    color: rgba(255, 255, 255, 0.25);
+    /* Les etapes qu'on n'a pas atteintes prennent le bleu froid — dans ce
+       projet, c'est la couleur de ce qui n'est pas encore la. Un gris a 0,25
+       ne se detachait pas du fond noir, et rien ne rattachait ces cercles au
+       parcours. */
+    border: 2px solid rgba(var(--froid, 168, 205, 255), 0.20);
+    background: rgba(var(--froid, 168, 205, 255), 0.04);
+    color: rgba(var(--froid, 168, 205, 255), 0.45);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     z-index: 2;
@@ -141,7 +146,11 @@ body::after {
 .progress-step.active .progress-circle {
     border-color: #fff;
     color: #fff;
-    background: rgba(255, 255, 255, 0.10);
+    /* Le disque est eclaire de l'interieur, par le haut : le meme geste que
+       tous les panneaux de verre du site. Un aplat uniforme faisait un anneau
+       vide de plus. */
+    background: radial-gradient(circle at 50% 22%, rgba(255,255,255,0.26), rgba(255,255,255,0.05) 70%);
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.55);
     box-shadow: 0 0 18px rgba(255, 255, 255, 0.22), inset 0 0 10px rgba(255, 255, 255, 0.10);
     animation: etapeRespire 2.6s ease-in-out infinite;
 }
@@ -188,7 +197,7 @@ body::after {
 .progress-label {
     font-size: 9px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.2);
+    color: rgba(var(--froid, 168, 205, 255), 0.38);
     margin-top: 6px;
     text-align: center;
     white-space: nowrap;
@@ -214,8 +223,10 @@ body::after {
     position: relative;
     flex: 1;
     height: 2px;
-    background: rgba(255, 255, 255, 0.06);
-    margin-top: 15px;
+    /* 0,06 sur du noir, c'est invisible : les quatre traits se lisaient comme
+       des tirets isoles au lieu d'un chemin. */
+    background: rgba(var(--froid, 168, 205, 255), 0.14);
+    margin-top: 16px;
     min-width: 16px;
     border-radius: 1px;
     overflow: hidden;
@@ -225,11 +236,14 @@ body::after {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.75));
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
+    /* Le degre s'etire avec le `scaleX` : son extremite claire avance donc
+       avec le remplissage, et la lumiere semble mener la marche sans qu'on
+       ajoute une seconde animation. */
+    background: linear-gradient(90deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.55) 60%, #fff 100%);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
     transform: scaleX(0);
     transform-origin: left center;
-    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .progress-line.completed::after { transform: scaleX(1); }
 
