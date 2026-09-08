@@ -971,7 +971,41 @@
                 </div>
             `;
 
+            // Un barbier qui arrive dans trois semaines occupait la premiere
+            // tuile, devant ceux qui coupent aujourd'hui : son `sort_order` est
+            // eleve parce qu'il vient d'etre cree, pas parce qu'il est
+            // prioritaire. Il passe derriere, en retrait.
+            //
+            // Sauf la derniere semaine avant son premier jour : la, son arrivee
+            // devient une nouvelle, et il remonte en tete avec la lueur doree de
+            // la maison. C'est le seul moment ou l'annoncer sert a quelque chose.
+            const JOURS_AVANT_MISE_EN_AVANT = 7;
+            const joursAvantArrivee = (b) => {
+                if (!b.contract_start) return null;
+                const debut = new Date(b.contract_start + 'T12:00:00');
+                const aujourdhui = new Date(); aujourdhui.setHours(0, 0, 0, 0);
+                const jours = Math.ceil((debut - aujourdhui) / 86400000);
+                return jours > 0 ? jours : null;
+            };
+
+            const imminents = [], enPlace = [], aVenir = [];
             for (const b of state.barbers) {
+                const jours = joursAvantArrivee(b);
+                if (jours === null) enPlace.push(b);
+                else if (jours <= JOURS_AVANT_MISE_EN_AVANT) imminents.push(b);
+                else aVenir.push(b);
+            }
+            // Le plus proche d'abord parmi les imminents, le plus proche d'abord
+            // aussi parmi ceux qu'on relegue : entre deux absents, celui qui
+            // revient bientot interesse davantage.
+            imminents.sort((x, y) => joursAvantArrivee(x) - joursAvantArrivee(y));
+            aVenir.sort((x, y) => joursAvantArrivee(x) - joursAvantArrivee(y));
+
+            for (const b of [...imminents, ...enPlace, ...aVenir]) {
+                const jours = joursAvantArrivee(b);
+                const etat = jours === null ? ''
+                    : jours <= JOURS_AVANT_MISE_EN_AVANT ? ' barber-imminent'
+                    : ' barber-a-venir';
                 const initial = b.name.charAt(0).toUpperCase();
                 const photoSrc = b.photo_url
                     ? (/^(data:|https?:)/.test(b.photo_url) ? b.photo_url : `../../assets/images${b.photo_url}`)
@@ -1003,7 +1037,7 @@
                 // mentions se superposent a l'image : elles ne coutent plus de
                 // hauteur, ce qui est tout l'enjeu de cette etape.
                 html += `
-                    <div class="barber-card${b.is_guest ? ' guest-barber' : ''}" data-id="${esc(b.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(b.name)}">
+                    <div class="barber-card${b.is_guest ? ' guest-barber' : ''}${etat}" data-id="${esc(b.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(b.name)}${jours !== null ? ' — arrive dans ' + jours + ' jour' + (jours > 1 ? 's' : '') : ''}">
                         <div class="barber-media">
                             ${avatarContent}
                             ${offerBadge}

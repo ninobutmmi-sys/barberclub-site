@@ -3246,3 +3246,72 @@ a:focus-visible, button:focus-visible {
         transition-delay: 0ms !important;
     }
 }
+
+/* ═══════════════════════════════════════════
+   LES BARBIERS QUI N'ONT PAS ENCORE COMMENCE
+
+   Deux etats, deux traitements opposes, et c'est voulu : loin de son premier
+   jour, un barbier n'est qu'une promesse et doit s'effacer ; a une semaine,
+   son arrivee est une nouvelle et merite la meilleure place.
+   ═══════════════════════════════════════════ */
+
+/* Loin : en retrait. La tuile reste cliquable — reserver pour le mois
+   prochain est legitime — mais elle cesse de rivaliser avec ceux qui coupent
+   aujourd'hui. */
+.barber-card.barber-a-venir {
+    opacity: 0.5;
+    border-color: rgba(255, 255, 255, 0.05);
+    box-shadow: none;
+    transition: opacity 0.3s ease, border-color 0.3s ease;
+}
+.barber-card.barber-a-venir .barber-media img {
+    filter: grayscale(0.75);
+}
+.barber-card.barber-a-venir:hover,
+.barber-card.barber-a-venir.selected,
+.barber-card.barber-a-venir:focus-visible {
+    opacity: 1;
+}
+.barber-card.barber-a-venir:hover .barber-media img,
+.barber-card.barber-a-venir.selected .barber-media img {
+    filter: none;
+}
+
+/* A une semaine : la tuile prend l'or, comme la fenetre des engagements. Le
+   halo respire lentement — c'est la seule chose qui bouge en continu sur cet
+   ecran, donc elle doit rester lente et discrete. */
+.barber-card.barber-imminent {
+    border-color: rgba(232, 192, 122, 0.45);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 0 22px rgba(232, 192, 122, 0.16),
+        0 6px 24px rgba(0, 0, 0, 0.3);
+    animation: barbierImminent 3.2s ease-in-out infinite;
+}
+@keyframes barbierImminent {
+    0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 20px rgba(232,192,122,0.14), 0 6px 24px rgba(0,0,0,0.3); }
+    50%      { box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 30px rgba(232,192,122,0.30), 0 6px 24px rgba(0,0,0,0.3); }
+}
+.barber-card.barber-imminent .barber-name {
+    color: #F0D9A8;
+}
+.barber-card.barber-imminent.selected .barber-name {
+    color: #000;
+}
+/* La date passe de l'or discret a l'or plein, et son fond se teinte : c'est
+   l'information qui justifie la mise en avant, elle doit se lire en premier. */
+.barber-card.barber-imminent .barber-media .barber-guest-badge {
+    color: #0C0A09;
+    font-weight: 800;
+    background: linear-gradient(to top, rgba(232, 192, 122, 0.95) 40%, rgba(232, 192, 122, 0.55) 75%, transparent);
+    padding-top: 14px;
+}
+.barber-card.barber-imminent .barber-avatar-placeholder {
+    color: rgba(232, 192, 122, 0.5);
+}
+
+/* Le halo qui respire s'arrete, la bordure doree suffit a distinguer la
+   tuile. */
+@media (prefers-reduced-motion: reduce) {
+    .barber-card.barber-imminent { animation: none; }
+}
