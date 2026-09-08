@@ -2173,107 +2173,250 @@ body::after {
 }
 
 /* Policy modal */
+/* ═══════════════════════════════════════════
+   LA FENETRE DES ENGAGEMENTS
+
+   Trois cartes identiques, des icones grises a 50 % d'opacite, un titre de
+   13 px et un bouton a 30 % d'opacite : l'ecran qui demande au client
+   d'accepter une facturation en cas d'absence avait l'air d'une note de bas
+   de page.
+
+   L'or du logo — la seule couleur de la maison — y prend enfin un role. Il
+   tient les icones et rien d'autre : une audace, a un seul endroit, le reste
+   se tait.
+   ═══════════════════════════════════════════ */
 .policy-overlay {
     position: fixed; inset: 0; z-index: 10000;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: flex-start; justify-content: center;
     padding: 16px;
-    background: rgba(0,0,0,0.75);
+    background: rgba(0,0,0,0.78);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
     opacity: 0; pointer-events: none;
     transition: opacity 0.4s ease;
     overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
 .policy-overlay.active { opacity: 1; pointer-events: auto; }
+
 .policy-card {
+    position: relative;
     max-width: 440px; width: 100%;
     /* Liquid Glass 2.0 — frosted translucent panel over the blurred overlay */
-    background: rgba(12,10,9,0.78);
+    background: rgba(12,10,9,0.82);
     backdrop-filter: blur(40px) saturate(180%);
     -webkit-backdrop-filter: blur(40px) saturate(180%);
     border: 1px solid rgba(255,255,255,0.1);
     box-shadow:
         inset 0 1px 0 rgba(255,255,255,0.14),
         0 0 0 1px rgba(255,255,255,0.04),
-        0 24px 80px rgba(0,0,0,0.6);
+        0 24px 80px rgba(0,0,0,0.7);
     border-radius: 24px;
-    padding: 28px 22px 24px;
+    padding: 26px 20px 22px;
+    margin: auto;
     text-align: center;
+    overflow: hidden;
     transform: translateY(30px) scale(0.95);
     opacity: 0;
     transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.5s ease;
 }
 .policy-overlay.active .policy-card { transform: translateY(0) scale(1); opacity: 1; }
+
+/* Une lueur doree tres basse, posee derriere le titre. Elle ne se voit pas
+   vraiment : elle donne juste une source de lumiere au panneau, qui etait
+   eclaire de nulle part. */
+.policy-card::before {
+    content: '';
+    position: absolute; top: -60%; left: 50%;
+    width: 320px; height: 320px;
+    transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(232,192,122,0.12), transparent 68%);
+    pointer-events: none;
+}
+
 .policy-title {
+    position: relative;
     font-family: 'Orbitron', sans-serif;
-    font-size: 13px; font-weight: 800;
+    font-size: 15px; font-weight: 800;
     color: #fff; text-transform: uppercase;
-    letter-spacing: 0.1em; margin-bottom: 4px;
+    letter-spacing: 0.09em; margin-bottom: 8px;
+    text-shadow: 0 0 26px rgba(232,192,122,0.28);
+}
+/* Le filet sous le titre : deux traits qui s'eteignent vers les bords, comme
+   une enseigne. Il remplace les 4 px de marge qui separaient le titre du
+   sous-titre sans rien dire. */
+.policy-title::after {
+    content: '';
+    display: block;
+    width: 84px; height: 1px;
+    margin: 8px auto 0;
+    background: linear-gradient(90deg, transparent, rgba(232,192,122,0.75), transparent);
 }
 .policy-subtitle {
-    font-size: 12px; color: rgba(255,255,255,0.4);
-    margin-bottom: 20px; line-height: 1.4;
+    position: relative;
+    font-size: 12.5px; color: rgba(255,255,255,0.58);
+    margin-bottom: 18px; line-height: 1.45;
 }
-.policy-rules { text-align: left; margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+
+.policy-rules { position: relative; text-align: left; margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
+
 .policy-rule {
-    display: flex; gap: 12px; align-items: flex-start;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+    display: flex; gap: 13px; align-items: flex-start;
+    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.018));
+    border: 1px solid rgba(255,255,255,0.07);
     border-radius: 14px;
-    padding: 14px;
+    padding: 13px 13px 13px 15px;
+    overflow: hidden;
+    /* Les trois regles entrent l'une apres l'autre. Le retard est court : on
+       lit un contrat, on ne regarde pas un generique. */
+    animation: policyRuleIn 0.4s cubic-bezier(0.16,1,0.3,1) backwards;
 }
+.policy-overlay .policy-rule:nth-child(1) { animation-delay: 0.16s; }
+.policy-overlay .policy-rule:nth-child(2) { animation-delay: 0.23s; }
+.policy-overlay .policy-rule:nth-child(3) { animation-delay: 0.30s; }
+@keyframes policyRuleIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* Le liseré doré a gauche : il rattache les trois cartes a la meme colonne,
+   la ou trois blocs identiques flottaient cote a cote. */
+.policy-rule::before {
+    content: '';
+    position: absolute; left: 0; top: 12px; bottom: 12px;
+    width: 2px; border-radius: 2px;
+    background: linear-gradient(180deg, rgba(232,192,122,0.55), rgba(232,192,122,0.06));
+}
+
 .policy-rule-icon {
-    flex-shrink: 0; width: 34px; height: 34px;
+    position: relative;
+    flex-shrink: 0; width: 36px; height: 36px;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(255,255,255,0.06);
-    border-radius: 10px;
+    background:
+        radial-gradient(circle at 50% 30%, rgba(232,192,122,0.22), transparent 70%),
+        linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02));
+    border: 1px solid rgba(232,192,122,0.24);
+    border-radius: 11px;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.14),
+        0 0 18px rgba(232,192,122,0.10);
 }
-.policy-rule-icon svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.5); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.policy-rule-content { flex: 1; }
+/* L'icone etait grise a 50 % dans une boite grise. Elle prend l'or et sa
+   propre lueur : c'est la seule chose coloree de la fenetre. */
+.policy-rule-icon svg {
+    width: 18px; height: 18px;
+    stroke: #E8C07A; fill: none;
+    stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 5px rgba(232,192,122,0.45));
+}
+
+.policy-rule-content { flex: 1; min-width: 0; }
 .policy-rule-title {
     font-family: 'Orbitron', sans-serif;
-    font-size: 10px; font-weight: 700;
+    font-size: 10.5px; font-weight: 700;
     color: #fff; text-transform: uppercase;
-    letter-spacing: 0.06em; margin-bottom: 4px;
+    letter-spacing: 0.07em; margin-bottom: 5px;
 }
 .policy-rule-text {
-    font-size: 12px; line-height: 1.6;
-    color: rgba(255,255,255,0.6);
+    font-size: 12.5px; line-height: 1.55;
+    /* 0.6 sur ce fond passait sous le seuil de lisibilite pour un texte que le
+       client s'engage a avoir lu. */
+    color: rgba(255,255,255,0.72);
 }
+
+/* ── L'acceptation ───────────────────────── */
 .policy-checkbox-row {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 16px; cursor: pointer;
+    position: relative;
+    display: flex; align-items: center; gap: 11px;
+    margin-bottom: 14px; padding: 9px 10px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.25s ease, border-color 0.25s ease;
     -webkit-tap-highlight-color: transparent;
+}
+.policy-checkbox-row:hover { background: rgba(255,255,255,0.035); }
+
+/* La vraie case, retiree de l'affichage mais pas du parcours clavier ni des
+   lecteurs d'ecran — `display: none` l'aurait sortie des deux. */
+.policy-checkbox-input {
+    position: absolute; width: 1px; height: 1px;
+    margin: 0; padding: 0; border: 0;
+    clip: rect(0 0 0 0); clip-path: inset(50%);
+    overflow: hidden; white-space: nowrap;
 }
 .policy-checkbox {
     flex-shrink: 0; width: 22px; height: 22px;
-    border: 1.5px solid rgba(255,255,255,0.15);
+    border: 1.5px solid rgba(255,255,255,0.22);
     border-radius: 7px;
     background: rgba(255,255,255,0.04);
     display: flex; align-items: center; justify-content: center;
-    transition: all 0.25s ease;
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
-.policy-checkbox svg { width: 13px; height: 13px; stroke: #fff; stroke-width: 2.5; fill: none; opacity: 0; transform: scale(0.5); transition: all 0.25s ease; }
-.policy-checkbox.checked { background: #fff; border-color: #fff; }
-.policy-checkbox.checked svg { opacity: 1; transform: scale(1); stroke: #000; }
-.policy-checkbox-label { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.4; user-select: none; }
+.policy-checkbox svg { width: 13px; height: 13px; stroke: #0C0A09; stroke-width: 3; fill: none; opacity: 0; transform: scale(0.5); transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16,1,0.3,1); }
+.policy-checkbox-input:checked + .policy-checkbox {
+    background: linear-gradient(160deg, #F0D9A8, #E8C07A);
+    border-color: #E8C07A;
+    box-shadow: 0 0 16px rgba(232,192,122,0.45);
+}
+.policy-checkbox-input:checked + .policy-checkbox svg { opacity: 1; transform: scale(1); }
+.policy-checkbox-input:focus-visible + .policy-checkbox {
+    outline: 2px solid #fff; outline-offset: 3px;
+}
+.policy-checkbox-label { font-size: 12.5px; color: rgba(255,255,255,0.7); line-height: 1.4; user-select: none; }
+
+/* Cliquer le bouton verrouille renvoie ici. Sans ce rappel, le clic ne
+   produisait rien et rien n'expliquait quoi. */
+.policy-checkbox-row.reclame {
+    animation: policyReclame 0.5s ease-out;
+}
+@keyframes policyReclame {
+    0%   { background: rgba(232,192,122,0.16); border-color: rgba(232,192,122,0.55); transform: translateX(0); }
+    25%  { transform: translateX(-4px); }
+    60%  { transform: translateX(4px); }
+    100% { background: transparent; border-color: transparent; transform: translateX(0); }
+}
+
+/* ── Le bouton ───────────────────────────── */
 .policy-btn {
+    position: relative;
     width: 100%; padding: 16px;
-    background: #fff; color: #000; border: none;
+    background: linear-gradient(180deg, #fff, #ebe7e2);
+    color: #000; border: 1px solid transparent;
     border-radius: 14px;
     font-family: 'Orbitron', sans-serif;
     font-size: 12px; font-weight: 800;
     text-transform: uppercase; letter-spacing: 0.1em;
-    cursor: pointer; transition: all 0.3s ease;
-    position: relative; overflow: hidden;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(232,192,122,0.22), 0 10px 30px rgba(0,0,0,0.45);
+    transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
 }
-.policy-btn.disabled { opacity: 0.3; pointer-events: none; }
-.policy-btn:not(.disabled):active { transform: scale(0.97); }
-.policy-btn:not(.disabled)::after {
+/* Verrouille, il restait lisible a 30 % d'opacite : du noir sur du blanc
+   presque transparent, sur fond sombre. Il devient une forme creuse, qui se
+   lit, et qui reste cliquable pour pouvoir dire ce qui manque. */
+.policy-btn.locked {
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.55);
+    border-color: rgba(255,255,255,0.14);
+    box-shadow: none;
+    cursor: not-allowed;
+}
+.policy-btn:not(.locked):active { transform: scale(0.97); }
+.policy-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.policy-btn:not(.locked)::after {
     content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
     animation: policyShimmer 2.5s ease-in-out infinite;
+    pointer-events: none;
 }
-@keyframes policyShimmer { 0% { left: -100%; } 50%, 100% { left: 150%; } }
+/* Le reflet animait `left`, donc une mise en page recalculee a chaque image,
+   en boucle et sans fin. En `transform`, la course se mesure sur la largeur du
+   reflet — 60 % du parent — donc les 250 % d'origine valent 417 % des siens. */
+@keyframes policyShimmer {
+    0% { transform: translateX(0); }
+    50%, 100% { transform: translateX(417%); }
+}
 
 .loading-spinner {
     width: 36px;

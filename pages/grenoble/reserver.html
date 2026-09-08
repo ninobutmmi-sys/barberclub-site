@@ -258,11 +258,15 @@
                     </div>
                 </div>
             </div>
-            <div class="policy-checkbox-row" id="policyCheckboxRow">
-                <div class="policy-checkbox" id="policyCheckbox"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-                <span class="policy-checkbox-label">J'ai lu et j'accepte ces conditions</span>
-            </div>
-            <button class="policy-btn disabled" id="policyAccept">Réserver mon créneau</button>
+            <!-- Vraie case a cocher : c'etait un <div> avec un ecouteur de clic,
+                 donc invisible au clavier et muet pour un lecteur d'ecran, sur la
+                 seule chose que le client doit accepter avant de reserver. -->
+            <label class="policy-checkbox-row" for="policyCheckbox">
+                <input type="checkbox" id="policyCheckbox" class="policy-checkbox-input">
+                <span class="policy-checkbox" aria-hidden="true"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <span class="policy-checkbox-label" id="policyCheckboxLabel">J'ai lu et j'accepte ces conditions</span>
+            </label>
+            <button class="policy-btn locked" id="policyAccept" aria-describedby="policyCheckboxLabel">Réserver mon créneau</button>
         </div>
     </div>
 
@@ -2342,20 +2346,59 @@
                 if (true) {
                     const overlay = $('#policyOverlay');
                     const checkbox = $('#policyCheckbox');
-                    const checkboxRow = $('#policyCheckboxRow');
                     const acceptBtn = $('#policyAccept');
+                    const card = overlay.querySelector('.policy-card');
                     overlay.classList.add('active');
                     document.body.style.overflow = 'hidden';
-                    checkboxRow.addEventListener('click', () => {
-                        checkbox.classList.toggle('checked');
-                        acceptBtn.classList.toggle('disabled', !checkbox.classList.contains('checked'));
-                    });
-                    acceptBtn.addEventListener('click', () => {
-                        if (acceptBtn.classList.contains('disabled')) return;
+
+                    // Le bouton n'est jamais annonce desactive : il l'a ete, et un
+                    // bouton desactive ne peut rien expliquer — ni au clavier, ni a
+                    // un lecteur d'ecran, ni a la souris. Il reste actif, prend
+                    // l'apparence verrouillee, et son clic renvoie vers la case.
+                    const majBouton = () => {
+                        acceptBtn.classList.toggle('locked', !checkbox.checked);
+                    };
+                    checkbox.addEventListener('change', majBouton);
+                    majBouton();
+
+                    const fermer = () => {
                         overlay.classList.remove('active');
                         document.body.style.overflow = '';
                         sessionStorage.setItem('bc_policy_seen', '1');
+                    };
+
+                    acceptBtn.addEventListener('click', () => {
+                        // Le bouton bloque ne faisait rien du tout : on cliquait,
+                        // il ne se passait rien, et rien ne disait pourquoi. Il
+                        // renvoie maintenant vers ce qui manque.
+                        if (!checkbox.checked) {
+                            const ligne = overlay.querySelector('.policy-checkbox-row');
+                            ligne.classList.remove('reclame');
+                            void ligne.offsetWidth;   // relance l'animation
+                            ligne.classList.add('reclame');
+                            checkbox.focus();
+                            return;
+                        }
+                        fermer();
                     });
+
+                    // Echap fermait le reste du site, pas cette fenetre. Et la
+                    // tabulation en sortait par le bas pour aller se perdre dans
+                    // la page cachee derriere.
+                    overlay.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') { e.preventDefault(); fermer(); return; }
+                        if (e.key !== 'Tab') return;
+                        const focusables = card.querySelectorAll('input, button, [href]');
+                        if (!focusables.length) return;
+                        const premier = focusables[0];
+                        const dernier = focusables[focusables.length - 1];
+                        if (e.shiftKey && document.activeElement === premier) {
+                            e.preventDefault(); dernier.focus();
+                        } else if (!e.shiftKey && document.activeElement === dernier) {
+                            e.preventDefault(); premier.focus();
+                        }
+                    });
+                    checkbox.focus({ preventScroll: true });
                 }
 
                 // Auto-select barber from URL param (e.g. ?barber=Tom)
