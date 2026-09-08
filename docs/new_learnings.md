@@ -1,7 +1,137 @@
 # Veille BarberClub — Nouvelles Decouvertes
 
-> Derniere mise a jour : 2026-04-21 14h30
-> Prochaine revue : 2026-04-28
+> Derniere mise a jour : 2026-09-08 15h30
+> Prochaine revue : 2026-09-22
+
+---
+
+## 2026-09-08 — Veille site & tunnel
+
+*Cinq mois sans veille. Les trois premiers points sont mesures sur la prod, pas
+lus quelque part.*
+
+### 1. Le tunnel envoie 1,7 Mo de photos pour des vignettes de 114 px
+
+**Mesure faite sur `barberclub-grenoble.fr/pages/grenoble/reserver`, iPhone 15 Pro
+simule** : 21 requetes, **~1715 Ko**, dont a elles seules `louay.jpg` 456 Ko,
+`clement.jpg` 404 Ko, `alan.jpg` 228 Ko et `tom.jpg` 196 Ko.
+
+Toutes ces images font **1200 px de large**. La grille des barbiers les affiche
+dans des tuiles de **114 x 152 px CSS** — soit 342 px de large au pire, en
+ecran a triple densite. Le tunnel telecharge donc entre trois et dix fois la
+resolution utile.
+
+Le probleme est ne du passage de l'avatar rond de 60 px a la tuile portrait :
+avant, une image trop grande se voyait peu ; maintenant il y en a sept par
+ecran. Le LCP reste bon (1088 ms) parce que la fibre du bureau masque tout,
+mais sur un forfait mobile c'est 1,7 Mo par visiteur qui hesite.
+
+**Action BarberClub** : generer une variante 400 px pour la grille (comme les
+600 px du planning), ou poser un `srcset`. Gain estime : ~1,4 Mo sur 1,7.
+- Source: mesure interne Playwright, 2026-09-08
+- Relevance: 5/5
+
+---
+
+### 2. Google a supprime les Q&A des fiches, et ouvre WhatsApp
+
+La rubrique Questions/Reponses des fiches Google Business **est retiree**,
+remplacee par « Ask Maps », une reponse generee en direct a partir du profil,
+des avis et du site. En parallele, WhatsApp devient un canal de message
+utilisable depuis la fiche, l'ancien chat natif etant abandonne.
+
+Consequence directe : les reponses que voyait le client ne viennent plus de ce
+que le salon a ecrit, mais de ce que Google lit **sur le site**. Une page
+horaires/tarifs claire devient une reponse ; une page floue devient un blanc.
+
+**Action BarberClub** : verifier ce qu'« Ask Maps » repond sur les deux fiches
+pour « prix coupe », « parking », « sans rendez-vous ». Decider si WhatsApp
+remplace le telephone comme canal de contact.
+- Source: https://www.zenoti.com/thecheckin/how-barbershops-can-own-the-local-search-results
+- Relevance: 4/5
+
+---
+
+### 3. INP sous 200 ms est devenu un risque de classement, pas un bonus
+
+Depuis la mise a jour de mars 2026, Google a **renforce le poids des Core Web
+Vitals**. INP a remplace FID, et le seuil est 200 ms au 75e centile sur les
+vrais visiteurs, sur une fenetre glissante de 28 jours.
+
+**Etat mesure du site** (laboratoire, mobile simule) :
+
+| Page | LCP | CLS | Poids |
+|------|-----|-----|-------|
+| Landing | 420 ms | 0,003 | 667 Ko |
+| Hub Grenoble | 192 ms | 0,014 | 199 Ko |
+| Reservation | 1088 ms | 0 | 1715 Ko |
+| Salon Meylan | 1256 ms | 0 | 553 Ko |
+
+Tout est loin des seuils. Deux reserves : ce sont des mesures laboratoire, et
+**l'INP ne se mesure pas ainsi** — il faut du trafic reel. Sur Salon Meylan,
+FCP et LCP tombent au meme instant (1256 ms), ce qui trahit un rendu bloque
+plutot qu'une image lente.
+
+**Action BarberClub** : ouvrir le rapport Core Web Vitals de la Search Console
+pour lire l'INP terrain. C'est la seule source qui compte.
+- Source: https://www.gbim.com/blog/core-web-vitals-2026-changes-fixes/
+- Relevance: 4/5
+
+---
+
+### 4. FAQPage : 3,2x plus de citations dans les reponses IA
+
+Audit de 150 sites de commerces locaux debut 2026 : **73 % n'ont aucun schema**.
+Ceux qui ont un `LocalBusiness` complet **plus** un `FAQPage` sont 2,7x plus
+souvent dans le pack local et **3,2x plus souvent cites dans les AI Overviews**.
+
+Nuance importante et contre-intuitive : une experience de fevrier 2026 montre
+que ChatGPT et Perplexity **ne parsent pas** le JSON-LD, ils le lisent comme du
+texte. Le benefice du schema est donc indirect — il renforce la position
+organique, et 76 % des citations d'AI Overview viennent du top 10 organique.
+
+**Etat du site** : `BarberShop` est present sur 20 pages, tres bien. `FAQPage`
+n'existe que sur les deux pages salon.
+
+**Action BarberClub** : ajouter un `FAQPage` sur prestations et contact — les
+vraies questions du telephone (parking, sans RDV, delai, moyens de paiement,
+enfants).
+- Source: https://thestacc.com/blog/local-business-schema-ai-search/
+- Relevance: 4/5
+
+---
+
+### 5. Afficher le prochain creneau AVANT le bouton Reserver
+
+Donnee de conversion : montrer « prochain creneau : jeudi 10h » **sur la page,
+avant que le client ne clique sur Reserver**, supprime l'incertitude qui cause
+l'essentiel des abandons en milieu de parcours. Autre chiffre du meme corpus :
+une reservation bouclee **en moins de deux minutes convertit 2,8x mieux**, et
+l'abandon culmine au moment du choix de date quand la disponibilite parait
+rare ou le prix flou.
+
+**Etat du site** : les trois prochains creneaux sont deja proposes, mais
+**a l'etape 3**, une fois le barbier et la prestation choisis. La landing et
+les pages salon, elles, ne montrent aucune disponibilite.
+
+**Action BarberClub** : afficher « prochain creneau : ... » sur les hubs de
+salon, a cote du bouton Reserver. L'API `availability` le sait deja.
+- Source: https://www.booknetic.com/blog/booking-funnel-conversion
+- Relevance: 4/5
+
+---
+
+### 6. Le profil ne rattrape plus un site faible
+
+Google evalue desormais l'etablissement **comme une entite unique** — fiche et
+site ensemble — et pondere l'engagement recent (frequence des posts, rapidite
+de reponse aux avis) plus que l'anciennete. Un profil complet ne compense plus
+un site pauvre, et inversement.
+
+**Action BarberClub** : le site est solide ; c'est la cadence de publication
+sur les fiches qui manque. Un post par semaine et par salon suffirait.
+- Source: https://www.mapranks.com/2026/02/23/google-business-seo-in-2026-whats-actually-driving-rankings-now/
+- Relevance: 3/5
 
 ---
 
