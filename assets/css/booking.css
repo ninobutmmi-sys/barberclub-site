@@ -2176,21 +2176,26 @@ body::after {
 /* ═══════════════════════════════════════════
    LA FENETRE DES ENGAGEMENTS
 
-   Trois cartes identiques, des icones grises a 50 % d'opacite, un titre de
-   13 px et un bouton a 30 % d'opacite : l'ecran qui demande au client
-   d'accepter une facturation en cas d'absence avait l'air d'une note de bas
-   de page.
+   Premiere tentative : de l'or sur les icones. C'etait hors sujet, et la regle
+   est ecrite dans ce depot — « le site est noir et blanc du sol au plafond »,
+   l'or de la couronne ne sort que sur le bloc fidelite. Une fenetre de
+   conditions n'a rien a lui emprunter.
 
-   L'or du logo — la seule couleur de la maison — y prend enfin un role. Il
-   tient les icones et rien d'autre : une audace, a un seul endroit, le reste
-   se tait.
+   Elle reprend donc la langue du site, et sa maniere de faire briller le
+   verre : la couronne qui flotte, les nappes qui derivent derriere le
+   panneau, et le faisceau qui fait le tour du cadre. Le meme geste que le
+   bloc fidelite, en blanc.
+
+   Les trois regles perdent leurs cartes et leurs icones en boite. Un seul
+   panneau, des filets pour separer : c'est un document qu'on lit, pas trois
+   objets qu'on compare.
    ═══════════════════════════════════════════ */
 .policy-overlay {
     position: fixed; inset: 0; z-index: 10000;
     display: flex; align-items: flex-start; justify-content: center;
     padding: 16px;
-    background: rgba(0,0,0,0.78);
-    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    background: rgba(0,0,0,0.82);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
     opacity: 0; pointer-events: none;
     transition: opacity 0.4s ease;
     overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -2199,114 +2204,170 @@ body::after {
 
 .policy-card {
     position: relative;
+    isolation: isolate;
     max-width: 440px; width: 100%;
-    /* Liquid Glass 2.0 — frosted translucent panel over the blurred overlay */
-    background: rgba(12,10,9,0.82);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.14),
-        0 0 0 1px rgba(255,255,255,0.04),
-        0 24px 80px rgba(0,0,0,0.7);
-    border-radius: 24px;
-    padding: 26px 20px 22px;
     margin: auto;
+    /* La lumiere vient du haut, comme sur tous les panneaux de verre du site. */
+    background:
+        radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.07), transparent 62%),
+        rgba(10, 9, 8, 0.62);
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+    border: 1px solid rgba(255,255,255,0.09);
+    box-shadow: 0 30px 90px rgba(0,0,0,0.75);
+    border-radius: 22px;
+    padding: 22px 20px 18px;
     text-align: center;
     overflow: hidden;
-    transform: translateY(30px) scale(0.95);
+    transform: translateY(28px) scale(0.96);
     opacity: 0;
-    transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.5s ease;
+    transition: transform 0.55s cubic-bezier(0.16,1,0.3,1), opacity 0.5s ease;
 }
 .policy-overlay.active .policy-card { transform: translateY(0) scale(1); opacity: 1; }
 
-/* Une lueur doree tres basse, posee derriere le titre. Elle ne se voit pas
-   vraiment : elle donne juste une source de lumiere au panneau, qui etait
-   eclaire de nulle part. */
+/* ─── Le faisceau qui fait le tour du cadre ───
+   Un degrade conique masque a un pixel : seul le bord recoit la lumiere. Le
+   nom de la variable est prefixe, `--beam` existe deja ailleurs dans le
+   projet et deux declarations `@property` du meme nom se marcheraient dessus. */
+@property --policy-beam {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
 .policy-card::before {
     content: '';
-    position: absolute; top: -60%; left: 50%;
-    width: 320px; height: 320px;
-    transform: translateX(-50%);
-    background: radial-gradient(circle, rgba(232,192,122,0.12), transparent 68%);
+    position: absolute; inset: 0; z-index: 2;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+        from var(--policy-beam, 0deg),
+        transparent 0deg 40deg,
+        rgba(255,255,255,0.30) 80deg,
+        rgba(255,255,255,0.92) 96deg,
+        rgba(255,255,255,0.22) 118deg,
+        transparent 158deg 360deg);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
     pointer-events: none;
+    animation: policyBeam 8s linear infinite;
+}
+@keyframes policyBeam { to { --policy-beam: 360deg; } }
+
+/* ─── Les nappes, derriere le verre ───
+   Blanc et gris bleute : les deux seules teintes que le site s'autorise hors
+   du bloc fidelite. Elles derivent assez lentement pour qu'on ne les voie pas
+   bouger, assez pour que le fond ne soit jamais tout a fait le meme. */
+.policy-aurora { position: absolute; inset: -40%; z-index: -1; pointer-events: none; }
+.policy-aurora span {
+    position: absolute;
+    width: 60%; padding-top: 60%;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.30;
+    will-change: transform;
+}
+.policy-aurora span:nth-child(1) {
+    left: 6%; top: 10%;
+    background: radial-gradient(circle, rgba(255,255,255,0.50), rgba(255,255,255,0.12) 55%, transparent 72%);
+    animation: policyAuroraA 15s ease-in-out infinite alternate;
+}
+.policy-aurora span:nth-child(2) {
+    right: 4%; bottom: 8%;
+    background: radial-gradient(circle, rgba(214,224,236,0.38), rgba(160,178,200,0.10) 55%, transparent 72%);
+    animation: policyAuroraB 19s ease-in-out infinite alternate;
+}
+@keyframes policyAuroraA {
+    from { transform: translate3d(0,0,0) scale(1); }
+    to   { transform: translate3d(20%, 12%, 0) scale(1.16); }
+}
+@keyframes policyAuroraB {
+    from { transform: translate3d(0,0,0) scale(1.1); }
+    to   { transform: translate3d(-16%, -10%, 0) scale(0.92); }
 }
 
+/* ─── La couronne ─── */
+.policy-crown {
+    position: relative;
+    display: block;
+    width: 22px; height: auto;
+    margin: 0 auto 9px;
+    opacity: 0.45;
+    animation: crownFloat 5s ease-in-out infinite;
+}
+@keyframes crownFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25%      { transform: translateY(-3px) rotate(1deg); }
+    75%      { transform: translateY(-1.5px) rotate(-0.5deg); }
+}
+
+/* ─── Le titre ───
+   Orbitron a 13 px pour le titre d'une fenetre, sur un site dont les titres
+   montent a 90 : il n'avait pas la voix de la maison. */
 .policy-title {
     position: relative;
     font-family: 'Orbitron', sans-serif;
-    font-size: 15px; font-weight: 800;
+    font-size: clamp(16px, 4.7vw, 20px);
+    font-weight: 800;
     color: #fff; text-transform: uppercase;
-    letter-spacing: 0.09em; margin-bottom: 8px;
-    text-shadow: 0 0 26px rgba(232,192,122,0.28);
+    letter-spacing: 0.06em; line-height: 1.2;
+    margin-bottom: 8px;
+    text-wrap: balance;
+    text-shadow: 0 0 30px rgba(255,255,255,0.22);
 }
-/* Le filet sous le titre : deux traits qui s'eteignent vers les bords, comme
-   une enseigne. Il remplace les 4 px de marge qui separaient le titre du
-   sous-titre sans rien dire. */
 .policy-title::after {
     content: '';
     display: block;
-    width: 84px; height: 1px;
-    margin: 8px auto 0;
-    background: linear-gradient(90deg, transparent, rgba(232,192,122,0.75), transparent);
+    width: 60px; height: 1px;
+    margin: 9px auto 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
 }
 .policy-subtitle {
     position: relative;
-    font-size: 12.5px; color: rgba(255,255,255,0.58);
-    margin-bottom: 18px; line-height: 1.45;
+    font-size: 12.5px; color: rgba(255,255,255,0.5);
+    margin-bottom: 15px; line-height: 1.45;
 }
 
-.policy-rules { position: relative; text-align: left; margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
-
+/* ─── Les trois regles ───
+   Un seul panneau, separe par des filets. Trois cartes identiques posees
+   cote a cote donnaient trois objets a comparer, alors qu'il s'agit de lire
+   un texte de haut en bas. */
+.policy-rules {
+    position: relative;
+    text-align: left;
+    margin-bottom: 14px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
 .policy-rule {
     position: relative;
-    display: flex; gap: 13px; align-items: flex-start;
-    background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.018));
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 14px;
-    padding: 13px 13px 13px 15px;
-    overflow: hidden;
-    /* Les trois regles entrent l'une apres l'autre. Le retard est court : on
-       lit un contrat, on ne regarde pas un generique. */
-    animation: policyRuleIn 0.4s cubic-bezier(0.16,1,0.3,1) backwards;
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 12px 2px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    animation: policyRuleIn 0.45s cubic-bezier(0.16,1,0.3,1) backwards;
 }
-.policy-overlay .policy-rule:nth-child(1) { animation-delay: 0.16s; }
-.policy-overlay .policy-rule:nth-child(2) { animation-delay: 0.23s; }
-.policy-overlay .policy-rule:nth-child(3) { animation-delay: 0.30s; }
+.policy-overlay .policy-rule:nth-child(1) { animation-delay: 0.18s; }
+.policy-overlay .policy-rule:nth-child(2) { animation-delay: 0.26s; }
+.policy-overlay .policy-rule:nth-child(3) { animation-delay: 0.34s; }
 @keyframes policyRuleIn {
     from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: none; }
 }
 
-/* Le liseré doré a gauche : il rattache les trois cartes a la meme colonne,
-   la ou trois blocs identiques flottaient cote a cote. */
-.policy-rule::before {
-    content: '';
-    position: absolute; left: 0; top: 12px; bottom: 12px;
-    width: 2px; border-radius: 2px;
-    background: linear-gradient(180deg, rgba(232,192,122,0.55), rgba(232,192,122,0.06));
-}
-
+/* L'icone quitte sa boite : elle devient un signe dans la marge, comme les
+   pictogrammes des pages prestations. */
 .policy-rule-icon {
-    position: relative;
-    flex-shrink: 0; width: 36px; height: 36px;
+    flex-shrink: 0;
+    width: 22px; height: 22px;
     display: flex; align-items: center; justify-content: center;
-    background:
-        radial-gradient(circle at 50% 30%, rgba(232,192,122,0.22), transparent 70%),
-        linear-gradient(160deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02));
-    border: 1px solid rgba(232,192,122,0.24);
-    border-radius: 11px;
-    box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.14),
-        0 0 18px rgba(232,192,122,0.10);
+    margin-top: 1px;
+    background: none; border: 0;
 }
-/* L'icone etait grise a 50 % dans une boite grise. Elle prend l'or et sa
-   propre lueur : c'est la seule chose coloree de la fenetre. */
 .policy-rule-icon svg {
-    width: 18px; height: 18px;
-    stroke: #E8C07A; fill: none;
-    stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
-    filter: drop-shadow(0 0 5px rgba(232,192,122,0.45));
+    width: 21px; height: 21px;
+    stroke: rgba(255,255,255,0.85); fill: none;
+    stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 8px rgba(255,255,255,0.30));
 }
 
 .policy-rule-content { flex: 1; min-width: 0; }
@@ -2314,21 +2375,19 @@ body::after {
     font-family: 'Orbitron', sans-serif;
     font-size: 10.5px; font-weight: 700;
     color: #fff; text-transform: uppercase;
-    letter-spacing: 0.07em; margin-bottom: 5px;
+    letter-spacing: 0.09em; margin-bottom: 5px;
 }
 .policy-rule-text {
-    font-size: 12.5px; line-height: 1.55;
-    /* 0.6 sur ce fond passait sous le seuil de lisibilite pour un texte que le
-       client s'engage a avoir lu. */
-    color: rgba(255,255,255,0.72);
+    font-size: 12.5px; line-height: 1.5;
+    color: rgba(255,255,255,0.66);
 }
 
-/* ── L'acceptation ───────────────────────── */
+/* ─── L'acceptation ───────────────────────── */
 .policy-checkbox-row {
     position: relative;
     display: flex; align-items: center; gap: 11px;
-    margin-bottom: 14px; padding: 9px 10px;
-    border-radius: 12px;
+    margin-bottom: 11px; padding: 7px 4px;
+    border-radius: 10px;
     border: 1px solid transparent;
     cursor: pointer;
     transition: background 0.25s ease, border-color 0.25s ease;
@@ -2336,8 +2395,8 @@ body::after {
 }
 .policy-checkbox-row:hover { background: rgba(255,255,255,0.035); }
 
-/* La vraie case, retiree de l'affichage mais pas du parcours clavier ni des
-   lecteurs d'ecran — `display: none` l'aurait sortie des deux. */
+/* Retiree de l'affichage mais pas du parcours clavier ni des lecteurs
+   d'ecran — `display: none` l'aurait sortie des deux. */
 .policy-checkbox-input {
     position: absolute; width: 1px; height: 1px;
     margin: 0; padding: 0; border: 0;
@@ -2346,54 +2405,51 @@ body::after {
 }
 .policy-checkbox {
     flex-shrink: 0; width: 22px; height: 22px;
-    border: 1.5px solid rgba(255,255,255,0.22);
+    border: 1.5px solid rgba(255,255,255,0.25);
     border-radius: 7px;
     background: rgba(255,255,255,0.04);
     display: flex; align-items: center; justify-content: center;
     transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
-.policy-checkbox svg { width: 13px; height: 13px; stroke: #0C0A09; stroke-width: 3; fill: none; opacity: 0; transform: scale(0.5); transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16,1,0.3,1); }
+.policy-checkbox svg { width: 13px; height: 13px; stroke: #000; stroke-width: 3; fill: none; opacity: 0; transform: scale(0.5); transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16,1,0.3,1); }
 .policy-checkbox-input:checked + .policy-checkbox {
-    background: linear-gradient(160deg, #F0D9A8, #E8C07A);
-    border-color: #E8C07A;
-    box-shadow: 0 0 16px rgba(232,192,122,0.45);
+    background: #fff; border-color: #fff;
+    box-shadow: 0 0 18px rgba(255,255,255,0.35);
 }
 .policy-checkbox-input:checked + .policy-checkbox svg { opacity: 1; transform: scale(1); }
 .policy-checkbox-input:focus-visible + .policy-checkbox {
     outline: 2px solid #fff; outline-offset: 3px;
 }
-.policy-checkbox-label { font-size: 12.5px; color: rgba(255,255,255,0.7); line-height: 1.4; user-select: none; }
+.policy-checkbox-label { font-size: 12.5px; color: rgba(255,255,255,0.68); line-height: 1.4; user-select: none; }
 
-/* Cliquer le bouton verrouille renvoie ici. Sans ce rappel, le clic ne
+/* Cliquer le bouton verrouille renvoie ici : sans ce rappel, le clic ne
    produisait rien et rien n'expliquait quoi. */
-.policy-checkbox-row.reclame {
-    animation: policyReclame 0.5s ease-out;
-}
+.policy-checkbox-row.reclame { animation: policyReclame 0.5s ease-out; }
 @keyframes policyReclame {
-    0%   { background: rgba(232,192,122,0.16); border-color: rgba(232,192,122,0.55); transform: translateX(0); }
+    0%   { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.5); transform: translateX(0); }
     25%  { transform: translateX(-4px); }
     60%  { transform: translateX(4px); }
     100% { background: transparent; border-color: transparent; transform: translateX(0); }
 }
 
-/* ── Le bouton ───────────────────────────── */
+/* ─── Le bouton ───────────────────────────── */
 .policy-btn {
     position: relative;
     width: 100%; padding: 16px;
-    background: linear-gradient(180deg, #fff, #ebe7e2);
+    background: #fff;
     color: #000; border: 1px solid transparent;
-    border-radius: 14px;
+    border-radius: 13px;
     font-family: 'Orbitron', sans-serif;
     font-size: 12px; font-weight: 800;
     text-transform: uppercase; letter-spacing: 0.1em;
     cursor: pointer;
     overflow: hidden;
-    box-shadow: 0 0 30px rgba(232,192,122,0.22), 0 10px 30px rgba(0,0,0,0.45);
+    box-shadow: 0 0 34px rgba(255,255,255,0.16), 0 10px 30px rgba(0,0,0,0.5);
     transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
 }
-/* Verrouille, il restait lisible a 30 % d'opacite : du noir sur du blanc
-   presque transparent, sur fond sombre. Il devient une forme creuse, qui se
-   lit, et qui reste cliquable pour pouvoir dire ce qui manque. */
+/* Verrouille, il etait a 30 % d'opacite : du noir sur du blanc presque
+   transparent, sur fond sombre. Il devient une forme creuse, qui se lit, et
+   qui reste cliquable pour pouvoir dire ce qui manque. */
 .policy-btn.locked {
     background: rgba(255,255,255,0.05);
     color: rgba(255,255,255,0.55);
@@ -2411,11 +2467,19 @@ body::after {
     pointer-events: none;
 }
 /* Le reflet animait `left`, donc une mise en page recalculee a chaque image,
-   en boucle et sans fin. En `transform`, la course se mesure sur la largeur du
-   reflet — 60 % du parent — donc les 250 % d'origine valent 417 % des siens. */
+   en boucle. En `transform`, la course se mesure sur la largeur du reflet —
+   60 % du parent — donc les 250 % d'origine valent 417 % des siens. */
 @keyframes policyShimmer {
     0% { transform: translateX(0); }
     50%, 100% { transform: translateX(417%); }
+}
+
+/* Le faisceau, les nappes et la couronne s'arretent : il reste un panneau de
+   verre, ce qui suffit. */
+@media (prefers-reduced-motion: reduce) {
+    .policy-card::before,
+    .policy-aurora span,
+    .policy-crown { animation: none; }
 }
 
 .loading-spinner {
