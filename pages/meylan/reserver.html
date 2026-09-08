@@ -976,11 +976,12 @@
             // Un barbier qui arrive dans trois semaines occupait la premiere
             // tuile, devant ceux qui coupent aujourd'hui : son `sort_order` est
             // eleve parce qu'il vient d'etre cree, pas parce qu'il est
-            // prioritaire. Il passe derriere, en retrait.
+            // prioritaire. Ceux qui n'ont pas commence passent en fin de grille.
             //
-            // Sauf la derniere semaine avant son premier jour : la, son arrivee
-            // devient une nouvelle, et il remonte en tete avec la lueur doree de
-            // la maison. C'est le seul moment ou l'annoncer sert a quelque chose.
+            // La derniere semaine avant son premier jour, sa tuile s'allume —
+            // mais sans changer de place. Le bleu froid de la carte de Voiron
+            // dit deja « pas encore ouvert » sur la landing ; c'est la meme
+            // chose ici, et ce n'est pas l'or, qui parle de fidelite.
             const JOURS_AVANT_MISE_EN_AVANT = 7;
             const joursAvantArrivee = (b) => {
                 if (!b.contract_start) return null;
@@ -996,20 +997,18 @@
                 return jours > 0 ? jours : null;
             };
 
-            const imminents = [], enPlace = [], aVenir = [];
+            const enPlace = [], aVenir = [];
             for (const b of state.barbers) {
-                const jours = joursAvantArrivee(b);
-                if (jours === null) enPlace.push(b);
-                else if (jours <= JOURS_AVANT_MISE_EN_AVANT) imminents.push(b);
-                else aVenir.push(b);
+                (joursAvantArrivee(b) === null ? enPlace : aVenir).push(b);
             }
-            // Le plus proche d'abord parmi les imminents, le plus proche d'abord
-            // aussi parmi ceux qu'on relegue : entre deux absents, celui qui
-            // revient bientot interesse davantage.
-            imminents.sort((x, y) => joursAvantArrivee(x) - joursAvantArrivee(y));
+            // Ceux qui n'ont pas commence restent apres ceux qui coupent, meme
+            // a une semaine de leur arrivee : on ne fait pas passer devant
+            // quelqu'un qui ne peut pas couper aujourd'hui. Le plus proche
+            // ouvre le groupe, et la mise en avant se joue sur la tuile, pas
+            // sur la place.
             aVenir.sort((x, y) => joursAvantArrivee(x) - joursAvantArrivee(y));
 
-            for (const b of [...imminents, ...enPlace, ...aVenir]) {
+            for (const b of [...enPlace, ...aVenir]) {
                 const jours = joursAvantArrivee(b);
                 const etat = jours === null ? ''
                     : jours <= JOURS_AVANT_MISE_EN_AVANT ? ' barber-imminent'
