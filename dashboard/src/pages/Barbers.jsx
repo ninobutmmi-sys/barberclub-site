@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   useBarbers,
   useAllSchedules,
+  useSchool,
   useBarberSchedule,
   useBarberGuestDays,
   useUpdateBarber,
@@ -120,8 +121,31 @@ function semaineComplete(lignes = []) {
   });
 }
 
-function totalHeures(semaine) {
-  return semaine.reduce((h, j) => (j.is_working ? h + Math.max(0, enHeures(j.end_time) - enHeures(j.start_time)) : h), 0);
+// Un jour de cours n'est pas du temps passe au salon. L'ecole vit dans les
+// blocages du planning, pas dans la semaine type : sans cette deduction, la
+// carte annoncait 51,5 h pour un apprenti present trois jours.
+function totalHeures(semaine, joursEcole = null) {
+  return semaine.reduce((h, j) => {
+    if (!j.is_working) return h;
+    if (joursEcole && joursEcole.has(j.day_of_week)) return h;
+    return h + Math.max(0, enHeures(j.end_time) - enHeures(j.start_time));
+  }, 0);
+}
+
+/**
+ * Jours de la semaine ou la personne est systematiquement en cours.
+ * On ne retient que ce qui se repete : l'alternance est irreguliere, une
+ * journee isolee de rattrapage ne doit pas amputer la semaine affichee.
+ * Seuil : au moins la moitie des 8 prochaines semaines.
+ */
+function joursEnCours(habituels) {
+  return new Set(habituels || []);
+}
+
+function resumeEcole(joursEcole) {
+  if (!joursEcole || joursEcole.size === 0) return null;
+  const noms = [...joursEcole].sort().map((d) => DAYS_ABREGE[d]);
+  return `${noms.join(' ')} en cours`;
 }
 
 function resumeRepos(semaine) {
@@ -160,6 +184,7 @@ function useFlash() {
 export default function Barbers() {
   const { data: barbers = [], isLoading, error, refetch } = useBarbers();
   const { data: horaires = [] } = useAllSchedules();
+  const { data: ecole } = useSchool(1);
   const [fiche, setFiche] = useState(null);       // { id, onglet }
   const [showCreate, setShowCreate] = useState(false);
 
@@ -174,6 +199,14 @@ export default function Barbers() {
     for (const [id, lignes] of m) out.set(id, semaineComplete(lignes));
     return out;
   }, [horaires]);
+
+  // Les jours de cours systematiques, par personne. La section Ecole fait
+  // deja ce tri : on ne le refait pas ici.
+  const ecoleParBarbier = useMemo(() => {
+    const m = new Map();
+    for (const a of ecole?.apprentis || []) m.set(a.barber_id, a.habituels);
+    return m;
+  }, [ecole]);
 
   const actifs = barbers.filter((b) => b.is_active);
   const inactifs = barbers.filter((b) => !b.is_active);
@@ -216,7 +249,7 @@ export default function Barbers() {
           <>
             <ul className="bb-grille">
               {actifs.map((b) => (
-                <CarteBarbier key={b.id} barber={b} semaine={semaines.get(b.id)} onOuvrir={(onglet) => setFiche({ id: b.id, onglet })} />
+                <CarteBarbier key={b.id} barber={b} semaine={semaines.get(b.id)} habituels={ecoleParBarbier.get(b.id)} onOuvrir={(onglet) => setFiche({ id: b.id, onglet })} />
               ))}
               <li>
                 <button type="button" className="bb-ajout" onClick={() => setShowCreate(true)}>
@@ -234,7 +267,7 @@ export default function Barbers() {
                 <h3 className="bb-groupe">Désactivés<span>{inactifs.length}</span></h3>
                 <ul className="bb-grille">
                   {inactifs.map((b) => (
-                    <CarteBarbier key={b.id} barber={b} semaine={semaines.get(b.id)} onOuvrir={(onglet) => setFiche({ id: b.id, onglet })} />
+                    <CarteBarbier key={b.id} barber={b} semaine={semaines.get(b.id)} habituels={ecoleParBarbier.get(b.id)} onOuvrir={(onglet) => setFiche({ id: b.id, onglet })} />
                   ))}
                 </ul>
               </>
@@ -260,9 +293,11 @@ export default function Barbers() {
 // Carte — une personne, sa semaine
 // ============================================
 
-function CarteBarbier({ barber, semaine, onOuvrir }) {
+function CarteBarbier({ barber, semaine, habituels, onOuvrir }) {
   const updateBarber = useUpdateBarber();
-  const heures = semaine ? totalHeures(semaine) : null;
+  const joursEcole = joursEnCours(habituels);
+  const heures = semaine ? totalHeures(semaine, joursEcole) : null;
+  const mentionEcole = resumeEcole(joursEcole);
 
   return (
     <li className={`bb-carte${barber.is_active ? '' : ' off'}`}>
@@ -304,7 +339,7 @@ function CarteBarbier({ barber, semaine, onOuvrir }) {
 
       <p className="bb-resume">
         {semaine
-          ? <><strong>{heures % 1 === 0 ? heures : heures.toFixed(1).replace('.', ',')} h</strong> par semaine · {resumeRepos(semaine)}</>
+          ? <><strong>{heures % 1 === 0 ? heures : heures.toFixed(1).replace('.', ',')} h</strong> par semaine · {resumeRepos(semaine)}{mentionEcole ? ` · ${mentionEcole}` : ''}</>
           : 'Semaine non renseignée'}
       </p>
 

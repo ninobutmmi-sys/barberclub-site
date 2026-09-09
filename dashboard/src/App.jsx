@@ -41,6 +41,7 @@ const Guide = lazy(() => import('./pages/Guide'));
 const Planning = lazy(() => import('./pages/Planning'));
 const Services = lazy(() => import('./pages/Services'));
 const Barbers = lazy(() => import('./pages/Barbers'));
+const Ecole = lazy(() => import('./pages/Ecole'));
 const Clients = lazy(() => import('./pages/Clients'));
 const ClientDetail = lazy(() => import('./pages/ClientDetail'));
 const History = lazy(() => import('./pages/History'));
@@ -97,6 +98,9 @@ function AppRoutes() {
         <Route path="boutique" element={<Suspense fallback={<PageLoader />}><Boutique /></Suspense>} />
         <Route path="oney" element={<Suspense fallback={<PageLoader />}><Oney /></Suspense>} />
         <Route path="barbers" element={<Suspense fallback={<PageLoader />}><Barbers /></Suspense>} />
+        {/* Six apprentis en alternance : savoir qui est en cours quel jour
+            n'etait lisible nulle part. */}
+        <Route path="ecole" element={<Suspense fallback={<PageLoader />}><Ecole /></Suspense>} />
         <Route path="clients" element={<Suspense fallback={<PageLoader />}><Clients /></Suspense>} />
         <Route path="clients/:id" element={<Suspense fallback={<PageLoader />}><ClientDetail /></Suspense>} />
         <Route path="faux-plans" element={<Suspense fallback={<PageLoader />}><FauxPlans /></Suspense>} />

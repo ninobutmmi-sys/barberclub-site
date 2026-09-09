@@ -88,6 +88,10 @@ const NAV_GROUPS = [
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
       },
       {
+        to: '/ecole', label: 'École',
+        icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg>,
+      },
+      {
         to: '/clients', label: 'Clients',
         icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
       },
@@ -169,6 +173,7 @@ const DRAWER_NAV = [
   { to: '/boutique', label: 'Stock', icon: NAV.find(n => n.to === '/boutique').icon },
   { to: '/oney', label: 'Oney', icon: NAV.find(n => n.to === '/oney').icon },
   { to: '/barbers', label: 'Barbers', icon: NAV.find(n => n.to === '/barbers').icon },
+  { to: '/ecole', label: 'École', icon: NAV.find(n => n.to === '/ecole').icon },
   { to: '/faux-plans', label: 'Faux Plans', icon: NAV.find(n => n.to === '/faux-plans').icon },
   { to: '/history', label: 'Historique', icon: NAV.find(n => n.to === '/history').icon },
   { to: '/waitlist', label: 'Liste d\'attente', icon: NAV.find(n => n.to === '/waitlist').icon, badge: true },

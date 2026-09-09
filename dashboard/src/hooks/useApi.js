@@ -13,6 +13,7 @@ export const keys = {
   blockedSlots: (params) => ['blockedSlots', params],
   guestAssignments: ['guestAssignments'],
   barberSchedule: (id) => ['barberSchedule', id],
+  school: (semaines) => ['school', semaines],
   barberGuestDays: (id) => ['barberGuestDays', id],
   barberServices: (id) => ['barberServices', id],
   clients: (params) => ['clients', params],
@@ -64,6 +65,15 @@ export function useAllSchedules(options) {
   return useQuery({
     queryKey: ['allSchedules'],
     queryFn: api.getAllSchedules,
+    staleTime: 60_000,
+    ...options,
+  });
+}
+
+export function useSchool(semaines = 4, options) {
+  return useQuery({
+    queryKey: keys.school(semaines),
+    queryFn: () => api.getSchool(`?semaines=${semaines}`),
     staleTime: 60_000,
     ...options,
   });

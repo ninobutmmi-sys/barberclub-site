@@ -44,6 +44,7 @@ const pushRoutes = require('./routes/admin/push');
 const productRoutes = require('./routes/admin/products');
 const objectivesRoutes = require('./routes/admin/objectives');
 const tasksRoutes = require('./routes/admin/tasks');
+const schoolRoutes = require('./routes/admin/school');
 const { publicRouter: eventAlertPublicRoutes, adminRouter: eventAlertAdminRoutes } = require('./routes/eventAlerts');
 const brevoSmsWebhookRoutes = require('./routes/webhooks/brevoSms');
 const brevoEmailWebhookRoutes = require('./routes/webhooks/brevoEmail');
@@ -277,6 +278,7 @@ adminRouter.use('/push', pushRoutes);
 adminRouter.use('/products', productRoutes);
 adminRouter.use('/objectives', objectivesRoutes);
 adminRouter.use('/tasks', tasksRoutes);
+adminRouter.use('/school', schoolRoutes);
 adminRouter.use('/event-alerts', eventAlertAdminRoutes);
 app.use('/api/admin', adminRouter);
 
