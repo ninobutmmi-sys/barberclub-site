@@ -3653,3 +3653,53 @@ C'est exactement le motif que le secteur recommande, et il est déjà en place. 
 4. **Geler le créneau 30 minutes** pendant l'offre — reste à faire. Aujourd'hui on promet la place à trois personnes et n'importe qui peut la prendre entre-temps.
 
 **À mesurer dans un mois** : le délai médian entre notification et réservation, aujourd'hui de 48 h. C'est le seul chiffre qui dira si le lien a servi.
+
+---
+
+## Veille du 2026-09-09 — Que mettre dans la section École
+
+> Angle demandé par Nino : la section École existe et affiche qui est en cours quand.
+> Que peut-on y mettre d'utile en plus ? Tous les chiffres BarberClub sont mesurés en
+> base le 2026-09-09, sur les 180 derniers jours de Grenoble.
+
+### Le contexte qui donne son poids au reste
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | **DARES** | **44 % de rupture des contrats d'apprentissage dans la coiffure** — un des pires taux tous secteurs confondus. **65 % des apprentis qui rompent citent l'employeur ou le poste**, et les motifs nommés en premier sont les **horaires atypiques et les heures supplémentaires non compensées**. | https://dares.travail-emploi.gouv.fr/publication/quelles-causes-aux-ruptures-des-contrats-dapprentissage |
+| 5/5 | **Mesure BarberClub** | Le salon tourne sur **~70 h d'heures supplémentaires par semaine** : Louay 56 h, Nathan 51 h, Alan 49 h, Tom 44 h (CFA inclus, il s'impute sur les 35 h). C'est exactement le motif n°1 de rupture, sur six apprentis. | — |
+
+La section École n'est donc pas qu'un confort d'organisation : c'est l'endroit où se voit
+le risque de perdre un apprenti.
+
+### Les trois idées qui se branchent sur des données déjà en base
+
+| Score | Idée | Ce que la base dit déjà |
+|-------|------|-------------------------|
+| 5/5 | **Couverture du référentiel** — quelles prestations chacun a réellement pratiquées. Le CAP s'articule en deux pôles : *réalisation de prestations* et *relation clientèle*. Le premier se lit directement dans `bookings × services`. | Mesuré : **Alan 7/8, il n'a jamais fait de mèches**. Tom, Nathan, Louay 8/8. Eddine et Durel 0/8, ils débutent. Une grille prestation × apprenti se calcule sans rien ajouter au schéma. |
+| 5/5 | **Courbe de progression** — RDV par jour, mois après mois. C'est la preuve chiffrée que demande le livret d'apprentissage, et elle est flatteuse. | Mesuré : **Tom 18,0 → 22,0** de mars à septembre. **Nathan 15,3 → 19,6**. **Alan 13,4 → 17,7**. Trois courbes qui montent, personne ne les regarde. |
+| 4/5 | **Taux de retour du client** — le deuxième pôle du référentiel, *relation clientèle*, mesuré par le fait que le client revienne chez le même. | Mesuré : **Alan 76 %, Tom 71 %, Nathan 65 %** — contre **52 % pour Louay**, le seul non-apprenti. Les apprentis fidélisent mieux que le titulaire : c'est un argument à leur montrer. |
+
+### Les obligations légales, qui font de bonnes fonctionnalités
+
+| Score | Source | Trouvaille | URL |
+|-------|--------|-----------|-----|
+| 5/5 | **Code du travail R6223-6** | **Deux apprentis maximum par maître d'apprentissage.** Grenoble en compte six : il faut **trois maîtres d'apprentissage déclarés**, ou une dérogation de la commission départementale (5 ans, renouvelable). À vérifier d'urgence — c'est un point de contrôle URSSAF. | https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000018524008 |
+| 5/5 | Filiz / Formasup | **Entretien mensuel minimum** entre maître d'apprentissage et apprenti, et **livret d'apprentissage à remplir**. Ce sont des tâches récurrentes datées : la table `tasks` du dashboard sait déjà les porter, avec sa cloche et son compteur de retards. | https://www.filiz.io/blog/maitre-apprentissage-role-obligations |
+| 3/5 | Phorest | Le marché fait ça sous l'angle « niveaux de styliste » et objectifs personnels visibles depuis le téléphone du coiffeur — pas sous l'angle apprentissage. Personne ne traite le CFA. | https://www.phorest.com/us/features/salon-rostering-software/ |
+
+### L'ordre que je propose
+
+1. **Heures réelles contre 35 h**, par apprenti, CFA compris. Le chiffre est déjà calculé
+   pour la page Équipe ; il suffit de l'afficher ici avec le seuil. C'est le seul
+   indicateur qui touche au premier motif de rupture du secteur.
+2. **Couverture du référentiel** — une grille prestation × apprenti. Zéro schéma à ajouter,
+   et elle sert directement au livret.
+3. **Courbe de progression** — trois lignes qui montent, à montrer aux intéressés.
+4. **Entretien mensuel** — une tâche récurrente par apprenti dans `tasks`.
+5. **Alerte maître d'apprentissage** si un salon dépasse deux apprentis par tuteur déclaré.
+   Demande une colonne `tuteur_id` sur `barbers` : c'est la seule idée de cette liste qui
+   coûte une migration.
+
+**À ne pas faire** : recopier les « niveaux de styliste » du marché. Ici le niveau est
+donné par le diplôme préparé et son calendrier, pas par un barème maison.
