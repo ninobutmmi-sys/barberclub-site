@@ -4,7 +4,7 @@
 
 import { timeToMinutes, HOUR_START, PX_PER_MIN } from './helpers';
 
-export const BLOCK_TYPE_LABELS = { break: 'Pause', personal: 'Perso', closed: 'Fermé' };
+export const BLOCK_TYPE_LABELS = { break: 'Pause', personal: 'Perso', closed: 'Fermé', school: 'École' };
 
 export default function BlockedSlotBlock({ block, onClick, onOverrideClick, pxPerMin }) {
   const px = pxPerMin || PX_PER_MIN;

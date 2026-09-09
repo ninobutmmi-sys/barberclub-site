@@ -81,6 +81,7 @@ export default function BlockSlotModal({ barbers, onClose, onCreated, initialDat
                   <option value="break">Pause déjeuner</option>
                   <option value="personal">Perso / RDV</option>
                   <option value="closed">Fermé</option>
+                  <option value="school">École</option>
                 </select>
               </div>
             </div>
