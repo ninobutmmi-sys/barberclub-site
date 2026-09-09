@@ -6558,7 +6558,7 @@ img { max-width: 100%; }
 }
 .ec-alerte ul { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-secondary); }
 .ec-alerte li { margin-bottom: 3px; }
-.ec-alerte p { margin: 8px 0 0; font-size: 11.5px; color: var(--text-muted); }
+.ec-alerte p { margin: 8px 0 0; font-size: 11.5px; color: var(--text-secondary); }
 
 /* La bande : une ligne par apprenti, une case par jour. */
 .ec-bande-bloc {
@@ -6572,7 +6572,7 @@ img { max-width: 100%; }
 
 .ec-jour-tete {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
-  font-size: 9px; line-height: 1.1; color: var(--text-muted);
+  font-size: 9px; line-height: 1.1; color: var(--text-secondary);
 }
 .ec-jour-tete em { font-style: normal; text-transform: uppercase; }
 .ec-jour-tete b { font-size: 10px; font-weight: 700; color: var(--text-secondary); }
@@ -6606,7 +6606,7 @@ img { max-width: 100%; }
 
 .ec-legende {
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  margin: 10px 0 0; font-size: 11px; color: var(--text-muted);
+  margin: 10px 0 0; font-size: 11px; color: var(--text-secondary);
 }
 .ec-legende .ec-case { width: 20px; height: 12px; display: inline-block; }
 
@@ -6615,9 +6615,9 @@ img { max-width: 100%; }
 
 .ec-faits { display: flex; flex-direction: column; gap: 7px; margin: 0; }
 .ec-faits > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-.ec-faits dt { font-size: 11.5px; color: var(--text-muted); }
+.ec-faits dt { font-size: 11.5px; color: var(--text-secondary); }
 .ec-faits dd { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--text); text-align: right; }
-.ec-faits dd em { font-style: normal; font-weight: 400; color: var(--text-muted); }
+.ec-faits dd em { font-style: normal; font-weight: 400; color: var(--text-secondary); }
 
 @media (max-width: 640px) {
   .ec-bande-bloc { padding: 12px 10px; }
@@ -6628,7 +6628,7 @@ img { max-width: 100%; }
 
 .ec-suivi { margin-top: 28px; }
 .ec-suivi h3 { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
-.ec-suivi-note { margin: 0 0 14px; font-size: 13px; color: var(--text-muted); max-width: 72ch; }
+.ec-suivi-note { margin: 0 0 14px; font-size: 13px; color: var(--text-secondary); max-width: 72ch; }
 
 .ec-table { border-collapse: collapse; width: 100%; min-width: 780px; }
 .ec-table th, .ec-table td {
@@ -6637,7 +6637,7 @@ img { max-width: 100%; }
 }
 .ec-table thead th {
   font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--text-muted); border-bottom: 1px solid var(--border);
+  color: var(--text-secondary); border-bottom: 1px solid var(--border);
 }
 .ec-table thead th span {
   display: block; font-size: 10px; letter-spacing: 0; text-transform: none;
@@ -6661,15 +6661,18 @@ img { max-width: 100%; }
     rgba(96,165,250,.22), rgba(96,165,250,.22) 3px,
     rgba(96,165,250,.45) 3px, rgba(96,165,250,.45) 6px);
 }
-/* Le trait des 35 h : c'est le repere que l'oeil cherche, il doit se voir. */
+/* Le trait des 35 h. Il tombe dans la barre pleine des qu'on depasse — donc
+   exactement chez ceux qu'on veut reperer. Un halo de la couleur de la carte
+   le detache aussi bien du segment sombre que de la piste vide. */
 .ec-seuil {
   position: absolute; top: -4px; bottom: -4px; width: 2px;
-  background: var(--text); opacity: .8; border-radius: 1px;
+  background: var(--text); border-radius: 1px;
+  box-shadow: 0 0 0 1.5px var(--bg-card);
 }
 .ec-heures-txt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
 .ec-heures-txt b { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .ec-heures-txt b.depasse { color: var(--ink-danger); }
-.ec-heures-txt em { font-style: normal; font-size: 12px; color: var(--text-muted); }
+.ec-heures-txt em { font-style: normal; font-size: 12px; color: var(--text-secondary); }
 .ec-depasse {
   font-style: normal; font-size: 11px; font-weight: 600; color: var(--ink-danger);
   background: rgba(239, 68, 68, 0.12); padding: 1px 7px; border-radius: var(--r-pill);
@@ -6682,7 +6685,7 @@ img { max-width: 100%; }
   font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .ec-ratio.complet { background: rgba(34, 197, 94, 0.14); color: var(--ink-good); }
-.ec-manque { display: block; margin-top: 4px; font-size: 11.5px; color: var(--text-muted); }
+.ec-manque { display: block; margin-top: 4px; font-size: 11.5px; color: var(--text-secondary); }
 
 /* Progression */
 /* La courbe reste dans l'encre du theme : sur cette page le bleu veut dire
@@ -6696,12 +6699,12 @@ img { max-width: 100%; }
 
 .ec-fid { display: flex; flex-direction: column; }
 .ec-fid b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.ec-fid em { font-style: normal; font-size: 11.5px; color: var(--text-muted); }
-.ec-vide { font-size: 12.5px; color: var(--text-muted); }
+.ec-fid em { font-style: normal; font-size: 11.5px; color: var(--text-secondary); }
+.ec-vide { font-size: 12.5px; color: var(--text-secondary); }
 
 .ec-legende-suivi {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
-  margin: 12px 0 0; font-size: 11.5px; color: var(--text-muted);
+  margin: 12px 0 0; font-size: 11.5px; color: var(--text-secondary);
 }
 .ec-cle { width: 16px; height: 8px; border-radius: 2px; display: inline-block; }
 .ec-cle.salon { background: var(--accent, #3b82f6); }
@@ -6710,8 +6713,42 @@ img { max-width: 100%; }
     rgba(96,165,250,.22), rgba(96,165,250,.22) 3px,
     rgba(96,165,250,.45) 3px, rgba(96,165,250,.45) 6px);
 }
-.ec-cle.seuil { width: 2px; height: 12px; background: var(--text-secondary); opacity: .65; }
+.ec-cle.seuil { width: 2px; height: 12px; background: var(--text); box-shadow: 0 0 0 1.5px var(--bg-card); }
 
 @media (max-width: 640px) {
   .ec-suivi h3 { font-size: 14px; }
+}
+
+/* ---------- École : accessibilité et confort tactile ---------- */
+
+/* Le dashboard n'a pas d'anneau de focus global : sans ça, un utilisateur au
+   clavier ne sait jamais où il se trouve sur cette page. */
+.ec-zoom-btn:focus-visible,
+.ec-suivi a:focus-visible,
+.ec-carte a:focus-visible,
+.ec-alerte a:focus-visible {
+  outline: 2px solid var(--border-focus, #60a5fa);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* 44 px au doigt, 8 px entre deux cibles. En 12 px de police et 6 px de marge,
+   le bouton faisait 28 px : on vise juste, on rate. */
+.ec-zoom { gap: 8px; }
+@media (max-width: 1024px) {
+  .ec-zoom-btn { min-height: 44px; min-width: 60px; }
+}
+
+/* Le survol d'une ligne du suivi : un retour visible, assez rapide pour ne pas
+   traîner derrière le curseur. */
+.ec-table tbody tr { transition: background 180ms var(--ease, ease); }
+.ec-table tbody tr:hover { background: var(--bg-hover); }
+
+/* La bande garde son intérêt au survol sans bouger la mise en page. */
+.ec-case { transition: filter 180ms var(--ease, ease); }
+.ec-bande-ligne:hover .ec-case.ecole { filter: brightness(1.25); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ec-table tbody tr, .ec-case { transition: none; }
+  .ec-bande-ligne:hover .ec-case.ecole { filter: none; }
 }

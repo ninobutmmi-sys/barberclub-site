@@ -173,7 +173,8 @@ export default function Ecole() {
             <button
               key={n}
               type="button"
-              className={`btn btn-sm ${semaines === n ? 'btn-primary' : 'btn-secondary'}`}
+              className={`btn btn-sm ec-zoom-btn ${semaines === n ? 'btn-primary' : 'btn-secondary'}`}
+              aria-pressed={semaines === n}
               onClick={() => setSemaines(n)}
             >
               {n} sem.
@@ -192,8 +193,8 @@ export default function Ecole() {
               {conflits.length} rendez-vous {conflits.length > 1 ? 'tombent' : 'tombe'} sur une journée de cours
             </h3>
             <ul>
-              {conflits.map((c, i) => (
-                <li key={i}>
+              {conflits.map((c) => (
+                <li key={`${c.barber_id}-${c.date}-${c.start_time}`}>
                   <strong>{c.barber_name}</strong> · {dateLongue(c.date)} à {c.start_time}
                   {c.first_name ? ` — ${c.first_name} ${c.last_name || ''}`.trimEnd() : ''}
                 </li>
@@ -217,8 +218,12 @@ export default function Ecole() {
           <>
             {/* La bande : une ligne par apprenti, une case par jour. La question
                 du quotidien — « qui est là jeudi ? » — se lit d'un coup d'œil. */}
-            <section className="ec-bande-bloc">
-              <div className="ec-bande-entete" style={{ gridTemplateColumns: `140px repeat(${bande.length}, 1fr)` }}>
+            <section
+              className="ec-bande-bloc"
+              role="img"
+              aria-label={`Journées de cours sur ${semaines} semaines pour ${apprentis.map((a) => a.name).join(', ')}. Le détail de chacun est repris dans les cartes ci-dessous.`}
+            >
+              <div className="ec-bande-entete" aria-hidden="true" style={{ gridTemplateColumns: `140px repeat(${bande.length}, 1fr)` }}>
                 <span />
                 {bande.map((d) => {
                   const dow = (new Date(`${d}T12:00:00`).getDay() + 6) % 7;
@@ -233,7 +238,7 @@ export default function Ecole() {
               {apprentis.map((a) => {
                 const set = new Set(a.calendrier.map((j) => j.date));
                 return (
-                  <div key={a.barber_id} className="ec-bande-ligne" style={{ gridTemplateColumns: `140px repeat(${bande.length}, 1fr)` }}>
+                  <div key={a.barber_id} className="ec-bande-ligne" aria-hidden="true" style={{ gridTemplateColumns: `140px repeat(${bande.length}, 1fr)` }}>
                     <span className="ec-bande-nom">{a.name}</span>
                     {bande.map((d) => {
                       const ecole = set.has(d);
@@ -249,7 +254,7 @@ export default function Ecole() {
                   </div>
                 );
               })}
-              <p className="ec-legende">
+              <p className="ec-legende" aria-hidden="true">
                 <span className="ec-case ecole" /> à l’école · <span className="ec-case" /> au salon
               </p>
             </section>
