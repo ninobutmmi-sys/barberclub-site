@@ -58,6 +58,74 @@ function prochainsJours(today, n) {
   return out;
 }
 
+/**
+ * Courbe de progression : rendez-vous par journee travaillee, mois par mois.
+ * Une seule serie, nommee par sa ligne — pas de legende, et les valeurs de
+ * depart et d'arrivee sont ecrites a cote, pour que rien ne repose sur la
+ * couleur seule.
+ */
+function Progression({ points }) {
+  if (!points || points.length < 2) {
+    return <span className="ec-vide">pas encore de recul</span>;
+  }
+  const L = 92, H = 26, P = 3;
+  const vals = points.map((p) => p.rdv_jour);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const etendue = max - min || 1;
+  const x = (i) => P + (i * (L - 2 * P)) / (points.length - 1);
+  const y = (v) => H - P - ((v - min) / etendue) * (H - 2 * P);
+  const d = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.rdv_jour).toFixed(1)}`).join(' ');
+  const dernier = points[points.length - 1];
+  const premier = points[0];
+  const delta = dernier.rdv_jour - premier.rdv_jour;
+
+  return (
+    <span className="ec-prog">
+      <svg width={L} height={H} viewBox={`0 0 ${L} ${H}`} role="img"
+        aria-label={`De ${premier.rdv_jour} à ${dernier.rdv_jour} rendez-vous par jour entre ${premier.mois} et ${dernier.mois}`}>
+        <path d={d} fill="none" stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
+        {points.map((p, i) => (
+          <circle key={p.mois} cx={x(i)} cy={y(p.rdv_jour)} r={i === points.length - 1 ? 3.5 : 0}
+            fill="currentColor">
+            <title>{`${p.mois} : ${p.rdv_jour} RDV/jour`}</title>
+          </circle>
+        ))}
+      </svg>
+      <b>{String(premier.rdv_jour).replace('.', ',')} → {String(dernier.rdv_jour).replace('.', ',')}</b>
+      <em className={delta >= 0 ? 'hausse' : 'baisse'}>
+        {delta >= 0 ? '+' : '−'}{String(Math.abs(Math.round(delta * 10) / 10)).replace('.', ',')}
+      </em>
+    </span>
+  );
+}
+
+/**
+ * Heures de la semaine : salon plein, CFA hachure, et le trait des 35 h du
+ * contrat. Le depassement est dit en toutes lettres, pas seulement en rouge.
+ */
+function Heures({ h }) {
+  const echelle = Math.max(h.total, h.contrat) * 1.06;
+  const pc = (v) => `${(v / echelle) * 100}%`;
+  const depasse = h.total > h.contrat;
+  return (
+    <span className="ec-heures-cell">
+      <span className="ec-barre" aria-hidden="true">
+        <span className="ec-seg salon" style={{ width: pc(h.salon) }} />
+        <span className="ec-seg cfa" style={{ width: pc(h.cfa) }} />
+        <span className="ec-seuil" style={{ left: pc(h.contrat) }} />
+      </span>
+      <span className="ec-heures-txt">
+        <b className={depasse ? 'depasse' : ''}>
+          {String(h.total).replace('.', ',')} h
+        </b>
+        <em>{String(h.salon).replace('.', ',')} salon + {h.cfa} CFA</em>
+        {depasse && <i className="ec-depasse">dépassement de {String(Math.round((h.total - h.contrat) * 10) / 10).replace('.', ',')} h</i>}
+      </span>
+    </span>
+  );
+}
+
 // ============================================
 
 export default function Ecole() {
@@ -223,6 +291,70 @@ export default function Ecole() {
                 </article>
               ))}
             </div>
+
+            {/* Suivi d'apprentissage. Quatre mesures qui dormaient dans les
+                données : les heures face aux 35 h du contrat (le CFA s'y
+                impute), la couverture du référentiel, la progression, et la
+                fidélisation — le second pôle du diplôme. */}
+            <section className="ec-suivi">
+              <h3>Suivi d’apprentissage</h3>
+              <p className="ec-suivi-note">
+                De quoi remplir le livret sans rien ressaisir. Les heures comptent le CFA,
+                qui s’impute sur le contrat au lieu de s’y ajouter.
+              </p>
+              <div className="scroller">
+                <table className="ec-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Apprenti</th>
+                      <th scope="col">Heures par semaine</th>
+                      <th scope="col">Prestations pratiquées</th>
+                      <th scope="col">Progression <span>RDV par jour, 7 mois</span></th>
+                      <th scope="col">Fidélisation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {apprentis.map((a) => {
+                      const faites = a.referentiel.filter((r) => r.n > 0);
+                      const manque = a.referentiel.filter((r) => r.n === 0);
+                      const complet = manque.length === 0;
+                      return (
+                        <tr key={a.barber_id}>
+                          <th scope="row">{a.name}</th>
+                          <td><Heures h={a.heures} /></td>
+                          <td>
+                            <span className={`ec-ratio${complet ? ' complet' : ''}`}>
+                              {faites.length} / {a.referentiel.length}
+                            </span>
+                            {manque.length > 0 && manque.length <= 3 && (
+                              <span className="ec-manque">
+                                jamais&nbsp;: {manque.map((m) => m.name).join(', ')}
+                              </span>
+                            )}
+                            {manque.length > 3 && (
+                              <span className="ec-manque">débute — {manque.length} restantes</span>
+                            )}
+                          </td>
+                          <td><Progression points={a.progression} /></td>
+                          <td>
+                            {a.fidelite
+                              ? <span className="ec-fid"><b>{a.fidelite.taux} %</b>
+                                  <em>{a.fidelite.visites} visites</em></span>
+                              : <span className="ec-vide">pas encore de recul</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="ec-legende-suivi">
+                <span className="ec-cle salon" /> heures au salon
+                <span className="ec-cle cfa" /> heures au CFA
+                <span className="ec-cle seuil" /> les 35 h du contrat
+                · <strong>Fidélisation</strong> : part des clients qui reviennent chez la même personne.
+              </p>
+            </section>
           </>
         )}
       </div>

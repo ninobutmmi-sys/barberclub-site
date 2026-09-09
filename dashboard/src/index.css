@@ -6623,3 +6623,95 @@ img { max-width: 100%; }
   .ec-bande-bloc { padding: 12px 10px; }
   .ec-bande-nom { font-size: 11px; }
 }
+
+/* ---------- École : suivi d'apprentissage ---------- */
+
+.ec-suivi { margin-top: 28px; }
+.ec-suivi h3 { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
+.ec-suivi-note { margin: 0 0 14px; font-size: 13px; color: var(--text-muted); max-width: 72ch; }
+
+.ec-table { border-collapse: collapse; width: 100%; min-width: 780px; }
+.ec-table th, .ec-table td {
+  text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.ec-table thead th {
+  font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-muted); border-bottom: 1px solid var(--border);
+}
+.ec-table thead th span {
+  display: block; font-size: 10px; letter-spacing: 0; text-transform: none;
+  font-weight: 400; opacity: .75; margin-top: 1px;
+}
+.ec-table tbody th { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.ec-table tbody tr:last-child th, .ec-table tbody tr:last-child td { border-bottom: none; }
+
+/* Heures : segments pleins pour le salon, hachures pour le CFA, trait au seuil.
+   Le depassement est ecrit, la couleur ne porte pas l'information seule. */
+.ec-heures-cell { display: flex; flex-direction: column; gap: 5px; min-width: 190px; }
+.ec-barre {
+  position: relative; display: flex; gap: 2px; height: 9px;
+  background: rgba(var(--overlay), 0.05); border-radius: 3px;
+}
+.ec-seg { height: 100%; }
+.ec-seg.salon { background: var(--accent, #3b82f6); border-radius: 3px 0 0 3px; }
+.ec-seg.cfa {
+  border-radius: 0 3px 3px 0;
+  background: repeating-linear-gradient(135deg,
+    rgba(96,165,250,.22), rgba(96,165,250,.22) 3px,
+    rgba(96,165,250,.45) 3px, rgba(96,165,250,.45) 6px);
+}
+/* Le trait des 35 h : c'est le repere que l'oeil cherche, il doit se voir. */
+.ec-seuil {
+  position: absolute; top: -4px; bottom: -4px; width: 2px;
+  background: var(--text); opacity: .8; border-radius: 1px;
+}
+.ec-heures-txt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.ec-heures-txt b { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ec-heures-txt b.depasse { color: var(--ink-danger); }
+.ec-heures-txt em { font-style: normal; font-size: 12px; color: var(--text-muted); }
+.ec-depasse {
+  font-style: normal; font-size: 11px; font-weight: 600; color: var(--ink-danger);
+  background: rgba(239, 68, 68, 0.12); padding: 1px 7px; border-radius: var(--r-pill);
+}
+
+/* Referentiel */
+.ec-ratio {
+  display: inline-block; padding: 2px 9px; border-radius: var(--r-pill);
+  background: rgba(var(--overlay), 0.08); color: var(--text-secondary);
+  font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.ec-ratio.complet { background: rgba(34, 197, 94, 0.14); color: var(--ink-good); }
+.ec-manque { display: block; margin-top: 4px; font-size: 11.5px; color: var(--text-muted); }
+
+/* Progression */
+/* La courbe reste dans l'encre du theme : sur cette page le bleu veut dire
+   « ecole », et la progression parle du salon. */
+.ec-prog { display: flex; align-items: center; gap: 9px; color: var(--text); }
+.ec-prog svg { flex-shrink: 0; overflow: visible; }
+.ec-prog b { font-size: 13px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ec-prog em { font-style: normal; font-size: 12px; font-weight: 600; }
+.ec-prog em.hausse { color: var(--ink-good); }
+.ec-prog em.baisse { color: var(--ink-warn); }
+
+.ec-fid { display: flex; flex-direction: column; }
+.ec-fid b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ec-fid em { font-style: normal; font-size: 11.5px; color: var(--text-muted); }
+.ec-vide { font-size: 12.5px; color: var(--text-muted); }
+
+.ec-legende-suivi {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  margin: 12px 0 0; font-size: 11.5px; color: var(--text-muted);
+}
+.ec-cle { width: 16px; height: 8px; border-radius: 2px; display: inline-block; }
+.ec-cle.salon { background: var(--accent, #3b82f6); }
+.ec-cle.cfa {
+  background: repeating-linear-gradient(135deg,
+    rgba(96,165,250,.22), rgba(96,165,250,.22) 3px,
+    rgba(96,165,250,.45) 3px, rgba(96,165,250,.45) 6px);
+}
+.ec-cle.seuil { width: 2px; height: 12px; background: var(--text-secondary); opacity: .65; }
+
+@media (max-width: 640px) {
+  .ec-suivi h3 { font-size: 14px; }
+}

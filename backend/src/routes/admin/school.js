@@ -15,6 +15,12 @@ const { getParisTodayISO } = require('../../utils/date');
 
 const router = Router();
 
+// Duree d'une journee au CFA, telle qu'imprimee sur les calendriers Ecole
+// Terrade (« CENTRE 7,00 »). En apprentissage ce temps s'impute sur les 35 h
+// du contrat, il ne s'y ajoute pas — article L6222-24.
+const HEURES_PAR_JOUR_CFA = 7;
+const CONTRAT_HEBDO = 35;
+
 // ============================================
 // GET /api/admin/school — Vue d'ensemble des apprentis
 // ?semaines=N pour la profondeur du calendrier (defaut 4)
@@ -77,6 +83,97 @@ router.get('/',
         [salonId, today]
       );
 
+      const ids = barbers.rows.map((b) => b.id);
+
+      // --- Suivi d'apprentissage ---------------------------------------
+      // Quatre mesures qui existent deja dans les donnees, et que personne ne
+      // regardait. Elles servent au livret d'apprentissage autant qu'a nous.
+
+      // 1. La semaine type, pour compter les heures reellement passees au salon.
+      const horaires = await db.query(
+        `SELECT barber_id, day_of_week, is_working,
+                EXTRACT(EPOCH FROM (end_time - start_time)) / 3600 AS amplitude,
+                CASE WHEN break_start IS NOT NULL AND break_end IS NOT NULL
+                     THEN EXTRACT(EPOCH FROM (break_end - break_start)) / 3600
+                     ELSE 0 END AS pause_declaree
+         FROM schedules WHERE salon_id = $1 AND barber_id = ANY($2)`,
+        [salonId, ids]
+      );
+
+      // Les pauses dejeuner ne vivent pas dans la semaine type mais en blocages
+      // recurrents. Sans les deduire, une journee 9h-19h compte 10 h.
+      const pauses = await db.query(
+        `SELECT barber_id, EXTRACT(ISODOW FROM date)::int - 1 AS day_of_week,
+                AVG(EXTRACT(EPOCH FROM (end_time - start_time)) / 3600) AS h
+         FROM blocked_slots
+         WHERE barber_id = ANY($1) AND type IN ('break', 'closed')
+           AND date >= $2 AND (end_time - start_time) < INTERVAL '3 hours'
+         GROUP BY 1, 2 HAVING COUNT(*) >= 4`,
+        [ids, today]
+      );
+
+      // 2. Le catalogue, et ce que chacun a deja pratique. Le referentiel du CAP
+      //    s'articule sur la realisation de prestations : la couverture se lit ici.
+      const catalogue = await db.query(
+        `SELECT id, name, sort_order FROM services
+         WHERE salon_id = $1 AND is_active = true AND deleted_at IS NULL
+         ORDER BY sort_order, name`,
+        [salonId]
+      );
+      const pratique = await db.query(
+        `SELECT barber_id, service_id, COUNT(*)::int AS n
+         FROM bookings
+         WHERE barber_id = ANY($1) AND status = 'completed' AND deleted_at IS NULL
+         GROUP BY 1, 2`,
+        [ids]
+      );
+
+      // 3. La progression : rendez-vous par journee travaillee, mois par mois.
+      const progression = await db.query(
+        `SELECT barber_id, to_char(date, 'YYYY-MM') AS mois,
+                ROUND(COUNT(*)::numeric / COUNT(DISTINCT date), 1) AS rdv_jour
+         FROM bookings
+         WHERE barber_id = ANY($1) AND status = 'completed' AND deleted_at IS NULL
+           AND date >= CURRENT_DATE - INTERVAL '7 months'
+         GROUP BY 1, 2 ORDER BY 1, 2`,
+        [ids]
+      );
+
+      // 4. La fidelisation : le client revient-il chez le meme ? C'est le second
+      //    pole du referentiel, la relation clientele.
+      const fidelite = await db.query(
+        `WITH visites AS (
+           SELECT client_id, barber_id, date,
+                  ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY date) AS rn
+           FROM bookings
+           WHERE status = 'completed' AND deleted_at IS NULL
+             AND date >= CURRENT_DATE - INTERVAL '1 year'
+         )
+         SELECT v.barber_id,
+                ROUND(100.0 * COUNT(*) FILTER (WHERE s.barber_id = v.barber_id)
+                      / NULLIF(COUNT(*), 0))::int AS taux,
+                COUNT(*)::int AS visites
+         FROM visites v
+         JOIN visites s ON s.client_id = v.client_id AND s.rn = v.rn + 1
+         WHERE v.barber_id = ANY($1)
+         GROUP BY 1`,
+        [ids]
+      );
+
+      const indexer = (rows, cle) => {
+        const m = new Map();
+        for (const r of rows) {
+          if (!m.has(r[cle])) m.set(r[cle], []);
+          m.get(r[cle]).push(r);
+        }
+        return m;
+      };
+      const horairesPar = indexer(horaires.rows, 'barber_id');
+      const pausesPar = indexer(pauses.rows, 'barber_id');
+      const pratiquePar = indexer(pratique.rows, 'barber_id');
+      const progressionPar = indexer(progression.rows, 'barber_id');
+      const fidelitePar = new Map(fidelite.rows.map((r) => [r.barber_id, r]));
+
       const parBarbier = new Map();
       for (const j of jours.rows) {
         if (!parBarbier.has(j.barber_id)) parBarbier.set(j.barber_id, []);
@@ -111,6 +208,41 @@ router.get('/',
           .map(([d]) => Number(d))
           .sort((a, b) => a - b);
 
+        // --- Heures : ce qu'il reste au salon une fois le CFA compte ---
+        // Un jour d'ecole n'est pas un jour de salon : on le retire de la
+        // semaine type avant de sommer, sinon on compte deux fois.
+        const setEcole = new Set(habituels);
+        const pausesJour = new Map(
+          (pausesPar.get(b.id) || []).map((r) => [Number(r.day_of_week), Number(r.h)])
+        );
+        let salonNet = 0;
+        let joursSalon = 0;
+        for (const h of horairesPar.get(b.id) || []) {
+          if (!h.is_working || setEcole.has(h.day_of_week)) continue;
+          joursSalon++;
+          salonNet += Number(h.amplitude)
+            - Number(h.pause_declaree)
+            - (pausesJour.get(h.day_of_week) || 0);
+        }
+        const heuresCfa = habituels.length * HEURES_PAR_JOUR_CFA;
+        const arrondi = (x) => Math.round(x * 10) / 10;
+
+        // --- Referentiel : ce qui a deja ete pratique, et ce qui manque ---
+        const faites = new Map(
+          (pratiquePar.get(b.id) || []).map((r) => [r.service_id, r.n])
+        );
+        const referentiel = catalogue.rows.map((s2) => ({
+          id: s2.id,
+          name: s2.name,
+          n: faites.get(s2.id) || 0,
+        }));
+
+        // --- Progression : premier et dernier mois renseignes ---
+        const mois = (progressionPar.get(b.id) || [])
+          .map((r) => ({ mois: r.mois, rdv_jour: Number(r.rdv_jour) }));
+
+        const fid = fidelitePar.get(b.id);
+
         apprentis.push({
           barber_id: b.id,
           name: b.name,
@@ -123,6 +255,16 @@ router.get('/',
           restantes: mesJours.length,
           en_cours_aujourdhui: mesJours.some((j) => j.date === today),
           calendrier: mesJours.filter((j) => j.date <= limiteISO),
+          heures: {
+            salon: arrondi(salonNet),
+            cfa: heuresCfa,
+            total: arrondi(salonNet + heuresCfa),
+            contrat: CONTRAT_HEBDO,
+            jours_salon: joursSalon,
+          },
+          referentiel,
+          progression: mois,
+          fidelite: fid ? { taux: fid.taux, visites: fid.visites } : null,
         });
       }
 
