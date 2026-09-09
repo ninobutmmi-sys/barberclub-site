@@ -95,6 +95,26 @@ router.get('/barbers', publicLimiter,
       }
     }
 
+    // Jours de cours des apprentis. La tuile annonce « Dès le 16 sept. » en
+    // sautant les jours de repos, mais elle ignorait l'ecole : Eddine etait
+    // presente comme disponible un mercredi, jour ou il est en classe.
+    // On envoie les dates a venir, la page en deduit le premier jour reel.
+    const allIdsForSchool = allBarbers.map((b) => b.id);
+    const schoolDates = {};
+    if (allIdsForSchool.length > 0) {
+      const sc = await db.query(
+        `SELECT barber_id, to_char(date, 'YYYY-MM-DD') AS date
+         FROM blocked_slots
+         WHERE type = 'school' AND barber_id = ANY($1)
+           AND date >= CURRENT_DATE AND date < CURRENT_DATE + INTERVAL '60 days'`,
+        [allIdsForSchool]
+      );
+      for (const row of sc.rows) {
+        if (!schoolDates[row.barber_id]) schoolDates[row.barber_id] = [];
+        schoolDates[row.barber_id].push(row.date);
+      }
+    }
+
     // Count bookings this week per barber for dynamic sort (least busy first)
     const allIds = allBarbers.map(b => b.id);
     let weeklyBookingCount = {};
@@ -128,6 +148,7 @@ router.get('/barbers', publicLimiter,
       work_dates: overrideWorkDates[b.id] || undefined,
       off_dates: overrideOffDates[b.id] || undefined,
       guest_dates: guestDatesMap[b.id] || undefined,
+      school_dates: schoolDates[b.id] || undefined,
     }));
 
     // Sort by weekly booking count ascending (least busy first)

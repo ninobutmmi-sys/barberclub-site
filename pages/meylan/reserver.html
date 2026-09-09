@@ -917,10 +917,17 @@
             const aujourdhui = new Date(); aujourdhui.setHours(0, 0, 0, 0);
             if (debut <= aujourdhui) return null;
             const repos = (b.off_days || []).map(Number);
+            // L'ecole compte comme un jour non travaille : annoncer un apprenti
+            // « des le 16 » quand il est en cours ce jour-la envoie le client
+            // sur un calendrier vide.
+            const ecole = new Set(b.school_dates || []);
             const d = new Date(debut);
-            for (let i = 0; i < 14; i++) {
+            for (let i = 0; i < 21; i++) {
                 const jour = (d.getDay() + 6) % 7;   // 0 = lundi, comme en base
-                if (!repos.includes(jour)) break;
+                const iso = d.getFullYear() + '-'
+                    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+                    + String(d.getDate()).padStart(2, '0');
+                if (!repos.includes(jour) && !ecole.has(iso)) break;
                 d.setDate(d.getDate() + 1);
             }
             const num = d.getDate();
