@@ -28,8 +28,8 @@
   var STORE_ANDROID = 'https://play.google.com/store/apps/details?id=fr.barberclubgrenoble.app';
   var ICON          = '/assets/images/common/app-icon.jpg';
   var DELAY         = 1200;   // le badge se pose une fois la page installée
-  var MODAL_KEY     = 'bc_app_modal';
-  var SNOOZE_DAYS   = 30;     // une fois vue et fermée, on laisse tranquille
+  var MODAL_KEY     = 'bc_app_modal';   // localStorage : l'app est installée
+  var VISITE_KEY    = 'bc_app_modal_vue'; // sessionStorage : vue cette visite
   var MAGNET_RADIUS = 140;
   var MAGNET_PULL   = 0.2;
 
@@ -45,14 +45,28 @@
   var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
   // ── La modale s'ouvre-t-elle d'elle-même ? ────────────────────────
-  // Une fois par visiteur, à l'arrivée. Ensuite le badge reste là pour la
-  // rouvrir : personne ne se fait interrompre deux fois.
+  // Une fois par visite, à l'arrivée sur le site : elle s'ouvre et il faut la
+  // fermer pour continuer. Le drapeau vit dans sessionStorage, donc elle ne
+  // revient pas quand on passe d'une page à l'autre — le script est posé sur
+  // six pages, sans ça on la reverrait à chaque clic. Le badge reste ensuite
+  // en bas à droite pour la rouvrir.
+  // Seule exception : qui a installé l'application ne la revoit jamais.
   var seen;
   try { seen = JSON.parse(localStorage.getItem(MODAL_KEY) || 'null'); } catch (e) { seen = null; }
-  var autoOpen = !(seen && (seen.state === 'installed' ||
-                            Date.now() - seen.at < SNOOZE_DAYS * 864e5));
+  var vueCetteVisite = false;
+  try { vueCetteVisite = sessionStorage.getItem(VISITE_KEY) === '1'; } catch (e) {}
+  var autoOpen = !vueCetteVisite && !(seen && seen.state === 'installed');
+
+  function marquerVisite() {
+    try { sessionStorage.setItem(VISITE_KEY, '1'); } catch (e) {}
+  }
   function rememberModal(state) {
-    try { localStorage.setItem(MODAL_KEY, JSON.stringify({ state: state, at: Date.now() })); } catch (e) {}
+    // « Installé » ne se dégrade pas en « fermé » : sans ça, qui a téléchargé
+    // l'application puis rouvert la modale par le badge se la reprenait à la
+    // visite suivante.
+    if (state === 'dismissed' && seen && seen.state === 'installed') return;
+    seen = { state: state, at: Date.now() };
+    try { localStorage.setItem(MODAL_KEY, JSON.stringify(seen)); } catch (e) {}
   }
 
   var GRAIN = "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
@@ -275,6 +289,7 @@
   var lastFocus = null;
 
   function open() {
+    marquerVisite();
     lastFocus = document.activeElement;
     modal.hidden = false;
     el.classList.add('is-hidden');
