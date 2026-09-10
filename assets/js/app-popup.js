@@ -142,15 +142,17 @@
     '.bc-modal.is-open .bc-modal-rim{opacity:1;animation:bc-app-orbit 8s linear infinite;transition:opacity 700ms ease 300ms}',
     '.bc-modal-panel{position:relative;max-height:calc(100vh - 44px);overflow-y:auto;padding:26px 24px 24px;border-radius:22px;background:linear-gradient(158deg,rgba(255,255,255,0.07),rgba(255,255,255,0.018) 46%,rgba(255,255,255,0.045)),rgba(7,7,8,0.97)}',
     // La lumière qui traverse le panneau à l'ouverture. Une fois.
-    '.bc-modal-panel::before{content:"";position:absolute;inset:-40% -60%;background:linear-gradient(74deg,transparent 40%,rgba(255,255,255,0.1) 50%,transparent 60%);transform:translateX(-120%);pointer-events:none;z-index:3}',
-    '.bc-modal.is-open .bc-modal-panel::before{animation:bc-modal-sweep 1100ms cubic-bezier(0.32,0,0.2,1) 260ms both}',
+    '.bc-modal-shine{position:absolute;inset:0;border-radius:22px;overflow:hidden;pointer-events:none;z-index:3}',
+    '.bc-modal-shine::before{content:"";position:absolute;inset:-40% -60%;background:linear-gradient(74deg,transparent 40%,rgba(255,255,255,0.1) 50%,transparent 60%);transform:translateX(-120%);pointer-events:none;z-index:3}',
+    '.bc-modal.is-open .bc-modal-shine::before{animation:bc-modal-sweep 1100ms cubic-bezier(0.32,0,0.2,1) 260ms both}',
     '@keyframes bc-modal-sweep{from{transform:translateX(-120%)}to{transform:translateX(120%)}}',
     
     // La couronne en filigrane et le grain du site : la modale est de la
     // même matière que les cartes du site, pas une fenêtre étrangère.
+    '.bc-modal-deco{position:absolute;inset:0;border-radius:22px;overflow:hidden;pointer-events:none}',
     '.bc-modal-mark{position:absolute;right:-40px;bottom:-56px;width:210px;height:auto;filter:invert(1);opacity:0.05;pointer-events:none;transform:rotate(-8deg)}',
     '.bc-modal-grain{position:absolute;inset:0;border-radius:22px;pointer-events:none;opacity:0.05;background-image:' + GRAIN + ';background-size:150px}',
-    '.bc-modal-panel>*:not(.bc-modal-mark):not(.bc-modal-grain):not(.bc-modal-close){position:relative;z-index:1}',
+    '.bc-modal-panel>*:not(.bc-modal-deco):not(.bc-modal-shine):not(.bc-modal-close){position:relative;z-index:1}',
     '.bc-modal-grain{border-radius:22px}',
 
     '.bc-modal-close{position:absolute;top:10px;right:10px;z-index:2;width:44px;height:44px;display:grid;place-items:center;background:none;border:0;cursor:pointer;color:rgba(255,255,255,0.4);transition:color 0.2s ease}',
@@ -200,6 +202,22 @@
     '.bc-modal{padding:16px}',
     '.bc-modal-panel{padding:28px 20px 22px}',
     '.bc-modal-name{font-size:30px}',
+    '}',
+
+    // Ecran bas — telephone couche, petit portable. La carte fait 412 px de
+    // contenu pour 336 px disponibles : il faut resserrer, sinon on redemande
+    // au visiteur de faire defiler pour trouver la croix.
+    '@media (max-height:520px){',
+    '.bc-modal{padding:12px}',
+    '.bc-modal-panel{padding:16px 18px 14px}',
+    '.bc-modal-tile{width:44px;height:44px;border-radius:12px}',
+    '.bc-modal-head{gap:11px}',
+    '.bc-modal-name{font-size:19px}',
+    '.bc-modal-lead{margin-top:14px}',
+    '.bc-modal-list{margin-top:10px}',
+    '.bc-modal-list li{margin-top:10px}',
+    '.bc-modal-cta{margin-top:14px;min-height:44px}',
+    '.bc-modal-store{margin-top:8px}',
     '}',
 
     '@media (prefers-reduced-motion:reduce){',
@@ -258,8 +276,10 @@
     '<div class="bc-modal-frame">' +
     '<div class="bc-modal-rim" aria-hidden="true"></div>' +
     '<div class="bc-modal-panel" role="dialog" aria-modal="true" aria-labelledby="bc-modal-name">' +
-      '<img class="bc-modal-mark" src="' + CROWN + '" alt="" aria-hidden="true">' +
-      '<span class="bc-modal-grain" aria-hidden="true"></span>' +
+      '<span class="bc-modal-deco" aria-hidden="true">' +
+        '<img class="bc-modal-mark" src="' + CROWN + '" alt="" aria-hidden="true">' +
+        '<span class="bc-modal-grain"></span>' +
+      '</span>' +
       '<button type="button" class="bc-modal-close" aria-label="Fermer">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">' +
         '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
@@ -280,6 +300,7 @@
       '<a class="bc-modal-cta" href="' + href + '" target="_blank" rel="noopener">' +
         GLYPH + '<span>Télécharger</span></a>' +
       '<p class="bc-modal-store">Sur ' + label + '</p>' +
+      '<span class="bc-modal-shine" aria-hidden="true"></span>' +
     '</div></div>';
   document.body.appendChild(modal);
 
