@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { estChunkManquant, rechargerUneFois } from '../utils/reload';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,6 +13,10 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('ErrorBoundary caught:', error, info.componentStack);
+    // Un module introuvable n'est pas un bug de l'application : c'est un
+    // onglet resté ouvert pendant un déploiement. On recharge au lieu
+    // d'afficher un écran d'erreur que la personne ne peut pas interpréter.
+    if (estChunkManquant(error)) rechargerUneFois();
   }
 
   render() {
@@ -30,7 +35,9 @@ export default class ErrorBoundary extends Component {
             <div style={{ fontSize: 48, marginBottom: 16 }}>!</div>
             <h2 style={{ margin: '0 0 8px', fontSize: 20 }}>Une erreur est survenue</h2>
             <p style={{ color: '#a8a29e', margin: '0 0 24px', fontSize: 14 }}>
-              {this.state.error?.message || 'Erreur inattendue'}
+              {estChunkManquant(this.state.error)
+                ? 'Une nouvelle version vient d\u2019\u00eatre publi\u00e9e. Rechargez pour la r\u00e9cup\u00e9rer.'
+                : (this.state.error?.message || 'Erreur inattendue')}
             </p>
             <button
               onClick={() => {
