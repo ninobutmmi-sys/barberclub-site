@@ -37,7 +37,8 @@ router.get('/barbers', publicLimiter,
     );
     // Guest barbers with future assignments in this salon
     const guestResult = await db.query(
-      `SELECT DISTINCT b.id, b.name, b.role, b.photo_url, b.sort_order, b.offer_label, TRUE as is_guest
+      `SELECT DISTINCT b.id, b.name, b.role, b.photo_url, b.sort_order, b.offer_label, TRUE as is_guest,
+              b.salon_id AS home_salon_id
        FROM barbers b
        JOIN guest_assignments ga ON b.id = ga.barber_id
        WHERE b.is_active = true AND b.deleted_at IS NULL

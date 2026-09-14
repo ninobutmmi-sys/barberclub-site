@@ -1319,6 +1319,42 @@
             // Le client voit des prix a zero : on lui dit pourquoi, ici, au
             // moment ou il les regarde.
             const barbier = state.selectedBarber;
+
+            // Un barbier venu d'un autre salon garde ses prix : Julien coupe a
+            // Grenoble le jeudi aux tarifs de Meylan. Ses prestations ne se
+            // melangent pas au catalogue d'ici, elles ont leurs propres cases —
+            // sinon le client compare un 27 € a un 20 € sans savoir pourquoi.
+            const casesInvite = !!(barbier && barbier.is_guest && state.services.length);
+            if (casesInvite) {
+                const salonOrigine = { meylan: 'Meylan', grenoble: 'Grenoble', voiron: 'Voiron' }[barbier.home_salon_id];
+                const joursInvite = [...new Set((barbier.guest_dates || []).map(d => new Date(String(d).slice(0, 10) + 'T12:00:00').getDay()))];
+                const quand = joursInvite.length === 1
+                    ? 'le ' + ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'][joursInvite[0]]
+                    : 'certains jours';
+                // 27 plutot que 27,00 : dans une case, le chiffre est le titre.
+                const euros = (c) => Number(c) % 100 === 0 ? String(Number(c) / 100) : (Number(c) / 100).toFixed(2).replace('.', ',');
+                html += `<section class="guest-tarifs" aria-labelledby="guestTarifsTitre">
+                    <div class="guest-tarifs-head">
+                        ${salonOrigine ? `<p class="guest-tarifs-eyebrow">Prix ${salonOrigine}</p>` : ''}
+                        <h3 class="guest-tarifs-title" id="guestTarifsTitre">Les cases de ${esc(barbier.name)}</h3>
+                        <p class="guest-tarifs-text">${esc(barbier.name)} vient couper &agrave; Grenoble ${quand}${salonOrigine ? ` et garde les tarifs de BarberClub ${salonOrigine}` : ''}.</p>
+                    </div>
+                    <div class="guest-cases">`;
+                for (const s of [...state.services].sort((a, b) => a.price - b.price)) {
+                    html += `
+                        <div class="service-card guest-case" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — ${s.duration} minutes — ${formatPrice(s.price)}">
+                            <div class="guest-case-top">
+                                <span class="guest-case-price">${euros(s.price)}<span class="guest-case-euro">&euro;</span></span>
+                                <div class="service-check">${checkSVG}</div>
+                            </div>
+                            <div class="guest-case-name">${esc(s.name)}</div>
+                            ${s.description ? `<div class="guest-case-desc">${esc(s.description)}</div>` : ''}
+                            <div class="service-duration">${clockSVG}${s.duration} min</div>
+                        </div>`;
+                }
+                html += `</div></section>`;
+            }
+
             if (barbier && barbier.offer_label) {
                 html += `<div class="service-offer-note"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 12 20 22 4 22 4 12\"/><rect x=\"2\" y=\"7\" width=\"20\" height=\"5\"/><line x1=\"12\" y1=\"22\" x2=\"12\" y2=\"7\"/><path d=\"M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z\"/><path d=\"M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z\"/></svg>
                     <div>
@@ -1327,7 +1363,7 @@
                     </div>
                 </div>`;
             }
-            for (const cat of categories) {
+            for (const cat of (casesInvite ? [] : categories)) {
                 if (grouped[cat.key].length === 0) continue;
                 html += `<div class="service-category">
                     <div class="service-category-header">
@@ -1354,8 +1390,8 @@
                 html += `</div>`;
             }
 
-            // Mèches: non-bookable, call salon
-            html += `<div class="service-category">
+            // Mèches: non-bookable, call salon (pas pour un barbier invite)
+            if (!casesInvite) html += `<div class="service-category">
                 <div class="service-category-header">
                     <span class="service-category-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg></span>
                     <span class="service-category-title">Autres</span>
