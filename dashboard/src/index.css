@@ -3059,6 +3059,95 @@ select.input {
   opacity: 0.5;
 }
 
+/* Ouvrir un jour de repos depuis la colonne. Le vert est celui d'« aujourd'hui »
+   dans l'en-tete : une action positive, qui rend la colonne disponible. Le
+   bouton reste visible sans survol — une tablette au comptoir n'en a pas. */
+.planning-day-off-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.planning-unblock-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.1);
+  color: #4ade80;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.planning-unblock-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+.planning-unblock-btn.icon-only { width: 28px; padding: 0; }
+.planning-unblock-btn:hover { background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.6); }
+.planning-unblock-btn:focus-visible { outline: 2px solid #22c55e; outline-offset: 2px; }
+[data-theme="light"] .planning-unblock-btn { color: #15803d; border-color: rgba(21, 128, 61, 0.4); background: rgba(34, 197, 94, 0.12); }
+
+/* Jour rouvert par exception : la mention se pose sous le nom, comme « Invité »
+   ou « dès 01/10 », et refermer se fait au meme endroit. */
+.planning-open-chip {
+  display: block;
+  margin: 1px auto 0;
+  padding: 0 4px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: #22c55e;
+  font: inherit;
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.planning-open-chip:hover { background: rgba(34, 197, 94, 0.12); }
+.planning-open-chip:focus-visible { outline: 2px solid #22c55e; outline-offset: 1px; }
+[data-theme="light"] .planning-open-chip { color: #15803d; }
+
+.unblock-reason {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(var(--overlay), 0.05);
+  border: 1px solid rgba(var(--overlay), 0.08);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.unblock-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 32px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  line-height: 1.4;
+}
+.unblock-check input { width: 16px; height: 16px; margin-top: 2px; accent-color: #22c55e; cursor: pointer; flex-shrink: 0; }
+.unblock-check.is-kept { color: var(--text-secondary); }
+.unblock-check-note { color: var(--text-muted); }
+.unblock-check-warn { display: block; font-size: 11px; color: #f59e0b; }
+.unblock-error {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  font-size: 12px;
+}
+
 /* ============================================
    #8 — View transition (Semaine/Jour)
    ============================================ */

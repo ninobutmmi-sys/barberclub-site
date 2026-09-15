@@ -11,7 +11,7 @@ import BlockedSlotBlock from './BlockedSlotBlock';
 import BookingBlock from './BookingBlock';
 import MinutePickerPopup from './MinutePickerPopup';
 
-export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, barberSchedules, guestAssignments, onBookingClick, onBlockClick, onOverrideClick, onSlotClick, view, onSwipeLeft, onSwipeRight, compact, highlightedBookingId }) {
+export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, barberSchedules, barberOverrides, guestAssignments, onBookingClick, onBlockClick, onOverrideClick, onSlotClick, onUnblockDay, onRecloseDay, view, onSwipeLeft, onSwipeRight, compact, highlightedBookingId }) {
   const scrollRef = useRef(null);
   const gridBodyRef = useRef(null);
   const touchRef = useRef(null);
@@ -80,7 +80,21 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
     // Resident barber: if they have a guest assignment elsewhere -> off
     if (ga) return true;
 
-    // Normal off-day check
+    // L'exception du jour prime sur la semaine type, dans les deux sens. Sans
+    // elle, un jour rouvert restait barre « Repos », et un repos exceptionnel
+    // pose sur un jour travaille ne se voyait pas.
+    const ov = getOverride(barberId, dateStr);
+    if (ov) return !!ov.is_day_off;
+
+    return isWeeklyOff(barberId, date);
+  }
+
+  function getOverride(barberId, dateStr) {
+    return barberOverrides?.[barberId]?.[dateStr] || null;
+  }
+
+  // Normal off-day check (semaine type seule)
+  function isWeeklyOff(barberId, date) {
     const offSet = barberOffDays?.[barberId];
     if (!offSet || offSet.size === 0) return false;
     const jsDay = date.getDay(); // 0=Sunday
@@ -88,11 +102,24 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
     return offSet.has(dow);
   }
 
+  // Un jour de repos se rouvre depuis la colonne, sauf quand ce n'est pas un
+  // horaire : hors contrat (garde-fou dur), barbier parti dans l'autre salon,
+  // ou invite sans affectation ce jour-la.
+  function canUnblock(barber, day) {
+    if (!onUnblockDay || !barber) return false;
+    if (getContractGap(barber, format(day, 'yyyy-MM-dd'))) return false;
+    if (barber.is_guest || getGuestInfo(barber.id, day)) return false;
+    return true;
+  }
+
   // Get off-hours zones for a specific barber on a specific date
   function getBarberOffHours(barberId, date) {
     const jsDay = date.getDay();
     const dow = jsDay === 0 ? 6 : jsDay - 1;
-    const sched = barberSchedules?.[barberId]?.[dow];
+    const ov = getOverride(barberId, format(date, 'yyyy-MM-dd'));
+    const sched = ov && !ov.is_day_off && ov.start_time && ov.end_time
+      ? { start: ov.start_time.slice(0, 5), end: ov.end_time.slice(0, 5) }
+      : barberSchedules?.[barberId]?.[dow];
     if (!sched) return OFF_HOURS; // fallback to global off-hours
     const [sh, sm] = sched.start.split(':').map(Number);
     const [eh, em] = sched.end.split(':').map(Number);
@@ -212,6 +239,22 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                             <span style={{ display: 'block', fontSize: 8, color: '#3b82f6', fontWeight: 600, lineHeight: 1 }}>
                               Invite
                             </span>
+                          </span>
+                        ) : (() => {
+                          const ov = getOverride(b.id, dayStr);
+                          return ov && !ov.is_day_off && isWeeklyOff(b.id, day) && onRecloseDay;
+                        })() ? (
+                          <span>
+                            {b.name.split(' ')[0]}
+                            <button
+                              type="button"
+                              className="planning-open-chip"
+                              onClick={() => onRecloseDay(b, dayStr, getOverride(b.id, dayStr))}
+                              title="Ouvert exceptionnellement — cliquer pour refermer ce jour"
+                              aria-label={`${b.name} ouvert exceptionnellement ce jour, refermer`}
+                            >
+                              ouvert
+                            </button>
                           </span>
                         ) : off ? (
                           <s>{b.name.split(' ')[0]}</s>
@@ -347,6 +390,7 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                         {/* Off-day overlay */}
                         {barberIsOff && (
                           <div className="planning-day-off-overlay">
+                            <div className="planning-day-off-stack">
                             <span className="planning-day-off-badge" style={compact ? { fontSize: 7, padding: '2px 5px' } : undefined}>
                               {!compact && (barberGap ? (
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -357,6 +401,24 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                                 ? (barberGap.type === 'before' ? `Arrive le ${shortDateFR(barberGap.date)}` : `Parti le ${shortDateFR(barberGap.date)}`)
                                 : 'Repos'}
                             </span>
+                            {canUnblock(barber, day) && (() => {
+                              // Colonnes etroites en vue semaine : l'icone seule, le libelle en infobulle.
+                              const narrow = compact || (isWeek && barberCount > 2);
+                              return (
+                                <button
+                                  type="button"
+                                  className={`planning-unblock-btn${narrow ? ' icon-only' : ''}`}
+                                  onClick={(e) => { e.stopPropagation(); onUnblockDay(barber, dayStr); }}
+                                  onMouseMove={(e) => e.stopPropagation()}
+                                  title={`Ouvrir la journée de ${barber.name}`}
+                                  aria-label={`Ouvrir la journée de ${barber.name}`}
+                                >
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                                  {!narrow && 'Ouvrir'}
+                                </button>
+                              );
+                            })()}
+                            </div>
                           </div>
                         )}
                         {/* Hover time indicator */}

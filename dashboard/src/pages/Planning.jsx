@@ -11,8 +11,11 @@ import {
   deleteBooking as apiDeleteBooking,
   deleteBookingGroup as apiDeleteBookingGroup,
   deleteBlockedSlot as apiDeleteBlockedSlot,
+  createBlockedSlot as apiCreateBlockedSlot,
+  getBlockedSlots as apiGetBlockedSlots,
   getBarberSchedule,
   addBarberOverride,
+  deleteBarberOverride,
 } from '../api';
 import {
   useBookings,
@@ -47,6 +50,11 @@ import CreateBookingModal from '../components/planning/CreateBookingModal';
 import BlockSlotModal from '../components/planning/BlockSlotModal';
 import BlockDetailModal from '../components/planning/BlockDetailModal';
 import OverrideModal from '../components/planning/OverrideModal';
+import UnblockDayModal from '../components/planning/UnblockDayModal';
+
+// Libelle de la pause posee en ouvrant un jour de repos : c'est a lui qu'on la
+// reconnait pour la retirer si le jour est referme.
+const PAUSE_JOUR_OUVERT = 'Pause (jour ouvert)';
 import TimeGrid from '../components/planning/TimeGrid';
 import MobileWeekStrip from '../components/planning/MobileWeekStrip';
 import MiniCalendar from '../components/planning/MiniCalendar';
@@ -64,6 +72,7 @@ export default function Planning() {
   const [blockDefaults, setBlockDefaults] = useState({});
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [overrideBlock, setOverrideBlock] = useState(null);
+  const [unblockTarget, setUnblockTarget] = useState(null); // { barber, dateStr }
   const [quickAction, setQuickAction] = useState(null);
   const [mobileFullDay, setMobileFullDay] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -394,6 +403,57 @@ export default function Planning() {
     const barberId = overrideBlock?.barber_id;
     if (!barberId) return;
     await addBarberOverride(barberId, data);
+    await refreshBarberSchedule(barberId);
+  }
+
+  // Ouvrir un jour de repos depuis la colonne : l'exception du jour, puis les
+  // blocages a retirer, puis la pause eventuelle.
+  async function handleConfirmUnblock({ start, end, pause, removeIds }) {
+    const { barber, dateStr } = unblockTarget;
+    await addBarberOverride(barber.id, {
+      date: dateStr,
+      is_day_off: false,
+      start_time: start,
+      end_time: end,
+      reason: 'Ouvert depuis le planning',
+    });
+    for (const id of removeIds) await apiDeleteBlockedSlot(id);
+    if (pause) {
+      await apiCreateBlockedSlot({
+        barber_id: barber.id,
+        date: dateStr,
+        start_time: pause.start,
+        end_time: pause.end,
+        type: 'break',
+        reason: PAUSE_JOUR_OUVERT,
+      });
+    }
+    await refreshBarberSchedule(barber.id);
+  }
+
+  async function handleRecloseDay(barber, dateStr, override) {
+    if (!override?.id) return;
+    const label = format(new Date(`${dateStr}T12:00:00`), 'EEEE d MMMM', { locale: fr });
+    if (!confirm(`Refermer le ${label} pour ${barber.name} ?\n\nLes clients ne pourront plus réserver ce jour. Les RDV déjà posés restent.`)) return;
+    try {
+      await deleteBarberOverride(override.id);
+      // La pause posee a l'ouverture n'a plus de sens une fois le jour referme.
+      // On ne retire que celle-la, reconnaissable a son libelle : les autres
+      // blocages du jour ont ete poses par quelqu'un, pour une raison. On relit
+      // le jour a la source plutot que le cache de la semaine, qui peut ne pas
+      // l'avoir encore (ou pas du tout : la requete semaine perd le dimanche
+      // hors UTC).
+      const duJour = await apiGetBlockedSlots({ date: dateStr, view: 'day', barber_id: barber.id });
+      const pausesOuverture = (Array.isArray(duJour) ? duJour : [])
+        .filter((b) => b.reason === PAUSE_JOUR_OUVERT);
+      for (const b of pausesOuverture) await apiDeleteBlockedSlot(b.id);
+      await refreshBarberSchedule(barber.id);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function refreshBarberSchedule(barberId) {
     // Invalidate barber schedule cache so the pause updates
     queryClient.invalidateQueries({ queryKey: keys.barberSchedule(barberId) });
     // Re-fetch schedules
@@ -432,14 +492,14 @@ export default function Planning() {
       }
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      if (selectedBooking || showCreateModal || showBlockModal || selectedBlock || overrideBlock || quickAction) return;
+      if (selectedBooking || showCreateModal || showBlockModal || selectedBlock || overrideBlock || unblockTarget || quickAction) return;
       if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); goNext(); }
       else if (e.key === 't' || e.key === 'T') { e.preventDefault(); goToday(); }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedBooking, showCreateModal, showBlockModal, selectedBlock, overrideBlock, quickAction, searchTerm, highlightedBookingId]);
+  }, [selectedBooking, showCreateModal, showBlockModal, selectedBlock, overrideBlock, unblockTarget, quickAction, searchTerm, highlightedBookingId]);
 
   // Pull to refresh (mobile)
   const showPullRef = useRef(false);
@@ -661,6 +721,9 @@ export default function Planning() {
               blockedByDayBarber={blockedByDayBarber}
               barberOffDays={barberOffDays}
               barberSchedules={barberSchedules}
+              barberOverrides={barberOverrides}
+              onUnblockDay={(barber, dateStr) => setUnblockTarget({ barber, dateStr })}
+              onRecloseDay={handleRecloseDay}
               onBookingClick={handleBookingBlockClick}
               onBlockClick={setSelectedBlock}
               onOverrideClick={handleOverrideClick}
@@ -771,6 +834,39 @@ export default function Planning() {
             barberScheduleEnd={sched?.end || '19:00'}
             onSave={handleSaveOverride}
             onClose={() => setOverrideBlock(null)}
+          />
+        );
+      })()}
+
+      {unblockTarget && (() => {
+        const { barber, dateStr } = unblockTarget;
+        // Les horaires proposes sont ceux qu'il fait le plus souvent dans sa
+        // semaine : un barbier qui vient un jour de plus vient a ses heures.
+        const plusFrequent = (valeurs) => {
+          const compte = {};
+          let meilleur = null;
+          for (const v of valeurs) {
+            compte[v] = (compte[v] || 0) + 1;
+            if (!meilleur || compte[v] > compte[meilleur]) meilleur = v;
+          }
+          return meilleur;
+        };
+        const heures = Object.values(barberSchedules[barber.id] || {});
+        const pause = plusFrequent(Object.values(barberBreaks[barber.id] || {}).map((b) => `${b.start}-${b.end}`));
+        const ov = barberOverrides[barber.id]?.[dateStr];
+        return (
+          <UnblockDayModal
+            barberName={barber.name}
+            dateStr={dateStr}
+            closedReason={ov?.is_day_off
+              ? `Repos exceptionnel${ov.reason ? ` — ${ov.reason}` : ''}`
+              : 'Jour de repos habituel dans sa semaine type'}
+            defaultStart={plusFrequent(heures.map((h) => h.start)) || '09:00'}
+            defaultEnd={plusFrequent(heures.map((h) => h.end)) || '19:00'}
+            defaultBreak={pause ? { start: pause.split('-')[0], end: pause.split('-')[1] } : null}
+            blocks={(blockedByDayBarber[`${dateStr}_${barber.id}`] || []).filter((b) => !b._isRecurring)}
+            onConfirm={handleConfirmUnblock}
+            onClose={() => setUnblockTarget(null)}
           />
         );
       })()}
