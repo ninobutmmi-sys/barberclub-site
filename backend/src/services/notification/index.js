@@ -14,20 +14,16 @@ const { SALON_IDS } = require('../../config/env');
 const logger = require('../../utils/logger');
 const templates = require('./templates');
 const queue = require('./queue');
+const smsDispatch = require('./sms-dispatch');
 
 /**
  * Provider-agnostic SMS dispatcher.
- * Routes to Twilio or Brevo based on config.smsProvider env.
- * Same signature/return shape as brevoSMS for backward compat.
+ * Ce sendSMS-ci ne lisait que SMS_PROVIDER global (brevo) et ignorait le
+ * fournisseur du salon : les rappels partaient par Twilio, mais les SMS envoyes
+ * a la main depuis la page Messages partaient par Brevo et n'arrivaient pas.
+ * Un seul aiguillage, celui du salon, pour tout le monde.
  */
-async function sendSMS(phone, content, salonId = 'meylan') {
-  const provider = (config.smsProvider || 'brevo').toLowerCase();
-  if (provider === 'twilio') {
-    return twilio.twilioSMS(phone, content, salonId);
-  }
-  // Default / legacy fallback
-  return brevo.brevoSMS(phone, content, salonId);
-}
+const { sendSMS } = smsDispatch;
 
 function getSmsProviderStatus(salonId) {
   const ids = salonId ? [salonId] : SALON_IDS;

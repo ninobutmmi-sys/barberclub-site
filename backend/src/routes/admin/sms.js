@@ -8,7 +8,7 @@ const router = express.Router();
 
 /**
  * POST /api/admin/sms/send
- * Send SMS to selected recipients via Brevo (server-side)
+ * Send SMS to selected recipients via le fournisseur du salon (Twilio ou Brevo)
  */
 router.post(
   '/send',
