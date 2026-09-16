@@ -694,6 +694,17 @@ function SectionSemaine({ barber }) {
 
   const modifie = semaine && reference !== null && JSON.stringify(semaine) !== reference;
 
+  // Sa semaine type appartient à son salon : l'écrire d'ici échouait en erreur
+  // serveur. Ses jours ici, ce sont les déplacements.
+  if (barber.is_guest) {
+    return (
+      <p className="bb-intro">
+        {barber.name} est invité dans ce salon. Sa semaine type se règle depuis son salon ;
+        ses jours ici se gèrent dans <strong>Déplacements</strong> (ex. tous les jeudis).
+      </p>
+    );
+  }
+
   const majJour = (i, champ, valeur) => {
     setSemaine((prev) => prev.map((j, idx) => (idx === i ? { ...j, [champ]: valeur } : j)));
   };
@@ -1148,13 +1159,27 @@ function SectionDeplacements({ barber }) {
   const [date, setDate] = useState('');
   const [debut, setDebut] = useState('09:00');
   const [fin, setFin] = useState('19:00');
+  const [chaqueSemaine, setChaqueSemaine] = useState(false);
+  const [jusquau, setJusquau] = useState('');
+
+  // Par défaut, la répétition court aussi loin que la réservation en ligne (6 mois).
+  function basculerSemaine(on) {
+    setChaqueSemaine(on);
+    if (on && !jusquau) {
+      const d = new Date();
+      d.setMonth(d.getMonth() + 6);
+      setJusquau(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    }
+  }
 
   async function handleAjout(e) {
     e.preventDefault();
     try {
-      await ajouter.mutateAsync({ id: barber.id, data: { date, host_salon_id: salon, start_time: debut, end_time: fin } });
-      setDate(''); setForm(false);
-      flash('success', 'Déplacement enregistré');
+      const data = { date, host_salon_id: salon, start_time: debut, end_time: fin };
+      if (chaqueSemaine) data.repeat_until = jusquau;
+      const res = await ajouter.mutateAsync({ id: barber.id, data });
+      setDate(''); setForm(false); setChaqueSemaine(false);
+      flash('success', Array.isArray(res) ? `${res.length} déplacements enregistrés` : 'Déplacement enregistré');
     } catch (err) { flash('error', err.message); }
   }
 
@@ -1177,7 +1202,7 @@ function SectionDeplacements({ barber }) {
               <div>
                 <div className="bb-item-titre">{formatDateFr(g.date)}</div>
                 <div className="bb-item-meta">
-                  <span className="bb-tag invite">{g.host_salon_id === 'grenoble' ? 'Grenoble' : 'Meylan'}</span>
+                  <span className="bb-tag invite">{SALON_OPTIONS.find((s) => s.id === g.host_salon_id)?.label || g.host_salon_id}</span>
                   <span>{hhmm(g.start_time) || '09:00'}–{hhmm(g.end_time) || '19:00'}</span>
                 </div>
               </div>
@@ -1209,6 +1234,15 @@ function SectionDeplacements({ barber }) {
           <div className="form-group">
             <label className="label" htmlFor="bb-gd-date">Date</label>
             <input id="bb-gd-date" className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          </div>
+          <div className="form-group">
+            <label className="label" htmlFor="bb-gd-repete">
+              <input id="bb-gd-repete" type="checkbox" checked={chaqueSemaine} onChange={(e) => basculerSemaine(e.target.checked)} />
+              {' '}Toutes les semaines, même jour
+            </label>
+            {chaqueSemaine && (
+              <input className="input" type="date" value={jusquau} min={date || undefined} onChange={(e) => setJusquau(e.target.value)} required aria-label="Jusqu'au" />
+            )}
           </div>
           <div className="form-group">
             <span className="label">Horaires sur place</span>

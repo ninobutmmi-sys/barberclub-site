@@ -79,6 +79,19 @@ router.get('/barbers', publicLimiter,
           overrideWorkDates[row.barber_id].push(row.date);
         }
       }
+
+      // Un résident parti dans un autre salon ce jour-là (Julien à Grenoble le
+      // jeudi) n'a aucun créneau ici : le calendrier doit griser le jour plutôt
+      // que d'ouvrir une journée vide.
+      const ailleurs = await db.query(
+        `SELECT barber_id, date FROM guest_assignments
+         WHERE host_salon_id != $1 AND date >= CURRENT_DATE AND barber_id = ANY($2)`,
+        [salonId, residentIds]
+      );
+      for (const row of ailleurs.rows) {
+        if (!overrideOffDates[row.barber_id]) overrideOffDates[row.barber_id] = [];
+        overrideOffDates[row.barber_id].push(row.date);
+      }
     }
 
     // For guest barbers, load their guest assignment dates

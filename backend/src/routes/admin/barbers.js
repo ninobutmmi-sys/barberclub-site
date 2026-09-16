@@ -9,7 +9,7 @@ const { ApiError } = require('../../utils/errors');
 const { queueNotification } = require('../../services/notification');
 const logger = require('../../utils/logger');
 const db = require('../../config/database');
-const { BCRYPT_ROUNDS } = require('../../constants');
+const { BCRYPT_ROUNDS, MAX_RECURRENCE_OCCURRENCES } = require('../../constants');
 const { SALON_IDS } = require('../../config/env');
 
 const router = Router();
@@ -405,6 +405,17 @@ router.put('/:id/schedule',
       const { id } = req.params;
       const { schedules } = req.body;
 
+      // Un invité (Julien vu depuis Grenoble) a sa semaine dans son salon :
+      // l'écrire ici heurtait UNIQUE(barber_id, day_of_week) et finissait en 500.
+      // Ses jours ici passent par les déplacements.
+      const owner = await db.query(
+        'SELECT name FROM barbers WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
+        [id, req.user.salon_id]
+      );
+      if (owner.rows.length === 0) {
+        throw ApiError.badRequest('Ce barbier est invité ici : ses jours dans ce salon se règlent dans « Déplacements »');
+      }
+
       // Replace all schedules for this barber (in a transaction)
       const client = await db.pool.connect();
       try {
@@ -544,12 +555,17 @@ router.post('/:id/guest-days',
     body('host_salon_id').isIn(SALON_IDS).withMessage('Salon invalide'),
     body('start_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure debut invalide'),
     body('end_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure fin invalide'),
+    body('repeat_until').optional({ values: 'falsy' }).matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de fin invalide')
+      .custom((value, { req: r }) => {
+        if (value < r.body.date) throw new Error('La date de fin doit suivre la première date');
+        return true;
+      }),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { date, host_salon_id, start_time, end_time } = req.body;
+      const { date, host_salon_id, start_time, end_time, repeat_until } = req.body;
 
       // Verify barber exists
       const barberCheck = await db.query(
@@ -564,16 +580,41 @@ router.post('/:id/guest-days',
         throw ApiError.badRequest('Le barber est deja dans ce salon');
       }
 
-      const result = await db.query(
-        `INSERT INTO guest_assignments (barber_id, host_salon_id, date, start_time, end_time)
-         VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (barber_id, date) DO UPDATE SET
-           host_salon_id = $2, start_time = $4, end_time = $5
-         RETURNING *`,
-        [id, host_salon_id, date, (start_time || '09:00').slice(0, 5), (end_time || '19:00').slice(0, 5)]
-      );
+      // « Tous les jeudis » : une ligne par semaine jusqu'à repeat_until, bornée
+      // à 52 semaines comme les récurrences de RDV.
+      const dates = [date];
+      if (repeat_until) {
+        const d = new Date(`${date}T12:00:00Z`);
+        for (;;) {
+          d.setUTCDate(d.getUTCDate() + 7);
+          const next = d.toISOString().slice(0, 10);
+          if (next > repeat_until) break;
+          dates.push(next);
+        }
+        if (dates.length > MAX_RECURRENCE_OCCURRENCES) {
+          throw ApiError.badRequest(`${MAX_RECURRENCE_OCCURRENCES} semaines maximum d'un coup`);
+        }
+      }
 
-      res.status(201).json(result.rows[0]);
+      const debut = (start_time || '09:00').slice(0, 5);
+      const fin = (end_time || '19:00').slice(0, 5);
+      const rows = await db.transaction(async (client) => {
+        const out = [];
+        for (const day of dates) {
+          const r = await client.query(
+            `INSERT INTO guest_assignments (barber_id, host_salon_id, date, start_time, end_time)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (barber_id, date) DO UPDATE SET
+               host_salon_id = $2, start_time = $4, end_time = $5
+             RETURNING *`,
+            [id, host_salon_id, day, debut, fin]
+          );
+          out.push(r.rows[0]);
+        }
+        return out;
+      });
+
+      res.status(201).json(repeat_until ? rows : rows[0]);
     } catch (error) {
       next(error);
     }
