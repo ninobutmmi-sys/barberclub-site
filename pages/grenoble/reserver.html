@@ -1336,8 +1336,8 @@
                 html += `<section class="guest-tarifs" aria-labelledby="guestTarifsTitre">
                     <div class="guest-tarifs-head">
                         ${salonOrigine ? `<p class="guest-tarifs-eyebrow">Prix ${salonOrigine}</p>` : ''}
-                        <h3 class="guest-tarifs-title" id="guestTarifsTitre">Les cases de ${esc(barbier.name)}</h3>
-                        <p class="guest-tarifs-text">${esc(barbier.name)} vient couper &agrave; Grenoble ${quand}${salonOrigine ? ` et garde les tarifs de BarberClub ${salonOrigine}` : ''}.</p>
+                        <h3 class="guest-tarifs-title" id="guestTarifsTitre">Les prestations de ${esc(barbier.name)}</h3>
+                        <p class="guest-tarifs-text">${esc(barbier.name)} est disponible uniquement ${quand} au salon de Grenoble.</p>
                     </div>
                     <div class="guest-cases">`;
                 for (const s of [...state.services].sort((a, b) => a.price - b.price)) {
