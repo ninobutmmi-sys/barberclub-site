@@ -5156,6 +5156,10 @@ img { max-width: 100%; }
 
 .bb-intro { margin-bottom: 16px; font-size: 12.5px; line-height: 1.55; color: var(--text-secondary); }
 .bb-intro strong { color: var(--text); }
+.bb-sous-titre { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--text); }
+.bb-liste + .bb-ajout-ligne + .bb-sous-titre,
+.bb-ajout-ligne + .bb-sous-titre,
+.bb-form + .bb-sous-titre { margin-top: 28px; }
 .bb-titre-bloc {
   display: flex; align-items: center; gap: 9px; margin: 24px 0 10px;
   font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);

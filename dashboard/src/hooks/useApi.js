@@ -15,6 +15,7 @@ export const keys = {
   barberSchedule: (id) => ['barberSchedule', id],
   school: (semaines) => ['school', semaines],
   barberGuestDays: (id) => ['barberGuestDays', id],
+  barberGuestWeekly: (id) => ['barberGuestWeekly', id],
   barberServices: (id) => ['barberServices', id],
   clients: (params) => ['clients', params],
   client: (id) => ['client', id],
@@ -214,6 +215,39 @@ export function useDeleteBarberGuestDay() {
       qc.invalidateQueries({ queryKey: ['barberGuestDays'] });
       qc.invalidateQueries({ queryKey: keys.guestAssignments });
     },
+  });
+}
+
+// Jours fixes dans un autre salon : ils génèrent des jours invités, donc on
+// rafraîchit aussi ces listes.
+export function useBarberGuestWeekly(id) {
+  return useQuery({
+    queryKey: keys.barberGuestWeekly(id),
+    queryFn: () => api.getBarberGuestWeekly(id),
+    enabled: !!id,
+  });
+}
+
+function invalidateGuest(qc) {
+  qc.invalidateQueries({ queryKey: ['barberGuestWeekly'] });
+  qc.invalidateQueries({ queryKey: ['barberGuestDays'] });
+  qc.invalidateQueries({ queryKey: keys.guestAssignments });
+  qc.invalidateQueries({ queryKey: keys.barbers });
+}
+
+export function useSaveBarberGuestWeekly() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => api.saveBarberGuestWeekly(id, data),
+    onSuccess: () => invalidateGuest(qc),
+  });
+}
+
+export function useDeleteBarberGuestWeekly() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => api.deleteBarberGuestWeekly(id),
+    onSuccess: () => invalidateGuest(qc),
   });
 }
 

@@ -17,6 +17,9 @@ import {
   useDeleteBarberOverride,
   useAddBarberGuestDay,
   useDeleteBarberGuestDay,
+  useBarberGuestWeekly,
+  useSaveBarberGuestWeekly,
+  useDeleteBarberGuestWeekly,
   useBarberBreaks,
   useCreateBlockedSlot,
   useDeleteBlockedSlot,
@@ -58,7 +61,7 @@ const ONGLETS = [
   { cle: 'semaine', label: 'Semaine' },
   { cle: 'absences', label: 'Absences' },
   { cle: 'prestations', label: 'Prestations' },
-  { cle: 'deplacements', label: 'Déplacements' },
+  { cle: 'deplacements', label: 'Autre salon' },
 ];
 
 const PHOTO_MAX_MO = 2;
@@ -700,7 +703,7 @@ function SectionSemaine({ barber }) {
     return (
       <p className="bb-intro">
         {barber.name} est invité dans ce salon. Sa semaine type se règle depuis son salon ;
-        ses jours ici se gèrent dans <strong>Déplacements</strong> (ex. tous les jeudis).
+        ses jours ici se gèrent dans <strong>Autre salon</strong> (ex. tous les jeudis).
       </p>
     );
   }
@@ -1143,7 +1146,7 @@ function LignePrestation({ ligne, barberId, onFlash }) {
 }
 
 // ============================================
-// Déplacements — jours travaillés dans l'autre salon
+// Autre salon — jours fixes et déplacements ponctuels
 // ============================================
 
 function SectionDeplacements({ barber }) {
@@ -1159,27 +1162,21 @@ function SectionDeplacements({ barber }) {
   const [date, setDate] = useState('');
   const [debut, setDebut] = useState('09:00');
   const [fin, setFin] = useState('19:00');
-  const [chaqueSemaine, setChaqueSemaine] = useState(false);
-  const [jusquau, setJusquau] = useState('');
+  const { data: regles } = useBarberGuestWeekly(barber.id);
+  const fixes = Array.isArray(regles) ? regles : [];
 
-  // Par défaut, la répétition court aussi loin que la réservation en ligne (6 mois).
-  function basculerSemaine(on) {
-    setChaqueSemaine(on);
-    if (on && !jusquau) {
-      const d = new Date();
-      d.setMonth(d.getMonth() + 6);
-      setJusquau(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
-    }
-  }
+  // Les dates générées par un jour fixe ne sont pas des déplacements : les
+  // lister ferait 26 jeudis. On ne montre que le ponctuel.
+  const ponctuels = jours.filter((g) => !fixes.some((r) =>
+    r.host_salon_id === g.host_salon_id && r.day_of_week === (new Date(`${String(g.date).slice(0, 10)}T12:00:00`).getDay() + 6) % 7
+  ));
 
   async function handleAjout(e) {
     e.preventDefault();
     try {
-      const data = { date, host_salon_id: salon, start_time: debut, end_time: fin };
-      if (chaqueSemaine) data.repeat_until = jusquau;
-      const res = await ajouter.mutateAsync({ id: barber.id, data });
-      setDate(''); setForm(false); setChaqueSemaine(false);
-      flash('success', Array.isArray(res) ? `${res.length} déplacements enregistrés` : 'Déplacement enregistré');
+      await ajouter.mutateAsync({ id: barber.id, data: { date, host_salon_id: salon, start_time: debut, end_time: fin } });
+      setDate(''); setForm(false);
+      flash('success', 'Déplacement enregistré');
     } catch (err) { flash('error', err.message); }
   }
 
@@ -1187,17 +1184,19 @@ function SectionDeplacements({ barber }) {
 
   return (
     <>
+      <JoursFixes barber={barber} fixes={fixes} destinations={destinations} />
+
       <InlineStatus status={status} />
+      <h3 className="bb-sous-titre">Déplacements ponctuels</h3>
       <p className="bb-intro">
-        Les jours où {barber.name} travaille dans l’autre salon. Il y devient réservable, et disparaît d’ici
-        automatiquement.
+        Un jour précis dans un autre salon. Il y devient réservable, et disparaît d’ici automatiquement.
       </p>
 
-      {jours.length === 0 ? (
+      {ponctuels.length === 0 ? (
         <p className="bb-vide">Aucun déplacement prévu.</p>
       ) : (
         <ul className="bb-liste">
-          {jours.map((g) => (
+          {ponctuels.map((g) => (
             <li key={g.id} className="bb-item invite">
               <div>
                 <div className="bb-item-titre">{formatDateFr(g.date)}</div>
@@ -1236,15 +1235,6 @@ function SectionDeplacements({ barber }) {
             <input id="bb-gd-date" className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
           </div>
           <div className="form-group">
-            <label className="label" htmlFor="bb-gd-repete">
-              <input id="bb-gd-repete" type="checkbox" checked={chaqueSemaine} onChange={(e) => basculerSemaine(e.target.checked)} />
-              {' '}Toutes les semaines, même jour
-            </label>
-            {chaqueSemaine && (
-              <input className="input" type="date" value={jusquau} min={date || undefined} onChange={(e) => setJusquau(e.target.value)} required aria-label="Jusqu'au" />
-            )}
-          </div>
-          <div className="form-group">
             <span className="label">Horaires sur place</span>
             <div className="bb-heures">
               <input className="input" type="time" value={debut} onChange={(e) => setDebut(e.target.value)} required aria-label="Début" />
@@ -1262,6 +1252,103 @@ function SectionDeplacements({ barber }) {
       ) : (
         <button type="button" className="bb-ajout-ligne" onClick={() => setForm(true)} disabled={destinations.length === 0}>
           <IcoPlus /> Ajouter un déplacement
+        </button>
+      )}
+    </>
+  );
+}
+
+// Jours fixes — « tous les jeudis à Grenoble », sans date de fin.
+function JoursFixes({ barber, fixes, destinations }) {
+  const enregistrer = useSaveBarberGuestWeekly();
+  const supprimer = useDeleteBarberGuestWeekly();
+  const [status, flash] = useFlash();
+  const [form, setForm] = useState(false);
+  const [salon, setSalon] = useState(destinations[0]?.id || '');
+  const [jour, setJour] = useState(3);
+  const [debut, setDebut] = useState('09:00');
+  const [fin, setFin] = useState('19:00');
+
+  async function handleAjout(e) {
+    e.preventDefault();
+    try {
+      await enregistrer.mutateAsync({ id: barber.id, data: { day_of_week: Number(jour), host_salon_id: salon, start_time: debut, end_time: fin } });
+      setForm(false);
+      flash('success', 'Jour fixe enregistré');
+    } catch (err) { flash('error', err.message); }
+  }
+
+  return (
+    <>
+      <InlineStatus status={status} />
+      <h3 className="bb-sous-titre">Jours fixes</h3>
+      <p className="bb-intro">
+        Chaque semaine, sans date de fin. {barber.name} est réservable dans l’autre salon ce jour-là, et
+        disparaît d’ici. Les RDV déjà pris ne bougent pas.
+      </p>
+
+      {fixes.length === 0 ? (
+        <p className="bb-vide">Aucun jour fixe.</p>
+      ) : (
+        <ul className="bb-liste">
+          {fixes.map((r) => (
+            <li key={r.id} className="bb-item invite">
+              <div>
+                <div className="bb-item-titre">Tous les {DAYS[r.day_of_week].toLowerCase()}s</div>
+                <div className="bb-item-meta">
+                  <span className="bb-tag invite">{SALON_OPTIONS.find((s) => s.id === r.host_salon_id)?.label || r.host_salon_id}</span>
+                  <span>{hhmm(r.start_time)}–{hhmm(r.end_time)}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="bb-supprimer"
+                aria-label="Supprimer"
+                onClick={async () => {
+                  if (!window.confirm(`Arrêter les ${DAYS[r.day_of_week].toLowerCase()}s dans l’autre salon ? Les dates à venir seront retirées.`)) return;
+                  try { await supprimer.mutateAsync(r.id); flash('success', 'Jour fixe supprimé'); }
+                  catch (err) { flash('error', err.message); }
+                }}
+              >
+                <IcoTrash />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {form ? (
+        <form className="bb-form" onSubmit={handleAjout}>
+          <div className="form-group">
+            <label className="label" htmlFor="bb-gw-salon">Salon</label>
+            <select id="bb-gw-salon" className="input" value={salon} onChange={(e) => setSalon(e.target.value)} required>
+              {destinations.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="label" htmlFor="bb-gw-jour">Jour</label>
+            <select id="bb-gw-jour" className="input" value={jour} onChange={(e) => setJour(e.target.value)} required>
+              {DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <span className="label">Horaires sur place</span>
+            <div className="bb-heures">
+              <input className="input" type="time" value={debut} onChange={(e) => setDebut(e.target.value)} required aria-label="Début" />
+              <em>à</em>
+              <input className="input" type="time" value={fin} onChange={(e) => setFin(e.target.value)} required aria-label="Fin" />
+            </div>
+          </div>
+          <div className="bb-form-actions">
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setForm(false)}>Annuler</button>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={enregistrer.isPending}>
+              {enregistrer.isPending ? '…' : 'Enregistrer'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button type="button" className="bb-ajout-ligne" onClick={() => setForm(true)} disabled={destinations.length === 0}>
+          <IcoPlus /> Ajouter un jour fixe
         </button>
       )}
     </>

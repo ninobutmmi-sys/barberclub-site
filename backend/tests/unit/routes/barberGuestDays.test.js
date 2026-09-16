@@ -1,7 +1,7 @@
 /**
- * Julien à Grenoble le jeudi : semaine type d'un invité et déplacements répétés.
+ * Julien à Grenoble tous les jeudis : semaine type d'un invité et jours fixes.
  * Écrire la semaine d'un invité finissait en 500 (UNIQUE barber_id, day_of_week).
- * Les déplacements acceptent désormais une répétition hebdomadaire.
+ * Un jour fixe crée la règle et génère ses dates dans la même transaction.
  */
 const request = require('supertest');
 const { createTestApp } = require('../../integration/helpers/createApp');
@@ -54,60 +54,83 @@ describe('PUT /api/admin/barbers/:id/schedule', () => {
       .send({ schedules: [{ day_of_week: 3, is_working: true, start_time: '09:00', end_time: '19:00' }] });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/Déplacements/);
+    expect(res.body.error).toMatch(/Autre salon/);
   });
 });
 
-describe('POST /api/admin/barbers/:id/guest-days', () => {
-  function transactionQuiEnregistre() {
-    const client = { query: jest.fn(async (sql, params) => ({ rows: [{ date: params[2] }] })) };
-    db.transaction.mockImplementation((fn) => fn(client));
-    return client;
-  }
+function transactionAvec(repondre) {
+  const client = { query: jest.fn(repondre) };
+  db.transaction.mockImplementation((fn) => fn(client));
+  return client;
+}
 
-  it('crée un jour par semaine jusqu\'à la date de fin incluse', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: BARBER, salon_id: 'meylan' }] });
-    const client = transactionQuiEnregistre();
+describe('POST /api/admin/barbers/:id/guest-weekly', () => {
+  const JEUDI_GRENOBLE = { day_of_week: 3, host_salon_id: 'grenoble', start_time: '09:00', end_time: '19:00' };
 
-    const res = await request(app)
-      .post(`/api/admin/barbers/${BARBER}/guest-days`)
-      .send({ date: '2026-09-17', host_salon_id: 'grenoble', start_time: '09:00', end_time: '19:00', repeat_until: '2026-10-15' });
+  it('enregistre la règle, aligne les dates à venir et génère les suivantes', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ salon_id: 'meylan' }] });
+    const client = transactionAvec(async (sql) => (
+      sql.includes('INSERT INTO guest_weekly')
+        ? { rows: [{ id: 'r1', ...JEUDI_GRENOBLE }] }
+        : { rows: [], rowCount: 26 }
+    ));
 
-    expect(res.status).toBe(201);
-    expect(client.query.mock.calls.map(([, p]) => p[2]))
-      .toEqual(['2026-09-17', '2026-09-24', '2026-10-01', '2026-10-08', '2026-10-15']);
-    expect(res.body).toHaveLength(5);
-  });
-
-  it('garde la réponse d\'un seul jour sans répétition', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: BARBER, salon_id: 'meylan' }] });
-    transactionQuiEnregistre();
-
-    const res = await request(app)
-      .post(`/api/admin/barbers/${BARBER}/guest-days`)
-      .send({ date: '2026-09-17', host_salon_id: 'grenoble' });
+    const res = await request(app).post(`/api/admin/barbers/${BARBER}/guest-weekly`).send(JEUDI_GRENOBLE);
 
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ date: '2026-09-17' });
+    expect(res.body).toMatchObject({ id: 'r1', day_of_week: 3, host_salon_id: 'grenoble' });
+    const sqls = client.query.mock.calls.map(([sql]) => sql);
+    expect(sqls[0]).toContain('INSERT INTO guest_weekly');
+    expect(sqls[1]).toContain('UPDATE guest_assignments');
+    expect(sqls[2]).toContain('INSERT INTO guest_assignments');
+    expect(client.query.mock.calls[2][1]).toEqual(['r1']); // seulement cette règle
+    expect(sqls[3]).toContain('UPDATE guest_weekly SET generated_until');
   });
 
-  it('refuse une date de fin avant la première date', async () => {
-    const res = await request(app)
-      .post(`/api/admin/barbers/${BARBER}/guest-days`)
-      .send({ date: '2026-09-17', host_salon_id: 'grenoble', repeat_until: '2026-09-10' });
+  it('refuse un jour fixe dans le salon du barbier', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ salon_id: 'grenoble' }] });
+
+    const res = await request(app).post(`/api/admin/barbers/${BARBER}/guest-weekly`).send(JEUDI_GRENOBLE);
 
     expect(res.status).toBe(400);
     expect(db.transaction).not.toHaveBeenCalled();
   });
 
-  it('refuse plus de 52 semaines', async () => {
-    db.query.mockResolvedValueOnce({ rows: [{ id: BARBER, salon_id: 'meylan' }] });
-
+  it('refuse une fin avant le début', async () => {
     const res = await request(app)
-      .post(`/api/admin/barbers/${BARBER}/guest-days`)
-      .send({ date: '2026-09-17', host_salon_id: 'grenoble', repeat_until: '2028-01-01' });
+      .post(`/api/admin/barbers/${BARBER}/guest-weekly`)
+      .send({ ...JEUDI_GRENOBLE, start_time: '19:00', end_time: '09:00' });
 
     expect(res.status).toBe(400);
-    expect(db.transaction).not.toHaveBeenCalled();
+    expect(db.query).not.toHaveBeenCalled();
+  });
+});
+
+describe('DELETE /api/admin/barbers/guest-weekly/:id', () => {
+  const RULE = 'b1000000-0000-0000-0000-000000000001';
+
+  it('retire la règle et ses dates à partir de demain', async () => {
+    const client = transactionAvec(async (sql) => (
+      sql.includes('DELETE FROM guest_weekly')
+        ? { rows: [{ barber_id: BARBER, host_salon_id: 'grenoble', day_of_week: 3 }] }
+        : { rows: [] }
+    ));
+
+    const res = await request(app).delete(`/api/admin/barbers/guest-weekly/${RULE}`);
+
+    expect(res.status).toBe(200);
+    const [sql, params] = client.query.mock.calls[1];
+    expect(sql).toContain('DELETE FROM guest_assignments');
+    expect(sql).toContain('date > CURRENT_DATE');
+    expect(params).toEqual([BARBER, 'grenoble', 3]);
+  });
+
+  it('404 si la règle n\'est pas visible depuis ce salon', async () => {
+    const client = transactionAvec(async () => ({ rows: [] }));
+
+    const res = await request(app).delete(`/api/admin/barbers/guest-weekly/${RULE}`);
+
+    expect(res.status).toBe(404);
+    expect(client.query).toHaveBeenCalledTimes(1);
   });
 });

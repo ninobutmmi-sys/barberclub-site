@@ -248,6 +248,12 @@ export const addBarberGuestDay = (id, body) =>
   request(`/admin/barbers/${id}/guest-days`, { method: 'POST', body: JSON.stringify(body) });
 export const deleteBarberGuestDay = (id) =>
   request(`/admin/barbers/guest-days/${id}`, { method: 'DELETE' });
+export const getBarberGuestWeekly = (id) =>
+  request(`/admin/barbers/${id}/guest-weekly`);
+export const saveBarberGuestWeekly = (id, body) =>
+  request(`/admin/barbers/${id}/guest-weekly`, { method: 'POST', body: JSON.stringify(body) });
+export const deleteBarberGuestWeekly = (id) =>
+  request(`/admin/barbers/guest-weekly/${id}`, { method: 'DELETE' });
 export const getGuestAssignments = () =>
   request('/admin/barbers/guest-assignments/list');
 

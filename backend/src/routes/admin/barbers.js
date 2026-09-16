@@ -9,8 +9,9 @@ const { ApiError } = require('../../utils/errors');
 const { queueNotification } = require('../../services/notification');
 const logger = require('../../utils/logger');
 const db = require('../../config/database');
-const { BCRYPT_ROUNDS, MAX_RECURRENCE_OCCURRENCES } = require('../../constants');
+const { BCRYPT_ROUNDS } = require('../../constants');
 const { SALON_IDS } = require('../../config/env');
+const { extendGuestWeekly } = require('../../services/guestWeekly');
 
 const router = Router();
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -407,13 +408,13 @@ router.put('/:id/schedule',
 
       // Un invité (Julien vu depuis Grenoble) a sa semaine dans son salon :
       // l'écrire ici heurtait UNIQUE(barber_id, day_of_week) et finissait en 500.
-      // Ses jours ici passent par les déplacements.
+      // Ses jours ici passent par les jours fixes ou les déplacements.
       const owner = await db.query(
         'SELECT name FROM barbers WHERE id = $1 AND salon_id = $2 AND deleted_at IS NULL',
         [id, req.user.salon_id]
       );
       if (owner.rows.length === 0) {
-        throw ApiError.badRequest('Ce barbier est invité ici : ses jours dans ce salon se règlent dans « Déplacements »');
+        throw ApiError.badRequest('Ce barbier est invité ici : ses jours dans ce salon se règlent dans « Autre salon »');
       }
 
       // Replace all schedules for this barber (in a transaction)
@@ -555,17 +556,12 @@ router.post('/:id/guest-days',
     body('host_salon_id').isIn(SALON_IDS).withMessage('Salon invalide'),
     body('start_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure debut invalide'),
     body('end_time').optional().matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure fin invalide'),
-    body('repeat_until').optional({ values: 'falsy' }).matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date de fin invalide')
-      .custom((value, { req: r }) => {
-        if (value < r.body.date) throw new Error('La date de fin doit suivre la première date');
-        return true;
-      }),
   ],
   handleValidation,
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { date, host_salon_id, start_time, end_time, repeat_until } = req.body;
+      const { date, host_salon_id, start_time, end_time } = req.body;
 
       // Verify barber exists
       const barberCheck = await db.query(
@@ -580,41 +576,16 @@ router.post('/:id/guest-days',
         throw ApiError.badRequest('Le barber est deja dans ce salon');
       }
 
-      // « Tous les jeudis » : une ligne par semaine jusqu'à repeat_until, bornée
-      // à 52 semaines comme les récurrences de RDV.
-      const dates = [date];
-      if (repeat_until) {
-        const d = new Date(`${date}T12:00:00Z`);
-        for (;;) {
-          d.setUTCDate(d.getUTCDate() + 7);
-          const next = d.toISOString().slice(0, 10);
-          if (next > repeat_until) break;
-          dates.push(next);
-        }
-        if (dates.length > MAX_RECURRENCE_OCCURRENCES) {
-          throw ApiError.badRequest(`${MAX_RECURRENCE_OCCURRENCES} semaines maximum d'un coup`);
-        }
-      }
+      const result = await db.query(
+        `INSERT INTO guest_assignments (barber_id, host_salon_id, date, start_time, end_time)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (barber_id, date) DO UPDATE SET
+           host_salon_id = $2, start_time = $4, end_time = $5
+         RETURNING *`,
+        [id, host_salon_id, date, (start_time || '09:00').slice(0, 5), (end_time || '19:00').slice(0, 5)]
+      );
 
-      const debut = (start_time || '09:00').slice(0, 5);
-      const fin = (end_time || '19:00').slice(0, 5);
-      const rows = await db.transaction(async (client) => {
-        const out = [];
-        for (const day of dates) {
-          const r = await client.query(
-            `INSERT INTO guest_assignments (barber_id, host_salon_id, date, start_time, end_time)
-             VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (barber_id, date) DO UPDATE SET
-               host_salon_id = $2, start_time = $4, end_time = $5
-             RETURNING *`,
-            [id, host_salon_id, day, debut, fin]
-          );
-          out.push(r.rows[0]);
-        }
-        return out;
-      });
-
-      res.status(201).json(repeat_until ? rows : rows[0]);
+      res.status(201).json(result.rows[0]);
     } catch (error) {
       next(error);
     }
@@ -638,6 +609,114 @@ router.delete('/guest-days/:id',
         throw ApiError.notFound('Jour invite introuvable');
       }
       res.json({ message: 'Jour invite supprime' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ============================================
+// Jours fixes dans un autre salon — « Julien, tous les jeudis à Grenoble »
+// La règle génère les guest_assignments (services/guestWeekly.js).
+// ============================================
+router.get('/:id/guest-weekly',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const result = await db.query(
+        `SELECT id, barber_id, host_salon_id, day_of_week, start_time, end_time
+         FROM guest_weekly WHERE barber_id = $1 ORDER BY day_of_week`,
+        [req.params.id]
+      );
+      res.json(result.rows);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.post('/:id/guest-weekly',
+  [
+    param('id').matches(uuidRegex),
+    body('day_of_week').isInt({ min: 0, max: 6 }).withMessage('Jour invalide'),
+    body('host_salon_id').isIn(SALON_IDS).withMessage('Salon invalide'),
+    body('start_time').matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure debut invalide'),
+    body('end_time').matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Heure fin invalide')
+      .custom((value, { req: r }) => {
+        if (value <= r.body.start_time) throw new Error('L\'heure de fin doit être après l\'heure de début');
+        return true;
+      }),
+  ],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { day_of_week, host_salon_id, start_time, end_time } = req.body;
+
+      const barberCheck = await db.query(
+        'SELECT salon_id FROM barbers WHERE id = $1 AND is_active = true AND deleted_at IS NULL',
+        [id]
+      );
+      if (barberCheck.rows.length === 0) throw ApiError.notFound('Barber introuvable');
+      if (barberCheck.rows[0].salon_id === host_salon_id) {
+        throw ApiError.badRequest('Le barber est deja dans ce salon');
+      }
+
+      const rule = await db.transaction(async (client) => {
+        const r = await client.query(
+          `INSERT INTO guest_weekly (barber_id, host_salon_id, day_of_week, start_time, end_time)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (barber_id, day_of_week) DO UPDATE SET
+             host_salon_id = $2, start_time = $4, end_time = $5
+           RETURNING id, barber_id, host_salon_id, day_of_week, start_time, end_time`,
+          [id, host_salon_id, day_of_week, start_time, end_time]
+        );
+        // Règle modifiée : les dates à venir de ce jour suivent (salon, heures).
+        await client.query(
+          `UPDATE guest_assignments SET host_salon_id = $2, start_time = $4, end_time = $5
+           WHERE barber_id = $1 AND date >= CURRENT_DATE AND EXTRACT(ISODOW FROM date) - 1 = $3`,
+          [id, host_salon_id, day_of_week, start_time, end_time]
+        );
+        await extendGuestWeekly({ ruleId: r.rows[0].id, queryFn: client.query.bind(client) });
+        return r.rows[0];
+      });
+
+      logAudit(req, 'update', 'guest_weekly', rule.id, { barber_id: id, day_of_week, host_salon_id, start_time, end_time });
+      res.status(201).json(rule);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.delete('/guest-weekly/:id',
+  [param('id').matches(uuidRegex)],
+  handleValidation,
+  async (req, res, next) => {
+    try {
+      const salonId = req.user.salon_id;
+      const removed = await db.transaction(async (client) => {
+        const r = await client.query(
+          `DELETE FROM guest_weekly WHERE id = $1
+             AND (barber_id IN (SELECT id FROM barbers WHERE salon_id = $2) OR host_salon_id = $2)
+           RETURNING barber_id, host_salon_id, day_of_week`,
+          [req.params.id, salonId]
+        );
+        if (r.rows.length === 0) return null;
+        const { barber_id, host_salon_id, day_of_week } = r.rows[0];
+        // Il revient dans son salon ce jour-là à partir de demain ; aujourd'hui ne bouge pas.
+        await client.query(
+          `DELETE FROM guest_assignments
+           WHERE barber_id = $1 AND host_salon_id = $2 AND date > CURRENT_DATE
+             AND EXTRACT(ISODOW FROM date) - 1 = $3`,
+          [barber_id, host_salon_id, day_of_week]
+        );
+        return r.rows[0];
+      });
+      if (!removed) throw ApiError.notFound('Jour fixe introuvable');
+      logAudit(req, 'delete', 'guest_weekly', req.params.id, removed);
+      res.json({ message: 'Jour fixe supprimé' });
     } catch (error) {
       next(error);
     }
