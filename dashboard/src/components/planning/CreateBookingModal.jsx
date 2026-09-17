@@ -235,7 +235,7 @@ export default function CreateBookingModal({ barbers, services, onClose, onCreat
             {skipped.length > 0 && (
               <div style={{ padding: '10px 14px', background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.03))', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 10, marginBottom: 12 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: '#f59e0b', marginBottom: 6 }}>
-                  {skipped.length} date{skipped.length > 1 ? 's' : ''} ignorée{skipped.length > 1 ? 's' : ''} (créneaux déjà pris)
+                  {skipped.length} date{skipped.length > 1 ? 's' : ''} ignorée{skipped.length > 1 ? 's' : ''}
                 </div>
                 {skipped.map((s, i) => (
                   <div key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', padding: '2px 0' }}>

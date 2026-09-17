@@ -539,7 +539,10 @@ async function createRecurringBookings(data, recurrence) {
     } catch (err) {
       // If slot conflict, skip this date silently
       if (err.status === 409 || err.statusCode === 409) {
-        skipped.push({ date, reason: 'Créneau déjà pris' });
+        // Le message d'origine nomme le RDV qui bloque, et son salon : sans lui,
+        // un jeudi refuse a Grenoble parce que le barbier est pris a Meylan
+        // n'etait pas diagnosticable.
+        skipped.push({ date, reason: err.message || 'Créneau déjà pris' });
         logger.info('Recurring booking skipped (conflict)', { date, time: data.start_time, groupId });
       } else {
         // For other errors, also skip but log

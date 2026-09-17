@@ -246,6 +246,10 @@ router.get('/services', publicLimiter,
               AND b.is_active = true
               AND b.deleted_at IS NULL
               AND b.salon_id = $1
+              -- Une prestation que seul un barbier hors du « peu importe »
+              -- pratique (les cases de Julien) n'a rien a faire dans cette
+              -- liste : la choisir menait a une etape date sans creneau.
+              AND b.exclude_from_any = false
           )
         ORDER BY s.sort_order`;
       params = [salonId];
