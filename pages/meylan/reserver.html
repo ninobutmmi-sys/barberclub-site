@@ -1157,7 +1157,7 @@
             // Categorize services
             function getCategory(name) {
                 const n = name.toLowerCase();
-                if (n.includes('enfant') || n.includes('étude') || n.includes('partenaire') || n.includes('(ce)')) return 'reduced';
+                if (n.includes('enfant') || n.includes('étude') || n.includes('étudiant') || n.includes('partenaire') || n.includes('(ce)')) return 'reduced';
                 if (n.startsWith('barbe') || (n.includes('soin') && !n.includes('coupe'))) return 'beard';
                 return 'cuts';
             }
