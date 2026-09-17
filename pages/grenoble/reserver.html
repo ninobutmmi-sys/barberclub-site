@@ -1312,8 +1312,25 @@
             for (const s of state.services) {
                 grouped[getCategory(s.name)].push(s);
             }
-            // Sort each category by price ascending
-            Object.values(grouped).forEach(arr => arr.sort((a, b) => a.price - b.price));
+            // Du moins cher au plus cher ; a prix egal, la plus courte, puis l'ordre alphabetique.
+            const tri = (a, b) => (a.price - b.price) || (a.duration - b.duration) || a.name.localeCompare(b.name, 'fr');
+            Object.values(grouped).forEach(arr => arr.sort(tri));
+
+            // Une case : le prix en titre, puisque c'est lui que le client compare.
+            // 27 plutot que 27,00 ; un prix a zero s'ecrit « Offert ».
+            const euros = (c) => Number(c) % 100 === 0 ? String(Number(c) / 100) : (Number(c) / 100).toFixed(2).replace('.', ',');
+            const caseHTML = (s) => `
+                        <div class="service-card service-case" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — ${s.duration} minutes — ${formatPrice(s.price)}">
+                            <div class="service-case-top">
+                                ${Number(s.price) === 0
+                                    ? '<span class="service-case-price is-free">Offert</span>'
+                                    : `<span class="service-case-price">${euros(s.price)}<span class="service-case-euro">&euro;</span></span>`}
+                                <div class="service-check">${checkSVG}</div>
+                            </div>
+                            <div class="service-case-name">${esc(s.name)}</div>
+                            ${s.description ? `<div class="service-case-desc">${esc(s.description)}</div>` : ''}
+                            <div class="service-duration">${clockSVG}${s.duration} min</div>
+                        </div>`;
 
             let html = '';
             // Le client voit des prix a zero : on lui dit pourquoi, ici, au
@@ -1331,28 +1348,14 @@
                 const quand = joursInvite.length === 1
                     ? 'le ' + ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'][joursInvite[0]]
                     : 'certains jours';
-                // 27 plutot que 27,00 : dans une case, le chiffre est le titre.
-                const euros = (c) => Number(c) % 100 === 0 ? String(Number(c) / 100) : (Number(c) / 100).toFixed(2).replace('.', ',');
                 html += `<section class="guest-tarifs" aria-labelledby="guestTarifsTitre">
                     <div class="guest-tarifs-head">
                         ${salonOrigine ? `<p class="guest-tarifs-eyebrow">Prix ${salonOrigine}</p>` : ''}
                         <h3 class="guest-tarifs-title" id="guestTarifsTitre">Les prestations de ${esc(barbier.name)}</h3>
                         <p class="guest-tarifs-text">${esc(barbier.name)} est disponible uniquement ${quand} au salon de Grenoble.</p>
                     </div>
-                    <div class="guest-cases">`;
-                for (const s of [...state.services].sort((a, b) => a.price - b.price)) {
-                    html += `
-                        <div class="service-card guest-case" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — ${s.duration} minutes — ${formatPrice(s.price)}">
-                            <div class="guest-case-top">
-                                <span class="guest-case-price">${euros(s.price)}<span class="guest-case-euro">&euro;</span></span>
-                                <div class="service-check">${checkSVG}</div>
-                            </div>
-                            <div class="guest-case-name">${esc(s.name)}</div>
-                            ${s.description ? `<div class="guest-case-desc">${esc(s.description)}</div>` : ''}
-                            <div class="service-duration">${clockSVG}${s.duration} min</div>
-                        </div>`;
-                }
-                html += `</div></section>`;
+                    <div class="service-cases" role="group" aria-labelledby="guestTarifsTitre">${[...state.services].sort(tri).map(caseHTML).join('')}</div>
+                </section>`;
             }
 
             if (barbier && barbier.offer_label) {
@@ -1371,22 +1374,7 @@
                         <span class="service-category-title">${cat.title}</span>
                         <span class="service-category-line"></span>
                     </div>`;
-                for (const s of grouped[cat.key]) {
-                    html += `
-                    <div class="service-card" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — ${s.duration} minutes — ${formatPrice(s.price)}">
-                        <div class="service-left">
-                            <div class="service-name">${esc(s.name)}</div>
-                            ${s.description ? `<div class="service-desc">${esc(s.description)}</div>` : ''}
-                        </div>
-                        <div class="service-right">
-                            <div class="service-pricing">
-                                <div class="service-price${Number(s.price) === 0 ? ' is-free' : ''}">${formatPrice(s.price)}</div>
-                                <div class="service-duration">${clockSVG}${s.duration} min</div>
-                            </div>
-                            <div class="service-check">${checkSVG}</div>
-                        </div>
-                    </div>`;
-                }
+                html += `<div class="service-cases" role="group" aria-label="${cat.title}">${grouped[cat.key].map(caseHTML).join('')}</div>`;
                 html += `</div>`;
             }
 
@@ -1397,19 +1385,13 @@
                     <span class="service-category-title">Autres</span>
                     <span class="service-category-line"></span>
                 </div>
-                <div class="service-card disabled" role="presentation">
-                    <div class="service-left">
-                        <div class="service-name">Mèches</div>
-                        <div class="service-card-note">Appelez le salon au 09 56 30 93 86</div>
-                    </div>
-                    <div class="service-right">
-                        <div class="service-pricing">
-                            <div class="service-price">40,00 €</div>
-                            <div class="service-duration">sur devis</div>
+                <div class="service-cases">
+                    <div class="service-card service-case disabled" role="presentation">
+                        <div class="service-case-top">
+                            <span class="service-case-price">40<span class="service-case-euro">&euro;</span></span>
                         </div>
-                        <!-- Espace reserve : sans lui, ce prix se calait 34 px
-                             plus a droite que les autres et cassait la colonne. -->
-                        <div class="service-check" aria-hidden="true" style="visibility:hidden"></div>
+                        <div class="service-case-name">Mèches</div>
+                        <div class="service-case-desc">Sur devis &mdash; appelez le salon au <a href="tel:+33956309386">09&nbsp;56&nbsp;30&nbsp;93&nbsp;86</a></div>
                     </div>
                 </div>
             </div>`;

@@ -3330,61 +3330,19 @@ a:focus-visible, button:focus-visible {
 }
 
 /* ═══════════════════════════════════════════
-   LES CASES D'UN BARBIER INVITE
-   Julien vient de Meylan couper a Grenoble le jeudi, a ses prix. Ses quatre
-   prestations quittent la liste pour une grille de cases : le prix devient le
-   titre de chaque case, parce que c'est lui qui differe du catalogue d'ici.
-   Meme cyan que la mention d'offre — une information sur le barbier, pas une
-   alerte — et la selection garde les codes des autres cartes (bord blanc,
-   prix cyan, coche pleine).
+   LES CASES DES PRESTATIONS
+   Nees pour Julien, invite a Grenoble le jeudi a ses prix, puis etendues a
+   tout le monde : le prix devient le titre de chaque case, parce que c'est lui
+   que le client compare. Deux colonnes par categorie, triees du moins cher au
+   plus cher. Le bandeau cyan (.guest-tarifs) reste propre aux invites ; la
+   selection garde les codes des autres cartes (bord blanc, prix cyan, coche).
    ═══════════════════════════════════════════ */
-.guest-tarifs {
-    margin-bottom: 6px;
-    animation: offerNoteIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.guest-tarifs-head {
-    margin-bottom: 12px;
-    padding: 16px 18px;
-    border-radius: 16px;
-    border: 1px solid rgba(96, 203, 245, 0.28);
-    background:
-        radial-gradient(130% 150% at 100% 0%, rgba(96, 203, 245, 0.16), transparent 58%),
-        rgba(255, 255, 255, 0.03);
-}
-.guest-tarifs-eyebrow {
-    display: inline-block;
-    margin: 0 0 8px;
-    padding: 3px 9px;
-    border-radius: 999px;
-    border: 1px solid rgba(96, 203, 245, 0.35);
-    background: rgba(96, 203, 245, 0.1);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #A8E4FA;
-}
-.guest-tarifs-title {
-    margin: 0 0 6px;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 16px;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    color: #fff;
-}
-.guest-tarifs-text {
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.66);
-}
-
-.guest-cases {
+.service-cases {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
 }
-.service-card.guest-case {
+.service-card.service-case {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
@@ -3393,22 +3351,24 @@ a:focus-visible, button:focus-visible {
     padding: 14px 14px 13px;
     border-radius: 16px;
     background: linear-gradient(160deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
+    touch-action: manipulation;
 }
-.service-card.guest-case:focus-visible {
+.service-card.service-case.disabled { cursor: default; }
+.service-card.service-case:focus-visible {
     outline: 2px solid #7FD8F7;
     outline-offset: 2px;
 }
 @media (hover: hover) {
-    .service-card.guest-case:not(.selected):hover { border-color: rgba(96, 203, 245, 0.35); }
+    .service-card.service-case:not(.selected):hover { border-color: rgba(96, 203, 245, 0.35); }
 }
-.guest-case-top {
+.service-case-top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
     margin-bottom: 6px;
 }
-.guest-case-price {
+.service-case-price {
     font-family: 'Orbitron', sans-serif;
     font-size: 28px;
     font-weight: 800;
@@ -3418,31 +3378,39 @@ a:focus-visible, button:focus-visible {
     color: #fff;
     transition: color 0.3s ease, text-shadow 0.3s ease;
 }
-.guest-case-euro {
+.service-case-euro {
     margin-left: 3px;
     font-size: 0.5em;
     color: rgba(127, 216, 247, 0.9);
 }
-.service-card.selected .guest-case-price {
+/* Un prix offert s'annonce en toutes lettres, plus petit pour tenir. */
+.service-case-price.is-free {
+    font-size: 20px;
+    line-height: 1.4;
+    color: #A8E4FA;
+    text-shadow: 0 0 18px rgba(96, 203, 245, 0.35);
+}
+.service-card.selected .service-case-price {
     color: #7FD8F7;
     text-shadow: 0 0 16px rgba(96, 203, 245, 0.45);
 }
-.guest-case-name {
+.service-case-name {
     font-size: 14px;
     font-weight: 600;
     line-height: 1.3;
 }
-.guest-case-desc {
+.service-case-desc {
     font-size: 11.5px;
     line-height: 1.4;
     color: rgba(255, 255, 255, 0.52);
 }
-.service-card.guest-case .service-duration { margin-top: auto; padding-top: 4px; }
+.service-card.service-case .service-duration { margin-top: auto; padding-top: 4px; }
+.service-case-desc a { color: rgba(255, 255, 255, 0.85); text-decoration: underline; text-underline-offset: 2px; }
 
 /* Sous 340 px, deux colonnes ecrasent les intitules : une case par ligne. */
 @media (max-width: 340px) {
-    .guest-cases { grid-template-columns: 1fr; }
-    .service-card.guest-case { min-height: 0; }
+    .service-cases { grid-template-columns: 1fr; }
+    .service-card.service-case { min-height: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
     .guest-tarifs { animation: none; }

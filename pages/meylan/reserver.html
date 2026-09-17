@@ -1172,8 +1172,25 @@
             for (const s of state.services) {
                 grouped[getCategory(s.name)].push(s);
             }
-            // Sort each category by price ascending
-            Object.values(grouped).forEach(arr => arr.sort((a, b) => a.price - b.price));
+            // Du moins cher au plus cher ; a prix egal, la plus courte, puis l'ordre alphabetique.
+            const tri = (a, b) => (a.price - b.price) || (a.duration - b.duration) || a.name.localeCompare(b.name, 'fr');
+            Object.values(grouped).forEach(arr => arr.sort(tri));
+
+            // Une case : le prix en titre, puisque c'est lui que le client compare.
+            // 27 plutot que 27,00 ; un prix a zero s'ecrit « Offert ».
+            const euros = (c) => Number(c) % 100 === 0 ? String(Number(c) / 100) : (Number(c) / 100).toFixed(2).replace('.', ',');
+            const caseHTML = (s) => `
+                        <div class="service-card service-case" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — ${s.duration} minutes — ${formatPrice(s.price)}">
+                            <div class="service-case-top">
+                                ${Number(s.price) === 0
+                                    ? '<span class="service-case-price is-free">Offert</span>'
+                                    : `<span class="service-case-price">${euros(s.price)}<span class="service-case-euro">&euro;</span></span>`}
+                                <div class="service-check">${checkSVG}</div>
+                            </div>
+                            <div class="service-case-name">${esc(s.name)}</div>
+                            ${s.description ? `<div class="service-case-desc">${esc(s.description)}</div>` : ''}
+                            <div class="service-duration">${clockSVG}${s.duration} min</div>
+                        </div>`;
 
             let html = '';
             // Le client voit des prix a zero : on lui dit pourquoi, ici, au
@@ -1195,22 +1212,7 @@
                         <span class="service-category-title">${cat.title}</span>
                         <span class="service-category-line"></span>
                     </div>`;
-                for (const s of grouped[cat.key]) {
-                    html += `
-                    <div class="service-card" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — ${s.duration} minutes — ${formatPrice(s.price)}">
-                        <div class="service-left">
-                            <div class="service-name">${esc(s.name)}</div>
-                            ${s.description ? `<div class="service-desc">${esc(s.description)}</div>` : ''}
-                        </div>
-                        <div class="service-right">
-                            <div class="service-pricing">
-                                <div class="service-price${Number(s.price) === 0 ? ' is-free' : ''}">${formatPrice(s.price)}</div>
-                                <div class="service-duration">${clockSVG}${s.duration} min</div>
-                            </div>
-                            <div class="service-check">${checkSVG}</div>
-                        </div>
-                    </div>`;
-                }
+                html += `<div class="service-cases" role="group" aria-label="${cat.title}">${grouped[cat.key].map(caseHTML).join('')}</div>`;
                 html += `</div>`;
             }
 
