@@ -293,13 +293,13 @@ describe('Client routes — Delete account (RGPD)', () => {
     expect(res.status).toBe(400);
   });
 
-  test('DELETE /client/delete-account with wrong password returns 401', async () => {
+  test('DELETE /client/delete-account with wrong password returns 403', async () => {
     const res = await request(app)
       .delete('/api/client/delete-account')
       .set('Authorization', `Bearer ${clientAccessToken}`)
       .send({ password: 'WrongPassword123!' });
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
     expect(res.body.error).toMatch(/incorrect/i);
   });
 

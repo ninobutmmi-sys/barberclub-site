@@ -211,7 +211,9 @@ router.delete('/delete-account',
 
       const valid = await bcrypt.compare(password, client.rows[0].password_hash);
       if (!valid) {
-        throw ApiError.unauthorized('Mot de passe incorrect');
+        // 403 et non 401 : mon-compte lit un 401 comme une session expirée,
+        // tente un refresh et peut déconnecter le client au lieu d'afficher l'erreur
+        throw ApiError.forbidden('Mot de passe incorrect');
       }
 
       await eraseClient(req.user.id);
