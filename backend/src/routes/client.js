@@ -8,6 +8,7 @@ const db = require('../config/database');
 const logger = require('../utils/logger');
 const { normalizeEmail } = require('../utils/email');
 const { SALON_IDS } = require('../config/env');
+const { eraseClient } = require('../services/clientErasure');
 
 const router = Router();
 
@@ -213,28 +214,7 @@ router.delete('/delete-account',
         throw ApiError.unauthorized('Mot de passe incorrect');
       }
 
-      // Cancel upcoming bookings
-      await db.query(
-        `UPDATE bookings SET status = 'cancelled', deleted_at = NOW()
-         WHERE client_id = $1 AND status = 'confirmed' AND date >= CURRENT_DATE AND deleted_at IS NULL`,
-        [req.user.id]
-      );
-
-      // Soft-delete client (preserve data for legal accounting, anonymize PII)
-      await db.query(
-        `UPDATE clients SET
-          first_name = 'Supprimé', last_name = 'RGPD',
-          email = NULL, phone = 'SUPPRIME-' || id::text, password_hash = NULL,
-          has_account = false, deleted_at = NOW()
-         WHERE id = $1`,
-        [req.user.id]
-      );
-
-      // Revoke all sessions
-      await db.query(
-        'DELETE FROM refresh_tokens WHERE user_id = $1 AND user_type = $2',
-        [req.user.id, 'client']
-      );
+      await eraseClient(req.user.id);
 
       logger.info('Client account deleted (RGPD)', { clientId: req.user.id });
 

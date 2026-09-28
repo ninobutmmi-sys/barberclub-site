@@ -327,24 +327,20 @@ describe('Client routes — Delete account (RGPD)', () => {
       .set('Authorization', `Bearer ${deleteToken}`)
       .send({ password: deleteClient.password });
 
-    // NOTE: If phone column has NOT NULL constraint, this returns 500.
-    // The route tries to SET phone = NULL which violates the constraint.
-    // This is a known issue — the route should set phone to a placeholder value instead.
-    // Accept either 200 (if schema allows NULL) or 500 (if NOT NULL constraint exists).
-    expect([200, 500]).toContain(res.status);
+    expect(res.status).toBe(200);
+    expect(res.body.message).toMatch(/supprimé/i);
 
-    if (res.status === 200) {
-      expect(res.body.message).toMatch(/supprimé/i);
-
+    {
       // Verify the client is soft-deleted (anonymized)
       const check = await db.query(
-        'SELECT first_name, last_name, email, deleted_at FROM clients WHERE id = $1',
+        'SELECT first_name, last_name, email, phone, deleted_at FROM clients WHERE id = $1',
         [deleteClientId]
       );
       expect(check.rows.length).toBe(1);
-      expect(check.rows[0].first_name).toBe('Supprimé');
-      expect(check.rows[0].last_name).toBe('RGPD');
+      expect(check.rows[0].first_name).toBe('Client');
+      expect(check.rows[0].last_name).toBe('supprimé');
       expect(check.rows[0].email).toBeNull();
+      expect(check.rows[0].phone).toMatch(/^DEL_/);
       expect(check.rows[0].deleted_at).not.toBeNull();
 
       // Verify refresh tokens are revoked

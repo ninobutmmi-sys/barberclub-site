@@ -7,6 +7,7 @@ const db = require('../../config/database');
 const { logAudit } = require('../../middleware/auditLog');
 const { PHONE_REGEX } = require('../../constants');
 const { normalizeEmail } = require('../../utils/email');
+const { eraseClient } = require('../../services/clientErasure');
 
 const router = Router();
 const photoBodyParser = express.json({ limit: '500kb' });
@@ -458,24 +459,10 @@ router.delete('/:id',
   handleValidation,
   async (req, res, next) => {
     try {
-      const result = await db.query(
-        `UPDATE clients SET deleted_at = NOW(), email = NULL,
-         phone = 'DEL_' || LEFT($1::text, 15),
-         first_name = 'Client', last_name = 'supprimé', password_hash = NULL,
-         has_account = false, reset_token = NULL, reset_token_expires = NULL
-         WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
-        [req.params.id]
-      );
-
-      if (result.rows.length === 0) {
+      const erased = await eraseClient(req.params.id);
+      if (!erased) {
         throw ApiError.notFound('Client introuvable');
       }
-
-      // Invalidate all refresh tokens for this client
-      await db.query(
-        'DELETE FROM refresh_tokens WHERE user_id = $1 AND user_type = $2',
-        [req.params.id, 'client']
-      );
 
       logAudit(req, 'delete', 'client', req.params.id);
       res.json({ message: 'Données client supprimées (RGPD)' });
