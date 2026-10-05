@@ -29,14 +29,15 @@ const VIBRATE = {
 function barberPhoto(name) {
   if (!name) return null;
   // Strip diacritics (Clément -> clement) and non-letters
-  const slug = String(name).toLowerCase()
+  const raw = String(name).toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z]/g, '');
-  if (!slug) return null;
-  // .jpg pour julien et louay, .png pour les autres
-  const jpgs = ['julien', 'louay'];
-  return `/barbers/${slug}.${jpgs.includes(slug) ? 'jpg' : 'png'}`;
+  if (!raw) return null;
+  // Surnoms affichés (migration 099) -> prénom des fichiers photo
+  const slug = { ju: 'julien', clem: 'clement', alex: 'alexandre' }[raw] || raw;
+  // dashboard/public/barbers : tout en .jpg sauf nathan
+  return `/barbers/${slug}.${slug === 'nathan' ? 'png' : 'jpg'}`;
 }
 
 function salonPhoto(salonId) {

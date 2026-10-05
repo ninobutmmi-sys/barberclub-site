@@ -8,14 +8,14 @@ const SALONS = [
     id: 'meylan',
     name: 'Meylan',
     address: '26 Av. du Gresivaudan, 38700 Corenc',
-    barbers: ['Alexandre', 'Nathan', 'Lucas', 'Julien'],
+    barbers: ['Alex', 'Nathan', 'Lucas', 'Ju'],
     image: '/salons/devanture-meylan.webp',
   },
   {
     id: 'grenoble',
     name: 'Grenoble',
     address: '5 Rue Clot Bey, 38000 Grenoble',
-    barbers: ['Tom', 'Alan', 'Clement', 'Nathan', 'Louay'],
+    barbers: ['Tom', 'Alan', 'Clem', 'Nathan', 'Louay'],
     image: '/salons/comptoir-grenoble.webp',
   },
   {

@@ -90,13 +90,17 @@ function getSalonLabel(salonId) {
   return salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
 }
 
+// Surnoms affichés (migration 099) -> prénom des fichiers photo
+const BARBER_NICKNAMES = { ju: 'julien', clem: 'clement', alex: 'alexandre' };
+
 /**
  * Build barber photo URL from barber name
  * Maps: "Lucas" -> /assets/images/barbers/lucas.jpg, "Julien" -> julien.jpg, etc.
  */
 function getBarberPhotoUrl(barberName) {
   if (!barberName) return null;
-  const name = barberName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const raw = barberName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const name = BARBER_NICKNAMES[raw] || raw;
   const known = ['lucas', 'julien', 'tom', 'alan', 'nathan', 'clement', 'eddine', 'daryl'];
   if (!known.includes(name)) return null;
   // Use /email/ subfolder with real JPEG files (originals are AVIF with wrong extension)
