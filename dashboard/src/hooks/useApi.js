@@ -38,6 +38,7 @@ export const keys = {
   brevoStatus: ['brevoStatus'],
   twilioStatus: ['twilioStatus'],
   systemHealth: ['systemHealth'],
+  onlineBooking: ['onlineBooking'],
   waitlist: (params) => ['waitlist', params],
   waitlistCount: ['waitlistCount'],
   automationTriggers: ['automationTriggers'],
@@ -675,6 +676,24 @@ export function useSystemHealth(options) {
     staleTime: 15_000,
     refetchInterval: 30_000,
     ...options,
+  });
+}
+
+// Réservation en ligne ouverte / fermée pour le salon courant
+export function useOnlineBooking(options) {
+  return useQuery({
+    queryKey: keys.onlineBooking,
+    queryFn: api.getOnlineBooking,
+    staleTime: 30_000,
+    ...options,
+  });
+}
+
+export function useSetOnlineBooking() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.setOnlineBooking,
+    onSuccess: (data) => qc.setQueryData(keys.onlineBooking, data),
   });
 }
 

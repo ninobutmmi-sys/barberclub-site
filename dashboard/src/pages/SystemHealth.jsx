@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import useMobile from '../hooks/useMobile';
-import { useSystemHealth, usePurgeFailedNotifications } from '../hooks/useApi';
+import { useSystemHealth, usePurgeFailedNotifications, useOnlineBooking, useSetOnlineBooking } from '../hooks/useApi';
+import { useAuth } from '../auth';
 import { API_BASE } from '../api';
 
 function formatUptime(seconds) {
@@ -30,6 +31,54 @@ function StatusDot({ status }) {
       display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
       background: colors[status] || '#6b7280', marginRight: 6, flexShrink: 0,
     }} />
+  );
+}
+
+// Réservation en ligne du salon courant. Un salon peut être prêt (équipe,
+// prestations, pages) sans être ouvert : tant que c'est fermé, le site,
+// mon-rdv et l'app refusent les RDV ; le dashboard, lui, en prend toujours.
+function OnlineBookingCard() {
+  const { salon } = useAuth();
+  const { data, isLoading } = useOnlineBooking();
+  const mutation = useSetOnlineBooking();
+  const open = data?.online_booking_open;
+  const nom = salon ? salon.charAt(0).toUpperCase() + salon.slice(1) : 'ce salon';
+
+  function basculer() {
+    const message = open
+      ? `Fermer la réservation en ligne de ${nom} ?\n\nLes clients ne pourront plus réserver depuis le site ni l'app. Les RDV existants ne bougent pas.`
+      : `Ouvrir la réservation en ligne de ${nom} ?\n\nLes clients pourront réserver tout de suite depuis le site et l'app.`;
+    if (!window.confirm(message)) return;
+    mutation.mutate(!open);
+  }
+
+  return (
+    <div className="card" style={{ padding: '18px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+      <div style={{ flex: 1, minWidth: 220 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center' }}>
+          <StatusDot status={isLoading ? 'idle' : open ? 'ok' : 'error'} />
+          Réservation en ligne
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+          {isLoading ? 'Chargement…' : open
+            ? 'Ouverte : les clients réservent depuis le site et l\'app.'
+            : 'Fermée : le site affiche « Ouverture bientôt ». Le dashboard peut toujours prendre des RDV.'}
+        </div>
+        {mutation.error && <div role="alert" style={{ fontSize: 12, color: '#ef4444', marginTop: 6 }}>{mutation.error.message}</div>}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={!!open}
+        aria-label={open ? 'Fermer la réservation en ligne' : 'Ouvrir la réservation en ligne'}
+        className={`bk-toggle ${open ? 'on' : 'off'}`}
+        style={{ border: 0, opacity: isLoading || mutation.isPending ? 0.5 : 1 }}
+        disabled={isLoading || mutation.isPending}
+        onClick={basculer}
+      >
+        <span className="bk-knob" />
+      </button>
+    </div>
   );
 }
 
@@ -106,6 +155,8 @@ export default function SystemHealth({ embedded } = {}) {
       )}
 
       <div className="page-body">
+        <OnlineBookingCard />
+
         {/* ====== OVERVIEW KPIs ====== */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
           <KpiCard

@@ -380,6 +380,8 @@ export const purgeFailedNotifications = () => request('/admin/notifications/fail
 
 // ---- Admin: System Health ----
 export const getSystemHealth = () => request('/admin/system/health');
+export const getOnlineBooking = () => request('/admin/salon/online-booking');
+export const setOnlineBooking = (open) => request('/admin/salon/online-booking', { method: 'PUT', body: JSON.stringify({ open }) });
 
 // ---- Admin: Objectives ----
 export const getMonthlyObjectives = (month) =>
