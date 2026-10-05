@@ -27,6 +27,9 @@ rsync -a \
   --exclude='fidelite-club-prive' \
   --exclude='fidelite-club-prive.zip' \
   --exclude='sources' \
+  --exclude='motion' \
+  --exclude='Photo produits' \
+  --exclude='test-results' \
   --exclude='.DS_Store' \
   --exclude='playwright.config.js' \
   --exclude='deploy-site.sh' \
