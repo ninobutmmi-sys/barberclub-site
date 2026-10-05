@@ -197,8 +197,17 @@ function getFullPhone(containerId, inputId) {
   const input = document.querySelector(inputId);
   if (!container || !input || !container._getDialCode) return '';
   const dial = container._getDialCode();
-  let num = input.value.trim().replace(/[\s.-]/g, '');
+  let num = input.value.trim().replace(/[\s.()-]/g, '');
   if (!num) return '';
+  // Numéro déjà international : le remplissage automatique de l'iPhone tape
+  // « +33 6 12… » dans le champ, à côté du sélecteur qui affiche déjà +33.
+  // Le préfixer une seconde fois donnait « +33+336… », refusé : le client
+  // restait bloqué à la dernière étape.
+  if (num.startsWith('+')) return num;
+  if (num.startsWith('00')) return '+' + num.substring(2);
+  // Indicatif tapé sans le + (« 33 6 12 34 56 78 ») : on ne le double pas
+  const indicatif = dial.replace('+', '');
+  if (num.startsWith(indicatif) && num.length > indicatif.length + 8) return '+' + num;
   if (num.startsWith('0')) num = num.substring(1);
   return dial + num;
 }
