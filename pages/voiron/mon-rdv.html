@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gérer votre rendez-vous BarberClub — annuler ou décaler">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#000000">
+    <title>Mon RDV | BarberClub</title>
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://api.barberclub-grenoble.fr">
+    <link rel="preconnect" href="https://api.barberclub-grenoble.fr" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/mon-rdv.css">
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
+</head>
+
+<body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="cursor-dot" aria-hidden="true"></div>
+    <div class="cursor-ring" aria-hidden="true"></div>
+    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
+    <div class="header">
+        <div class="header-center">
+            <div class="header-title">BarberClub</div>
+            <div class="header-subtitle">Mon rendez-vous</div>
+        </div>
+    </div>
+
+    <div class="container" id="main-content">
+        <!-- Loading -->
+        <div class="state active" id="stateLoading">
+            <div class="spinner"></div>
+            <div class="loading-text">Chargement du rendez-vous...</div>
+        </div>
+
+        <!-- Booking found — confirmed -->
+        <div class="state" id="stateBooking">
+            <div class="booking-card">
+                <div class="booking-status confirmed" id="statusBadge">
+                    <div class="booking-status-dot"></div>
+                    <span id="statusText">Confirmé</span>
+                </div>
+                <div id="bookingDetails"></div>
+            </div>
+            <div class="actions" id="actionsBlock">
+                <button class="btn-reschedule" id="rescheduleBtn">Décaler ce rendez-vous</button>
+                <button class="btn-cancel" id="cancelBtn">Annuler ce rendez-vous</button>
+                <a class="btn-calendar" id="calendarBtn" style="display:none;" download="rdv-barberclub.ics">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Ajouter au calendrier
+                </a>
+            </div>
+            <p class="actions-note" id="actionsNote">Annulation gratuite jusqu'à 12h avant le RDV. Décalage possible une seule fois.</p>
+        </div>
+
+        <!-- Booking found — past/completed/no_show (read only) -->
+        <div class="state" id="statePast">
+            <div class="booking-card">
+                <div class="booking-status completed" id="pastStatusBadge">
+                    <div class="booking-status-dot"></div>
+                    <span id="pastStatusText">Terminé</span>
+                </div>
+                <div id="pastBookingDetails"></div>
+            </div>
+            <a href="reserver.html" class="rebook-link">Prendre un nouveau RDV</a>
+            <br>
+            <a href="./" class="home-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Retour à l'accueil
+            </a>
+        </div>
+
+        <!-- Reschedule mode -->
+        <div class="state" id="stateReschedule">
+            <div class="reschedule-panel">
+                <div class="panel-header">
+                    <span class="panel-title">Nouveau créneau</span>
+                    <button class="btn-back" id="backBtn" aria-label="Retour aux détails du rendez-vous">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        Retour
+                    </button>
+                </div>
+
+                <div class="calendar-section">
+                    <div class="calendar-nav">
+                        <button class="calendar-nav-btn" id="calPrev" aria-label="Mois précédent">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+                        </button>
+                        <span class="calendar-month" id="calMonth" aria-live="polite"></span>
+                        <button class="calendar-nav-btn" id="calNext" aria-label="Mois suivant">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                    </div>
+                    <div class="calendar-weekdays">
+                        <span class="calendar-weekday">Lun</span>
+                        <span class="calendar-weekday">Mar</span>
+                        <span class="calendar-weekday">Mer</span>
+                        <span class="calendar-weekday">Jeu</span>
+                        <span class="calendar-weekday">Ven</span>
+                        <span class="calendar-weekday">Sam</span>
+                        <span class="calendar-weekday">Dim</span>
+                    </div>
+                    <div class="calendar-days" id="calDays"></div>
+                </div>
+
+                <div class="slots-section" id="slotsSection">
+                    <p class="slots-empty">Sélectionnez une date pour voir les créneaux disponibles.</p>
+                </div>
+
+                <button class="btn-confirm-reschedule" id="confirmRescheduleBtn" disabled>Confirmer le nouveau créneau</button>
+            </div>
+        </div>
+
+        <!-- Cancelled success -->
+        <div class="state" id="stateCancelled">
+            <div class="result-icon success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <div class="result-title">Annulé</div>
+            <p class="result-text">Votre rendez-vous a été annulé avec succès.</p>
+            <a href="reserver.html" class="rebook-link">Reprendre un RDV</a>
+            <br>
+            <a href="./" class="home-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Retour à l'accueil
+            </a>
+        </div>
+
+        <!-- Rescheduled success -->
+        <div class="state" id="stateRescheduled">
+            <div class="result-icon success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <div class="result-title">Décalé</div>
+            <p class="result-text">Votre rendez-vous a été déplacé avec succès.</p>
+            <div class="new-booking-card" id="newBookingCard"></div>
+            <p class="success-note">Un nouvel email de confirmation vous a été envoyé.</p>
+            <button class="btn-cancel" id="cancelAfterRescheduleBtn" style="margin-bottom:16px;">Annuler ce rendez-vous</button>
+            <a href="./" class="home-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Retour à l'accueil
+            </a>
+        </div>
+
+        <!-- Already cancelled -->
+        <div class="state" id="stateAlready">
+            <div class="result-icon error">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </div>
+            <div class="result-title">Déjà annulé</div>
+            <p class="result-text">Ce rendez-vous a déjà été annulé.</p>
+            <a href="reserver.html" class="rebook-link">Reprendre un RDV</a>
+            <br>
+            <a href="./" class="home-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Retour à l'accueil
+            </a>
+        </div>
+
+        <!-- Lookup by phone (no token) -->
+        <div class="state" id="stateLookup">
+            <div class="result-icon" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </div>
+            <div class="result-title">Retrouver mon RDV</div>
+            <p class="result-text">Pas reçu d'email ? Entrez votre numéro de téléphone pour retrouver vos rendez-vous à venir.</p>
+            <div style="width:100%;max-width:320px;margin:0 auto;">
+                <input type="tel" id="lookupPhone" placeholder="06 12 34 56 78" autocomplete="tel" style="width:100%;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-family:'Inter',sans-serif;font-size:16px;outline:none;text-align:center;margin-bottom:12px;">
+                <button id="lookupBtn" style="width:100%;padding:14px;background:#fff;border:none;border-radius:12px;color:#000;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;">Rechercher</button>
+                <p id="lookupError" style="display:none;color:#ef4444;font-size:13px;margin-top:12px;text-align:center;"></p>
+            </div>
+            <div id="lookupResults" style="width:100%;margin-top:20px;"></div>
+            <a href="./" class="home-link" style="margin-top:20px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Retour à l'accueil
+            </a>
+        </div>
+
+        <!-- Error -->
+        <div class="state" id="stateError">
+            <div class="result-icon error">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            </div>
+            <div class="result-title">Erreur</div>
+            <p class="result-text" id="errorText">Rendez-vous introuvable ou lien invalide.</p>
+            <a href="./" class="home-link">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Retour à l'accueil
+            </a>
+        </div>
+    </div>
+
+    <!-- Confirm cancel dialog -->
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-dialog">
+            <h3>Annuler le RDV ?</h3>
+            <p>Cette action est irréversible. Vous devrez reprendre un nouveau rendez-vous.</p>
+            <div class="confirm-actions">
+                <button class="btn-confirm-no" id="confirmNo">Non</button>
+                <button class="btn-confirm-yes" id="confirmYes">Oui, annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../assets/js/api-config.js"></script>
+    <script>
+    (() => {
+        'use strict';
+
+        const API = window.BARBERCLUB_API;
+        const SALON_ID = 'voiron';
+
+        const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+        const DAYS_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+
+        const STATUS_LABELS = {
+            confirmed: 'Confirmé',
+            completed: 'Terminé',
+            cancelled: 'Annulé',
+            no_show: 'Absent'
+        };
+
+        const params = new URLSearchParams(window.location.search);
+        let bookingId = params.get('id');
+        let token = params.get('token');
+
+        // Reschedule state
+        let booking = null;
+        let barberOffDays = [];
+        let calMonth = new Date().getMonth();
+        let calYear = new Date().getFullYear();
+        let selectedDate = null;
+        let selectedSlot = null;
+        let slots = [];
+
+        const $ = s => document.querySelector(s);
+        const $$ = s => document.querySelectorAll(s);
+
+        function show(id) {
+            $$('.state').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function formatDateFR(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr + 'T00:00:00');
+            return `${DAYS_FR[d.getDay()]} ${d.getDate()} ${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
+        }
+
+        function formatPrice(cents) {
+            return (cents / 100).toFixed(2).replace('.', ',') + ' €';
+        }
+
+        function renderBookingDetails(container, b) {
+            container.innerHTML = `
+                <div class="detail-row">
+                    <span class="detail-label">Prestation</span>
+                    <span class="detail-value">${esc(b.service_name)}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Barber</span>
+                    <span class="detail-value">${esc(b.barber_name)}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value">${formatDateFR(b.date)}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Horaire</span>
+                    <span class="detail-value">${(b.start_time || '').slice(0, 5)} - ${(b.end_time || '').slice(0, 5)}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Prix</span>
+                    <span class="detail-value">${formatPrice(b.price)}</span>
+                </div>
+            `;
+        }
+
+        function esc(str) {
+            if (!str) return '';
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        // =============================================
+        // LOAD BOOKING
+        // =============================================
+        async function loadBooking() {
+            if (!bookingId || !token) {
+                show('stateLookup');
+                setupLookup();
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API}/bookings/${bookingId}?token=${token}&salon_id=${SALON_ID}`);
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || 'Rendez-vous introuvable');
+                }
+
+                booking = await res.json();
+
+                if (booking.status === 'cancelled') {
+                    show('stateAlready');
+                    return;
+                }
+
+                if (booking.status === 'completed' || booking.status === 'no_show') {
+                    const badge = $('#pastStatusBadge');
+                    badge.className = `booking-status ${booking.status}`;
+                    $('#pastStatusText').textContent = STATUS_LABELS[booking.status] || booking.status;
+                    renderBookingDetails($('#pastBookingDetails'), booking);
+                    show('statePast');
+                    return;
+                }
+
+                // Confirmed — show actions
+                renderBookingDetails($('#bookingDetails'), booking);
+
+                // Hide reschedule button if already rescheduled
+                if (booking.rescheduled) {
+                    $('#rescheduleBtn').style.display = 'none';
+                    $('#actionsNote').textContent = 'Ce RDV a déjà été décalé. Vous pouvez toujours l\'annuler jusqu\'à 12h avant.';
+                }
+
+                // Check if less than 12h before RDV — disable cancel/reschedule
+                // Use Paris timezone explicitly to avoid DST issues
+                const nowParis = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
+                const [rdvY, rdvM, rdvD] = booking.date.split('-').map(Number);
+                const [rdvH, rdvMn] = booking.start_time.slice(0, 5).split(':').map(Number);
+                const rdvDateTime = new Date(rdvY, rdvM - 1, rdvD, rdvH, rdvMn, 0);
+                const hoursUntil = (rdvDateTime - nowParis) / (1000 * 60 * 60);
+
+                if (hoursUntil < 12) {
+                    $('#cancelBtn').disabled = true;
+                    $('#cancelBtn').style.opacity = '0.4';
+                    $('#cancelBtn').style.cursor = 'not-allowed';
+                    if (!booking.rescheduled) {
+                        $('#rescheduleBtn').disabled = true;
+                        $('#rescheduleBtn').style.opacity = '0.4';
+                        $('#rescheduleBtn').style.cursor = 'not-allowed';
+                    }
+                    $('#actionsNote').innerHTML = '<span style="color:#ef4444;">Annulation/modification impossible moins de 12h avant le RDV.</span>';
+                }
+
+                show('stateBooking');
+
+                // Show "Add to calendar" button with ICS download link
+                const calBtn = $('#calendarBtn');
+                if (calBtn && booking.id && token) {
+                    calBtn.href = `${API}/bookings/${booking.id}/ics?token=${token}`;
+                    calBtn.style.display = '';
+                }
+
+                // Fetch barber off days for calendar
+                loadBarberOffDays();
+
+            } catch (e) {
+                $('#errorText').textContent = e.message;
+                show('stateError');
+            }
+        }
+
+        async function loadBarberOffDays() {
+            try {
+                const res = await fetch(`${API}/barbers?salon_id=${SALON_ID}`);
+                if (res.ok) {
+                    const barbers = await res.json();
+                    const b = barbers.find(b => b.id === booking.barber_id);
+                    if (b) barberOffDays = b.off_days || [];
+                }
+            } catch (e) {
+                // Not critical
+            }
+        }
+
+        // =============================================
+        // CANCEL
+        // =============================================
+        let cancelTriggerBtn = null; // tracks which button triggered cancel
+
+        async function performCancel() {
+            const btn = cancelTriggerBtn;
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Annulation en cours...';
+            }
+
+            try {
+                const res = await fetch(`${API}/bookings/${bookingId}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, salon_id: SALON_ID }),
+                });
+
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || 'Erreur lors de l\'annulation');
+                }
+
+                show('stateCancelled');
+            } catch (e) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Annuler ce rendez-vous';
+                }
+                $('#errorText').textContent = e.message;
+                show('stateError');
+            }
+        }
+
+        function openCancelDialog(triggerBtn) {
+            cancelTriggerBtn = triggerBtn;
+            $('#confirmOverlay').classList.add('active');
+        }
+
+        function setupCancel() {
+            $('#cancelBtn').addEventListener('click', () => openCancelDialog($('#cancelBtn')));
+            $('#cancelAfterRescheduleBtn').addEventListener('click', () => openCancelDialog($('#cancelAfterRescheduleBtn')));
+
+            $('#confirmNo').addEventListener('click', () => {
+                $('#confirmOverlay').classList.remove('active');
+            });
+
+            $('#confirmOverlay').addEventListener('click', (e) => {
+                if (e.target === $('#confirmOverlay')) {
+                    $('#confirmOverlay').classList.remove('active');
+                }
+            });
+
+            $('#confirmYes').addEventListener('click', async () => {
+                $('#confirmOverlay').classList.remove('active');
+                await performCancel();
+            });
+        }
+
+        // =============================================
+        // RESCHEDULE
+        // =============================================
+        function setupReschedule() {
+            $('#rescheduleBtn').addEventListener('click', () => {
+                selectedDate = null;
+                selectedSlot = null;
+                calMonth = new Date().getMonth();
+                calYear = new Date().getFullYear();
+                show('stateReschedule');
+                renderCalendar();
+                $('#slotsSection').innerHTML = '<p class="slots-empty">Sélectionnez une date pour voir les créneaux disponibles.</p>';
+                $('#confirmRescheduleBtn').disabled = true;
+            });
+
+            $('#backBtn').addEventListener('click', () => {
+                show('stateBooking');
+            });
+
+            $('#calPrev').addEventListener('click', () => {
+                calMonth--;
+                if (calMonth < 0) { calMonth = 11; calYear--; }
+                renderCalendar();
+            });
+
+            $('#calNext').addEventListener('click', () => {
+                calMonth++;
+                if (calMonth > 11) { calMonth = 0; calYear++; }
+                renderCalendar();
+            });
+
+            $('#confirmRescheduleBtn').addEventListener('click', confirmReschedule);
+        }
+
+        function isOffDay(dateObj) {
+            const jsDay = dateObj.getDay(); // 0=Sunday
+            const dow = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday
+            return barberOffDays.includes(dow);
+        }
+
+        function renderCalendar() {
+            const year = calYear;
+            const month = calMonth;
+
+            $('#calMonth').textContent = `${MONTHS_FR[month]} ${year}`;
+
+            const now = new Date();
+            const isPastMonth = year < now.getFullYear() || (year === now.getFullYear() && month <= now.getMonth());
+            $('#calPrev').disabled = isPastMonth;
+
+            const maxDate = new Date(now.getFullYear(), now.getMonth() + 6, 1);
+            const isFutureLimit = year > maxDate.getFullYear() || (year === maxDate.getFullYear() && month >= maxDate.getMonth());
+            $('#calNext').disabled = isFutureLimit;
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDow = (firstDay.getDay() + 6) % 7; // 0=Mon
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let html = '';
+            for (let i = 0; i < startDow; i++) {
+                html += '<div class="calendar-day empty"></div>';
+            }
+
+            for (let d = 1; d <= lastDay.getDate(); d++) {
+                const dateObj = new Date(year, month, d);
+                dateObj.setHours(0, 0, 0, 0);
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isPast = dateObj < today;
+                const isToday = dateObj.getTime() === today.getTime();
+                const isSelected = selectedDate === dateStr;
+                const off = !isPast && isOffDay(dateObj);
+
+                let cls = 'calendar-day';
+                if (isPast || off) cls += ' past';
+                if (off) cls += ' disabled';
+                if (isToday) cls += ' today';
+                if (isSelected && !off && !isPast) cls += ' selected';
+
+                html += `<div class="${cls}" data-date="${dateStr}">${d}</div>`;
+            }
+
+            $('#calDays').innerHTML = html;
+
+            document.querySelectorAll('#calDays .calendar-day:not(.empty):not(.past):not(.disabled)').forEach(el => {
+                el.addEventListener('click', () => {
+                    selectedDate = el.dataset.date;
+                    selectedSlot = null;
+                    $('#confirmRescheduleBtn').disabled = true;
+                    renderCalendar();
+                    loadSlots();
+                });
+            });
+        }
+
+        async function loadSlots() {
+            const section = $('#slotsSection');
+            section.innerHTML = '<div class="slots-loading"><div class="mini-spinner"></div>Chargement des créneaux...</div>';
+
+            try {
+                const res = await fetch(`${API}/availability?service_id=${booking.service_id}&date=${selectedDate}&barber_id=${booking.barber_id}&salon_id=${SALON_ID}`);
+                if (!res.ok) throw new Error('Erreur');
+                slots = await res.json();
+                renderSlots();
+            } catch (e) {
+                section.innerHTML = '<p class="slots-empty">Erreur lors du chargement des créneaux.</p>';
+            }
+        }
+
+        function renderSlots() {
+            const section = $('#slotsSection');
+
+            if (slots.length === 0) {
+                section.innerHTML = '<p class="slots-empty">Aucun créneau disponible ce jour.<br>Essayez une autre date.</p>';
+                return;
+            }
+
+            let html = '<div class="slots-title">Créneaux disponibles</div><div class="slots-grid">';
+            const seen = new Set();
+            for (const slot of slots) {
+                if (seen.has(slot.time)) continue;
+                seen.add(slot.time);
+                const sel = selectedSlot === slot.time ? ' selected' : '';
+                html += `<button class="slot-btn${sel}" data-time="${slot.time}">${slot.time}</button>`;
+            }
+            html += '</div>';
+            section.innerHTML = html;
+
+            section.querySelectorAll('.slot-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedSlot = btn.dataset.time;
+                    section.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    $('#confirmRescheduleBtn').disabled = false;
+                });
+            });
+        }
+
+        async function confirmReschedule() {
+            if (!selectedDate || !selectedSlot) return;
+
+            const btn = $('#confirmRescheduleBtn');
+            btn.disabled = true;
+            btn.textContent = 'Déplacement en cours...';
+
+            try {
+                const res = await fetch(`${API}/bookings/${bookingId}/reschedule`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token,
+                        date: selectedDate,
+                        start_time: selectedSlot,
+                        salon_id: SALON_ID,
+                    }),
+                });
+
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.error || 'Erreur lors du déplacement');
+                }
+
+                const result = await res.json();
+                const b = result.booking;
+
+                // Update local refs with new token
+                bookingId = b.id;
+                token = b.cancel_token;
+
+                // Show success with new details
+                $('#newBookingCard').innerHTML = `
+                    <div class="detail-row">
+                        <span class="detail-label">Prestation</span>
+                        <span class="detail-value">${esc(b.service_name)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Barber</span>
+                        <span class="detail-value">${esc(b.barber_name)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date</span>
+                        <span class="detail-value">${formatDateFR(b.date)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Horaire</span>
+                        <span class="detail-value">${(b.start_time || '').slice(0, 5)} - ${(b.end_time || '').slice(0, 5)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Prix</span>
+                        <span class="detail-value">${formatPrice(b.price)}</span>
+                    </div>
+                `;
+
+                show('stateRescheduled');
+
+            } catch (e) {
+                btn.disabled = false;
+                btn.textContent = 'Confirmer le nouveau créneau';
+                // Show error inline below button
+                let errEl = btn.parentElement.querySelector('.reschedule-error');
+                if (!errEl) {
+                    errEl = document.createElement('p');
+                    errEl.className = 'reschedule-error';
+                    errEl.style.cssText = 'color:#ef4444;font-size:13px;margin-top:12px;text-align:center;';
+                    btn.parentElement.appendChild(errEl);
+                }
+                errEl.textContent = e.message || 'Une erreur est survenue';
+            }
+        }
+
+        // =============================================
+        // =============================================
+        // PHONE LOOKUP
+        // =============================================
+        function setupLookup() {
+            const phoneInput = document.getElementById('lookupPhone');
+            const btn = document.getElementById('lookupBtn');
+            const errEl = document.getElementById('lookupError');
+            const resultsEl = document.getElementById('lookupResults');
+            if (!btn) return;
+
+            async function doLookup() {
+                const phone = phoneInput.value.replace(/[\s.-]/g, '');
+                if (!phone || !/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14}|0[1-9]\d{8})$/.test(phone)) {
+                    errEl.textContent = 'Entrez un numéro valide (ex: 0612345678)';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                errEl.style.display = 'none';
+                btn.disabled = true;
+                btn.textContent = 'Recherche...';
+                try {
+                    const res = await fetch(`${API}/bookings/lookup?phone=${encodeURIComponent(phone)}&salon_id=${SALON_ID}`);
+                    if (!res.ok) throw new Error('Erreur serveur');
+                    const bookings = await res.json();
+                    if (bookings.length === 0) {
+                        errEl.textContent = 'Aucun RDV à venir trouvé pour ce numéro.';
+                        errEl.style.display = 'block';
+                        resultsEl.innerHTML = '';
+                        return;
+                    }
+                    resultsEl.innerHTML = '';
+                    bookings.forEach(function(b) {
+                        const dateFR = formatDateFR(b.date);
+                        const time = (b.start_time || '').slice(0, 5);
+                        const price = (b.price / 100).toFixed(2).replace('.', ',') + ' \u20AC';
+                        const card = document.createElement('div');
+                        card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-bottom:12px;text-align:left;';
+                        card.innerHTML =
+                            '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:14px;background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.2);"><div style="width:6px;height:6px;border-radius:50%;background:currentColor;"></div>Confirm\u00E9</div>' +
+                            '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Prestation</span><span style="font-size:14px;font-weight:600;">' + esc(b.service_name) + '</span></div>' +
+                            '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Barber</span><span style="font-size:14px;font-weight:600;">' + esc(b.barber_name) + '</span></div>' +
+                            '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Date</span><span style="font-size:14px;font-weight:600;">' + dateFR + '</span></div>' +
+                            '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Horaire</span><span style="font-size:14px;font-weight:600;">' + time + '</span></div>' +
+                            '<div style="display:flex;justify-content:space-between;padding:10px 0;"><span style="font-size:13px;color:rgba(255,255,255,0.4);">Prix</span><span style="font-size:14px;font-weight:600;">' + price + '</span></div>' +
+                            '<div style="display:flex;gap:8px;margin-top:14px;">' +
+                              '<a href="mon-rdv.html?id=' + b.id + '&token=' + b.cancel_token + '" style="flex:1;padding:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#fff;font-size:12px;font-weight:600;text-align:center;text-decoration:none;">G\u00E9rer ce RDV</a>' +
+                            '</div>';
+                        resultsEl.appendChild(card);
+                    });
+                } catch(e) {
+                    errEl.textContent = e.message;
+                    errEl.style.display = 'block';
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'RECHERCHER';
+                }
+            }
+
+            btn.addEventListener('click', doLookup);
+            phoneInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') doLookup(); });
+        }
+
+        // =============================================
+        // INIT
+        // =============================================
+        setupCancel();
+        setupReschedule();
+        loadBooking();
+    })();
+    </script>
+<script>
+    if (window.matchMedia('(pointer: fine)').matches) {
+        const dot = document.querySelector('.cursor-dot');
+        const ring = document.querySelector('.cursor-ring');
+        let mx = -100, my = -100, rx = -100, ry = -100;
+        document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; dot.style.left = mx + 'px'; dot.style.top = my + 'px'; });
+        (function loop() { rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15; ring.style.left = rx + 'px'; ring.style.top = ry + 'px'; requestAnimationFrame(loop); })();
+        document.querySelectorAll('a, button, .booking-card, .action-btn').forEach(el => {
+            el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+        });
+    }
+</script>
+<script src="../../assets/js/cookie-consent.js" defer></script>
+<script src="../../assets/js/app-popup.js" defer></script>
+</body>
+
+</html>

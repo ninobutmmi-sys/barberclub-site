@@ -1,6 +1,6 @@
 // BarberClub Service Worker
 // Bump version on each deploy to invalidate stale cache
-const CACHE_VERSION = 5;
+const CACHE_VERSION = 6;
 const CACHE_NAME = `barberclub-v${CACHE_VERSION}`;
 const OFFLINE_URL = 'index.html';
 
@@ -21,7 +21,9 @@ const PRECACHE_ASSETS = [
 ];
 
 // Never cache API calls or booking pages (always need fresh data)
-const NEVER_CACHE = ['/api/', '/pages/meylan/reserver.html', '/pages/meylan/mon-rdv.html', '/pages/meylan/reset-password.html', '/pages/grenoble/reserver.html', '/pages/grenoble/mon-rdv.html', '/pages/grenoble/reset-password.html'];
+const NEVER_CACHE = ['/api/', '/pages/meylan/reserver.html', '/pages/meylan/mon-rdv.html', '/pages/meylan/reset-password.html', '/pages/grenoble/reserver.html', '/pages/grenoble/mon-rdv.html', '/pages/grenoble/reset-password.html',
+    // Sans extension : Cloudflare sert /pages/voiron/reserver, et startsWith couvre les deux formes
+    '/pages/voiron/reserver', '/pages/voiron/mon-rdv', '/pages/voiron/reset-password', '/pages/voiron/mon-compte'];
 
 // Install event - precache core assets
 self.addEventListener('install', event => {
