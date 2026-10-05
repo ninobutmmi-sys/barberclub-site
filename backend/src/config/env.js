@@ -82,11 +82,11 @@ const SALONS = {
   voiron: {
     name: process.env.SALON_VOIRON_NAME || 'BarberClub Voiron',
     address: process.env.SALON_VOIRON_ADDRESS || '5 Av. Léon et Joanny Tardy, 38500 Voiron',
-    phone: process.env.SALON_VOIRON_PHONE || '',
+    phone: process.env.SALON_VOIRON_PHONE || '09 55 20 86 20',
     googleReviewUrl: process.env.GOOGLE_REVIEW_URL_VOIRON || '',
     bookingPath: '/pages/voiron',
     mapsUrl: 'https://maps.google.com/?q=5+Av+L%C3%A9on+et+Joanny+Tardy+38500+Voiron',
-    heroImage: '/assets/images/salons/voiron/salon-voiron-nuit.webp',
+    heroImage: '/assets/images/salons/Voiron/salon-voiron-nuit.webp',
     brevo: {
       apiKey: process.env.BREVO_API_KEY_VOIRON || '',
       senderEmail: process.env.BREVO_SENDER_EMAIL_VOIRON || 'noreply@barberclub-grenoble.fr',
