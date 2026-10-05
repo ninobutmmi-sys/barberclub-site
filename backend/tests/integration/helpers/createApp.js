@@ -27,6 +27,7 @@ function createTestApp(routeSetup) {
     if (err instanceof ApiError) {
       return res.status(err.statusCode).json({
         error: err.message,
+        code: err.code || undefined,
         details: err.details || undefined,
       });
     }

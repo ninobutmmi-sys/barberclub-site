@@ -2,10 +2,13 @@
  * Custom API error class for consistent error handling
  */
 class ApiError extends Error {
-  constructor(statusCode, message, details = null) {
+  // code : identifiant stable que le front peut tester (ex. 'booking_closed'),
+  // là où le message, lui, est fait pour être lu et peut changer.
+  constructor(statusCode, message, details = null, code = null) {
     super(message);
     this.statusCode = statusCode;
     this.details = details;
+    this.code = code;
     this.name = 'ApiError';
   }
 

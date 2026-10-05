@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const db = require('../config/database');
 const { ApiError } = require('../utils/errors');
+const { assertOnlineBookingOpen } = require('./salonStatus');
 const availability = require('./availability');
 const notification = require('./notification');
 const logger = require('../utils/logger');
@@ -895,6 +896,10 @@ async function rescheduleBooking(bookingId, cancelToken, newDate, newStartTime) 
     }
 
     const booking = bookingResult.rows[0];
+
+    // Salon pas encore ouvert en ligne : un RDV pris au dashboard s'annule,
+    // mais ne se décale pas tout seul (la route ne connaît pas le salon).
+    await assertOnlineBookingOpen(booking.salon_id || 'meylan', client);
 
     if (booking.status !== 'confirmed') {
       throw ApiError.badRequest('Ce rendez-vous ne peut plus être modifié');

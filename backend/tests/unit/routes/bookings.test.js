@@ -72,6 +72,12 @@ jest.mock('../../../src/middleware/auth', () => ({
   generateRefreshToken: jest.fn(() => 'mock-refresh-token'),
 }));
 
+// Le verrou « salon pas encore ouvert » a ses propres tests (onlineBooking.test.js)
+jest.mock('../../../src/services/salonStatus', () => ({
+  assertOnlineBookingOpen: jest.fn().mockResolvedValue(),
+  isOnlineBookingOpen: jest.fn().mockResolvedValue(true),
+}));
+
 jest.mock('../../../src/utils/ics', () => ({
   generateICS: jest.fn(() => 'BEGIN:VCALENDAR\nEND:VCALENDAR'),
 }));

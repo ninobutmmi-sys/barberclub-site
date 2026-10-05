@@ -39,6 +39,7 @@ const waitlistRoutes = require('./routes/admin/waitlist');
 const automationRoutes = require('./routes/admin/automation');
 const { adminRouter: campaignRoutes, publicRouter: campaignTrackRoutes } = require('./routes/admin/campaignTracking');
 const systemHealthRoutes = require('./routes/admin/systemHealth');
+const { publicRouter: salonPublicRoutes, adminRouter: salonAdminRoutes } = require('./routes/salons');
 const auditLogRoutes = require('./routes/admin/auditLog');
 const pushRoutes = require('./routes/admin/push');
 const productRoutes = require('./routes/admin/products');
@@ -231,6 +232,7 @@ app.use((req, res, next) => {
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', bookingRoutes); // publicLimiter already applied per-route in bookingRoutes
+app.use('/api', salonPublicRoutes); // GET /api/salons/:id/status
 
 // Client routes (authenticated)
 app.use('/api/client', clientRoutes);
@@ -283,6 +285,7 @@ adminRouter.use('/objectives', objectivesRoutes);
 adminRouter.use('/tasks', tasksRoutes);
 adminRouter.use('/school', schoolRoutes);
 adminRouter.use('/event-alerts', eventAlertAdminRoutes);
+adminRouter.use('/salon', salonAdminRoutes);
 app.use('/api/admin', adminRouter);
 
 // Public event alerts (subscribe)
@@ -372,8 +375,9 @@ app.use((err, req, res, next) => {
 
   // Handle known API errors
   if (err instanceof ApiError) {
-    // Track 4xx/5xx API errors (skip 401s to avoid noise from expired tokens)
-    if (err.statusCode >= 400 && err.statusCode !== 401) {
+    // Track 4xx/5xx API errors (skip 401s to avoid noise from expired tokens,
+    // and booking_closed : un salon fermé qui refuse, c'est prévu, pas une panne)
+    if (err.statusCode >= 400 && err.statusCode !== 401 && err.code !== 'booking_closed') {
       trackError({
         method: req.method,
         path: req.originalUrl,
@@ -385,6 +389,7 @@ app.use((err, req, res, next) => {
     }
     return res.status(err.statusCode).json({
       error: err.message,
+      code: err.code || undefined,
       details: err.details || undefined,
     });
   }

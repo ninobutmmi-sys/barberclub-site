@@ -726,6 +726,19 @@ describe('rescheduleBooking', () => {
     expect(mockNotification.sendRescheduleEmail).toHaveBeenCalled();
   });
 
+  test('refuse de décaler un RDV d\'un salon pas encore ouvert en ligne', async () => {
+    const booking = createConfirmedBooking({ salon_id: 'voiron' });
+    const mockClient = setupRescheduleMocks(booking);
+    const defaut = mockClient.query.getMockImplementation();
+    mockClient.query.mockImplementation(async (sql, params) =>
+      sql.includes('online_booking_open FROM salons') ? { rows: [{ online_booking_open: false }] } : defaut(sql, params));
+
+    await expect(
+      bookingService.rescheduleBooking('booking-1', 'cancel-tok-123', '2026-04-15', '14:00')
+    ).rejects.toMatchObject({ statusCode: 403, code: 'booking_closed' });
+    expect(mockClient.query).not.toHaveBeenCalledWith(expect.stringContaining('UPDATE bookings'), expect.anything());
+  });
+
   test('rejects second reschedule (rescheduled flag)', async () => {
     const booking = createConfirmedBooking({ rescheduled: true });
     setupRescheduleMocks(booking);

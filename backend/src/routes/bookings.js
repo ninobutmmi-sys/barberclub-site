@@ -11,6 +11,7 @@ const db = require('../config/database');
 const { MAX_BOOKING_ADVANCE_MONTHS } = require('../constants');
 const ws = require('../services/websocket');
 const { SALON_IDS } = require('../config/env');
+const { assertOnlineBookingOpen } = require('../services/salonStatus');
 
 const router = Router();
 
@@ -379,6 +380,8 @@ router.post('/bookings',
   async (req, res, next) => {
     try {
       const salonId = req.body.salon_id || 'meylan';
+      // Avant tout effet de bord : un salon pas encore ouvert ne prend rien en ligne
+      await assertOnlineBookingOpen(salonId);
       let bookingData = { ...req.body, source: 'online', salon_id: salonId };
 
       if (req.user && req.user.type === 'client') {
@@ -596,6 +599,7 @@ router.post('/waitlist',
     try {
       const { barber_id, service_id, preferred_date, preferred_time_start, preferred_time_end } = req.body;
       const salonId = req.body.salon_id || 'meylan';
+      await assertOnlineBookingOpen(salonId);
       let { client_name, client_phone } = req.body;
 
       // Resolve client info: authenticated client → fetch from DB
