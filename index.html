@@ -676,6 +676,124 @@ html, body {
 }
 
 /* ═══════════════════════════════════════
+   OFFRE D'OUVERTURE — VOIRON (-50 % du 21 au 24 octobre 2026)
+   ═══════════════════════════════════════
+   Carte de verre posée sur la vitrine, dans la teinte froide du panneau.
+   Décorative (aria-hidden) : l'offre est annoncée dans l'aria-label du lien.
+   Le script en bas de page la retire une fois le 24 octobre passé.
+   Entrée : après le CTA (1.25 s) → 1.45 s. Deux boucles seulement : le halo
+   qui respire (opacity) et le reflet qui traverse le « -50 % » (transform,
+   rect SVG découpé par les glyphes). */
+.promo-badge {
+  position: absolute; z-index: 12; pointer-events: none;
+  top: 44%; left: 0; right: 0; margin-inline: auto; width: fit-content;
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 20px 30px 18px;
+  color: #fff; text-align: center;
+  background: linear-gradient(160deg, rgba(168,205,255,0.14) 0%, rgba(168,205,255,0.04) 40%, rgba(8,12,22,0.62) 100%);
+  backdrop-filter: blur(22px) saturate(1.25); -webkit-backdrop-filter: blur(22px) saturate(1.25);
+  border: 1px solid rgba(168,205,255,0.28);
+  border-radius: 22px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18);
+  opacity: 0; transform: translateY(-14px) scale(0.96);
+  transition: opacity 0.7s ease, transform 0.9s cubic-bezier(0.16,1,0.3,1);
+}
+.landing.visible .promo-badge { opacity: 1; transform: none; transition-delay: 1.45s; }
+/* halo qui respire — seule l'opacité bouge */
+.promo-badge::before {
+  content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 0 36px rgba(150,200,255,0.32), 0 0 90px rgba(150,200,255,0.16);
+  opacity: 0.4;
+  animation: promoHalo 4.5s ease-in-out infinite 1.6s;
+}
+@keyframes promoHalo { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.promo-badge > * { position: relative; }
+/* Même balisage pour les deux dispositions : en colonne (desktop) le groupe
+   de texte s'efface et ses lignes se rangent autour du chiffre par `order`,
+   en ligne (mobile) il redevient une colonne à droite du chiffre. */
+.promo-text { display: contents; }
+.promo-eyebrow { order: 1; } .promo-num { order: 2; } .promo-line { order: 3; } .promo-dates { order: 4; }
+.promo-eyebrow {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase;
+  color: rgba(200,225,255,0.82);
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.promo-eyebrow::before, .promo-eyebrow::after {
+  content: ''; width: 18px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200,225,255,0.6));
+}
+.promo-eyebrow::after { background: linear-gradient(90deg, rgba(200,225,255,0.6), transparent); }
+.promo-num {
+  display: block; width: 250px; height: auto; overflow: visible;
+  filter: drop-shadow(0 0 18px rgba(150,200,255,0.45)) drop-shadow(0 2px 0 rgba(0,0,0,0.35));
+}
+.promo-num-text {
+  font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 62px;
+  letter-spacing: 0.02em;
+}
+.promo-num-glint {
+  transform: translateX(-120px) skewX(-18deg);
+  animation: promoGlint 6s cubic-bezier(0.4,0,0.2,1) infinite 2.6s;
+}
+@keyframes promoGlint {
+  0%        { transform: translateX(-120px) skewX(-18deg); }
+  28%, 100% { transform: translateX(340px) skewX(-18deg); }
+}
+.promo-line {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px; font-weight: 500; letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.94);
+}
+.promo-dates {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(200,225,255,0.78);
+  margin-top: 2px;
+}
+.promo-dates-short { display: none; }
+/* la carte se soulève avec le panneau au survol */
+.salon-mystere:hover .promo-badge {
+  transform: translateY(-5px); transition-delay: 0s;
+  border-color: rgba(168,205,255,0.42);
+}
+/* Tablette portrait : colonnes étroites, carte resserrée */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .promo-badge { top: 42%; max-width: calc(100% - 28px); padding: 14px 16px 13px; gap: 5px; border-radius: 18px; }
+  .promo-num { width: 164px; }
+  .promo-eyebrow { font-size: 8px; letter-spacing: 0.22em; gap: 7px; }
+  .promo-eyebrow::before, .promo-eyebrow::after { width: 10px; }
+  .promo-line { font-size: 12px; }
+  .promo-dates { font-size: 8.5px; letter-spacing: 0.08em; white-space: nowrap; }
+  .promo-dates-long { display: none; }
+  .promo-dates-short { display: inline; }
+}
+/* Mobile : un tiers d'écran par panneau. Carte compacte, horizontale, posée
+   dans le coin haut-gauche libre (le badge APP tient le bas-droit, l'enseigne
+   de la photo le haut-droit). */
+@media (max-width: 767px) {
+  .promo-badge {
+    top: 12px; left: 14px; right: auto; margin: 0;
+    flex-direction: row; align-items: center; gap: 12px; text-align: left;
+    padding: 9px 14px 9px 12px; border-radius: 14px;
+    transform: translateY(-8px) scale(0.97);
+  }
+  .promo-num { order: 0; width: 104px; filter: drop-shadow(0 0 10px rgba(150,200,255,0.4)) drop-shadow(0 1px 0 rgba(0,0,0,0.35)); }
+  .promo-text { display: flex; flex-direction: column; gap: 3px; position: relative; }
+  .promo-eyebrow { font-size: 7.5px; letter-spacing: 0.22em; gap: 0; }
+  .promo-eyebrow::before, .promo-eyebrow::after { display: none; }
+  .promo-line { font-size: 10.5px; font-weight: 600; }
+  .promo-dates { font-size: 8.5px; letter-spacing: 0.1em; margin-top: 0; }
+  .promo-dates-long { display: none; }
+  .promo-dates-short { display: inline; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .promo-badge { opacity: 1; transform: none; }
+  .promo-badge::before { animation: none !important; opacity: 0.6; }
+  .promo-num-glint { animation: none !important; transform: translateX(340px) skewX(-18deg); }
+}
+
+/* ═══════════════════════════════════════
    HIRING BANNER — Meylan (RED)
    ═══════════════════════════════════════ */
 .hiring-badge {
@@ -1101,10 +1219,41 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
     </div>
 
     <!-- ═══════ 3ᵉ SALON — VOIRON (mène à la page teaser) ═══════ -->
-    <a href="pages/voiron/" class="salon salon-mystere" data-salon aria-label="BarberClub Voiron — ouverture en octobre, en savoir plus">
+    <a href="pages/voiron/" class="salon salon-mystere" data-salon aria-label="BarberClub Voiron — ouverture en octobre. Offre d'ouverture : toutes les prestations à -50 % du mercredi 21 au samedi 24 octobre. En savoir plus">
       <div class="salon-bg"></div>
       <div class="salon-overlay"></div>
       <div class="mystere-sheen" aria-hidden="true"></div>
+      <!-- Offre d'ouverture — retirée par script après le 24 octobre 2026 -->
+      <div class="promo-badge" aria-hidden="true">
+        <svg class="promo-num" viewBox="22 8 216 58" focusable="false">
+          <defs>
+            <linearGradient id="promoNumFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffffff"/>
+              <stop offset="1" stop-color="#c8ddff"/>
+            </linearGradient>
+            <linearGradient id="promoNumSheen" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+              <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.85"/>
+              <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+            </linearGradient>
+            <clipPath id="promoNumClip">
+              <text class="promo-num-text" x="130" y="60" text-anchor="middle">-50&#8239;%</text>
+            </clipPath>
+          </defs>
+          <text class="promo-num-text" x="130" y="60" text-anchor="middle" fill="url(#promoNumFill)">-50&#8239;%</text>
+          <g clip-path="url(#promoNumClip)">
+            <rect class="promo-num-glint" x="0" y="0" width="70" height="72" fill="url(#promoNumSheen)"/>
+          </g>
+        </svg>
+        <div class="promo-text">
+          <span class="promo-eyebrow">Offre d'ouverture</span>
+          <span class="promo-line">Toutes les prestations</span>
+          <span class="promo-dates">
+            <span class="promo-dates-long">Du mercredi 21 au samedi 24 octobre</span>
+            <span class="promo-dates-short">Du mer. 21 au sam. 24 oct.</span>
+          </span>
+        </div>
+      </div>
       <div class="salon-content">
         <h2 class="salon-title" data-split>Voiron</h2>
         <p class="salon-location">Ouverture en octobre</p>
@@ -1124,6 +1273,18 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
   'use strict';
   const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const isTouch = matchMedia('(pointer: coarse)').matches;
+
+  /* ═══════════════════════════════════════
+     OFFRE D'OUVERTURE VOIRON — retirée après le samedi 24 octobre 2026
+     ═══════════════════════════════════════
+     Fin de journée heure de Paris : le 25 octobre 2026 est le dernier
+     dimanche d'octobre, le 24 est donc encore en heure d'été (+02:00). */
+  const promoBadge = document.querySelector('.promo-badge');
+  if (promoBadge && Date.now() > Date.parse('2026-10-24T23:59:59+02:00')) {
+    promoBadge.remove();
+    const voiron = document.querySelector('.salon-mystere');
+    if (voiron) voiron.setAttribute('aria-label', 'BarberClub Voiron — ouverture en octobre, en savoir plus');
+  }
 
   /* ═══════════════════════════════════════
      INTRO → LANDING transition
