@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bc-dashboard-v3';
+const CACHE_NAME = 'bc-dashboard-v4';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -53,7 +53,10 @@ self.addEventListener('fetch', (e) => {
     caches.match(e.request).then((cached) => {
       if (cached) return cached;
       return fetch(e.request).then((res) => {
-        if (res.ok) {
+        // Un fichier absent retombe sur index.html en 200 (_redirects) : sans
+        // ce filtre, la page restait en cache à la place de l'image, à vie.
+        const html = (res.headers.get('content-type') || '').includes('text/html');
+        if (res.ok && !html) {
           const clone = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
         }
