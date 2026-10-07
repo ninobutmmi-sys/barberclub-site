@@ -195,6 +195,13 @@ describe('GET /api/barbers', () => {
 // GET /api/services
 // ============================================
 describe('GET /api/services', () => {
+  it('include_named=true keeps services of barbers outside « peu importe »', async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).get('/api/services?salon_id=grenoble&include_named=true');
+    expect(res.status).toBe(200);
+    expect(db.query.mock.calls[0][1]).toEqual(['grenoble', true]);
+  });
+
   it('returns all services for default salon', async () => {
     db.query.mockResolvedValueOnce({
       rows: [

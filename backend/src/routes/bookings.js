@@ -193,11 +193,17 @@ router.get('/services', publicLimiter,
   [
     query('barber_id').optional().custom((val) => val === 'any' || uuidRegex.test(val)).withMessage('Barber ID invalide'),
     query('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
+    query('include_named').optional().isIn(['true', 'false']).withMessage('Valeur invalide'),
   ],
   handleValidation,
   async (req, res, next) => {
   try {
     const { barber_id } = req.query;
+    // Les pages qui font choisir la prestation avant le barbier (Meylan,
+    // Grenoble) veulent aussi celles que seul un barbier hors du « peu
+    // importe » pratique (les cases « avec Ju ») : l'étape barber le
+    // proposera nommément.
+    const includeNamed = req.query.include_named === 'true';
     const salonId = req.query.salon_id || 'meylan';
 
     let queryText;
@@ -245,17 +251,8 @@ router.get('/services', publicLimiter,
       // "Peu importe" mode: return every service offered by at least one
       // active barber of the salon. Availability engine auto-assigns the
       // right barber when only one of them performs the service.
-      // barber_ids : qui pratique la prestation. La page de réservation s'en
-      // sert pour dire « avec Alex » sur une prestation qu'un seul barbier fait
-      // (la coupe WiiKard), avant même l'étape barber.
       queryText = `
-        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color,
-               ARRAY(
-                 SELECT bs.barber_id FROM barber_services bs
-                 JOIN barbers b ON bs.barber_id = b.id
-                 WHERE bs.service_id = s.id AND b.is_active = true AND b.deleted_at IS NULL
-                   AND b.exclude_from_any = false
-               ) AS barber_ids
+        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color
         FROM services s
         WHERE s.is_active = true AND s.deleted_at IS NULL AND s.salon_id = $1
           AND (s.admin_only = false OR s.admin_only IS NULL)
@@ -268,11 +265,12 @@ router.get('/services', publicLimiter,
               AND b.salon_id = $1
               -- Une prestation que seul un barbier hors du « peu importe »
               -- pratique (les cases de Julien) n'a rien a faire dans cette
-              -- liste : la choisir menait a une etape date sans creneau.
-              AND b.exclude_from_any = false
+              -- liste quand le barbier se choisit avant : la choisir menait a
+              -- une etape date sans creneau. Avec include_named, si.
+              AND ($2::boolean OR b.exclude_from_any = false)
           )
         ORDER BY s.sort_order`;
-      params = [salonId];
+      params = [salonId, includeNamed];
     }
 
     const result = await db.query(queryText, params);

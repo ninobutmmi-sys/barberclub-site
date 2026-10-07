@@ -1148,7 +1148,9 @@
         async function loadServices() {
             try {
                 const barberId = state.selectedBarber ? state.selectedBarber.id : 'any';
-                const query = barberId !== 'any' ? `?barber_id=${barberId}` : '';
+                // include_named : aussi les prestations d'un barbier hors « peu importe »
+                // (les cases « avec Ju ») — l'etape barber le proposera nommement.
+                const query = barberId !== 'any' ? `?barber_id=${barberId}` : '?include_named=true';
                 let services = await api('/services' + query);
                 // Deduplicate when "peu importe": keep general service over restricted one
                 if (barberId === 'any') {
@@ -1186,7 +1188,7 @@
             // Categorize services
             function getCategory(name) {
                 const n = name.toLowerCase();
-                if (n.includes('wiikard') || n.includes('enfant') || n.includes('étude') || n.includes('étudiant') || n.includes('partenaire') || n.includes('(ce)')) return 'reduced';
+                if (n.includes('wiikard') || n.includes('enfant') || n.includes('étude') || n.includes('étudiant') || n.includes('etudiant') || n.includes('partenaire') || n.includes('(ce)')) return 'reduced';
                 if (n.startsWith('barbe') || (n.includes('soin') && !n.includes('coupe'))) return 'beard';
                 return 'cuts';
             }
@@ -1207,8 +1209,9 @@
             // carte WiiKard (pleine largeur, entre deux rangees), puis le CE.
             const estPartenaire = (x) => /wiikard/i.test(x.name);
             const rangReduit = (x) => {
-                const n = x.name.toLowerCase();
-                if (n.includes('étude') || n.includes('étudiant')) return 0;
+                // sans accents : « Coupe Etudiante » et « Coupe Études » se valent
+                const n = x.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                if (n.includes('etud')) return 0;
                 if (n.includes('enfant')) return 1;
                 if (estPartenaire(x)) return 2;
                 if (n.includes('(ce)')) return 3;
