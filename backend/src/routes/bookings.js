@@ -22,19 +22,27 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 // GET /api/barbers — List active barbers
 // ============================================
 router.get('/barbers', publicLimiter,
-  [query('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide')],
+  [
+    query('salon_id').optional().isIn(SALON_IDS).withMessage('Salon invalide'),
+    query('service_id').optional().matches(uuidRegex).withMessage('Service ID invalide'),
+  ],
   handleValidation,
   async (req, res, next) => {
   try {
     const salonId = req.query.salon_id || 'meylan';
+    // La réservation de Meylan commence par la prestation : l'étape barber ne
+    // montre que ceux qui la pratiquent (la coupe WiiKard n'est qu'à Alex).
+    const serviceId = req.query.service_id || null;
     // Resident barbers
     const result = await db.query(
       `SELECT id, name, role, photo_url, contract_start, contract_end, offer_label, FALSE as is_guest
        FROM barbers
        WHERE is_active = true AND deleted_at IS NULL AND salon_id = $1
          AND (contract_end IS NULL OR contract_end >= CURRENT_DATE)
+         AND ($2::uuid IS NULL OR EXISTS (
+           SELECT 1 FROM barber_services bs WHERE bs.barber_id = barbers.id AND bs.service_id = $2::uuid))
        ORDER BY sort_order`,
-      [salonId]
+      [salonId, serviceId]
     );
     // Guest barbers with future assignments in this salon
     const guestResult = await db.query(
@@ -45,8 +53,10 @@ router.get('/barbers', publicLimiter,
        WHERE b.is_active = true AND b.deleted_at IS NULL
          AND ga.host_salon_id = $1 AND ga.date >= CURRENT_DATE
          AND b.salon_id != $1
+         AND ($2::uuid IS NULL OR EXISTS (
+           SELECT 1 FROM barber_services bs WHERE bs.barber_id = b.id AND bs.service_id = $2::uuid))
        ORDER BY b.sort_order`,
-      [salonId]
+      [salonId, serviceId]
     );
     const allBarbers = [...result.rows, ...guestResult.rows];
 
@@ -235,8 +245,17 @@ router.get('/services', publicLimiter,
       // "Peu importe" mode: return every service offered by at least one
       // active barber of the salon. Availability engine auto-assigns the
       // right barber when only one of them performs the service.
+      // barber_ids : qui pratique la prestation. La page de réservation s'en
+      // sert pour dire « avec Alex » sur une prestation qu'un seul barbier fait
+      // (la coupe WiiKard), avant même l'étape barber.
       queryText = `
-        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color
+        SELECT s.id, s.name, s.price, s.duration, s.duration_saturday, s.description, s.color,
+               ARRAY(
+                 SELECT bs.barber_id FROM barber_services bs
+                 JOIN barbers b ON bs.barber_id = b.id
+                 WHERE bs.service_id = s.id AND b.is_active = true AND b.deleted_at IS NULL
+                   AND b.exclude_from_any = false
+               ) AS barber_ids
         FROM services s
         WHERE s.is_active = true AND s.deleted_at IS NULL AND s.salon_id = $1
           AND (s.admin_only = false OR s.admin_only IS NULL)

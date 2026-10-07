@@ -160,12 +160,12 @@
         <div class="progress-bar" role="navigation" aria-label="Étapes de réservation">
             <div class="progress-step active" data-step="1" aria-current="step">
                 <div class="progress-circle">1</div>
-                <span class="progress-label">Barber</span>
+                <span class="progress-label">Prestation</span>
             </div>
             <div class="progress-line" data-after="1"></div>
             <div class="progress-step" data-step="2">
                 <div class="progress-circle">2</div>
-                <span class="progress-label">Prestation</span>
+                <span class="progress-label">Barber</span>
             </div>
             <div class="progress-line" data-after="2"></div>
             <div class="progress-step" data-step="3">
@@ -187,20 +187,21 @@
         <!-- STEPS -->
         <div class="steps-container">
 
-            <!-- STEP 1: BARBER -->
+            <!-- STEP 1: SERVICE — la prestation passe en premier : elle decide
+                 des barbiers proposes ensuite (la coupe WiiKard n'est qu'a Alex). -->
             <div class="step active" id="step1">
-                <h2 class="step-title">Votre barber</h2>
-                <p class="step-desc">Choisissez votre barber préféré</p>
-                <div class="barber-grid" id="barberGrid" role="radiogroup" aria-label="Choisir un barber">
+                <h2 class="step-title">Prestation</h2>
+                <p class="step-desc">Sélectionnez votre prestation</p>
+                <div class="service-list" id="serviceList" role="radiogroup" aria-label="Choisir une prestation">
                     <!-- Filled by JS -->
                 </div>
             </div>
 
-            <!-- STEP 2: SERVICE -->
+            <!-- STEP 2: BARBER -->
             <div class="step" id="step2">
-                <h2 class="step-title">Prestation</h2>
-                <p class="step-desc">Sélectionnez votre prestation</p>
-                <div class="service-list" id="serviceList" role="radiogroup" aria-label="Choisir une prestation">
+                <h2 class="step-title">Votre barber</h2>
+                <p class="step-desc" id="barberStepDesc">Choisissez votre barber préféré</p>
+                <div class="barber-grid" id="barberGrid" role="radiogroup" aria-label="Choisir un barber">
                     <!-- Filled by JS -->
                 </div>
             </div>
@@ -858,10 +859,10 @@
             const n = state.step;
 
             if (n === 1) {
-                actionBtn.disabled = !state.selectedBarber;
+                actionBtn.disabled = !state.selectedService;
                 actionBtn.querySelector('.btn-text').textContent = 'Continuer';
             } else if (n === 2) {
-                actionBtn.disabled = !state.selectedService;
+                actionBtn.disabled = !state.selectedBarber;
                 actionBtn.querySelector('.btn-text').textContent = 'Continuer';
             } else if (n === 3) {
                 actionBtn.disabled = !state.selectedSlot && !state.wantWaitlist;
@@ -880,10 +881,23 @@
             }
         }
 
-        // ---- STEP 1: BARBERS ----
+        // ---- STEP 2: BARBERS ----
+        // Sans prestation (au chargement), tous les barbiers : il faut pouvoir
+        // reconnaitre ?barber=Lucas. Une fois la prestation choisie, seuls ceux
+        // qui la pratiquent.
         async function loadBarbers() {
             try {
-                state.barbers = await api('/barbers');
+                const svc = state.selectedService;
+                state.barbers = await api('/barbers' + (svc ? `?service_id=${encodeURIComponent(svc.id)}` : ''));
+                // Le barbier choisi avant (lien ?barber= ou retour arriere) ne
+                // reste selectionne que s'il fait la prestation.
+                if (state.selectedBarber && state.selectedBarber.id !== 'any'
+                    && !state.barbers.some(b => b.id === state.selectedBarber.id)) {
+                    state.selectedBarber = null;
+                }
+                // Un seul barbier pour cette prestation : il est choisi d'office,
+                // « Peu importe » n'a plus de sens.
+                if (svc && state.barbers.length === 1) state.selectedBarber = state.barbers[0];
                 renderBarbers();
             } catch (e) {
                 $('#barberGrid').innerHTML = `
@@ -960,9 +974,16 @@
             const checkSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
 
             let html = '';
+            const seul = state.selectedService && state.barbers.length === 1 ? state.barbers[0] : null;
+            const desc = $('#barberStepDesc');
+            if (desc) {
+                desc.textContent = seul
+                    ? `${state.selectedService.name} : avec ${seul.name}`
+                    : 'Choisissez votre barber préféré';
+            }
 
-            // "Peu importe" option
-            html += `
+            // "Peu importe" option — inutile quand un seul barbier fait la prestation
+            if (!seul) html += `
                 <div class="barber-card any-barber" data-id="any" role="radio" tabindex="0" aria-checked="false" aria-label="Peu importe — Premier barber disponible">
                     <div class="any-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1072,6 +1093,12 @@
             grid.innerHTML = html;
             cascade(grid, '.barber-card');
 
+            // Selection deja faite (lien ?barber=, retour arriere, barbier unique)
+            if (state.selectedBarber) {
+                const sel = grid.querySelector(`.barber-card[data-id="${state.selectedBarber.id}"]`);
+                if (sel) { sel.classList.add('selected'); sel.setAttribute('aria-checked', 'true'); }
+            }
+
             // Event listeners
             grid.querySelectorAll('.barber-card').forEach((card) => {
                 function selectBarber() {
@@ -1090,8 +1117,7 @@
                         state.selectedBarber = state.barbers.find(b => b.id === id);
                     }
 
-                    // Reset downstream selections
-                    state.selectedService = null;
+                    // Reset downstream selections (la prestation est deja choisie)
                     state.selectedSlot = null;
                     state.selectedDate = null;
                     updateActionBtn();
@@ -1115,10 +1141,12 @@
             });
         }
 
-        // ---- STEP 2: SERVICES ----
+        // ---- STEP 1: SERVICES ----
+        // Sans barbier choisi : toutes les prestations du salon (mode « peu
+        // importe »). Avec ?barber=Lucas : celles de Lucas, a ses prix.
         async function loadServices() {
             try {
-                const barberId = state.selectedBarber.id;
+                const barberId = state.selectedBarber ? state.selectedBarber.id : 'any';
                 const query = barberId !== 'any' ? `?barber_id=${barberId}` : '';
                 let services = await api('/services' + query);
                 // Deduplicate when "peu importe": keep general service over restricted one
@@ -1157,6 +1185,7 @@
             // Categorize services
             function getCategory(name) {
                 const n = name.toLowerCase();
+                if (n.includes('wiikard')) return 'partner';
                 if (n.includes('enfant') || n.includes('étude') || n.includes('étudiant') || n.includes('partenaire') || n.includes('(ce)')) return 'reduced';
                 if (n.startsWith('barbe') || (n.includes('soin') && !n.includes('coupe'))) return 'beard';
                 return 'cuts';
@@ -1164,11 +1193,12 @@
 
             const categories = [
                 { key: 'cuts', title: 'Coupes', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>' },
+                { key: 'partner', title: 'Partenaire', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l2 2a1 1 0 1 0 3-3"/><path d="M14 14l2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="M21 3l1 11h-2"/><path d="M3 3L2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></svg>' },
                 { key: 'beard', title: 'Barbe & Soins', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>' },
                 { key: 'reduced', title: 'Tarifs Réduits', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>' },
             ];
 
-            const grouped = { cuts: [], beard: [], reduced: [] };
+            const grouped = { cuts: [], partner: [], beard: [], reduced: [] };
             for (const s of state.services) {
                 grouped[getCategory(s.name)].push(s);
             }
@@ -1192,6 +1222,37 @@
                             <div class="service-duration">${clockSVG}${s.duration} min</div>
                         </div>`;
 
+            // La carte du partenaire WiiKard : pleine largeur, le logo sur sa
+            // pastille blanche (son texte est sombre), le rouge de la marque en
+            // filet, et le barbier qui la pratique, nomme avant l'etape barber.
+            const partnerHTML = (s) => {
+                const ids = s.barber_ids || [];
+                const seul = ids.length === 1 ? state.barbers.find(b => b.id === ids[0]) : null;
+                const photo = seul && seul.photo_url
+                    ? (/^(data:|https?:)/.test(seul.photo_url) ? seul.photo_url : `../../assets/images${seul.photo_url}`)
+                    : '';
+                const avec = seul
+                    ? `<span class="partner-with">${photo ? `<img src="${esc(photo)}" alt="" loading="lazy" onerror="this.remove()">` : ''}avec ${esc(seul.name)}</span>`
+                    : '';
+                return `
+                        <div class="service-card service-case service-partner" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — tarif partenaire WiiKard — ${s.duration} minutes — ${formatPrice(s.price)}${seul ? ' — avec ' + esc(seul.name) : ''}">
+                            <span class="partner-shine" aria-hidden="true"></span>
+                            <div class="partner-head">
+                                <span class="partner-logo"><img src="../../assets/images/partners/wiikard.webp" alt="WiiKard" width="96" height="27"></span>
+                                <span class="partner-tag">Tarif partenaire</span>
+                                <div class="service-check">${checkSVG}</div>
+                            </div>
+                            <div class="partner-main">
+                                <div class="partner-info">
+                                    <div class="service-case-name">${esc(s.name)}</div>
+                                    ${s.description ? `<div class="service-case-desc">${esc(s.description)}</div>` : ''}
+                                    <div class="partner-meta"><span class="service-duration">${clockSVG}${s.duration} min</span>${avec}</div>
+                                </div>
+                                <span class="service-case-price">${euros(s.price)}<span class="service-case-euro">&euro;</span></span>
+                            </div>
+                        </div>`;
+            };
+
             let html = '';
             // Le client voit des prix a zero : on lui dit pourquoi, ici, au
             // moment ou il les regarde.
@@ -1212,7 +1273,7 @@
                         <span class="service-category-title">${cat.title}</span>
                         <span class="service-category-line"></span>
                     </div>`;
-                html += `<div class="service-cases" role="group" aria-label="${cat.title}">${grouped[cat.key].map(caseHTML).join('')}</div>`;
+                html += `<div class="service-cases" role="group" aria-label="${cat.title}">${grouped[cat.key].map(cat.key === 'partner' ? partnerHTML : caseHTML).join('')}</div>`;
                 html += `</div>`;
             }
 
@@ -2188,6 +2249,19 @@
             showAuthPanel(null);
         });
 
+        // La prestation a ete choisie avant le barbier, donc au tarif du salon.
+        // Un barbier peut avoir son prix ou sa duree (Ju fait la coupe etudiante
+        // en 20 min) : on les reprend une fois le barbier connu.
+        async function appliquerTarifBarbier() {
+            const b = state.selectedBarber;
+            if (!b || b.id === 'any' || !state.selectedService) return;
+            try {
+                const list = await api(`/services?barber_id=${encodeURIComponent(b.id)}`);
+                const m = list.find(x => x.id === state.selectedService.id);
+                if (m) state.selectedService = { ...state.selectedService, price: m.price, duration: m.custom_duration || m.duration };
+            } catch { /* on garde le tarif du salon */ }
+        }
+
         // ---- ACTION BUTTON ----
         let actionBusy = false;
         actionBtn.addEventListener('click', async () => {
@@ -2199,9 +2273,10 @@
 
             try {
                 if (n === 1) {
-                    await loadServices();
+                    await loadBarbers();
                     goToStep(2);
                 } else if (n === 2) {
+                    await appliquerTarifBarbier();
                     // Initialize calendar at current month
                     const now = new Date();
                     state.calendarMonth = now.getMonth();
@@ -2228,7 +2303,10 @@
                 // Keep button disabled after successful booking/waitlist (step 5)
                 if (state.step === 5) return;
                 actionBusy = false;
-                actionBtn.disabled = false;
+                // L'etat du bouton depend de l'etape ou l'on arrive : il se
+                // reactivait sans condition, et l'etape barber laissait
+                // « Continuer » cliquable sans barbier choisi.
+                updateActionBtn();
             }
         });
 
@@ -2305,17 +2383,11 @@
                 const urlBarber = new URLSearchParams(window.location.search).get('barber');
                 if (urlBarber) {
                     const match = state.barbers.find(b => b.name.toLowerCase() === urlBarber.toLowerCase());
-                    if (match) {
-                        state.selectedBarber = match;
-                        const card = document.querySelector(`.barber-card[data-id="${match.id}"]`);
-                        if (card) {
-                            card.classList.add('selected');
-                            card.setAttribute('aria-checked', 'true');
-                        }
-                        goToStep(2);
-                        await loadServices();
-                    }
+                    // La prestation passe en premier : le barbier du lien reste
+                    // choisi, et la liste ne montre que ses prestations.
+                    if (match) state.selectedBarber = match;
                 }
+                await loadServices();
 
                 updateActionBtn();
             } catch (e) {

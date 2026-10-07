@@ -132,8 +132,8 @@ describe('GET /api/barbers', () => {
     expect(res.body[0].name).toBe('Lucas');
     expect(res.body[0].off_days).toEqual([0]);
     expect(db.query).toHaveBeenCalledTimes(3);
-    // First query should filter by salon_id = 'meylan'
-    expect(db.query.mock.calls[0][1]).toEqual(['meylan']);
+    // First query should filter by salon_id = 'meylan', no service filter
+    expect(db.query.mock.calls[0][1]).toEqual(['meylan', null]);
   });
 
   it('returns barbers for grenoble salon', async () => {
@@ -145,7 +145,27 @@ describe('GET /api/barbers', () => {
     const res = await request(app).get('/api/barbers?salon_id=grenoble');
 
     expect(res.status).toBe(200);
-    expect(db.query.mock.calls[0][1]).toEqual(['grenoble']);
+    expect(db.query.mock.calls[0][1]).toEqual(['grenoble', null]);
+  });
+
+  it('filters barbers by service_id (prestation choisie en premier)', async () => {
+    const SERVICE = 'a0000000-0000-0000-0000-00000000a101';
+    db.query
+      .mockResolvedValueOnce({ rows: [{ id: BARBER_ID, name: 'Alex', role: 'Barber', photo_url: null, is_guest: false }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).get(`/api/barbers?service_id=${SERVICE}`);
+
+    expect(res.status).toBe(200);
+    expect(db.query.mock.calls[0][0]).toMatch(/barber_services/);
+    expect(db.query.mock.calls[0][1]).toEqual(['meylan', SERVICE]);
+    expect(db.query.mock.calls[1][1]).toEqual(['meylan', SERVICE]);
+  });
+
+  it('rejects an invalid service_id', async () => {
+    const res = await request(app).get('/api/barbers?service_id=pas-un-uuid');
+    expect(res.status).toBe(400);
   });
 
   it('includes guest barbers with future assignments', async () => {
