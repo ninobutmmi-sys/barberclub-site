@@ -11,6 +11,9 @@ import BlockedSlotBlock from './BlockedSlotBlock';
 import BookingBlock from './BookingBlock';
 import MinutePickerPopup from './MinutePickerPopup';
 
+// Nom affiché du salon où un barbier est parti ce jour-là (trois salons).
+const SALON_NOMS = { meylan: 'Meylan', grenoble: 'Grenoble', voiron: 'Voiron' };
+
 export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedByDayBarber, barberOffDays, barberSchedules, barberOverrides, guestAssignments, onBookingClick, onBlockClick, onOverrideClick, onSlotClick, onUnblockDay, onRecloseDay, view, onSwipeLeft, onSwipeRight, compact, highlightedBookingId }) {
   const scrollRef = useRef(null);
   const gridBodyRef = useRef(null);
@@ -227,10 +230,10 @@ export default function TimeGrid({ days, barbers, bookingsByDayBarber, blockedBy
                             </span>
                           </span>
                         ) : isAway ? (
-                          <span title={`A ${gi.host_salon_id === 'grenoble' ? 'Grenoble' : 'Meylan'}`}>
+                          <span title={`A ${SALON_NOMS[gi.host_salon_id] || gi.host_salon_id}`}>
                             <s>{b.name.split(' ')[0]}</s>
                             <span style={{ display: 'block', fontSize: 8, color: '#f59e0b', fontWeight: 600, lineHeight: 1 }}>
-                              {gi.host_salon_id === 'grenoble' ? 'Grenoble' : 'Meylan'}
+                              {SALON_NOMS[gi.host_salon_id] || gi.host_salon_id}
                             </span>
                           </span>
                         ) : isGuestHere ? (

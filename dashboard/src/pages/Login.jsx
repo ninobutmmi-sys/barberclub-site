@@ -21,7 +21,8 @@ export default function Login() {
     }
   };
 
-  const salonLabel = salon === 'grenoble' ? 'Grenoble' : 'Meylan';
+  // Voiron tombait sur « Meylan » : le ternaire ne connaissait que deux salons.
+  const salonLabel = { meylan: 'Meylan', grenoble: 'Grenoble', voiron: 'Voiron' }[salon] || salon;
 
   return (
     <div className="login-page">

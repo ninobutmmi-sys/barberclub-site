@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { getClients, sendMailing } from '../api';
 import useMobile from '../hooks/useMobile';
 import { useBrevoStatus, useNotificationLogs } from '../hooks/useApi';
+import { useAuth } from '../auth';
+
+const SALON_NOMS = { meylan: 'Meylan', grenoble: 'Grenoble', voiron: 'Voiron' };
 
 // ============================================
 // Mailing Page — Email campaigns via Brevo
@@ -67,6 +70,7 @@ function MailIcon() {
 }
 
 export default function Mailing({ embedded } = {}) {
+  const { salon } = useAuth();
   const isMobile = useMobile();
   const [tab, setTab] = useState('compose'); // 'compose' | 'history' | 'settings'
   const [template, setTemplate] = useState(EMAIL_TEMPLATES[0]);
@@ -157,7 +161,7 @@ export default function Mailing({ embedded } = {}) {
         })),
         subject,
         body,
-        from_name: brevoStatus?.senderName || 'BarberClub Meylan',
+        from_name: brevoStatus?.senderName || `BarberClub ${SALON_NOMS[salon] || 'Meylan'}`,
       });
 
       setResult({
@@ -412,7 +416,7 @@ export default function Mailing({ embedded } = {}) {
                 }}>
                   {/* Email header area */}
                   <div style={{ marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid #2a2a2a' }}>
-                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>De: {brevoStatus?.senderName || 'BarberClub Meylan'}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>De: {brevoStatus?.senderName || `BarberClub ${SALON_NOMS[salon] || 'Meylan'}`}</div>
                     <div style={{
                       fontSize: 13, fontWeight: 700, color: '#e0e0e0', lineHeight: 1.3,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
