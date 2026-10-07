@@ -1261,7 +1261,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
     </div>
 
     <!-- ═══════ 3ᵉ SALON — VOIRON (mène à la page teaser) ═══════ -->
-    <a href="pages/voiron/" class="salon salon-mystere" data-salon aria-label="BarberClub Voiron — ouverture en octobre. Offre d'ouverture : toutes les prestations à -50 % du mercredi 21 au samedi 24 octobre. En savoir plus">
+    <a href="pages/voiron/" class="salon salon-mystere" data-salon aria-label="BarberClub Voiron — ouverture le mercredi 21 octobre. Offre d'ouverture : toutes les prestations à -50 % du mercredi 21 au samedi 24 octobre. En savoir plus">
       <div class="salon-bg"></div>
       <div class="salon-overlay"></div>
       <div class="mystere-sheen" aria-hidden="true"></div>
@@ -1278,7 +1278,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
           </span>
         </span>
         <h2 class="salon-title" data-split>Voiron</h2>
-        <p class="salon-location">Ouverture en octobre</p>
+        <p class="salon-location">Ouverture le 21 octobre</p>
         <span class="salon-cta mystere-cta" data-magnetic>
           <span class="cta-text">En savoir plus</span>
           <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -1305,7 +1305,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
   if (promo && Date.now() > Date.parse('2026-10-24T23:59:59+02:00')) {
     promo.remove();
     const voiron = document.querySelector('.salon-mystere');
-    if (voiron) voiron.setAttribute('aria-label', 'BarberClub Voiron — ouverture en octobre, en savoir plus');
+    if (voiron) voiron.setAttribute('aria-label', 'BarberClub Voiron — ouvert depuis le 21 octobre, en savoir plus');
   }
 
   /* ═══════════════════════════════════════
