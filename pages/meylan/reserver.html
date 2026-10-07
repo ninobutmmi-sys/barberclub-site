@@ -847,7 +847,8 @@
                 backBtn.href = '#';
                 backBtn.onclick = (e) => {
                     e.preventDefault();
-                    goToStep(n - 1);
+                    // Retour depuis la date quand l'etape barber a ete sautee
+                    goToStep(n === 3 && state.barberSkipped ? 1 : n - 1);
                     updateActionBtn();
                 };
             }
@@ -1202,10 +1203,20 @@
             }
             // Du moins cher au plus cher ; a prix egal, la plus courte, puis l'ordre alphabetique.
             const tri = (a, b) => (a.price - b.price) || (a.duration - b.duration) || a.name.localeCompare(b.name, 'fr');
-            // La carte WiiKard (pleine largeur) ouvre les tarifs reduits : placee
-            // a son rang de prix, elle couperait la grille en deux.
+            // Tarifs reduits dans l'ordre voulu au salon : etudes, enfant, la
+            // carte WiiKard (pleine largeur, entre deux rangees), puis le CE.
             const estPartenaire = (x) => /wiikard/i.test(x.name);
-            Object.values(grouped).forEach(arr => arr.sort((a, b) => (estPartenaire(b) - estPartenaire(a)) || tri(a, b)));
+            const rangReduit = (x) => {
+                const n = x.name.toLowerCase();
+                if (n.includes('étude') || n.includes('étudiant')) return 0;
+                if (n.includes('enfant')) return 1;
+                if (estPartenaire(x)) return 2;
+                if (n.includes('(ce)')) return 3;
+                return 4;
+            };
+            grouped.cuts.sort(tri);
+            grouped.beard.sort(tri);
+            grouped.reduced.sort((a, b) => (rangReduit(a) - rangReduit(b)) || tri(a, b));
 
             // Une case : le prix en titre, puisque c'est lui que le client compare.
             // 27 plutot que 27,00 ; un prix a zero s'ecrit « Offert ».
@@ -1227,16 +1238,8 @@
             // pastille blanche (son texte est sombre), le rouge de la marque en
             // filet, et le barbier qui la pratique, nomme avant l'etape barber.
             const partnerHTML = (s) => {
-                const ids = s.barber_ids || [];
-                const seul = ids.length === 1 ? state.barbers.find(b => b.id === ids[0]) : null;
-                const photo = seul && seul.photo_url
-                    ? (/^(data:|https?:)/.test(seul.photo_url) ? seul.photo_url : `../../assets/images${seul.photo_url}`)
-                    : '';
-                const avec = seul
-                    ? `<span class="partner-with">${photo ? `<img src="${esc(photo)}" alt="" loading="lazy" onerror="this.remove()">` : ''}avec ${esc(seul.name)}</span>`
-                    : '';
                 return `
-                        <div class="service-card service-case service-partner" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — tarif partenaire WiiKard — ${s.duration} minutes — ${formatPrice(s.price)}${seul ? ' — avec ' + esc(seul.name) : ''}">
+                        <div class="service-card service-case service-partner" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — tarif partenaire WiiKard — ${s.duration} minutes — ${formatPrice(s.price)}">
                             <span class="partner-shine" aria-hidden="true"></span>
                             <div class="partner-head">
                                 <span class="partner-logo"><img src="../../assets/images/partners/wiikard.webp" alt="WiiKard" width="96" height="27"></span>
@@ -1247,7 +1250,7 @@
                                 <div class="partner-info">
                                     <div class="service-case-name">${esc(s.name)}</div>
                                     ${s.description ? `<div class="service-case-desc">${esc(s.description)}</div>` : ''}
-                                    <div class="partner-meta"><span class="service-duration">${clockSVG}${s.duration} min</span>${avec}</div>
+                                    <div class="partner-meta"><span class="service-duration">${clockSVG}${s.duration} min</span></div>
                                 </div>
                                 <span class="service-case-price">${euros(s.price)}<span class="service-case-euro">&euro;</span></span>
                             </div>
@@ -2263,6 +2266,23 @@
             } catch { /* on garde le tarif du salon */ }
         }
 
+        // Etape date : tarif du barbier, calendrier au mois courant, puis
+        // suggestions et disponibilites du mois en arriere-plan.
+        async function allerAuCalendrier() {
+            await appliquerTarifBarbier();
+            const now = new Date();
+            state.calendarMonth = now.getMonth();
+            state.calendarYear = now.getFullYear();
+            state.selectedDate = null;
+            state.selectedSlot = null;
+            renderCalendar();
+            $('#slotsSection').innerHTML = '<p class="slots-empty">Sélectionnez une date pour voir les créneaux disponibles</p>';
+            goToStep(3);
+            // Load quick suggestions + month availability in background (non-blocking)
+            loadQuickSuggestions();
+            loadMonthAvailability();
+        }
+
         // ---- ACTION BUTTON ----
         let actionBusy = false;
         actionBtn.addEventListener('click', async () => {
@@ -2275,21 +2295,16 @@
             try {
                 if (n === 1) {
                     await loadBarbers();
-                    goToStep(2);
+                    // Un seul barbier fait la prestation (WiiKard → Alex) : il
+                    // est choisi d'office, l'etape barber n'a rien a demander.
+                    state.barberSkipped = state.barbers.length === 1 && !!state.selectedBarber;
+                    if (state.barberSkipped) {
+                        await allerAuCalendrier();
+                    } else {
+                        goToStep(2);
+                    }
                 } else if (n === 2) {
-                    await appliquerTarifBarbier();
-                    // Initialize calendar at current month
-                    const now = new Date();
-                    state.calendarMonth = now.getMonth();
-                    state.calendarYear = now.getFullYear();
-                    state.selectedDate = null;
-                    state.selectedSlot = null;
-                    renderCalendar();
-                    $('#slotsSection').innerHTML = '<p class="slots-empty">Sélectionnez une date pour voir les créneaux disponibles</p>';
-                    goToStep(3);
-                    // Load quick suggestions + month availability in background (non-blocking)
-                    loadQuickSuggestions();
-                    loadMonthAvailability();
+                    await allerAuCalendrier();
                 } else if (n === 3) {
                     renderSummary();
                     goToStep(4);
