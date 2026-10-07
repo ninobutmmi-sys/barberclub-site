@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no">
+    <title>Le Salon BarberClub Voiron | Ouverture octobre 2026</title>
+    <meta name="description"
+        content="BarberClub Voiron, le troisième salon BarberClub : ouverture en octobre 2026 au 5 Av. Léon et Joanny Tardy, 38500 Voiron. Équipe, prestations de 20 à 45 €, horaires et accès.">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="canonical" href="https://barberclub-grenoble.fr/pages/voiron/salon.html">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Le Salon BarberClub Voiron">
+    <meta property="og:description" content="Ouverture en octobre 2026, 5 Av. Léon et Joanny Tardy à Voiron.">
+    <meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-facade-bleue.jpg">
+    <meta property="og:url" content="https://barberclub-grenoble.fr/pages/voiron/salon.html">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:site_name" content="BarberClub">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Le Salon BarberClub Voiron">
+    <meta name="twitter:description" content="Ouverture en octobre 2026, 5 Av. Léon et Joanny Tardy à Voiron.">
+    <meta name="twitter:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-facade-bleue.jpg">
+
+    <!-- BreadcrumbList -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://barberclub-grenoble.fr/"},
+            {"@type": "ListItem", "position": 2, "name": "Voiron", "item": "https://barberclub-grenoble.fr/pages/voiron/"},
+            {"@type": "ListItem", "position": 3, "name": "Le Salon", "item": "https://barberclub-grenoble.fr/pages/voiron/salon.html"}
+        ]
+    }
+    </script>
+
+    <!-- FAQPage -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "Quand ouvre BarberClub Voiron ?",
+                "acceptedAnswer": {"@type": "Answer", "text": "En octobre 2026, au 5 Av. Léon et Joanny Tardy, 38500 Voiron."}
+            },
+            {
+                "@type": "Question",
+                "name": "Quels sont les tarifs chez BarberClub Voiron ?",
+                "acceptedAnswer": {"@type": "Answer", "text": "De 20 € à 45 €. La coupe homme est à 25 €, la coupe + barbe à 35 €."}
+            }
+        ]
+    }
+    </script>
+
+    <!-- Schema.org -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BarberShop",
+        "name": "BarberClub Voiron",
+        "url": "https://barberclub-grenoble.fr/pages/voiron/",
+        "telephone": "+33955208620",
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "5 Av. Léon et Joanny Tardy",
+            "addressLocality": "Voiron",
+            "postalCode": "38500",
+            "addressCountry": "FR"
+        },
+        "geo": {"@type": "GeoCoordinates", "latitude": 45.36464, "longitude": 5.594941},
+        "image": "https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-facade-nuit.jpg",
+        "priceRange": "€€"
+    }
+    </script>
+    <script>
+    /* Offre d'ouverture (-50 % du 21 au 24/10/2026) : son rappel disparaît
+       avant le premier rendu une fois l'offre passée. */
+    if (Date.now() > Date.parse('2026-10-24T23:59:59+02:00')) document.documentElement.classList.add('launch-over');
+    </script>
+
+    <link rel="manifest" href="../../config/manifest.json">
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
+    <style>
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: #000; color: #fff; min-height: 100vh; overflow-x: hidden; }
+        @media (pointer: fine) { body { cursor: none; } }
+
+        /* CURSOR */
+        .cursor-dot { position: fixed; width: 8px; height: 8px; background: #fff; border-radius: 50%; pointer-events: none; z-index: 10001; mix-blend-mode: difference; transform: translate(-50%,-50%); }
+        .cursor-ring { position: fixed; width: 40px; height: 40px; border: 1.5px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: none; z-index: 10001; mix-blend-mode: difference; transition: width 0.35s cubic-bezier(0.16,1,0.3,1), height 0.35s cubic-bezier(0.16,1,0.3,1), border-color 0.3s; transform: translate(-50%,-50%); }
+        .cursor-ring.hovering { width: 64px; height: 64px; border-color: rgba(255,255,255,0.8); }
+        @media (pointer: coarse) { .cursor-dot, .cursor-ring { display: none !important; } }
+
+        /* GRAIN */
+        .grain { position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 180px; }
+
+        /* PAGE TRANSITION */
+        .page-transition { position: fixed; inset: 0; z-index: 9999; background: #000; pointer-events: none; opacity: 0; transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1); }
+        .page-transition.active { opacity: 1; pointer-events: all; }
+
+        /* HEADER */
+        .header {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            padding: 8px 16px; padding-top: max(8px, env(safe-area-inset-top));
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); transition: all 0.3s ease;
+        }
+        .header.scrolled { background: rgba(0,0,0,1); border-bottom-color: rgba(255,255,255,0.1); box-shadow: 0 4px 24px rgba(0,0,0,0.6); }
+        .back-btn {
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-radius: 50%; color: #fff; text-decoration: none; transition: all 0.3s ease;
+        }
+        .back-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
+        .back-btn svg { width: 18px; height: 18px; }
+        .logo { height: 40px; width: auto; }
+        .header-spacer { width: 40px; }
+
+        /* PAGE HEADER */
+        .page-header { position: relative; z-index: 1; padding: 110px 20px 10px; text-align: center; }
+        .page-title {
+            font-family: 'Orbitron', sans-serif; font-size: 36px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
+            overflow: hidden;
+        }
+        .page-title .letter {
+            display: inline-block; opacity: 0; transform: translateY(110%);
+            transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1);
+        }
+        body.loaded .page-title .letter { opacity: 1; transform: translateY(0); }
+        .page-subtitle { font-size: 12px; color: rgba(255,255,255,0.5); letter-spacing: 0.15em; text-transform: uppercase; }
+        .page-intro {
+            max-width: 520px; margin: 16px auto 0; font-size: 15px; line-height: 1.7;
+            color: rgba(255,255,255,0.6); text-align: center;
+        }
+
+        /* CONTENT */
+        .content { position: relative; z-index: 1; padding: 28px 16px 120px; max-width: 640px; margin: 0 auto; }
+
+        /* SECTIONS */
+        .salon-section { margin-bottom: 44px; }
+        .section-label {
+            font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px;
+        }
+
+        /* STATS GRID */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-card {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; padding: 20px 14px; text-align: center; transition: border-color 0.3s ease;
+        }
+        .stat-value {
+            font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 800;
+            letter-spacing: 0.02em; margin-bottom: 6px;
+        }
+        .stat-desc { font-size: 12px; line-height: 1.5; color: rgba(255,255,255,0.45); }
+
+        /* PHOTO CAROUSEL */
+        .photo-scroll {
+            display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            padding: 0 0 12px;
+            scrollbar-width: none;
+        }
+        .photo-scroll::-webkit-scrollbar { display: none; }
+        .photo-item {
+            flex: 0 0 85%; scroll-snap-align: center;
+            border-radius: 14px; overflow: hidden; cursor: pointer;
+            position: relative; aspect-ratio: 4/3;
+        }
+        .photo-item picture { display: block; width: 100%; height: 100%; }
+        .photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease; }
+        .photo-item:active img { transform: scale(1.05); }
+        .photo-label {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 28px 12px 10px;
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+            font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+
+        /* PRESTATIONS */
+        .presta-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 18px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; margin-bottom: 8px;
+            font-size: 15px; color: rgba(255,255,255,0.75);
+        }
+        .presta-price { font-weight: 700; color: #fff; }
+        .presta-link {
+            display: block; text-align: center; margin-top: 14px;
+            color: rgba(255,255,255,0.5); font-size: 14px; text-decoration: none; transition: color 0.3s ease;
+        }
+        .presta-link:hover { color: rgba(255,255,255,0.8); }
+
+        /* MAP CONTAINER */
+        .map-container {
+            position: relative;
+            z-index: 1;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .map-container.visible { opacity: 1; transform: translateY(0); }
+
+        #map { width: 100%; height: 250px; background: #1a1a1a; }
+
+        .leaflet-tile-pane { filter: grayscale(100%) invert(100%) contrast(90%) brightness(0.9); }
+        .leaflet-control-attribution { display: none !important; }
+        .leaflet-control-zoom { border: none !important; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important; }
+        .leaflet-control-zoom a { background: rgba(30, 30, 30, 0.95) !important; color: #fff !important; border: none !important; width: 36px !important; height: 36px !important; line-height: 36px !important; font-size: 18px !important; }
+        .leaflet-control-zoom a:hover { background: rgba(50, 50, 50, 0.95) !important; }
+
+        .map-overlay-btn {
+            position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 1000;
+            display: flex; align-items: center; gap: 8px; padding: 12px 20px;
+            background: #fff; color: #000;
+            font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.05em; text-decoration: none;
+            border-radius: 30px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); transition: all 0.3s ease;
+        }
+        .map-overlay-btn:active { transform: translateX(-50%) scale(0.97); }
+        .map-overlay-btn svg { width: 18px; height: 18px; }
+
+        /* CONTACT SECTIONS */
+        .contact-section { margin-bottom: 28px; }
+
+        .section-header {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+        }
+        .section-header-icon {
+            width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+            background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 11px; flex-shrink: 0;
+        }
+        .section-header-icon svg { width: 18px; height: 18px; opacity: 0.7; }
+        .section-header-title {
+            font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.7);
+        }
+        .section-header-line { flex: 1; height: 1px; background: linear-gradient(to right, rgba(255, 255, 255, 0.15), transparent); }
+
+        /* CONTACT CARD */
+        .contact-card {
+            position: relative;
+            background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px;
+            padding: 20px; margin-bottom: 10px; overflow: hidden;
+            opacity: 0; transform: translateY(20px);
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, background 0.3s ease;
+        }
+        .contact-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .contact-card.visible { opacity: 1; transform: translateY(0); }
+
+        .contact-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+        .contact-card-icon {
+            width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px; flex-shrink: 0;
+        }
+        .contact-card-icon svg { width: 20px; height: 20px; opacity: 0.8; }
+        .contact-card-label {
+            font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .contact-card-value { font-size: 15px; color: rgba(255, 255, 255, 0.7); line-height: 1.6; margin-bottom: 16px; }
+
+        /* ACTION BUTTONS */
+        .action-btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 14px 20px; background: #fff; color: #000;
+            font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.06em; text-decoration: none;
+            border-radius: 10px; border: none; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .action-btn:active { transform: scale(0.97); }
+        .action-btn svg { width: 18px; height: 18px; }
+
+        /* HORAIRES */
+        .hours-grid { display: flex; flex-direction: column; gap: 6px; }
+        .hours-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .hours-row.today { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.12); }
+        .hours-day { font-size: 14px; color: rgba(255, 255, 255, 0.55); }
+        .hours-row.today .hours-day { color: #fff; font-weight: 600; }
+        .hours-time { font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 800; letter-spacing: 0.02em; }
+        .hours-time.open { color: #4ade80; }
+        .hours-time.closed { color: #f87171; }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+            border-radius: 20px; font-size: 12px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px;
+        }
+        .status-badge.open { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+        .status-badge.closed { background: rgba(248, 113, 113, 0.12); color: #f87171; }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* TRANSPORT */
+        .transport-grid { display: flex; flex-direction: column; gap: 8px; }
+        .transport-row {
+            display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        .transport-icon {
+            width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+            background: rgba(255, 255, 255, 0.08); border-radius: 10px; flex-shrink: 0;
+        }
+        .transport-icon svg { width: 18px; height: 18px; opacity: 0.8; }
+        .transport-info { flex: 1; min-width: 0; }
+        .transport-name { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+        .transport-detail { font-size: 13px; color: rgba(255, 255, 255, 0.5); }
+        .transport-time { font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 800; color: rgba(255, 255, 255, 0.6); white-space: nowrap; }
+
+        /* SOCIAL */
+        .social-grid { display: flex; gap: 10px; }
+        .social-link {
+            flex: 1; position: relative; display: flex; flex-direction: column; align-items: center;
+            gap: 8px; padding: 20px 15px;
+            background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px;
+            color: #fff; text-decoration: none; overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0; transform: translateY(20px);
+        }
+        .social-link::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .social-link.visible { opacity: 1; transform: translateY(0); }
+        .social-link:active { transform: scale(0.97) !important; transition-duration: 0.1s; }
+        .social-link svg { width: 26px; height: 26px; opacity: 0.8; }
+        .social-link span { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6); }
+
+        /* LEGAL */
+        .legal-section {
+            display: flex; justify-content: center; align-items: center;
+            gap: 10px; padding: 20px; margin-top: 10px;
+        }
+        .legal-link { font-size: 11px; color: rgba(255, 255, 255, 0.4); text-decoration: none; transition: color 0.3s ease; }
+        .legal-link:hover { color: rgba(255, 255, 255, 0.7); }
+        .legal-sep { color: rgba(255, 255, 255, 0.2); font-size: 8px; }
+
+        /* FAQ */
+        .faq-item {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; margin-bottom: 8px; overflow: hidden;
+        }
+        .faq-item summary {
+            padding: 16px 18px; font-weight: 600; font-size: 14px; cursor: pointer;
+            list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+        }
+        .faq-item summary::-webkit-details-marker { display: none; }
+        .faq-item summary::after {
+            content: '+'; flex-shrink: 0; font-size: 20px; font-weight: 300;
+            color: rgba(255,255,255,0.35); transition: transform 0.3s ease;
+        }
+        .faq-item[open] summary::after { transform: rotate(45deg); }
+        .faq-item p {
+            padding: 0 18px 16px; font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.5);
+        }
+        .faq-item a { color: rgba(255,255,255,0.75); text-underline-offset: 2px; }
+
+        /* CROSS-SALON */
+        .cross-salon {
+            text-align: center; padding: 22px 18px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px; font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.6;
+        }
+        .cross-salon a { color: #fff; text-underline-offset: 2px; }
+
+        /* LIGHTBOX */
+        .lightbox {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: all 0.3s ease;
+        }
+        .lightbox.active { opacity: 1; visibility: visible; }
+        .lightbox-close {
+            position: absolute; top: 16px; right: 16px; top: max(16px, env(safe-area-inset-top));
+            width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.1); border: none; border-radius: 50%;
+            color: #fff; cursor: pointer; transition: all 0.3s ease;
+        }
+        .lightbox-close:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
+        .lightbox-close svg { width: 24px; height: 24px; }
+        .lightbox-img { max-width: 92%; max-height: 85vh; border-radius: 8px; }
+
+        /* BOTTOM NAV */
+        .bottom-nav {
+            position: fixed; bottom: 12px; left: 12px; right: 12px;
+            background: rgba(10,10,10,0.95); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 24px;
+            padding: 8px 4px; padding-bottom: max(8px, env(safe-area-inset-bottom));
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 50;
+        }
+        .nav-row { display: flex; justify-content: space-around; align-items: flex-end; }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+            color: rgba(255,255,255,0.4); text-decoration: none; font-size: 9px;
+            font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em;
+            transition: color 0.3s ease; padding: 4px 8px;
+        }
+        .nav-item.active { color: #fff; }
+        .nav-item svg { width: 20px; height: 20px; }
+        .nav-cta {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            text-decoration: none; margin-top: -26px;
+        }
+        .nav-cta-btn {
+            width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;
+            background: #fff; border-radius: 50%; color: #000;
+            box-shadow: 0 4px 20px rgba(255,255,255,0.3); transition: all 0.3s ease;
+        }
+        .nav-cta-btn svg { width: 22px; height: 22px; }
+        .nav-cta:active .nav-cta-btn { transform: scale(0.95); box-shadow: 0 2px 12px rgba(255,255,255,0.2); }
+        .nav-cta-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; }
+
+        /* ANIMATIONS */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .salon-section { opacity: 0; animation: fadeInUp 0.5s ease forwards; }
+        .salon-section:nth-child(1) { animation-delay: 0.05s; }
+        .salon-section:nth-child(2) { animation-delay: 0.15s; }
+        .salon-section:nth-child(3) { animation-delay: 0.25s; }
+        .salon-section:nth-child(4) { animation-delay: 0.35s; }
+        .salon-section:nth-child(5) { animation-delay: 0.45s; }
+        .salon-section:nth-child(6) { animation-delay: 0.55s; }
+        .salon-section:nth-child(7) { animation-delay: 0.65s; }
+        .salon-section:nth-child(8) { animation-delay: 0.75s; }
+        .salon-section:nth-child(9) { animation-delay: 0.85s; }
+        .salon-section:nth-child(10) { animation-delay: 0.95s; }
+
+        /* STORY BLOCK */
+        .story-block {
+            text-align: center;
+            padding: 28px 20px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+        }
+        .story-block .story-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(22px, 6vw, 32px);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff, #a0a0a0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .story-block .story-divider {
+            width: 40px;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            margin: 0 auto 28px;
+        }
+        .story-block p {
+            font-size: 14px;
+            line-height: 1.9;
+            color: rgba(255,255,255,0.55);
+            margin-bottom: 16px;
+        }
+        .story-block p:last-child { margin-bottom: 0; }
+        .story-block .story-accent {
+            font-size: 15px;
+            color: rgba(255,255,255,0.9);
+            font-weight: 600;
+        }
+        .story-block .story-closing {
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .story-block .story-closing p {
+            color: rgba(255,255,255,0.45);
+            font-style: italic;
+            margin-bottom: 4px;
+        }
+        .story-block .story-with-you {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            font-style: normal;
+            color: #fff;
+            letter-spacing: 0.1em;
+            margin-top: 6px;
+        }
+
+        .desktop-hero { display: none; }
+
+        /* DESKTOP 768+ */
+        @media (min-width: 768px) {
+            .content { max-width: 800px; }
+            .stats-grid { grid-template-columns: repeat(4, 1fr); }
+            .photo-scroll { gap: 12px; }
+            .photo-item { flex: 0 0 45%; }
+            .photo-item:hover img { transform: scale(1.05); }
+            .stat-card:hover { border-color: rgba(255,255,255,0.15); }
+            .logo { height: 75px; }
+            #map { height: 350px; }
+            .contact-card:hover { border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.07); transform: translateY(-2px); }
+            .social-link:hover { border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.07); transform: translateY(-2px); }
+            .hours-row:hover { background: rgba(255,255,255,0.06); }
+            .action-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(255,255,255,0.15); }
+            .map-overlay-btn:hover { transform: translateX(-50%) scale(1.03); box-shadow: 0 6px 25px rgba(0,0,0,0.5); }
+            .nav-item:hover { color: rgba(255,255,255,0.8); }
+            .nav-cta:hover .nav-cta-btn { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255,255,255,0.4); }
+        }
+
+        @media (pointer: fine) { a, button, .nav-cta, .stat-card, .photo-item, .presta-row, .faq-item summary, .social-link, .cross-salon a, .contact-card, .action-btn, .map-overlay-btn { cursor: none; } }
+
+        /* REDUCED MOTION */
+        @media (prefers-reduced-motion: reduce) {
+            *, .salon-section, .status-dot { animation: none !important; transition: none !important; }
+            .salon-section { opacity: 1; }
+            .page-title .letter { opacity: 1; transform: none; }
+            .contact-card, .social-link, .map-container { opacity: 1; transform: none; }
+            .cursor-dot, .cursor-ring { display: none; }
+            body { cursor: auto; }
+        }
+        .skip-to-content {
+            position: absolute; top: -40px; left: 0; background: #fff; color: #000;
+            padding: 8px 16px; z-index: 10000; font-size: 14px; text-decoration: none; transition: top 0.2s;
+        }
+        .skip-to-content:focus { top: 0; }
+        a:focus-visible, button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+        /* KEN BURNS */
+        @keyframes kenBurnsSlow {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.1) translate(-1%, -1%); }
+        }
+
+        /* DESKTOP 1024+ */
+        @media (min-width: 1024px) {
+            html, body { background: #000; }
+
+            .header { z-index: 100; background: rgba(0,0,0,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06); }
+            .header.scrolled { background: rgba(0,0,0,0.9); border-bottom-color: rgba(255,255,255,0.1); }
+
+            body::before {
+                content: ''; position: fixed; left: 50%; top: 0;
+                width: 1px; height: 100%;
+                background: linear-gradient(to bottom, transparent 5%, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.08) 70%, transparent 95%);
+                box-shadow: 0 0 60px 15px rgba(255,255,255,0.015);
+                z-index: 5; pointer-events: none;
+            }
+
+            .desktop-hero {
+                display: block;
+                position: fixed; left: 0; top: 0;
+                width: 50%; height: 100vh;
+                overflow: hidden; z-index: 1;
+            }
+            .desktop-hero-img {
+                width: 100%; height: 100%; object-fit: cover;
+                animation: kenBurnsSlow 25s ease-in-out infinite alternate;
+            }
+            .desktop-hero-gradient {
+                position: absolute; right: 0; top: 0; bottom: 0;
+                width: 200px;
+                background: linear-gradient(to left, rgba(0,0,0,0.6) 0%, transparent 100%);
+            }
+
+            .page-header {
+                position: relative; z-index: 2;
+                margin-left: 50%; padding: 80px 60px 20px;
+                max-width: 50vw; text-align: left;
+            }
+            .page-title {
+                font-size: clamp(28px, 3vw, 42px);
+                line-height: 1; letter-spacing: 0.04em;
+            }
+            .page-subtitle { font-size: 11px; letter-spacing: 0.35em; color: rgba(255,255,255,0.3); text-align: left; }
+            .page-intro { margin: 14px 0 0; text-align: left; max-width: 420px; font-size: 14px; color: rgba(255,255,255,0.45); }
+
+            .content {
+                position: relative; z-index: 2;
+                margin-left: 50%; max-width: 50vw;
+                padding: 20px 60px 120px;
+            }
+
+            .section-label { font-size: 10px; letter-spacing: 0.3em; color: rgba(255,255,255,0.25); margin-bottom: 18px; }
+
+            .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+            .stat-card {
+                background: none; border: none; padding: 0; text-align: left;
+                border-right: 1px solid rgba(255,255,255,0.06);
+                border-radius: 0; padding-right: 16px;
+            }
+            .stat-card:last-child { border-right: none; }
+            .stat-value { font-size: 14px; margin-bottom: 4px; }
+            .stat-desc { font-size: 11px; color: rgba(255,255,255,0.3); }
+
+            .photo-scroll {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                grid-auto-rows: 180px !important;
+                gap: 8px !important;
+                overflow: visible !important;
+                scroll-snap-type: none !important;
+                padding: 0 !important;
+            }
+            .photo-item {
+                flex: unset !important; width: 100% !important; min-width: unset !important;
+                scroll-snap-align: unset !important;
+                aspect-ratio: unset !important;
+                border-radius: 12px;
+                transition: transform 0.5s cubic-bezier(0.16,1,0.3,1), box-shadow 0.5s ease;
+            }
+            .photo-item:first-child { grid-column: span 2; grid-row: span 2; }
+            .photo-item:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.4); }
+            .photo-item:hover img { transform: scale(1.05); }
+            .photo-item img { transition: transform 0.6s cubic-bezier(0.16,1,0.3,1); }
+
+            .presta-row {
+                background: none; border: none; border-bottom: 1px solid rgba(255,255,255,0.06);
+                border-radius: 0; padding: 16px 0; font-size: 15px;
+            }
+            .presta-row:last-of-type { border-bottom: none; }
+
+            .section-header-title { font-size: 10px; letter-spacing: 0.3em; color: rgba(255,255,255,0.25); }
+            .section-header-line { background: linear-gradient(to right, rgba(255,255,255,0.08), transparent); }
+
+            .contact-card { padding: 24px; transition: transform 0.3s ease, border-color 0.3s; }
+            .contact-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.15); }
+
+            .story-block {
+                background: none; border: none; border-radius: 0;
+                text-align: left; padding: 0;
+                border-left: 1px solid rgba(255,255,255,0.1);
+                padding-left: 24px;
+            }
+            .story-block .story-title { font-size: 14px; letter-spacing: 0.2em; background: none; -webkit-text-fill-color: rgba(255,255,255,0.3); }
+            .story-block .story-divider { display: none; }
+            .story-block p { font-size: 14px; line-height: 1.8; color: rgba(255,255,255,0.45); text-align: left; }
+            .story-block .story-accent { font-size: 15px; color: rgba(255,255,255,0.7); }
+            .story-block .story-closing { border-top: none; padding-top: 0; }
+
+            .faq-item { background: none; border: none; border-bottom: 1px solid rgba(255,255,255,0.06); border-radius: 0; }
+            .faq-item:last-child { border-bottom: none; }
+            .faq-item summary { padding: 16px 0; font-size: 14px; }
+            .faq-item p { padding: 0 0 16px; font-size: 13px; }
+
+            .cross-salon { background: none; border: none; border-radius: 0; padding: 20px 0; text-align: left; }
+
+            .bottom-nav {
+                position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+                width: auto; z-index: 50;
+                background: rgba(0,0,0,0.4);
+                backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 24px;
+                padding: 14px 20px;
+                box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+            }
+            .nav-row { gap: 12px; }
+            .nav-item {
+                flex-direction: row; gap: 10px;
+                padding: 16px 24px; flex-shrink: 0; white-space: nowrap;
+                font-family: 'Orbitron', sans-serif;
+                font-size: 12px; font-weight: 600;
+                letter-spacing: 0.1em; text-transform: uppercase;
+                background: rgba(255,255,255,0.06);
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 14px;
+                transition: all 0.3s ease;
+            }
+            .nav-item.active { color: #fff; }
+            .nav-item svg { width: 18px; height: 18px; opacity: 0.6; }
+            .nav-item:hover { transform: translateY(-4px); background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.25); }
+            .nav-item:hover svg { opacity: 1; }
+            .nav-cta {
+                margin-top: 0; flex-direction: row; gap: 10px;
+                padding: 16px 32px; flex-shrink: 0; white-space: nowrap;
+                font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 600;
+                letter-spacing: 0.1em; text-transform: uppercase;
+                background: #fff; color: #000;
+                border: none; border-radius: 16px;
+                box-shadow: 0 8px 32px rgba(255,255,255,0.15);
+                position: relative; overflow: hidden;
+            }
+            .nav-cta::before {
+                content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+                animation: ctaShimmer 3s ease-in-out infinite;
+            }
+            @keyframes ctaShimmer { 0%, 100% { left: -100%; } 50% { left: 100%; } }
+            .nav-cta-btn { width: auto; height: auto; background: none; border-radius: 0; box-shadow: none; color: #000; }
+            .nav-cta-btn svg { width: 18px; height: 18px; }
+            .nav-cta-label { font-size: 13px; color: #000; }
+            .nav-cta:hover {
+                transform: translateY(-4px) scale(1.02);
+                box-shadow: 0 12px 40px rgba(255,255,255,0.25);
+            }
+            .nav-cta:hover .nav-cta-btn { transform: none; box-shadow: none; }
+
+            .lightbox-img { max-width: 80%; max-height: 90vh; border-radius: 12px; }
+
+            #map { height: 400px; }
+        }
+
+        /* ═══════════ VOIRON ═══════════
+           Accent propre au salon : le bleu électrique de ses visuels.
+           Il ne sert qu'aux lueurs, aux filets et aux petits détails. */
+        :root { --vb: 61, 90, 254; --vb-soft: #AFC0FF; color-scheme: dark; }
+        ::selection { background: rgba(var(--vb), 0.45); color: #fff; }
+
+        .page-subtitle .accent { color: var(--vb-soft); }
+        .section-label::after {
+            content: ''; display: block; width: 28px; height: 2px; margin-top: 10px; border-radius: 2px;
+            background: linear-gradient(90deg, rgba(var(--vb),1), rgba(var(--vb),0));
+            box-shadow: 0 0 12px rgba(var(--vb),0.7);
+        }
+        .stat-card .stat-value { text-shadow: 0 0 18px rgba(var(--vb),0.35); }
+
+        /* Mobile : la façade bleue en tête de page (le desktop a son panneau fixe à gauche) */
+        .mobile-hero {
+            position: relative; height: 62vh; min-height: 420px; max-height: 560px; overflow: hidden;
+            margin-bottom: -150px;
+        }
+        .mobile-hero picture, .mobile-hero img { display: block; width: 100%; height: 100%; }
+        .mobile-hero img { object-fit: cover; object-position: center 22%; animation: kenBurnsSlow 25s ease-in-out infinite alternate; }
+        .mobile-hero::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.7) 70%, #000 100%);
+        }
+        @media (max-width: 1023px) { .mobile-hero + .page-header { padding-top: 20px; } }
+        .page-title .word { display: inline-block; white-space: nowrap; }
+
+        /* Rappel de l'offre d'ouverture */
+        .launch-strip {
+            position: relative; display: flex; align-items: center; gap: 16px; overflow: hidden;
+            padding: 16px 18px; border-radius: 16px; text-decoration: none; color: #fff;
+            background: linear-gradient(120deg, rgba(var(--vb),0.22), rgba(var(--vb),0.06) 60%, rgba(255,255,255,0.02));
+            border: 1px solid rgba(var(--vb),0.5);
+            box-shadow: 0 0 34px rgba(var(--vb),0.18), inset 0 1px 0 rgba(255,255,255,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .launch-strip-num {
+            font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 30px; letter-spacing: -0.03em; line-height: 1;
+            text-shadow: 0 0 20px rgba(var(--vb),0.9);
+            flex-shrink: 0;
+        }
+        .launch-strip-txt { flex: 1; min-width: 0; font-size: 13px; line-height: 1.45; color: rgba(255,255,255,0.7); }
+        .launch-strip-txt strong { display: block; color: #fff; font-size: 14px; }
+        .launch-strip svg { width: 18px; height: 18px; flex-shrink: 0; stroke: var(--vb-soft); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .launch-strip:active { transform: scale(0.98); }
+        .launch-over .js-launch { display: none !important; }
+
+        /* Galerie : visuels d'ambiance, légendés comme tels */
+        .gallery-note { font-size: 12.5px; line-height: 1.6; color: rgba(255,255,255,0.45); margin: -4px 0 14px; }
+        .photo-item::after {
+            content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+        }
+        .photo-label { text-shadow: 0 0 14px rgba(var(--vb),0.6); }
+
+        /* Prestations : prix en bleu clair */
+        .presta-row { gap: 12px; }
+        .presta-price { color: #fff; text-shadow: 0 0 14px rgba(var(--vb),0.55); white-space: nowrap; }
+
+        /* Carte et horaires */
+        .map-container { border-color: rgba(var(--vb),0.3); box-shadow: 0 0 40px rgba(var(--vb),0.1); }
+        .status-badge.soon { background: rgba(var(--vb),0.16); color: var(--vb-soft); border: 1px solid rgba(var(--vb),0.4); }
+        .hours-row.big { padding: 18px 16px; }
+        .hours-row.big .hours-day { color: #fff; font-weight: 600; }
+        .hours-time.open { color: var(--vb-soft); }
+        .hours-note { margin-top: 10px; font-size: 12.5px; line-height: 1.55; color: rgba(255,255,255,0.45); }
+
+        /* Équipe (dans le bloc d'infos) */
+        .team-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .team-item {
+            display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
+        }
+        .team-item img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(var(--vb),0.5); background: #0b0d18; }
+        .team-avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; color: var(--vb-soft); background: rgba(var(--vb),0.14); border: 1px solid rgba(var(--vb),0.5); }
+        .team-name { font-size: 14px; font-weight: 600; }
+        .team-role { font-size: 11.5px; color: rgba(255,255,255,0.45); line-height: 1.35; }
+        .presta-link.team { margin-top: 12px; }
+
+        .cross-salon a { color: var(--vb-soft); }
+        a:focus-visible, button:focus-visible { outline-color: var(--vb-soft); }
+
+        @media (min-width: 768px) {
+            .launch-strip:hover { transform: translateY(-2px); box-shadow: 0 0 44px rgba(var(--vb),0.3), inset 0 1px 0 rgba(255,255,255,0.1); }
+        }
+        @media (min-width: 1024px) {
+            .mobile-hero { display: none; }
+            /* L'en-tête fixe fait 96 px en large : le titre passait dessous */
+            .page-header { padding-top: 124px; }
+            .desktop-hero-img { object-position: center 25%; }
+            .desktop-hero::after {
+                content: ''; position: absolute; inset: auto 0 0 0; height: 30%;
+                background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
+                pointer-events: none;
+            }
+            body::before { background: linear-gradient(to bottom, transparent 5%, rgba(var(--vb),0.35) 30%, rgba(var(--vb),0.35) 70%, transparent 95%); box-shadow: 0 0 60px 15px rgba(var(--vb),0.06); }
+            .photo-item:first-child img { object-position: center 40%; }
+            .launch-strip-num { font-size: 34px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .mobile-hero img { animation: none; }
+        }
+    </style>
+<link rel="stylesheet" href="../../assets/css/bottom-nav.css">
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
+</head>
+
+<body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="cursor-dot" aria-hidden="true"></div>
+    <div class="cursor-ring" aria-hidden="true"></div>
+    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
+
+    <header class="header" id="header">
+        <a href="./" class="back-btn" aria-label="Retour" onclick="if(history.length>1){history.back();return false}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+        </a>
+        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+        <div class="header-spacer"></div>
+    </header>
+
+    <!-- DESKTOP HERO (hidden on mobile) -->
+    <div class="desktop-hero" aria-hidden="true">
+        <picture>
+            <source srcset="../../assets/images/salons/Voiron/voiron-facade-bleue.webp" type="image/webp">
+            <img src="../../assets/images/salons/Voiron/voiron-facade-bleue.jpg" alt="" class="desktop-hero-img">
+        </picture>
+        <div class="desktop-hero-gradient"></div>
+    </div>
+
+    <!-- MOBILE HERO (hidden on desktop) -->
+    <div class="mobile-hero" aria-hidden="true">
+        <picture>
+            <source srcset="../../assets/images/salons/Voiron/voiron-facade-bleue.webp" type="image/webp">
+            <img src="../../assets/images/salons/Voiron/voiron-facade-bleue.jpg" alt="" fetchpriority="high">
+        </picture>
+    </div>
+
+    <div class="page-header">
+        <h1 class="page-title" data-split>Salon BarberClub Voiron</h1>
+        <p class="page-subtitle">Ouverture <span class="accent">octobre 2026</span></p>
+        <p class="page-intro">Le troisième BarberClub ouvre au 5 Av. Léon et Joanny Tardy, à Voiron. Une équipe de quatre menée par Clem, onze prestations de 20 à 45 €, et la même exigence à chaque coupe.</p>
+    </div>
+
+    <div class="content" id="main-content">
+
+        <!-- 1. STATS -->
+        <div class="salon-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">Oct. 2026</div>
+                    <div class="stat-desc">Ouverture du salon</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">4 Barbers</div>
+                    <div class="stat-desc">Menés par Clem</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">20 – 45 €</div>
+                    <div class="stat-desc">11 prestations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">9h – 19h</div>
+                    <div class="stat-desc">Horaires du salon</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1b. RAPPEL OFFRE D'OUVERTURE (masqué après le 24/10/2026) -->
+        <div class="salon-section js-launch">
+            <a href="offres.html" class="launch-strip" aria-label="Offre d'ouverture : moins 50 pour cent sur toutes les prestations du 21 au 24 octobre 2026. Voir l'offre.">
+                <span class="launch-strip-num" aria-hidden="true">-50%</span>
+                <span class="launch-strip-txt"><strong>Offre d'ouverture</strong>Toutes les prestations, du mercredi 21 au samedi 24 octobre.</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+        </div>
+
+        <!-- 2. PHOTOS : retirée, les visuels de Voiron ne sont pas des photos officielles du salon -->
+
+        <!-- 3. PRESTATIONS -->
+        <div class="salon-section">
+            <h2 class="section-label">Nos prestations</h2>
+            <div class="presta-row"><span>Coupe Homme</span><span class="presta-price">25€</span></div>
+            <div class="presta-row"><span>Coupe + Barbe</span><span class="presta-price">35€</span></div>
+            <div class="presta-row"><span>Coupe + Barbe + Soin Complet</span><span class="presta-price">45€</span></div>
+            <div class="presta-row"><span>Barbe Uniquement</span><span class="presta-price">20€</span></div>
+            <a href="prestations.html" class="presta-link">Voir les 11 prestations →</a>
+        </div>
+
+        <!-- 3b. L'ÉQUIPE -->
+        <div class="salon-section">
+            <h2 class="section-label">L'équipe</h2>
+            <div class="team-list">
+                <div class="team-item">
+                    <img src="../../assets/images/barbers/clement.jpg" alt="" loading="lazy" style="object-position: 32% 20%;">
+                    <div><div class="team-name">Clem</div><div class="team-role">Gérant du salon</div></div>
+                </div>
+                <div class="team-item">
+                    <img src="../../assets/images/barbers/julien.jpg?v=4" alt="" loading="lazy" style="object-position: center 20%;">
+                    <div><div class="team-name">Ju</div><div class="team-role">Co-fondateur, certains jours</div></div>
+                </div>
+                <div class="team-item">
+                    <span class="team-avatar" aria-hidden="true">J</span>
+                    <div><div class="team-name">Jules</div><div class="team-role">Barbier</div></div>
+                </div>
+                <div class="team-item">
+                    <span class="team-avatar" aria-hidden="true">G</span>
+                    <div><div class="team-name">Gabriel</div><div class="team-role">Apprenti, dès le 15 octobre</div></div>
+                </div>
+            </div>
+            <a href="barbers.html" class="presta-link team">Découvrir l'équipe →</a>
+        </div>
+
+        <!-- 4. NOUS TROUVER -->
+        <div class="salon-section">
+            <div class="contact-section">
+                <div class="section-header">
+                    <span class="section-header-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                    </span>
+                    <h2 class="section-header-title">Nous Trouver</h2>
+                    <span class="section-header-line"></span>
+                </div>
+                <div class="map-container" id="mapContainer">
+                    <div id="map"></div>
+                    <a href="#" id="openMapsBtn" class="map-overlay-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                        </svg>
+                        Itinéraire
+                    </a>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-card-header">
+                        <div class="contact-card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                <circle cx="12" cy="10" r="3" />
+                            </svg>
+                        </div>
+                        <span class="contact-card-label">Adresse</span>
+                    </div>
+                    <p class="contact-card-value">5 Av. Léon et Joanny Tardy<br>38500 Voiron</p>
+                    <a href="#" id="addressBtn" class="action-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                        </svg>
+                        Ouvrir dans Maps
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. HORAIRES & CONTACT -->
+        <div class="salon-section">
+            <div class="contact-section">
+                <div class="section-header">
+                    <span class="section-header-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                    </span>
+                    <h2 class="section-header-title">Horaires & Contact</h2>
+                    <span class="section-header-line"></span>
+                </div>
+                <div class="contact-card">
+                    <div class="status-badge soon js-launch">
+                        <span class="status-dot"></span>
+                        <span>Ouverture en octobre 2026</span>
+                    </div>
+                    <div class="hours-grid">
+                        <div class="hours-row big">
+                            <span class="hours-day">Horaires</span>
+                            <span class="hours-time open">9h – 19h</span>
+                        </div>
+                    </div>
+                    <p class="hours-note">Jours d'ouverture communiqués à l'ouverture.</p>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-card-header">
+                        <div class="contact-card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                            </svg>
+                        </div>
+                        <span class="contact-card-label">Téléphone</span>
+                    </div>
+                    <p class="contact-card-value">09 55 20 86 20</p>
+                    <a href="tel:+33955208620" class="action-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                        Appeler le salon
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. FAQ -->
+        <div class="salon-section">
+            <h2 class="section-label">Questions fréquentes</h2>
+            <details class="faq-item">
+                <summary>Quand ouvre le salon ?</summary>
+                <p>En octobre 2026.<span class="js-launch"> Pour fêter ça, toutes les prestations sont à -50 % du mercredi 21 au samedi 24 octobre : <a href="offres.html">voir l'offre</a>.</span></p>
+            </details>
+            <details class="faq-item">
+                <summary>Où se situe le salon ?</summary>
+                <p>Au 5 Av. Léon et Joanny Tardy, 38500 Voiron. Le bouton « Itinéraire » de la carte ci-dessus t'y guide.</p>
+            </details>
+            <details class="faq-item">
+                <summary>Quels sont les tarifs ?</summary>
+                <p>De 20 € à 45 €. La coupe homme est à 25 €, la coupe + barbe à 35 €, la barbe seule à 20 €. Tarifs réduits étudiant, enfant (moins de 12 ans) et partenaire. Le détail est sur notre <a href="prestations.html">page tarifs</a>.</p>
+            </details>
+            <details class="faq-item">
+                <summary>Qui sont les barbiers ?</summary>
+                <p>Clem, le gérant du salon ; Ju, co-fondateur de BarberClub, présent certains jours ; Jules, barbier ; et Gabriel, apprenti, à partir du 15 octobre. Fais connaissance sur la <a href="barbers.html">page équipe</a>.</p>
+            </details>
+        </div>
+
+        <!-- 7. NOTRE HISTOIRE -->
+        <div class="salon-section">
+            <h2 class="section-label">Notre Histoire</h2>
+            <div class="story-block">
+                <div class="story-title">L'Exigence</div>
+                <div class="story-divider"></div>
+                <p>Avec plus de 10 ans d'expertise, au fil de mon parcours, j'ai appris ce qui plaît vraiment. Ce qui déçoit. Et surtout, ce qui ne doit jamais être laissé au hasard pour faire la différence.</p>
+                <p>Chaque détail a été observé, corrigé, perfectionné au fil du temps.</p>
+                <p class="story-accent">En 2024, Barber Club est né de cette exigence.</p>
+                <p>Une vision construite avec du temps, de l'expérience, et surtout une passion.</p>
+                <p>Nous avons décidé de ne pas suivre les règles, mais de les redéfinir. Comme vous, nous avons appris, évolué, cherché l'exigence. Et comme vous, nous savons qu'un style se construit avec le temps.</p>
+                <p>Barber Club grandit, étape après étape.<br>Et ce n'est que le début.</p>
+                <div class="story-closing">
+                    <p>L'histoire s'écrit maintenant.</p>
+                    <p class="story-with-you">Avec vous.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. LEGAL -->
+        <div class="salon-section">
+            <div class="legal-section">
+                <a href="../legal/mentions-legales.html" class="legal-link">Mentions légales</a>
+                <span class="legal-sep">&#8226;</span>
+                <a href="../legal/cgu.html" class="legal-link">CGU</a>
+                <span class="legal-sep">&#8226;</span>
+                <a href="../legal/politique-confidentialite.html" class="legal-link">Confidentialité</a>
+            </div>
+        </div>
+
+        <!-- 9. CROSS-SALON (volontaire) -->
+        <div class="salon-section">
+            <div class="cross-salon">
+                <p>Retrouvez-nous aussi à <a href="../grenoble/">Grenoble</a> et <a href="../meylan/">Meylan</a>.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LIGHTBOX -->
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <button class="lightbox-close" aria-label="Fermer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        </button>
+        <img src="" alt="" class="lightbox-img" id="lightbox-img" onclick="event.stopPropagation()">
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+        <div class="nav-row">
+            <a href="barbers.html" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Barbers
+            </a>
+            <a href="prestations.html" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                    <line x1="7" y1="7" x2="7.01" y2="7" />
+                </svg>
+                Tarifs
+            </a>
+            <a href="reserver.html" class="nav-cta">
+                <div class="nav-cta-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                </div>
+                <span class="nav-cta-label">Réserver</span>
+            </a>
+            <a href="offres.html" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="5" x2="5" y2="19"/>
+                    <circle cx="6.5" cy="6.5" r="2.5"/>
+                    <circle cx="17.5" cy="17.5" r="2.5"/>
+                </svg>
+                Offres
+            </a>
+            <a href="salon.html" class="nav-item active" aria-current="page">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                Salon
+            </a>
+        </div>
+    </nav>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+    <script>
+    /* --- LETTER SPLIT --- */
+    document.querySelectorAll('[data-split]').forEach(el => {
+        const text = el.textContent;
+        el.setAttribute('aria-label', text);
+        el.innerHTML = '';
+        // Lettres regroupées par mot : la ligne ne se coupe qu'entre deux mots.
+        let i = 0;
+        text.split(' ').forEach((mot, w) => {
+            if (w > 0) el.appendChild(document.createTextNode(' '));
+            const word = document.createElement('span');
+            word.className = 'word';
+            word.setAttribute('aria-hidden', 'true');
+            mot.split('').forEach((ch) => {
+                const span = document.createElement('span');
+                span.className = 'letter';
+                span.textContent = ch;
+                span.style.transitionDelay = (i++ * 0.04) + 's';
+                word.appendChild(span);
+            });
+            el.appendChild(word);
+        });
+    });
+    requestAnimationFrame(() => { document.body.classList.add('loaded'); });
+
+    /* --- CUSTOM CURSOR --- */
+    if (window.matchMedia('(pointer: fine)').matches) {
+        const dot = document.querySelector('.cursor-dot');
+        const ring = document.querySelector('.cursor-ring');
+        let mx = -100, my = -100, rx = -100, ry = -100;
+        document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; dot.style.left = mx + 'px'; dot.style.top = my + 'px'; });
+        (function loop() { rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15; ring.style.left = rx + 'px'; ring.style.top = ry + 'px'; requestAnimationFrame(loop); })();
+        document.querySelectorAll('a, button, .stat-card, .photo-item, .presta-row, .faq-item summary, .nav-cta, .contact-card, .action-btn, .map-overlay-btn').forEach(el => {
+            el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+        });
+    }
+
+    /* --- HEADER SCROLL --- */
+    const header = document.getElementById('header');
+    window.addEventListener('scroll', () => {
+        header.classList.toggle('scrolled', window.scrollY > 50);
+    }, { passive: true });
+
+    /* --- LIGHTBOX --- */
+    function openLightbox(el) {
+        const img = el.querySelector('img');
+        const lb = document.getElementById('lightbox-img');
+        lb.src = img.currentSrc || img.src;
+        lb.alt = img.alt;
+        document.getElementById('lightbox').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
+    /* --- MAP --- */
+    // Coordonnées de la Base Adresse Nationale pour « 5 Avenue Léon et Joanny Tardy, 38500 Voiron ».
+    const salonLat = 45.36464;
+    const salonLng = 5.594941;
+    const salonAddress = "5 Av. Léon et Joanny Tardy, 38500 Voiron";
+
+    const map = L.map('map', {
+        zoomControl: true,
+        scrollWheelZoom: false
+    }).setView([salonLat, salonLng], 16);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(map);
+
+    const customIcon = L.divIcon({
+        html: `<div style="
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3), 0 0 22px rgba(61,90,254,0.8);
+        ">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+            </svg>
+        </div>`,
+        className: 'custom-marker',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40]
+    });
+
+    L.marker([salonLat, salonLng], { icon: customIcon }).addTo(map);
+
+    function openInMaps() {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+
+        if (isIOS) {
+            window.location.href = `maps://maps.apple.com/?daddr=${salonLat},${salonLng}&dirflg=d`;
+        } else if (isAndroid) {
+            window.location.href = `geo:${salonLat},${salonLng}?q=${encodeURIComponent(salonAddress)}`;
+        } else {
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${salonLat},${salonLng}`, '_blank');
+        }
+    }
+
+    document.getElementById('openMapsBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        openInMaps();
+    });
+
+    document.getElementById('addressBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        openInMaps();
+    });
+
+    /* --- REVEAL ANIMATIONS --- */
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+    const mapEl = document.getElementById('mapContainer');
+    if (mapEl) revealObserver.observe(mapEl);
+
+    document.querySelectorAll('.contact-section').forEach(section => {
+        const cards = section.querySelectorAll('.contact-card');
+        cards.forEach((card, i) => {
+            card.style.transitionDelay = (i * 0.07) + 's';
+            revealObserver.observe(card);
+        });
+    });
+    </script>
+    <script src="../../assets/js/bottom-nav.js" defer></script>
+<script src="../../assets/js/cookie-consent.js" defer></script>
+</body>
+
+</html>

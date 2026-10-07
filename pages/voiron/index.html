@@ -2,1544 +2,368 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voiron — Ouverture octobre 2026 | BarberClub</title>
-<meta name="description" content="Un troisième salon BARBER CLUB ouvre à Voiron en octobre 2026. Laissez-nous votre email : nous vous prévenons le jour de l'ouverture.">
-<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Barber Voiron | BarberClub - Coiffeur Homme & Barbier à Voiron</title>
+<meta name="description" content="BarberClub Voiron : le troisième salon BarberClub ouvre le 21 octobre au 5 avenue Léon et Joanny Tardy, à Voiron. -50 % sur toutes les prestations du 21 au 24 octobre.">
+<!-- Pas encore indexée : la réservation en ligne de Voiron n'est pas ouverte -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="canonical" href="https://barberclub-grenoble.fr/pages/voiron/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Voiron — Ouverture octobre 2026 | BarberClub">
-<meta property="og:description" content="Le troisième salon. Dossier partiellement déclassifié.">
-<meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/salon-voiron-nuit.webp">
-<meta property="og:url" content="https://barberclub-grenoble.fr/pages/voiron/">
 <meta property="og:locale" content="fr_FR">
+<meta property="og:site_name" content="BarberClub">
+<meta property="og:title" content="BarberClub Voiron - Ouverture le 21 octobre">
+<meta property="og:description" content="Le troisième salon BarberClub ouvre à Voiron. -50 % sur toutes les prestations du 21 au 24 octobre.">
+<meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-billard.jpg?v=1">
+<meta property="og:url" content="https://barberclub-grenoble.fr/pages/voiron/">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
-{"@type":"ListItem","position":1,"name":"Accueil","item":"https://barberclub-grenoble.fr/"},
-{"@type":"ListItem","position":2,"name":"Voiron","item":"https://barberclub-grenoble.fr/pages/voiron/"}
-]}
+{"@context":"https://schema.org","@type":"BarberShop","name":"BarberClub Voiron","url":"https://barberclub-grenoble.fr/pages/voiron/","telephone":"+33955208620","image":"https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-facade-nuit.jpg?v=1","address":{"@type":"PostalAddress","streetAddress":"5 Avenue Léon et Joanny Tardy","addressLocality":"Voiron","postalCode":"38500","addressCountry":"FR"},"priceRange":"€€"}
 </script>
 <link rel="manifest" href="../../config/manifest.json">
-<link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
 <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
-<link rel="preload" as="image" href="../../assets/images/salons/Voiron/salon-voiron-nuit.webp" fetchpriority="high">
+<link rel="icon" type="image/png" href="../../assets/icons/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/salon-hub.css">
+<link rel="stylesheet" href="../../assets/css/bottom-nav.css">
 <style>
-@font-face {
-    font-family: 'Orbitron';
-    src: url('../../assets/fonts/Orbitron-ExtraBold.ttf') format('truetype');
-    font-weight: 800;
-    font-display: swap;
+/* ═══════════════════════════════════════════
+   VOIRON — le hub, comme Meylan et Grenoble (fond, logo, barre basse), avec
+   ce que Voiron a en propre : ses visuels au bleu électrique, qui portent
+   déjà le nom VOIRON — d'où l'absence de grand titre — et l'ouverture du
+   21 octobre : un compte à rebours, puis l'offre -50 % jusqu'au 24.
+   Accent : #3D5AFE (le bleu des visuels), texte bleuté #AFC0FF.
+   ═══════════════════════════════════════════ */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+:root { --vo: #3D5AFE; --vo-glow: rgba(61,90,254,0.45); --vo-text: #AFC0FF; }
+/* Les visuels de Voiron sont déjà sombres : l'assombrissement des autres hubs
+   (0.28) les éteignait. On garde de la profondeur sans tuer le bleu. */
+.bg {
+  background-image: url('../../assets/images/salons/Voiron/voiron-facade-bleue.jpg?v=1');
+  background-image: image-set(url('../../assets/images/salons/Voiron/voiron-facade-bleue.webp?v=1') type('image/webp'), url('../../assets/images/salons/Voiron/voiron-facade-bleue.jpg?v=1') type('image/jpeg'));
+  background-position: center 18%;
+  filter: brightness(0.82) saturate(1.05);
 }
+@media (min-width: 768px) {
+  .bg {
+    background-image: url('../../assets/images/salons/Voiron/voiron-billard.jpg?v=1');
+    background-image: image-set(url('../../assets/images/salons/Voiron/voiron-billard.webp?v=1') type('image/webp'), url('../../assets/images/salons/Voiron/voiron-billard.jpg?v=1') type('image/jpeg'));
+    background-position: center 30%;
+  }
+}
+.bg-overlay {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 48%, rgba(0,0,0,0.78) 74%, rgba(0,0,0,0.96) 100%);
+}
+/* le projecteur des visuels, rendu vivant : un cône de lumière qui respire */
+.spot {
+  position: absolute; z-index: 2; top: -10%; left: 50%; width: 120vmin; height: 95%;
+  transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(ellipse 30% 60% at 50% 0%, rgba(140,165,255,0.28), rgba(61,90,254,0.08) 45%, transparent 70%);
+  mix-blend-mode: screen; opacity: 0;
+  transition: opacity 1.6s ease 0.2s;
+  animation: spotBreath 6s ease-in-out infinite;
+}
+.page.loaded .spot { opacity: 1; }
+@keyframes spotBreath { 0%, 100% { filter: brightness(0.85); } 50% { filter: brightness(1.15); } }
+/* brume au sol, qui glisse lentement */
+.fog {
+  position: absolute; z-index: 2; left: -20%; right: -20%; bottom: 14%; height: 34%;
+  pointer-events: none; opacity: 0.55;
+  background:
+    radial-gradient(ellipse 40% 50% at 30% 60%, rgba(120,140,220,0.18), transparent 70%),
+    radial-gradient(ellipse 35% 45% at 70% 55%, rgba(90,110,210,0.14), transparent 70%);
+  filter: blur(18px);
+  animation: fogDrift 18s ease-in-out infinite alternate;
+}
+@keyframes fogDrift { from { transform: translateX(-4%); } to { transform: translateX(4%); } }
+.particle { background: rgba(175,192,255,0.55); box-shadow: 0 0 6px rgba(61,90,254,0.8); }
 
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+/* ── le bloc d'ouverture, posé au-dessus de la barre basse ── */
+.hero { justify-content: flex-end; padding: 20px 18px calc(178px + env(safe-area-inset-bottom)); }
+/* la barre basse et le badge APP sont fixés en bas : le bloc s'arrête au-dessus */
+.separator { display: none; }
+.open-block { width: 100%; max-width: 460px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.open-chip {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 7px 14px 7px 12px; border-radius: 999px;
+  border: 1px solid rgba(175,192,255,0.28); background: rgba(10,14,40,0.45);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.24em; text-transform: uppercase; color: #fff;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.6s ease 0.35s, transform 0.7s cubic-bezier(0.16,1,0.3,1) 0.35s;
+}
+.open-dot { position: relative; width: 7px; height: 7px; }
+.open-dot::before, .open-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #fff; }
+.open-dot::before { box-shadow: 0 0 8px #fff, 0 0 18px var(--vo); }
+.open-dot::after { animation: dotPing 1.7s cubic-bezier(0,0,0.2,1) infinite; }
+@keyframes dotPing { 0% { transform: scale(1); opacity: 0.9; } 80%, 100% { transform: scale(3.2); opacity: 0; } }
 
-/* Deux bleus, les deux venus de la carte tarifs de Voiron :
-   --cold, le halo froid qui baigne la photo du salon — c'est la couleur du
-   dossier, elle ne sert qu'à ce qui n'est pas encore public ;
-   --neon, le cyan des intitulés imprimés (CHEVEUX, BARBE, FORFAITS,
-   PARTENAIRES) — il ne sert qu'à ce qui est déjà lisible : titres de
-   catégorie, prix, cadre de l'appel à l'action. */
-:root {
-    --cold: 168, 205, 255;          /* halo froid du panneau mystère de la landing */
-    --neon: 96, 203, 245;           /* cyan des intitulés de la carte tarifs */
-    --line: rgba(255,255,255,0.09);
-    --muted: rgba(255,255,255,0.36);
-    --faint: rgba(255,255,255,0.20);
-    --header-h: 72px;
-    --z-bg: 0; --z-content: 10; --z-header: 100; --z-progress: 101; --z-grain: 9000; --z-cursor: 10001;
-    color-scheme: dark;
+/* compte à rebours : quatre cases de verre, chiffres Orbitron */
+.countdown { display: flex; gap: 8px; width: 100%; justify-content: center; }
+.cd-cell {
+  position: relative; flex: 1; max-width: 92px; padding: 12px 4px 10px; border-radius: 14px; text-align: center;
+  background: linear-gradient(160deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02)), rgba(6,9,26,0.55);
+  border: 1px solid rgba(175,192,255,0.16);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 12px 30px rgba(0,0,0,0.45);
+  opacity: 0; transform: translateY(14px) scale(0.96);
+  transition: opacity 0.6s ease, transform 0.8s cubic-bezier(0.16,1,0.3,1);
 }
+.page.loaded .cd-cell { opacity: 1; transform: none; }
+.page.loaded .cd-cell:nth-child(1) { transition-delay: 0.5s; }
+.page.loaded .cd-cell:nth-child(2) { transition-delay: 0.58s; }
+.page.loaded .cd-cell:nth-child(3) { transition-delay: 0.66s; }
+.page.loaded .cd-cell:nth-child(4) { transition-delay: 0.74s; }
+.cd-num {
+  display: block; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 30px; line-height: 1;
+  font-variant-numeric: tabular-nums; color: #fff; font-size: 26px;
+  text-shadow: 0 0 18px var(--vo-glow), 0 0 2px rgba(255,255,255,0.6);
+}
+.cd-num.tick { animation: cdTick 0.45s cubic-bezier(0.16,1,0.3,1); }
+@keyframes cdTick { from { transform: translateY(-30%); opacity: 0.2; } to { transform: none; opacity: 1; } }
+.cd-label { display: block; margin-top: 6px; font-size: 9px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--vo-text); opacity: 0.8; }
 
-/* Ascenseur au ton de la page — sur Firefox et les Chromium récents. */
-html { scrollbar-color: rgba(var(--neon), 0.3) transparent; scrollbar-width: thin; }
-::selection { background: rgba(var(--neon), 0.3); color: #fff; }
-
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 16px); }
-
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #000; color: #fff;
-    min-height: 100vh; overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-}
-
-.grain {
-    position: fixed; inset: 0; z-index: var(--z-grain); pointer-events: none; opacity: 0.05;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-size: 180px;
-}
-
-/* Curseur custom — signature du site, desktop uniquement */
-.cursor-dot, .cursor-ring { position: fixed; pointer-events: none; z-index: var(--z-cursor); mix-blend-mode: difference; transform: translate(-50%, -50%); will-change: left, top; }
-.cursor-dot { width: 8px; height: 8px; background: #fff; border-radius: 50%; }
-.cursor-ring { width: 40px; height: 40px; border: 1.5px solid rgba(255,255,255,0.3); border-radius: 50%; transition: width 0.35s cubic-bezier(0.16,1,0.3,1), height 0.35s cubic-bezier(0.16,1,0.3,1), border-color 0.3s; }
-.cursor-ring.grow { width: 68px; height: 68px; border-color: rgba(var(--neon),0.55); }
-@media (pointer: coarse) { .cursor-dot, .cursor-ring { display: none !important; } }
-
-.skip-to-content { position: absolute; left: -9999px; top: 0; z-index: 10000; padding: 12px 20px; background: #fff; color: #000; font-size: 13px; font-weight: 600; }
-.skip-to-content:focus { left: 12px; top: 12px; }
-
-[tabindex="-1"]:focus { outline: none; }
-a:focus-visible, button:focus-visible, input:focus-visible {
-    outline: 2px solid rgb(var(--neon)); outline-offset: 3px; border-radius: 6px;
-}
-
-/* Jauge de lecture : un trait cyan qui se remplit, repris du filet
-   lumineux qui encadre le QR code sur la carte. Purement indicatif. */
-.progress {
-    position: fixed; top: 0; left: 0; height: 2px; width: 100%;
-    z-index: var(--z-progress); pointer-events: none;
-    transform: scaleX(0); transform-origin: 0 50%;
-    background: linear-gradient(90deg, rgba(var(--neon),0.25), rgb(var(--neon)));
-    box-shadow: 0 0 12px rgba(var(--neon),0.55);
-    will-change: transform;
-}
-
-/* ════════ HEADER ════════ */
-.header {
-    position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-header);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
-    background: linear-gradient(180deg, rgba(0,0,0,0.85), transparent);
-    border-bottom: 1px solid transparent;
-    transition: background 0.35s ease, border-color 0.35s ease;
-}
-.header.stuck {
-    background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-    border-bottom-color: rgba(255,255,255,0.07);
-}
-.back-btn {
-    width: 44px; height: 44px; flex-shrink: 0;
-    display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 50%; color: #fff; text-decoration: none;
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    transition: background 0.25s ease, border-color 0.25s ease;
-}
-.back-btn:hover { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.24); }
-.back-btn:active { transform: scale(0.95); }
-.back-btn svg { width: 19px; height: 19px; }
-/* min-height 44px : cible tactile, le lien logo tombait a 33px. */
-.header-brand { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 44px; text-decoration: none; }
-.header-crown { width: 14px; height: auto; opacity: 0.32; animation: crownFloat 5s ease-in-out infinite; }
-.logo { height: 24px; width: auto; display: block; }
-.header-spacer { width: 44px; flex-shrink: 0; }
-@keyframes crownFloat {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    25% { transform: translateY(-3px) rotate(1deg); }
-    75% { transform: translateY(-1.5px) rotate(-0.5deg); }
-}
-
-/* ════════ HERO ════════ */
-.hero {
-    position: relative; isolation: isolate;
-    min-height: 100vh; min-height: 100dvh;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 90px 20px 84px; text-align: center; overflow: hidden;
-}
-.hero-bg {
-    position: absolute; inset: -8%; z-index: -3;
-    background: url('../../assets/images/salons/Voiron/salon-voiron-nuit.webp') center 34%/cover no-repeat;
-    filter: blur(13px) brightness(0.52) saturate(0.7) contrast(1.05);
-    animation: kenBurns 26s ease-in-out infinite alternate;
-    will-change: transform;
-}
-@keyframes kenBurns {
-    0%   { transform: scale(1.12) translate(-1%, 0.5%); }
-    100% { transform: scale(1) translate(1%, -0.5%); }
-}
-.hero-veil {
-    position: absolute; inset: 0; z-index: -2;
-    background:
-        /* Le lavis froid posé sur la façade : c'est la lumière bleue qui
-           baigne la photo de la carte tarifs. */
-        radial-gradient(ellipse 95% 62% at 50% 42%, rgba(var(--cold), 0.10), transparent 72%),
-        radial-gradient(ellipse 100% 65% at 50% 45%, transparent 10%, rgba(0,0,0,0.5) 65%, #000 100%),
-        linear-gradient(180deg, rgba(0,0,0,0.75) 0%, transparent 26%, transparent 62%, #000 98%);
-}
-/* La bande qui balaie et rend nette une tranche de la façade */
-.hero-slit {
-    position: absolute; left: 0; right: 0; height: 24%; z-index: -1;
-    background: url('../../assets/images/salons/Voiron/salon-voiron-nuit.webp') center 34%/cover no-repeat;
-    filter: brightness(1) saturate(0.95) contrast(1.04);
-    -webkit-mask-image: linear-gradient(180deg, transparent, #000 24%, #000 76%, transparent);
-            mask-image: linear-gradient(180deg, transparent, #000 24%, #000 76%, transparent);
-    animation: slitSweep 15s cubic-bezier(0.55, 0, 0.45, 1) infinite;
-    will-change: top;
-}
-@keyframes slitSweep {
-    0%, 6%   { top: -28%; opacity: 0; }
-    16%      { opacity: 0.9; }
-    52%      { top: 40%; opacity: 0.9; }
-    84%      { opacity: 0; }
-    100%     { top: 106%; opacity: 0; }
-}
-.hero-slit::after {
-    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(var(--cold), 0.6), transparent);
-}
-
-.particles { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
-.particle { position: absolute; border-radius: 50%; background: rgba(var(--cold), 0.4); animation: particleFloat linear infinite; }
-@keyframes particleFloat {
-    0%   { transform: translateY(0) translateX(0); opacity: 0; }
-    8%   { opacity: 0.5; }
-    92%  { opacity: 0.5; }
-    100% { transform: translateY(-110vh) translateX(20px); opacity: 0; }
-}
-
-.hero-inner { position: relative; z-index: var(--z-content); display: flex; flex-direction: column; align-items: center; }
-/* Halo posé derrière le titre, hors du flux du texte. En text-shadow il était
-   peint à l'intérieur de chaque .letter-mask et coupé au-dehors : l'union des
-   masques dessinait un rectangle clair net autour du mot. */
-.hero-inner::before {
-    content: ''; position: absolute; z-index: -1; pointer-events: none;
-    left: 50%; top: 46%; width: min(115%, 780px); aspect-ratio: 2 / 1;
-    transform: translate(-50%, -50%);
-    background: radial-gradient(ellipse at center, rgba(var(--cold), 0.17), transparent 66%);
-}
-.hero-crown {
-    width: 42px; height: auto; opacity: 0; margin-bottom: 22px;
-    filter: drop-shadow(0 0 18px rgba(var(--cold), 0.4));
-    animation: crownIn 1.1s cubic-bezier(0.16,1,0.3,1) 0.15s forwards, crownFloat 5s ease-in-out 1.3s infinite;
-}
-@keyframes crownIn { to { opacity: 0.85; } }
-
-.stamp {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 7px 14px; margin-bottom: 24px;
-    border: 1px solid rgba(var(--cold), 0.3); border-radius: 100px;
-    background: rgba(var(--cold), 0.06);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    font-size: 9.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
-    color: rgba(var(--cold), 0.95);
-    opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.35s forwards;
-}
-.stamp .dot { width: 5px; height: 5px; border-radius: 50%; background: rgb(var(--cold)); animation: pulse 2.4s ease-in-out infinite; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-
-/* Titre révélé lettre par lettre — signature des pages salon */
-.hero-title {
-    font-family: 'Orbitron', sans-serif; font-weight: 800;
-    font-size: clamp(54px, 17vw, 132px); line-height: 0.92; letter-spacing: 0.03em;
-    text-transform: uppercase;
-}
-/* Le masque est posé lettre par lettre, jamais sur le titre : un overflow
-   hidden sur le bloc découperait le halo du text-shadow en rectangle net. */
-.letter-mask { display: inline-block; overflow: hidden; vertical-align: bottom; }
-.hero-title .letter {
-    display: inline-block; opacity: 0; transform: translateY(105%);
-    transition: opacity 0.55s ease, transform 0.7s cubic-bezier(0.16,1,0.3,1);
-}
-.hero-title.in .letter { opacity: 1; transform: none; }
-
-.hero-sub {
-    margin-top: 20px; max-width: 34ch;
-    font-size: 14px; font-weight: 400; line-height: 1.7; color: rgba(255,255,255,0.6);
-    opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 1.15s forwards;
-}
-.hero-sub strong { color: #fff; font-weight: 600; }
-
-.scroll-cue {
-    position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 9px;
-    min-width: 44px; padding: 10px 14px;     /* cible tactile */
-    font-size: 8.5px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase;
-    color: var(--faint); text-decoration: none;
-    /* Animation dédiée : fadeUp se termine sur `transform: none` et écraserait
-       le translateX(-50%) qui centre le repère. */
-    opacity: 0; animation: cueIn 0.9s ease 1.7s forwards;
-}
-@keyframes cueIn {
-    from { opacity: 0; transform: translate(-50%, 10px); }
-    to   { opacity: 1; transform: translate(-50%, 0); }
-}
-.scroll-cue:hover { color: rgba(255,255,255,0.55); }
-.scroll-cue-line { width: 1px; height: 34px; background: linear-gradient(180deg, rgba(255,255,255,0.32), transparent); }
-.scroll-cue-line::after {
-    content: ''; display: block; width: 1px; height: 12px;
-    background: rgb(var(--neon)); box-shadow: 0 0 8px rgba(var(--neon), 0.8); animation: cueRun 2.1s ease-in-out infinite;
-}
-@keyframes cueRun { 0% { transform: translateY(-12px); opacity: 0; } 40% { opacity: 1; } 100% { transform: translateY(34px); opacity: 0; } }
-
-/* ════════ SÉPARATEUR ════════ */
-.sep { position: relative; height: 1px; max-width: 640px; margin: 0 auto; background: rgba(255,255,255,0.06); }
-.sep::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(90deg, transparent 12%, rgba(255,255,255,0.3) 50%, transparent 88%);
-    box-shadow: 0 0 10px rgba(255,255,255,0.14);
-}
-
-/* ════════ CONTENU ════════ */
-.wrap { max-width: 640px; margin: 0 auto; padding: 0 20px 96px; }
-
-.sec-head { margin: 62px 0 20px; scroll-margin-top: calc(var(--header-h) + 20px); }
-.sec-kicker {
-    display: block; margin-bottom: 9px;
-    font-size: 9.5px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase;
-    color: rgba(var(--neon), 0.78); text-shadow: 0 0 16px rgba(var(--neon), 0.35);
-}
-.sec-title {
-    font-family: 'Orbitron', sans-serif; font-weight: 800;
-    font-size: clamp(21px, 5.5vw, 27px); letter-spacing: 0.02em;
-    text-shadow: 0 0 30px rgba(255,255,255,0.13);
-}
-
-.file {
-    border: 1px solid var(--line); border-radius: 22px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-    backdrop-filter: blur(34px); -webkit-backdrop-filter: blur(34px);
-    box-shadow: 0 24px 70px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
-    overflow: hidden;
-}
-.row {
-    display: grid; grid-template-columns: 33% 1fr; align-items: center; gap: 14px;
-    padding: 19px 22px; border-bottom: 1px solid rgba(255,255,255,0.05);
-    transition: background 0.3s ease;
-}
-.row:last-of-type { border-bottom: none; }
-/* La transition de fond existait sans règle de survol : la ligne survolée
-   s'éclaire maintenant du même cyan que le reste de la page. */
-@media (hover: hover) and (pointer: fine) {
-    .row:hover { background: rgba(var(--neon), 0.04); }
-}
-.row-key { font-size: 9.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
-.row-val { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 0.01em; color: #fff; }
-.row-val small { display: block; margin-top: 5px; font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 400; letter-spacing: 0; color: rgba(255,255,255,0.42); }
-
-/* ════════ COMPTE À REBOURS ════════
-   Repris du composant de offres.html (Grenoble et Meylan). Une seule différence, et c'est
-   le sujet de la page : la case des JOURS est floue. Les heures, minutes et
-   secondes, elles, sont exactes — l'échéance étant fixée à minuit, le temps
-   restant dans la journée ne dépend pas du jour d'ouverture. Seul le nombre
-   de jours est inconnu, et c'est le seul chiffre qu'on ne laisse pas lire. */
-.countdown {
-    display: flex; gap: 9px; align-items: flex-start; justify-content: center;
-    margin: 30px 0 0;
-    opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.75s forwards;
-}
-.cd-unit { display: flex; flex-direction: column; align-items: center; gap: 7px; }
-.cd-digit {
-    width: 58px; height: 66px; display: flex; align-items: center; justify-content: center;
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px; position: relative; overflow: hidden;
-    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-}
-.cd-digit::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50%;
-    background: rgba(255,255,255,0.02); pointer-events: none;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-}
-.cd-digit::after {
-    content: ''; position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(ellipse at center 25%, rgba(255,255,255,0.04) 0%, transparent 70%);
-}
-.cd-digit span {
-    font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 27px;
-    letter-spacing: -1px; position: relative; z-index: 1;
-    text-shadow: 0 0 24px rgba(255,255,255,0.1);
-}
-.cd-digit-wide { width: 84px; }
-.cd-digit-wide span { font-size: 24px; letter-spacing: 0; }
-.cd-label { font-size: 8px; font-weight: 600; letter-spacing: 2.4px; text-transform: uppercase; color: rgba(255,255,255,0.2); }
-.cd-sep {
-    font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 23px;
-    color: rgba(255,255,255,0.15); align-self: flex-start; margin-top: 17px;
-}
-/* La case des jours : on voit qu'il y a deux chiffres, on ne les lit pas. */
-.cd-unit.unknown .cd-digit { border-color: rgba(var(--cold), 0.2); background: rgba(var(--cold), 0.05); }
-.cd-unit.unknown .cd-label { color: rgba(var(--cold), 0.42); }
-.cd-digit-blur span {
-    filter: blur(2.6px); opacity: 0.7; text-shadow: none;
-    -webkit-user-select: none; user-select: none;
-    transition: filter 0.5s ease, opacity 0.5s ease;
-}
-@keyframes cdDrift {
-    0%   { opacity: 0.7; transform: translateY(0); }
-    32%  { opacity: 0.2; transform: translateY(-3px); }
-    100% { opacity: 0.7; transform: translateY(0); }
-}
-.cd-digit-blur.drift span { animation: cdDrift 0.45s cubic-bezier(0.4, 0, 0.2, 1); }
-.cd-note {
-    margin: 15px 0 0; font-size: 11px; letter-spacing: 0.02em;
-    color: rgba(255,255,255,0.38);
-    opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.9s forwards;
-}
-@media (min-width: 760px) {
-    .countdown { gap: 12px; margin-top: 34px; }
-    .cd-digit { width: 68px; height: 76px; border-radius: 16px; }
-    .cd-digit span { font-size: 32px; }
-    .cd-digit-wide { width: 100px; }
-    .cd-digit-wide span { font-size: 29px; }
-    .cd-digit-blur span { filter: blur(3.1px); }   /* suit la taille de la case */
-    .cd-sep { font-size: 26px; margin-top: 20px; }
-    .cd-note { font-size: 12px; }
-}
-@media (max-width: 359px) {
-    .cd-digit { width: 50px; height: 58px; }
-    .cd-digit span { font-size: 23px; }
-    .cd-digit-wide { width: 72px; }
-    .cd-digit-wide span { font-size: 20px; }
-    .countdown { gap: 6px; }
-    .cd-digit-blur span { filter: blur(3.1px); }
-    .cd-sep { font-size: 19px; margin-top: 15px; }
-}
-@media (prefers-reduced-motion: reduce) {
-    .cd-digit-blur.drift span { animation: none; }
-}
-
-.redacted {
-    position: relative; display: inline-flex; align-items: center;
-    min-height: 44px; padding: 5px 14px;   /* cible tactile */
-    border: 1px solid rgba(255,255,255,0.07); border-radius: 4px;
-    background: #0a0a0b;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.6), inset 0 1px 7px rgba(0,0,0,0.9);
-    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
-    font-size: 13px; font-weight: 500; letter-spacing: 0.02em;
-    color: rgba(255,255,255,0.13); cursor: pointer;
-    -webkit-tap-highlight-color: transparent; overflow: hidden;
-    transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
-}
-.redacted::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(100deg, transparent 40%, rgba(var(--cold),0.18) 50%, transparent 60%);
-    transform: translateX(-130%);
-}
-.redacted:hover { border-color: rgba(var(--cold), 0.3); color: rgba(255,255,255,0.24); }
-.redacted.scrambling { color: rgba(var(--cold), 0.8); background: rgba(var(--cold), 0.07); border-color: rgba(var(--cold), 0.4); }
-.redacted.scrambling::before { animation: sheen 0.8s ease-out; }
-@keyframes sheen { to { transform: translateX(130%); } }
-
-/* Le message d'accès refusé vit sous la carte. Le conteneur garde sa hauteur
-   en permanence pour que l'apparition ne pousse pas le contenu qui suit. */
-.denied-slot { min-height: 30px; padding: 10px 4px 0; text-align: center; }
-.denied { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(var(--cold), 0.8); opacity: 0; transform: translateY(-3px); transition: opacity 0.35s ease, transform 0.35s ease; }
-.denied.show { opacity: 1; transform: none; }
-
-/* ════════ TARIFS — même système de cartes que les pages prestations ════════ */
-.tarif-group { margin-top: 30px; }
-.tarif-group:first-of-type { margin-top: 0; }
-.category-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-.category-icon {
-    width: 38px; height: 38px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(var(--neon), 0.08); border: 1px solid rgba(var(--neon), 0.24);
-    border-radius: 11px; color: rgb(var(--neon));
-    box-shadow: 0 0 18px rgba(var(--neon), 0.14), inset 0 0 14px rgba(var(--neon), 0.07);
-}
-.category-icon svg { width: 18px; height: 18px; opacity: 0.92; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-/* Le cyan lumineux des intitulés de la carte : CHEVEUX, BARBE, FORFAITS. */
-.category-title {
-    font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 800;
-    text-transform: uppercase; letter-spacing: 0.09em;
-    color: rgba(var(--neon), 0.96);
-    text-shadow: 0 0 16px rgba(var(--neon), 0.45), 0 0 40px rgba(var(--neon), 0.18);
-}
-.category-line { flex: 1; height: 1px; background: linear-gradient(to right, rgba(var(--neon), 0.35), transparent); }
-
-.tarif-cards { display: flex; flex-direction: column; gap: 12px; }
-.tarif-card {
-    position: relative; overflow: hidden;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    padding: 18px 20px; border-radius: 16px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
-    backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.35), 0 8px 32px rgba(0,0,0,0.35);
-    transition: border-color 0.35s ease, background 0.35s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1);
-}
-/* La tranche lumineuse à gauche de chaque ligne : c'est le filet cyan qui
-   court le long des blocs de la carte imprimée. Discret au repos, il
-   s'allume quand on approche la ligne. */
-.tarif-card::before {
-    content: ''; position: absolute; left: 0; top: 12%; bottom: 12%; width: 2px;
-    background: linear-gradient(180deg, transparent, rgba(var(--neon), 0.85), transparent);
-    opacity: 0.4; transition: opacity 0.35s ease, top 0.35s ease, bottom 0.35s ease;
-}
-@media (hover: hover) and (pointer: fine) {
-    .tarif-card:hover {
-        border-color: rgba(var(--neon), 0.3);
-        background: linear-gradient(135deg, rgba(var(--neon),0.07) 0%, rgba(255,255,255,0.02) 100%);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.35),
-                    0 10px 34px rgba(0,0,0,0.4), 0 0 26px rgba(var(--neon),0.10);
-        transform: translateY(-2px);
-    }
-    .tarif-card:hover::before { opacity: 1; top: 0; bottom: 0; }
-}
-.tarif-card-info { min-width: 0; }
-.tarif-card-name { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 4px; line-height: 1.3; letter-spacing: 0.01em; }
-.tarif-card-desc { font-size: 12px; color: rgba(255,255,255,0.45); margin-bottom: 8px; line-height: 1.35; }
-.tarif-card-duration {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 11px; color: rgba(255,255,255,0.3);
-    padding: 3px 8px; border-radius: 20px;
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
-}
-.tarif-card-duration svg { width: 10px; height: 10px; opacity: 0.5; stroke: currentColor; fill: none; stroke-width: 2; }
-/* Prix en blanc, halo cyan : exactement le traitement de la carte, où les
-   montants ressortent en blanc sur le bleu des intitulés. */
-.tarif-card-price {
-    font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 800;
-    color: #fff; white-space: nowrap; letter-spacing: -0.02em; line-height: 1;
-    text-shadow: 0 0 10px rgba(255,255,255,0.18), 0 0 26px rgba(var(--neon), 0.35);
-}
-.tarif-card-price .euro { font-size: 0.56em; margin-left: 2px; color: rgba(var(--neon), 0.95); }
-.price-note { margin-top: 22px; font-size: 11px; line-height: 1.6; color: rgba(255,255,255,0.3); text-align: center; }
-
-/* ════════ ALERTE ════════ */
-/* Le seul bloc de la page qui demande une action : il reprend le cadre
-   cyan lumineux qui entoure le QR code « SCANNEZ / RÉSERVEZ » sur la
-   carte. C'est le repère qu'on cherche des yeux. */
-.alert-card {
-    position: relative; overflow: hidden;
-    padding: 32px 24px; border: 1px solid rgba(var(--neon), 0.3); border-radius: 22px;
-    background: linear-gradient(180deg, rgba(var(--neon),0.07), rgba(255,255,255,0.02));
-    backdrop-filter: blur(34px); -webkit-backdrop-filter: blur(34px);
-    box-shadow: 0 24px 70px rgba(0,0,0,0.45), 0 0 40px rgba(var(--neon),0.12),
-                inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 46px rgba(var(--neon),0.05);
-    text-align: center;
-}
-.alert-card::before {
-    content: ''; position: absolute; top: -60%; left: 50%; width: 300px; height: 300px;
-    transform: translateX(-50%); pointer-events: none;
-    background: radial-gradient(circle, rgba(var(--neon),0.16), transparent 68%);
-}
-.alert-title {
-    position: relative; font-family: 'Orbitron', sans-serif; font-weight: 800;
-    font-size: 20px; letter-spacing: 0.02em;
-    text-shadow: 0 0 26px rgba(var(--neon), 0.32);
-}
-.alert-desc { position: relative; margin: 12px auto 22px; max-width: 36ch; font-size: 12.5px; line-height: 1.7; color: rgba(255,255,255,0.52); }
-.alert-form { position: relative; display: flex; gap: 8px; max-width: 390px; margin: 0 auto; }
-/* Prénom au-dessus, numéro et bouton sur une ligne : trois champs cote a cote
-   sur un telephone, chacun devient trop etroit et le numero se coupe.
-   Le selecteur est double a dessein — `.alert-input` est declare plus bas et
-   remettrait son propre `flex` sinon. */
-.alert-form--tel { flex-wrap: wrap; }
-.alert-form--tel .alert-input--prenom { flex: 1 1 100%; min-width: 100%; }
-.alert-input {
-    flex: 1; min-width: 0; height: 50px; padding: 0 16px;
-    border: 1px solid rgba(255,255,255,0.14); border-radius: 13px;
-    background: rgba(255,255,255,0.05); color: #fff;
-    font-family: inherit; font-size: 16px;
-    transition: border-color 0.25s ease, background 0.25s ease;
-}
-.alert-input::placeholder { color: rgba(255,255,255,0.3); }
-.alert-input:focus {
-    outline: none; border-color: rgba(var(--neon), 0.65); background: rgba(255,255,255,0.08);
-    box-shadow: 0 0 0 3px rgba(var(--neon), 0.14);
-}
-.alert-input[aria-invalid="true"] { border-color: rgba(255,139,139,0.65); }
-/* Le bouton était un carré à peine teinté : rien ne disait qu'il portait
-   l'action de la page. Il prend le cyan plein et son halo. */
-.alert-submit {
-    width: 50px; height: 50px; flex-shrink: 0;
-    display: inline-flex; align-items: center; justify-content: center;
-    border: 1px solid rgba(var(--neon),0.55); border-radius: 13px;
-    background: linear-gradient(180deg, rgba(var(--neon),0.3), rgba(var(--neon),0.15));
-    box-shadow: 0 0 22px rgba(var(--neon),0.22);
-    color: #fff; cursor: pointer;
-    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-}
-.alert-submit:hover:not(:disabled) {
-    background: linear-gradient(180deg, rgba(var(--neon),0.45), rgba(var(--neon),0.24));
-    border-color: rgba(var(--neon),0.8); box-shadow: 0 0 30px rgba(var(--neon),0.35);
-}
-.alert-submit:active:not(:disabled) { transform: scale(0.95); }
-.alert-submit:disabled { opacity: 0.45; cursor: wait; }
-.alert-submit svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.alert-done { position: relative; display: none; align-items: center; justify-content: center; gap: 9px; min-height: 50px; font-size: 13px; font-weight: 500; color: rgba(var(--neon), 0.95); }
-.alert-done.show { display: flex; }
-.alert-done svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-.alert-err { position: relative; margin-top: 11px; font-size: 12px; color: #ff8b8b; min-height: 1em; }
-
-/* ════════ LES DEUX SALONS OUVERTS ════════ */
-.salons { display: grid; gap: 12px; }
-@media (min-width: 620px) { .salons { grid-template-columns: 1fr 1fr; } }
-.salon-card {
-    position: relative; overflow: hidden;
-    min-height: 192px; padding: 20px; border-radius: 20px;
-    border: 1px solid var(--line); color: #fff; text-decoration: none;
-    display: flex; flex-direction: column; justify-content: flex-end;
-    transition: border-color 0.35s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1);
-}
-.salon-card-bg {
-    position: absolute; inset: 0; z-index: 0;
-    background-size: cover;
-    /* Les devantures sont des photos verticales prises en plein jour : cadrées
-       au centre dans une carte basse, on tombait sur le store et il ne restait
-       rien une fois assombri. On remonte sur l'enseigne. */
-    background-position: center 34%;
-    filter: brightness(0.62) saturate(0.8) contrast(1.05);
-    transition: filter 0.5s ease, transform 0.7s cubic-bezier(0.16,1,0.3,1);
-}
-.salon-card::after {
-    content: ''; position: absolute; inset: 0; z-index: 1;
-    background: linear-gradient(0deg, rgba(0,0,0,0.9) 6%, rgba(0,0,0,0.45) 48%, rgba(0,0,0,0.12) 100%);
-}
-/* :not(.salon-card-bg) est indispensable — sinon le fond repasse en position
-   relative, son inset: 0 s'effondre et la photo disparaît. */
-.salon-card > *:not(.salon-card-bg) { position: relative; z-index: 2; }
-.salon-card:hover { border-color: rgba(255,255,255,0.24); }
-.salon-card:hover .salon-card-bg { filter: brightness(0.5) saturate(0.9); transform: scale(1.05); }
-.salon-card:active { transform: scale(0.988); }
-.salon-card-name { font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.03em; }
-.salon-card-addr { margin-top: 5px; font-size: 10.5px; font-weight: 400; letter-spacing: 0.09em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
-.salon-card-go { display: inline-flex; align-items: center; gap: 7px; margin-top: 13px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.9); }
-.salon-card-go svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.3s ease; }
-.salon-card:hover .salon-card-go svg { transform: translateX(4px); }
-
-.legal-note { margin-top: 38px; font-size: 10.5px; line-height: 1.75; color: rgba(255,255,255,0.24); text-align: center; }
-
-/* ════════ RÉVÉLATION AU SCROLL ════════ */
-.rv { opacity: 0; transform: translateY(22px); transition: opacity 0.85s ease, transform 0.85s cubic-bezier(0.16,1,0.3,1); }
-.rv.in { opacity: 1; transform: none; }
-
-/* ════════ L'ÉQUIPE ════════
-   Le dossier caviarde ce qui n'est pas encore public. Deux barbiers ont un
-   visage, deux n'ont qu'un fauteuil : la contrainte devient le sujet.
-   Le bleu froid — la couleur du secret sur cette page — ne sert qu'aux deux
-   qui restent à découvrir. Les révélés prennent des couleurs au survol ; les
-   autres restent gris, parce qu'il n'y a rien à révéler. */
-.eq-lede {
-    margin: -6px 0 22px; max-width: 42ch;
-    font-size: 14px; line-height: 1.6; color: var(--muted);
-}
-
-/* Deux colonnes, pas quatre : le conteneur fait 640 px, donc quatre vignettes
-   tombaient à 135 px de large — une fiche d'annuaire, pas un portrait. En 3:4
-   sur deux colonnes, la photo redevient le sujet et le texte se pose dessus
-   au lieu d'occuper un bloc aussi haut qu'elle. */
-.eq-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-
-.eq-card {
-    position: relative; overflow: hidden;
-    aspect-ratio: 3 / 4;
-    border-radius: 18px; background: #0a0a0b;
-    box-shadow: 0 18px 44px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.07);
-}
-
-.eq-shot { position: absolute; inset: 0; overflow: hidden; }
-.eq-shot img {
-    width: 100%; height: 100%; object-fit: cover; display: block;
-    filter: grayscale(1) contrast(1.08) brightness(0.95);
-    transition: filter 0.6s ease, transform 0.7s cubic-bezier(0.16,1,0.3,1);
-}
-/* Le visage se révèle quand on le regarde. Réservé à ceux qui en ont un. */
-.eq-card:not(.eq-soon):hover .eq-shot img { filter: none; transform: scale(1.05); }
-
-/* Voile bas : le texte doit tenir sur n'importe quelle photo. */
-.eq-shot::after {
-    content: ''; position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(to top,
-        rgba(0,0,0,0.93) 0%, rgba(0,0,0,0.78) 22%, rgba(0,0,0,0.25) 48%, transparent 68%);
-}
-
-.eq-body {
-    position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
-    padding: 0 15px 15px;
-}
-.eq-name {
-    font-family: 'Orbitron', sans-serif; font-weight: 800;
-    font-size: clamp(15px, 4.4vw, 19px); letter-spacing: 0.045em; text-transform: uppercase;
-    line-height: 1.1;
-}
-.eq-role {
-    margin-top: 5px; font-size: 12px; line-height: 1.45;
-    color: rgba(255,255,255,0.62);
-}
-
-.eq-when {
-    display: flex; align-items: flex-start; gap: 6px;
-    margin-top: 11px; padding-top: 10px;
-    border-top: 1px solid rgba(255,255,255,0.13);
-    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
-    font-size: 9.5px; line-height: 1.5; letter-spacing: 0.06em; text-transform: uppercase;
-    color: rgba(255,255,255,0.62);
-}
-.eq-when::before {
-    content: ''; width: 5px; height: 5px; border-radius: 50%; margin-top: 4px;
-    background: rgba(255,255,255,0.55); flex: 0 0 auto;
-}
-
-/* Le gérant : une marque, pas une couleur de plus. */
-.eq-tag {
-    position: absolute; top: 10px; left: 10px; z-index: 1;
-    padding: 4px 8px; border-radius: 5px;
-    background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.18);
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
-    font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
-    color: rgba(255,255,255,0.82);
-}
-
-/* ── Les deux fauteuils encore vides ──
-   Le bleu froid du dossier ne sert QU'ICI : il marque ce qui n'est pas
-   encore public. Halo depuis le haut, là où devrait être le visage. */
-.eq-soon { box-shadow: 0 18px 44px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(var(--cold), 0.2); }
-.eq-soon .eq-shot img {
-    filter: grayscale(1) brightness(0.62) contrast(1.12);
-    object-position: center 34%;   /* garde le point d'interrogation au-dessus du voile */
-}
-.eq-soon .eq-shot::before {
-    content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-    background: radial-gradient(ellipse 120% 60% at 50% 22%, rgba(var(--cold), 0.16), transparent 70%);
-}
-.eq-soon .eq-when { color: rgba(var(--cold), 0.78); border-top-color: rgba(var(--cold), 0.24); }
-.eq-soon .eq-when::before { background: rgba(var(--cold), 0.8); }
-
-/* Le tag du gérant, posé sur la photo. */
-.eq-tag { z-index: 2; }
-
-/* ── Mobile : le manège ──
-   Un salon, c'est quatre fauteuils ; un manège, c'est un anneau de sièges qui
-   tourne. Les cartes sont posées sur un cylindre, à 90° l'une de l'autre, et
-   c'est l'anneau entier qui pivote.
-   Limite géométrique assumée : à quatre cartes, les voisines sont vues de
-   tranche et donc invisibles au repos. D'où l'anneau dessiné au sol — la base
-   du manège — qui rend le cercle lisible même à l'arrêt. */
-.eq-ring { position: relative; }
-.eq-floor { display: none; }
-
-@media (max-width: 759px) {
-    .eq-ring {
-        perspective: 900px;
-        margin: 0 -20px;              /* le manège déborde des marges du texte */
-        padding-bottom: 26px;
-    }
-
-    .eq-grid {
-        display: block; position: relative;
-        height: var(--eq-h, 300px);
-        transform-style: preserve-3d;
-        transform: translateZ(calc(var(--eq-r, 150px) * -1)) rotateY(var(--eq-rot, 0deg));
-        transition: transform 0.95s cubic-bezier(0.32, 0, 0.16, 1);
-        will-change: transform;
-    }
-
-    .eq-card {
-        position: absolute; top: 0; left: 50%;
-        width: var(--eq-w, 215px); margin-left: calc(var(--eq-w, 215px) / -2);
-        aspect-ratio: 3 / 4;
-        transform: rotateY(calc(var(--i) * 90deg)) translateZ(var(--eq-r, 150px));
-        opacity: 0.25;
-        transition: opacity 0.6s ease;
-    }
-    .eq-card.is-front { opacity: 1; }
-
-    /* L'anneau au sol : le cercle du manège, vu en perspective. */
-    .eq-floor {
-        display: block; position: absolute; left: 50%; bottom: 8px;
-        width: calc(var(--eq-r, 150px) * 2.1); height: 42px;
-        margin-left: calc(var(--eq-r, 150px) * -1.05);
-        border: 1px solid rgba(var(--cold), 0.18);
-        border-radius: 50%;
-        box-shadow: 0 0 34px rgba(var(--cold), 0.07) inset;
-        pointer-events: none;
-    }
-
-    .eq-body { padding: 0 16px 16px; }
-    .eq-role { margin-top: 5px; font-size: 12.5px; line-height: 1.45; }
-    .eq-when { margin-top: 11px; padding-top: 10px; font-size: 9.5px; }
-}
-
-/* Moins d'animations demandées : pas de manège du tout. On empile les quatre
-   cartes, tout est lisible d'un coup et rien ne bouge. */
-@media (max-width: 759px) and (prefers-reduced-motion: reduce) {
-    .eq-ring { perspective: none; margin: 0; padding-bottom: 0; }
-    .eq-grid {
-        display: grid; grid-template-columns: 1fr; gap: 12px;
-        height: auto; transform: none; transition: none;
-    }
-    .eq-card {
-        position: relative; left: auto; top: auto; width: auto; margin-left: 0;
-        transform: none; opacity: 1; aspect-ratio: 3 / 4;
-    }
-    .eq-floor, .eq-dots { display: none; }
-}
-
-/* Pastilles de position — masquées en desktop, où tout est visible d'un coup. */
-.eq-dots { display: none; }
-@media (max-width: 759px) {
-    .eq-dots {
-        display: flex; justify-content: center; align-items: center; gap: 0;
-        margin-top: 4px;
-    }
-    /* 44 x 44 px de zone tactile pour une pastille de 6 px : on vise au
-       pouce sans que le repère visuel grossisse. */
-    .eq-dot {
-        width: 44px; height: 44px; padding: 0;
-        display: grid; place-items: center;
-        background: none; border: 0; cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-    }
-    .eq-dot::before {
-        content: ''; width: 6px; height: 6px; border-radius: 50%;
-        background: rgba(255,255,255,0.22);
-        transition: background 0.3s ease, width 0.3s cubic-bezier(0.16,1,0.3,1);
-    }
-    .eq-dot[aria-current="true"]::before {
-        width: 20px; border-radius: 3px; background: rgb(var(--neon));
-        box-shadow: 0 0 10px rgba(var(--neon), 0.6);
-    }
-    .eq-dot:focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 1px; border-radius: 6px; }
-}
-
-@media (min-width: 760px) {
-    .eq-grid { gap: 16px; }
-    .eq-body { padding: 0 18px 18px; }
-    .eq-role { font-size: 12.5px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .eq-shot img { transition: none; }
-    .eq-card:not(.eq-soon):hover .eq-shot img { transform: none; }
-}
+/* l'offre : la même lumière que le badge de la landing */
+.open-offer {
+  position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; border-radius: 16px; text-decoration: none; color: #fff;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03) 55%, rgba(61,90,254,0.14)), rgba(8,11,30,0.6);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border: 1px solid rgba(175,192,255,0.2);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.5), 0 0 30px rgba(61,90,254,0.18);
+  opacity: 0; transform: translateY(12px);
+  transition: opacity 0.6s ease 0.9s, transform 0.8s cubic-bezier(0.16,1,0.3,1) 0.9s;
+}
+.open-offer::after {
+  content: ''; position: absolute; top: -20%; bottom: -20%; left: 0; width: 35%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.22), transparent);
+  transform: translateX(-160%) skewX(-18deg);
+  animation: offerShine 5.5s cubic-bezier(0.4,0,0.2,1) 2.4s infinite;
+}
+@keyframes offerShine { 0% { transform: translateX(-160%) skewX(-18deg); } 30%, 100% { transform: translateX(380%) skewX(-18deg); } }
+.open-offer-num {
+  font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 26px; line-height: 1; letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #fff 40%, #c8d4ff); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 10px rgba(61,90,254,0.55));
+}
+.open-offer-sep { width: 1px; height: 28px; background: linear-gradient(180deg, transparent, rgba(255,255,255,0.4), transparent); }
+.open-offer-text { display: flex; flex-direction: column; gap: 4px; line-height: 1.15; text-align: left; }
+.open-offer-text b { font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; }
+.open-offer-text span { font-size: 12px; color: rgba(225,232,255,0.82); }
+.page.loaded .open-chip, .page.loaded .open-offer { opacity: 1; transform: none; }
+/* une fois ouvert, le compte à rebours laisse la place à « Ouvert » */
+.open-block.is-open .countdown { display: none; }
 
 @media (min-width: 768px) {
-    .hero { padding: 110px 24px 96px; }
-    .hero-sub { font-size: 15px; max-width: 40ch; }
-    .wrap { padding-bottom: 120px; }
-    .row { grid-template-columns: 28% 1fr; padding: 21px 26px; }
-    .row-val { font-size: 17px; }
-    .sec-head { margin: 76px 0 22px; }
+  .hero { padding-bottom: 150px; }
+  .open-block { max-width: 520px; gap: 16px; }
+  .cd-num { font-size: 38px; }
+  .cd-cell { max-width: 110px; padding: 16px 6px 12px; }
+  .open-offer { padding: 13px 20px; }
+  .open-offer-num { font-size: 30px; }
 }
-
+@media (max-height: 700px) {
+  .hero { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
+  .cd-num { font-size: 22px; } .cd-cell { padding: 9px 4px 8px; } .open-block { gap: 10px; }
+}
 @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    *, *::before, *::after { animation: none !important; transition: none !important; }
-    .rv { opacity: 1; transform: none; }
-    .hero-title .letter { opacity: 1; transform: none; }
-    .hero-crown, .stamp, .hero-sub, .scroll-cue { opacity: 1; }
-    .hero-slit, .particles { display: none; }
+  .spot, .fog, .open-dot::after, .open-offer::after, .cd-num.tick { animation: none !important; }
+  .spot, .open-chip, .open-offer, .cd-cell { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
 </style>
 <link rel="stylesheet" href="../../assets/css/page-transitions.css">
 </head>
-
 <body>
-<div class="progress" id="progress" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
 <div class="cursor-dot" aria-hidden="true"></div>
 <div class="cursor-ring" aria-hidden="true"></div>
-<a href="#dossier" class="skip-to-content">Aller au contenu principal</a>
 
-<header class="header">
-    <a href="../../" class="back-btn" aria-label="Retour à l'accueil">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+<div class="page" id="page">
+  <div class="bg" role="img" aria-label="La façade de BarberClub Voiron sous la lumière bleue, un fauteuil de barbier devant la vitrine"></div>
+  <div class="bg-overlay"></div>
+  <div class="spot" aria-hidden="true"></div>
+  <div class="fog" aria-hidden="true"></div>
+  <div class="particles" aria-hidden="true"></div>
+
+  <header class="header">
+    <a href="../../" class="back-btn" aria-label="Retour">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </a>
-    <a href="../../" class="header-brand" aria-label="BarberClub, accueil">
-        <img src="../../assets/images/common/couronne.png" alt="" class="header-crown" aria-hidden="true">
-        <img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo">
-    </a>
-    <div class="header-spacer"></div>
-</header>
-
-<main>
-    <!-- ════════ HERO ════════ -->
-    <section class="hero">
-        <div class="hero-bg" aria-hidden="true"></div>
-        <div class="hero-veil" aria-hidden="true"></div>
-        <div class="hero-slit" aria-hidden="true"></div>
-        <div class="particles" aria-hidden="true"></div>
-
-        <div class="hero-inner">
-            <img src="../../assets/images/common/couronne.png" alt="" class="hero-crown" aria-hidden="true">
-            <span class="stamp"><span class="dot" aria-hidden="true"></span> Dossier non public</span>
-            <h1 class="hero-title" data-split>Voiron</h1>
-            <p class="hero-sub">
-                Un <strong>troisième salon BARBER CLUB</strong> ouvre à Voiron en <strong>octobre 2026</strong>.
-                La même exigence, le même accueil, à 25 minutes de Grenoble.
-                Les travaux sont en cours — le reste, nous vous le dévoilerons très vite.
-            </p>
-
-            <div class="countdown" aria-label="Date d'ouverture : octobre 2026, le jour n'est pas communiqué">
-                <div class="cd-unit">
-                    <div class="cd-digit cd-digit-wide" id="cdY"><span>2026</span></div>
-                    <div class="cd-label">Année</div>
-                </div>
-                <div class="cd-sep" aria-hidden="true">/</div>
-                <div class="cd-unit">
-                    <div class="cd-digit" id="cdMo"><span>10</span></div>
-                    <div class="cd-label">Mois</div>
-                </div>
-                <div class="cd-sep" aria-hidden="true">/</div>
-                <div class="cd-unit unknown">
-                    <div class="cd-digit cd-digit-blur" id="cdD"><span aria-hidden="true">--</span></div>
-                    <div class="cd-label">Jour</div>
-                </div>
-            </div>
-            <p class="cd-note">Le mois est arrêté. Le jour, nous vous le dévoilerons ici même.</p>
-        </div>
-
-        <a href="#dossier" class="scroll-cue" aria-label="Aller au dossier">
-            Le dossier
-            <span class="scroll-cue-line" aria-hidden="true"></span>
-        </a>
-    </section>
-
-    <div class="sep" aria-hidden="true"></div>
-
-    <div class="wrap">
-        <!-- ════════ DOSSIER ════════ -->
-        <div class="sec-head rv" id="dossier" tabindex="-1">
-            <span class="sec-kicker">Partiellement déclassifié</span>
-            <h2 class="sec-title">Ce que nous pouvons déjà vous dire</h2>
-        </div>
-
-        <div class="file rv">
-            <div class="row">
-                <span class="row-key">Ville</span>
-                <span class="row-val">Voiron<small>Isère · à 25 min de Grenoble</small></span>
-            </div>
-            <div class="row">
-                <span class="row-key">Ouverture</span>
-                <span class="row-val">Octobre 2026<small>Le jour vous sera annoncé ici</small></span>
-            </div>
-            <div class="row">
-                <span class="row-key">Adresse</span>
-                <span class="row-val">
-                    <button type="button" class="redacted" data-reveal="RUE ███████" aria-label="Adresse non communiquée">████ ██████████</button>
-                </span>
-            </div>
-            <div class="row">
-                <span class="row-key">Équipe</span>
-                <span class="row-val">Quatre barbiers<small>Clem prend la tête du salon</small></span>
-            </div>
-            <div class="row">
-                <span class="row-key">Prestations</span>
-                <span class="row-val">La carte de Meylan<small>Coupe, barbe, soins — la même carte</small></span>
-            </div>
-            <div class="row">
-                <span class="row-key">Tarifs</span>
-                <span class="row-val">Grille propre à Voiron<small>À découvrir plus bas</small></span>
-            </div>
-        </div>
-        <p class="denied-slot" role="status" aria-live="polite"><span class="denied" id="denied">Accès refusé — le dossier n'est pas encore déclassifié</span></p>
-
-        <!-- ════════ L'ÉQUIPE ════════ -->
-        <div class="sec-head rv">
-            <span class="sec-kicker">Annoncé aujourd'hui</span>
-            <h2 class="sec-title">L'équipe qui vous attend</h2>
-        </div>
-
-        <p class="eq-lede rv">Quatre fauteuils. Deux visages que vous connaissez déjà, deux que vous découvrirez à l'ouverture.</p>
-
-        <div class="eq-ring rv" id="eqRing">
-        <div class="eq-floor" aria-hidden="true"></div>
-        <div class="eq-grid" id="eqGrid" role="group" aria-label="L'équipe de Voiron">
-            <article class="eq-card">
-                <span class="eq-tag">Gérant</span>
-                <div class="eq-shot">
-                    <!-- Recadrage : la photo est une scène de salon, Clément est à gauche du cadre. -->
-                    <img src="../../assets/images/barbers/clement.jpg" alt="Clem, responsable du salon de Voiron" loading="lazy" decoding="async" width="1200" height="1682" style="object-position: 32% center;">
-                </div>
-                <div class="eq-body">
-                    <h3 class="eq-name">Clem</h3>
-                    <p class="eq-role">Il ouvre, il ferme, il tient la maison.</p>
-                    <span class="eq-when">Toute la semaine</span>
-                </div>
-            </article>
-
-            <article class="eq-card">
-                <div class="eq-shot">
-                    <img src="../../assets/images/barbers/julien.jpg?v=4" alt="Ju, fondateur de BarberClub" loading="lazy" decoding="async" width="1200" height="1714">
-                </div>
-                <div class="eq-body">
-                    <h3 class="eq-name">Ju</h3>
-                    <p class="eq-role">Le fondateur, venu de Meylan.</p>
-                    <span class="eq-when">Deux jours par semaine</span>
-                </div>
-            </article>
-
-            <article class="eq-card eq-soon">
-                <div class="eq-shot">
-                    <img src="../../assets/images/barbers/barber-soon.webp" alt="Fauteuil encore libre — portrait de Jules à venir" loading="lazy" decoding="async" width="900" height="1379">
-                </div>
-                <div class="eq-body">
-                    <h3 class="eq-name">Jules</h3>
-                    <p class="eq-role">Nouveau. Son fauteuil l'attend.</p>
-                    <span class="eq-when">Dès l'ouverture</span>
-                </div>
-            </article>
-
-            <article class="eq-card eq-soon">
-                <div class="eq-shot">
-                    <img src="../../assets/images/barbers/barber-soon.webp" alt="Fauteuil encore libre — portrait de Gab à venir" loading="lazy" decoding="async" width="900" height="1379">
-                </div>
-                <div class="eq-body">
-                    <h3 class="eq-name">Gab</h3>
-                    <p class="eq-role">Nouveau. Son fauteuil l'attend.</p>
-                    <span class="eq-when">Dès l'ouverture</span>
-                </div>
-            </article>
-        </div>
-
-        </div>
-
-        <!-- Pastilles du carrousel mobile : remplies par le script, inutiles sans lui. -->
-        <div class="eq-dots rv" id="eqDots" role="group" aria-label="Choisir un barbier"></div>
-
-        <!-- ════════ LA GRILLE ════════ -->
-        <div class="sec-head rv">
-            <span class="sec-kicker">Déjà déclassifié</span>
-            <h2 class="sec-title">Nos prestations à Voiron</h2>
-        </div>
-
-        <div class="rv">
-            <div class="tarif-group">
-                <div class="category-header">
-                    <span class="category-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg></span>
-                    <h3 class="category-title">Coupes</h3>
-                    <span class="category-line" aria-hidden="true"></span>
-                </div>
-                <div class="tarif-cards">
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Coupe Homme</div>
-                            <div class="tarif-card-desc">Shampooing, coupe, coiffage + parfumage luxe</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">25<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Coupe + Traçage Barbe</div>
-                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage + traçage et soin barbe + parfumage luxe</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">30<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Coupe + Barbe</div>
-                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage + traçage et taillage barbe + parfumage luxe</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">35<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Coupe + Barbe + Soin Complet</div>
-                            <div class="tarif-card-desc">Coupe, shampooing massage, coiffage + barbe complète + serviette chaude + soin visage + parfumage luxe</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 40 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">45<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tarif-group">
-                <div class="category-header">
-                    <span class="category-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.7s6 6 6 10a6 6 0 0 1-12 0c0-4 6-10 6-10z"/></svg></span>
-                    <h3 class="category-title">Barbe &amp; Soins</h3>
-                    <span class="category-line" aria-hidden="true"></span>
-                </div>
-                <div class="tarif-cards">
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Barbe Uniquement</div>
-                            <div class="tarif-card-desc">Traçage, taillage et huile mangue + parfumage luxe</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 20 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Soin Visage + Barbe</div>
-                            <div class="tarif-card-desc">Taillage et traçage barbe + huile mangue + serviette chaude + vapozone et crème hydratante + parfumage luxe</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">25<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tarif-group">
-                <div class="category-header">
-                    <span class="category-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 12 4.8H4.8V12l8.6 8.6a2 2 0 0 0 2.8 0l4.4-4.4a2 2 0 0 0 0-2.8z"/><circle cx="8.5" cy="8.5" r="1.2"/></svg></span>
-                    <h3 class="category-title">Tarifs Réduits</h3>
-                    <span class="category-line" aria-hidden="true"></span>
-                </div>
-                <div class="tarif-cards">
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Coupe Étudiante</div>
-                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage, sur présentation de la carte</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Coupe Enfant</div>
-                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage — moins de 12 ans</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 20 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Coupe Partenaire</div>
-                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage, comité d'entreprise</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 20 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">20<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Coupe + Traçage Partenaire</div>
-                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage + traçage et soin barbe + parfumage luxe, comité d'entreprise</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 20 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">25<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                    <div class="tarif-card">
-                        <div class="tarif-card-info">
-                            <div class="tarif-card-name">Coupe + Barbe Partenaire</div>
-                            <div class="tarif-card-desc">Coupe cheveux, shampooing, coiffage + traçage et taillage barbe, comité d'entreprise</div>
-                            <span class="tarif-card-duration"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 30 min</span>
-                        </div>
-                        <div class="tarif-card-price-wrap">
-                            <span class="tarif-card-price">30<span class="euro">&euro;</span></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <p class="price-note">Grille d'ouverture, susceptible d'évoluer d'ici octobre.</p>
-        </div>
-        <!-- ════════ ALERTE ════════ -->
-        <div class="sec-head rv">
-            <span class="sec-kicker">Un seul SMS</span>
-            <h2 class="sec-title">Soyez les premiers prévenus</h2>
-        </div>
-
-        <div class="alert-card rv">
-            <div class="alert-title">Le jour de l'ouverture</div>
-            <p class="alert-desc">Laissez votre numéro : un SMS le jour de l'ouverture, avec le lien pour réserver. Une seule fois, pas de relance.</p>
-
-            <form class="alert-form alert-form--tel" id="alertForm" novalidate>
-                <label for="alertPrenom" class="skip-to-content">Votre prénom</label>
-                <input type="text" id="alertPrenom" class="alert-input alert-input--prenom" placeholder="Prénom" autocomplete="given-name" maxlength="60">
-                <label for="alertTel" class="skip-to-content">Votre numéro de téléphone</label>
-                <input type="tel" id="alertTel" class="alert-input" placeholder="06 12 34 56 78" required autocomplete="tel" inputmode="tel">
-                <button type="submit" class="alert-submit" id="alertSubmit" aria-label="Être prévenu de l'ouverture">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                </button>
-            </form>
-
-            <div class="alert-done" id="alertDone" role="status">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                C'est noté. Merci pour votre confiance — vous recevez un SMS le jour J.
-            </div>
-            <p class="alert-err" id="alertErr" role="alert"></p>
-        </div>
-
-        <!-- ════════ SALONS OUVERTS ════════ -->
-        <div class="sec-head rv">
-            <span class="sec-kicker">En attendant</span>
-            <h2 class="sec-title">Retrouvez-nous à Grenoble et Meylan</h2>
-        </div>
-
-        <div class="salons rv">
-            <a class="salon-card" href="../grenoble/">
-                <span class="salon-card-bg" style="background-image:url('../../assets/images/salons/grenoble/devanture-grenoble.jpg')" aria-hidden="true"></span>
-                <span class="salon-card-name">Grenoble</span>
-                <span class="salon-card-addr">5 rue Clot Bey</span>
-                <span class="salon-card-go">Découvrir
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </span>
-            </a>
-            <a class="salon-card" href="../meylan/">
-                <span class="salon-card-bg" style="background-image:url('../../assets/images/salons/meylan/devanture-meylan.jpg')" aria-hidden="true"></span>
-                <span class="salon-card-name">Meylan</span>
-                <span class="salon-card-addr">26 av. du Grésivaudan</span>
-                <span class="salon-card-go">Découvrir
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </span>
-            </a>
-        </div>
-
-        <p class="legal-note rv">Ouverture prévue en octobre 2026, sous réserve de l'avancement des travaux.</p>
+    <div class="header-logo">
+      <img src="../../assets/images/common/couronne.png" alt="" class="header-crown" aria-hidden="true">
+      <img src="../../assets/images/common/logo-blanc.png" alt="BarberClub">
     </div>
-</main>
+    <a href="/mon-compte" class="account-btn" aria-label="Mon compte">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+  </header>
 
-<script src="../../assets/js/api-config.js"></script>
+  <main class="hero">
+    <h1 class="sr-only">BarberClub Voiron — barbier et coiffeur homme, ouverture le 21 octobre</h1>
+    <div class="open-block" id="openBlock">
+      <span class="open-chip"><span class="open-dot" aria-hidden="true"></span><span id="openChipText">Ouverture le 21 octobre</span></span>
+      <div class="countdown" id="countdown" role="timer" aria-live="off" aria-label="Temps restant avant l'ouverture">
+        <div class="cd-cell"><span class="cd-num" data-u="d">--</span><span class="cd-label">Jours</span></div>
+        <div class="cd-cell"><span class="cd-num" data-u="h">--</span><span class="cd-label">Heures</span></div>
+        <div class="cd-cell"><span class="cd-num" data-u="m">--</span><span class="cd-label">Min</span></div>
+        <div class="cd-cell"><span class="cd-num" data-u="s">--</span><span class="cd-label">Sec</span></div>
+      </div>
+      <a href="offres.html" class="open-offer" id="openOffer">
+        <span class="open-offer-num">-50&#8239;%</span>
+        <span class="open-offer-sep" aria-hidden="true"></span>
+        <span class="open-offer-text"><b>Du 21 au 24 oct.</b><span>sur toutes les prestations</span></span>
+      </a>
+    </div>
+  </main>
+
+  <div class="separator" aria-hidden="true"><div class="separator-line"></div></div>
+
+  <nav class="bottom-nav">
+    <div class="nav-row">
+      <a href="barbers.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Barbers
+      </a>
+      <a href="prestations.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        Tarifs
+      </a>
+      <a href="reserver.html" class="nav-cta">
+        <div class="nav-cta-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <span class="nav-cta-label">Réserver</span>
+      </a>
+      <a href="offres.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+        Offres
+      </a>
+      <a href="salon.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Salon
+      </a>
+    </div>
+  </nav>
+</div>
+
 <script>
+/* Ouverture de Voiron : compte à rebours jusqu'au mercredi 21 octobre 2026,
+   9h (heure de Paris, été : +02:00). Ensuite « Ouvert », et l'offre -50 %
+   reste affichée jusqu'au samedi 24 au soir, puis disparaît. */
 (() => {
-    'use strict';
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    /* ═══ En-tête opaque + jauge de lecture ═══
-       Un seul écouteur pour les deux, et la lecture des dimensions est
-       repoussée dans une frame d'animation : mesurer la hauteur du document
-       à chaque pixel de défilement forçait un recalcul de mise en page. */
-    const header = document.querySelector('.header');
-    const progress = document.getElementById('progress');
-    let ticking = false;
-    const paint = () => {
-        ticking = false;
-        const y = window.scrollY;
-        header.classList.toggle('stuck', y > 24);
-        if (progress) {
-            const course = document.documentElement.scrollHeight - innerHeight;
-            progress.style.transform = 'scaleX(' + (course > 0 ? Math.min(y / course, 1) : 0) + ')';
-        }
-    };
-    const onScroll = () => {
-        if (ticking) return;
-        ticking = true;
-        requestAnimationFrame(paint);
-    };
-    addEventListener('scroll', onScroll, { passive: true });
-    addEventListener('resize', onScroll, { passive: true });
-    paint();
-
-    /* ═══ Titre lettre par lettre (même mécanique que les pages salon) ═══ */
-    const title = document.querySelector('[data-split]');
-    if (title) {
-        const text = title.textContent;
-        title.innerHTML = '';
-        [...text].forEach((ch, i) => {
-            const mask = document.createElement('span');
-            mask.className = 'letter-mask';
-            const s = document.createElement('span');
-            s.className = 'letter';
-            s.textContent = ch === ' ' ? ' ' : ch;
-            s.style.transitionDelay = `${0.55 + i * 0.065}s`;
-            mask.appendChild(s);
-            title.appendChild(mask);
-        });
-        requestAnimationFrame(() => title.classList.add('in'));
+  const OUVERTURE = Date.parse('2026-10-21T09:00:00+02:00');
+  const FIN_OFFRE = Date.parse('2026-10-24T23:59:59+02:00');
+  const block = document.getElementById('openBlock');
+  const chip = document.getElementById('openChipText');
+  const offer = document.getElementById('openOffer');
+  const cells = {};
+  document.querySelectorAll('#countdown .cd-num').forEach(el => { cells[el.dataset.u] = el; });
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pad = n => String(n).padStart(2, '0');
+  function maj() {
+    const now = Date.now();
+    if (now >= FIN_OFFRE && offer) offer.remove();
+    if (now >= OUVERTURE) {
+      block.classList.add('is-open');
+      chip.textContent = 'Ouvert · 5 av. Léon et Joanny Tardy';
+      return false;
     }
-
-    /* ═══ Particules ═══ */
-    if (!reduced) {
-        document.querySelectorAll('.particles').forEach((c) => {
-            for (let i = 0; i < 15; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                const size = 1 + Math.random() * 2.5;
-                p.style.cssText = `left:${Math.random() * 100}%;bottom:-3%;width:${size}px;height:${size}px;`
-                    + `animation-duration:${7 + Math.random() * 14}s;animation-delay:${Math.random() * 12}s;opacity:0;`;
-                c.appendChild(p);
-            }
-        });
+    let t = Math.floor((OUVERTURE - now) / 1000);
+    const v = { d: Math.floor(t / 86400), h: Math.floor(t % 86400 / 3600), m: Math.floor(t % 3600 / 60), s: t % 60 };
+    for (const u in v) {
+      const txt = pad(v[u]);
+      if (cells[u].textContent !== txt) {
+        cells[u].textContent = txt;
+        if (!reduced) { cells[u].classList.remove('tick'); void cells[u].offsetWidth; cells[u].classList.add('tick'); }
+      }
     }
-
-    /* ═══ Curseur custom (desktop) ═══ */
-    if (matchMedia('(pointer: fine)').matches && !reduced) {
-        const dot = document.querySelector('.cursor-dot');
-        const ring = document.querySelector('.cursor-ring');
-        let rx = 0, ry = 0, tx = 0, ty = 0;
-        addEventListener('mousemove', (e) => {
-            tx = e.clientX; ty = e.clientY;
-            dot.style.left = tx + 'px'; dot.style.top = ty + 'px';
-        }, { passive: true });
-        (function loop() {
-            rx += (tx - rx) * 0.16; ry += (ty - ry) * 0.16;
-            ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-            requestAnimationFrame(loop);
-        })();
-        document.querySelectorAll('a, button, input').forEach((el) => {
-            el.addEventListener('mouseenter', () => ring.classList.add('grow'));
-            el.addEventListener('mouseleave', () => ring.classList.remove('grow'));
-        });
-    }
-
-    /* ═══ Carrousel équipe (mobile) ═══
-       Quatre règles pour qu'un défilement automatique ne devienne pas une
-       gêne :
-       1. il ne tourne que quand la section est à l'écran ;
-       2. il s'arrête DÉFINITIVEMENT dès que le visiteur touche le rail ou une
-          pastille — on ne reprend jamais la main à quelqu'un qui lit ;
-       3. rien ne bouge si le système demande moins d'animations ;
-       4. il ne s'active pas en desktop, où les quatre cartes sont déjà là.
-       Le défilement lui-même reste natif (scroll-snap) : sans JavaScript, on
-       peut toujours faire glisser à la main. */
-    (function manegeEquipe() {
-        const ring = document.getElementById('eqRing');
-        const stage = document.getElementById('eqGrid');
-        const dots = document.getElementById('eqDots');
-        if (!ring || !stage || !dots) return;
-
-        const cartes = Array.from(stage.querySelectorAll('.eq-card'));
-        if (cartes.length < 2) return;
-
-        const PAS = 360 / cartes.length;      // 90° pour quatre fauteuils
-        const DELAI = 4000;
-        const REPRISE = 6000;                 // délai avant de reprendre la main
-        const mobile = matchMedia('(max-width: 759px)');
-        let timer = null, reprise = null, index = 0, visible = false, enPause = false;
-
-        cartes.forEach((c, i) => c.style.setProperty('--i', i));
-
-        /* Le rayon se calcule sur la largeur réelle : le manège doit tenir sur
-           un iPhone SE comme sur un Pro Max. */
-        function mesurer() {
-            const w = Math.round(ring.clientWidth * 0.58);
-            ring.style.setProperty('--eq-w', w + 'px');
-            ring.style.setProperty('--eq-r', Math.round(w * 0.72) + 'px');
-            ring.style.setProperty('--eq-h', Math.round(w * 4 / 3) + 'px');
-        }
-
-        function placer(i) {
-            index = ((i % cartes.length) + cartes.length) % cartes.length;
-            stage.style.setProperty('--eq-rot', (-index * PAS) + 'deg');
-            cartes.forEach((c, n) => c.classList.toggle('is-front', n === index));
-            Array.from(dots.children).forEach((p, n) =>
-                p.setAttribute('aria-current', String(n === index)));
-        }
-
-        function tourner() { if (!reduced) placer(index + 1); }
-
-        function demarrer() {
-            // enPause verrouille la fenêtre de pause : sans ce garde-fou,
-            // l'observateur de visibilité relançait le manège dans la seconde
-            // qui suit le geste du visiteur, annulant la pause.
-            if (timer || reduced || enPause || !mobile.matches || !visible) return;
-            timer = setInterval(tourner, DELAI);
-        }
-        function suspendre() { if (timer) { clearInterval(timer); timer = null; } }
-
-        /* Pause, pas arrêt définitif. La version précédente se coupait au
-           premier contact — or sur mobile, faire défiler la page verticalement
-           pose le doigt sur les cartes : le manège s'arrêtait dès le premier
-           geste, sans jamais repartir. */
-        function pause() {
-            enPause = true;
-            suspendre();
-            if (reprise) clearTimeout(reprise);
-            reprise = setTimeout(() => { enPause = false; demarrer(); }, REPRISE);
-        }
-
-        cartes.forEach((carte, i) => {
-            const nom = carte.querySelector('.eq-name');
-            const d = document.createElement('button');
-            d.type = 'button';
-            d.className = 'eq-dot';
-            d.setAttribute('aria-label', 'Voir ' + (nom ? nom.textContent.trim() : 'la carte ' + (i + 1)));
-            d.addEventListener('click', () => { pause(); placer(i); });
-            dots.appendChild(d);
-        });
-
-        /* Glisser pour tourner. On ne capte le geste que s'il est franchement
-           horizontal, sinon on bloquerait le défilement vertical de la page. */
-        let x0 = null, y0 = null, pris = false;
-        ring.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; pris = false; });
-        ring.addEventListener('pointermove', (e) => {
-            if (x0 === null || pris) return;
-            const dx = e.clientX - x0, dy = e.clientY - y0;
-            if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy)) {
-                pris = true;
-                pause();
-                placer(index + (dx < 0 ? 1 : -1));
-            }
-        }, { passive: true });
-        ring.addEventListener('pointerup', () => { x0 = null; });
-        ring.addEventListener('pointercancel', () => { x0 = null; });
-
-        mesurer();
-        placer(0);
-        addEventListener('resize', mesurer, { passive: true });
-
-        // Ne tourne que sous les yeux du visiteur.
-        if ('IntersectionObserver' in window) {
-            new IntersectionObserver((entrees) => {
-                entrees.forEach((e) => {
-                    visible = e.isIntersecting;
-                    if (visible) demarrer(); else suspendre();
-                });
-            }, { threshold: 0.3 }).observe(ring);
-        } else {
-            visible = true; demarrer();
-        }
-
-        mobile.addEventListener('change', () => {
-            mesurer();
-            if (!mobile.matches) suspendre(); else demarrer();
-        });
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) suspendre(); else demarrer();
-        });
-    })();
-
-    /* ═══ Révélation au scroll ═══ */
-    const rv = document.querySelectorAll('.rv');
-    if (reduced || !('IntersectionObserver' in window)) {
-        rv.forEach((el) => el.classList.add('in'));
-    } else {
-        const obs = new IntersectionObserver((entries) => {
-            entries.forEach((e, i) => {
-                if (!e.isIntersecting) return;
-                setTimeout(() => e.target.classList.add('in'), i * 80);
-                obs.unobserve(e.target);
-            });
-        }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
-        rv.forEach((el) => obs.observe(el));
-    }
-
-    /* ═══ Date d'ouverture ═══
-       L'année et le mois sont acquis, le jour non : c'est le seul chiffre
-       qu'on ne laisse pas lire. Il roule dans la fourchette annoncée (seconde
-       moitié d'octobre) derrière un flou — on voit qu'il y a deux chiffres,
-       on n'en lit aucun. */
-    (() => {
-        const jour = document.getElementById('cdD');
-        if (!jour) return;
-        const val = jour.querySelector('span');
-        const MIN = 13, MAX = 31;   // seconde moitié d'octobre
-        const CADENCE = 1700;
-        let dernier = null, visible = true, aLecran = true, timer = null;
-
-        const tirer = () => {
-            let n;
-            do { n = MIN + Math.floor(Math.random() * (MAX - MIN + 1)); } while (n === dernier);
-            dernier = n;
-            val.textContent = String(n).padStart(2, '0');
-            if (reduced) return;
-            jour.classList.remove('drift');
-            void jour.offsetWidth;
-            jour.classList.add('drift');
-        };
-
-        const stop = () => { clearInterval(timer); timer = null; };
-        const demarrer = () => {
-            if (reduced || timer || !visible || !aLecran) return;
-            timer = setInterval(tirer, CADENCE);
-        };
-
-        tirer();
-        if ('IntersectionObserver' in window) {
-            new IntersectionObserver((e) => {
-                aLecran = e[0].isIntersecting;
-                aLecran ? demarrer() : stop();
-            }, { threshold: 0.2 }).observe(jour);
-        }
-        document.addEventListener('visibilitychange', () => {
-            visible = !document.hidden;
-            visible ? demarrer() : stop();
-        });
-        demarrer();
-    })();
-
-    /* ═══ Lignes caviardées ═══
-       On brouille quelques glyphes puis on retombe sur le bloc : le dossier
-       fait mine de s'ouvrir et se referme. Rien n'est révélé — le data-reveal
-       est lui-même caviardé, il n'y a aucune information à extraire du DOM. */
-    const GLYPHS = '█▓▒░#@$%&/\\|=+*<>';
-    const denied = document.getElementById('denied');
-    let deniedTimer = null;
-
-    document.querySelectorAll('.redacted').forEach((el) => {
-        const original = el.textContent;
-        const teaser = el.dataset.reveal || original;
-        let busy = false;
-        el.addEventListener('click', () => {
-            if (busy) return;
-            busy = true;
-            if (denied) {
-                denied.classList.add('show');
-                clearTimeout(deniedTimer);
-                deniedTimer = setTimeout(() => denied.classList.remove('show'), 3200);
-            }
-            if (reduced) { busy = false; return; }
-            el.classList.add('scrambling');
-            let frame = 0;
-            const id = setInterval(() => {
-                if (++frame < 22) {
-                    el.textContent = teaser.split('').map((c) =>
-                        c === ' ' ? ' ' : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]).join('');
-                } else {
-                    clearInterval(id);
-                    el.textContent = original;
-                    el.classList.remove('scrambling');
-                    busy = false;
-                }
-            }, 45);
-        });
-    });
-
-    /* ═══ Alerte ouverture ═══ */
-    const form = document.getElementById('alertForm');
-    const input = document.getElementById('alertTel');
-    const prenom = document.getElementById('alertPrenom');
-    const submit = document.getElementById('alertSubmit');
-    const done = document.getElementById('alertDone');
-    const err = document.getElementById('alertErr');
-
-    input.setAttribute('aria-describedby', 'alertErr');
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        err.textContent = '';
-        input.removeAttribute('aria-invalid');
-        // On accepte le numéro tel qu'il se tape : espaces, points, tirets.
-        const tel = input.value.replace(/[\s.\-()]/g, '');
-        if (!/^(\+33[1-9]\d{8}|\+(?!33)\d{7,14}|0[1-9]\d{8})$/.test(tel)) {
-            err.textContent = 'Numéro invalide — exemple : 06 12 34 56 78';
-            input.setAttribute('aria-invalid', 'true');
-            input.focus();
-            return;
-        }
-        submit.disabled = true;
-        submit.setAttribute('aria-busy', 'true');
-        try {
-            // Voiron existe désormais en base : les inscrits lui sont rattachés
-            // directement. Les premiers, enregistrés sous Grenoble avant son
-            // ouverture, restent visibles côté dashboard par event_name.
-            const res = await fetch(`${window.BARBERCLUB_API}/event-alerts`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phone: tel,
-                    first_name: prenom.value.trim() || undefined,
-                    event_name: 'ouverture_voiron',
-                    salon_id: 'voiron',
-                }),
-            });
-            if (res.ok) {
-                form.style.display = 'none';
-                done.classList.add('show');
-            } else {
-                const data = await res.json().catch(() => ({}));
-                err.textContent = data.error || 'Impossible d\'enregistrer, réessayez.';
-                submit.disabled = false;
-                submit.removeAttribute('aria-busy');
-            }
-        } catch {
-            err.textContent = 'Connexion impossible. Réessayez dans un instant.';
-            submit.disabled = false;
-            submit.removeAttribute('aria-busy');
-        }
-    });
+    return true;
+  }
+  if (maj()) { const id = setInterval(() => { if (!maj()) clearInterval(id); }, 1000); }
 })();
 </script>
+<script>
+(() => {
+  'use strict';
+  const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+  const page = document.getElementById('page');
+  requestAnimationFrame(() => page.classList.add('loaded'));
+
+  /* Letter split */
+  document.querySelectorAll('[data-split]').forEach(el => {
+    const text = el.textContent; el.innerHTML = '';
+    [...text].forEach((ch, i) => {
+      const s = document.createElement('span');
+      s.className = 'letter';
+      s.textContent = ch === ' ' ? '\u00A0' : ch;
+      s.style.transitionDelay = `${0.15 + i * 0.06}s`;
+      el.appendChild(s);
+    });
+  });
+
+  /* Particles */
+  if (!prefersReduced) {
+    const c = document.querySelector('.particles');
+    for (let i = 0; i < 18; i++) {
+      const p = document.createElement('div'); p.className = 'particle';
+      const size = 1 + Math.random() * 2;
+      p.style.cssText = `left:${Math.random()*100}%;bottom:-3%;width:${size}px;height:${size}px;animation-duration:${8+Math.random()*14}s;animation-delay:${Math.random()*10}s;opacity:0;`;
+      c.appendChild(p);
+    }
+  }
+
+  /* Gyroscope */
+  if (isTouch && !prefersReduced) {
+    const bg = document.querySelector('.bg');
+    function handleO(e) {
+      const b = Math.max(-30, Math.min(30, e.beta||0)), g = Math.max(-30, Math.min(30, e.gamma||0));
+      const tx = (g/30)*-12, ty = (b/60)*-8;
+      bg.style.transform = `translate(${tx}px,${ty}px) scale(1.1)`;
+    }
+    if (typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function') {
+      document.addEventListener('touchstart', function req() { DeviceOrientationEvent.requestPermission().then(s=>{if(s==='granted')window.addEventListener('deviceorientation',handleO,{passive:true})}).catch(()=>{}); document.removeEventListener('touchstart',req); }, {once:true});
+    } else if (typeof DeviceOrientationEvent!=='undefined') { window.addEventListener('deviceorientation',handleO,{passive:true}); }
+  }
+
+  /* Mouse parallax */
+  if (!isTouch && !prefersReduced) {
+    const bg = document.querySelector('.bg');
+    document.addEventListener('mousemove', e => {
+      const lx = (e.clientX/window.innerWidth-0.5)*2, ly = (e.clientY/window.innerHeight-0.5)*2;
+      bg.style.transform = `translate(${lx*-10}px,${ly*-8}px) scale(1.1)`;
+    });
+  }
+
+  /* Custom cursor */
+  if (!isTouch) {
+    const dot = document.querySelector('.cursor-dot'), ring = document.querySelector('.cursor-ring');
+    let mx=-100,my=-100,rx=-100,ry=-100;
+    document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; dot.style.left=mx+'px'; dot.style.top=my+'px'; });
+    (function loop(){ rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(loop); })();
+    document.querySelectorAll('a,[data-magnetic]').forEach(el => {
+      el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+      el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+    });
+  }
+
+  /* Magnetic */
+  if (!isTouch && !prefersReduced) {
+    document.querySelectorAll('[data-magnetic]').forEach(btn => {
+      btn.addEventListener('mousemove', e => { const r=btn.getBoundingClientRect(); btn.style.transform=`translate(${(e.clientX-r.left-r.width/2)*0.25}px,${(e.clientY-r.top-r.height/2)*0.25}px)`; });
+      btn.addEventListener('mouseleave', () => { btn.style.transform=''; });
+    });
+  }
+
+  /* Page transition */
+})();
+</script>
+<script src="../../assets/js/bottom-nav.js" defer></script>
 <script src="../../assets/js/cookie-consent.js" defer></script>
 <script src="../../assets/js/app-popup.js" defer></script>
 </body>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nos Barbiers Voiron | Équipe BarberClub - Coiffeurs Experts</title>
+<meta name="description" content="Rencontrez l'équipe de barbiers BarberClub Voiron : Clem, Ju, Jules et Gabriel. Coiffeurs experts en dégradés et barbe, ouverture en octobre 2026. Prenez RDV !">
+<!-- Le salon n'est pas encore ouvert en ligne : la page reste hors des moteurs. -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="../../config/manifest.json">
+<link rel="icon" type="image/png" href="../../assets/icons/favicon.png">
+<link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+<link rel="canonical" href="https://barberclub-grenoble.fr/pages/voiron/barbers.html">
+<meta property="og:title" content="Nos Barbiers Voiron | Équipe BarberClub">
+<meta property="og:description" content="Clem, Ju, Jules et Gabriel, l'équipe BarberClub Voiron. Coiffeurs experts en dégradés et barbe.">
+<meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-billard.jpg">
+<meta property="og:url" content="https://barberclub-grenoble.fr/pages/voiron/barbers.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="../../assets/css/barbers.css">
+<link rel="stylesheet" href="../../assets/css/bottom-nav.css">
+<style>
+/* ═══ Voiron — l'accent bleu électrique des visuels du salon ═══
+   Il ne sert qu'aux lueurs et aux filets, jamais en aplat. */
+:root {
+  --vo-accent: #3D5AFE;
+  --vo-accent-rgb: 61, 90, 254;
+  --vo-glow: rgba(61, 90, 254, 0.45);
+  --vo-ink: #AFC0FF;
+}
+::selection { background: rgba(var(--vo-accent-rgb), 0.35); color: #fff; }
+
+/* Une lumière froide tombe du haut de la page, comme le projecteur de la façade */
+.vo-light {
+  position: fixed; inset: 0 0 auto 0; height: 70vh; z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 55% at 50% -8%, rgba(var(--vo-accent-rgb), 0.20), transparent 70%),
+    radial-gradient(35% 30% at 50% 0%, rgba(var(--vo-accent-rgb), 0.12), transparent 75%);
+}
+
+.page-title { text-shadow: 0 0 28px rgba(var(--vo-accent-rgb), 0.35); }
+.page-subtitle { color: var(--vo-ink); opacity: 0.75; }
+.page-meta { border-color: rgba(var(--vo-accent-rgb), 0.28); }
+.page-meta .dot { background: var(--vo-accent); box-shadow: 0 0 8px var(--vo-glow); }
+
+/* Filet bleu au bas de chaque photo, et lueur au survol */
+.barber-media-overlay {
+  background: linear-gradient(180deg, transparent 48%, rgba(0,0,0,0.82) 100%);
+  box-shadow: inset 0 -1px 0 rgba(var(--vo-accent-rgb), 0.55);
+}
+.barber-card:focus-visible { outline-color: var(--vo-accent); }
+.barber-when { color: var(--vo-ink); }
+@media (min-width: 768px) {
+  .barber-card:hover {
+    border-color: rgba(var(--vo-accent-rgb), 0.45);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.5), 0 0 34px -10px var(--vo-glow);
+  }
+  .barber-card:hover .barber-cta {
+    background: rgba(var(--vo-accent-rgb), 0.22);
+    border-color: rgba(var(--vo-accent-rgb), 0.7);
+  }
+}
+
+/* Clem : le visage tombe un peu à gauche du cadre */
+.barber-media img.vo-clem { object-position: 32% center; }
+
+/* Fauteuil mystère : Jules et Gabriel n'ont pas encore de photo.
+   Pas de badge « Prochainement », ils font partie de l'équipe d'ouverture.
+   Une lueur bleue les rattache aux visuels du salon. (L'image ne se
+   retourne pas : le point d'interrogation est dans la photo.) */
+.barber-media picture { display: block; width: 100%; height: 100%; }
+.barber-media.vo-mystery::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(80% 60% at 50% 30%, rgba(var(--vo-accent-rgb), 0.22), transparent 70%);
+  mix-blend-mode: screen;
+}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BarberShop","name":"BarberClub Voiron","url":"https://barberclub-grenoble.fr/pages/voiron/barbers.html","telephone":"+33955208620","address":{"@type":"PostalAddress","streetAddress":"5 Av. Léon et Joanny Tardy","addressLocality":"Voiron","postalCode":"38500","addressCountry":"FR"},"image":"https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-billard.jpg","employee":[{"@type":"Person","name":"Clem","jobTitle":"Gérant","image":"https://barberclub-grenoble.fr/assets/images/barbers/clement.jpg"},{"@type":"Person","name":"Ju","jobTitle":"Co-fondateur","image":"https://barberclub-grenoble.fr/assets/images/barbers/julien.jpg?v=4"},{"@type":"Person","name":"Jules","jobTitle":"Barbier"},{"@type":"Person","name":"Gabriel","jobTitle":"Apprenti barbier"}]}
+</script>
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<div class="vo-light" aria-hidden="true"></div>
+<div class="cursor-dot" aria-hidden="true"></div>
+<div class="cursor-ring" aria-hidden="true"></div>
+
+<div class="page" id="page">
+
+  <header class="header" id="header">
+    <a href="./" class="back-btn" aria-label="Retour">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </a>
+    <a href="../../"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+    <div class="header-spacer"></div>
+  </header>
+
+  <div class="page-header">
+    <h1 class="page-title" data-split>Barbiers Voiron</h1>
+    <p class="page-subtitle">L'équipe BarberClub Voiron</p>
+    <p class="page-intro">Quatre barbiers vous accueillent avenue Léon et Joanny Tardy. Dégradés, fades, taille de barbe : chacun sa spécialité, pour un résultat sur mesure.</p>
+    <p class="page-meta"><span>L'équipe d'ouverture</span><span class="dot" aria-hidden="true"></span><span>Octobre 2026</span></p>
+  </div>
+
+  <div class="barbers">
+
+    <!-- Clem : gérant du salon. Sa fiche (barber-clement.html) renvoie vers la
+         réservation d'un autre salon : la carte mène donc à la réservation Voiron. -->
+    <a href="reserver.html?barber=Clem" class="barber-card" data-tilt>
+      <div class="barber-media">
+        <img src="../../assets/images/barbers/clement.jpg?v=3" alt="Clem" class="vo-clem">
+        <div class="barber-media-overlay"></div>
+      </div>
+      <div class="barber-info">
+        <div class="barber-details">
+          <h2 class="barber-name">Clem</h2>
+        </div>
+        <div class="barber-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </a>
+
+    <!-- Ju : un jour par semaine, jour pas encore fixé -->
+    <a href="reserver.html?barber=Ju" class="barber-card" data-tilt>
+      <div class="barber-media">
+        <img src="../../assets/images/barbers/julien.jpg?v=4" alt="Ju">
+        <div class="barber-media-overlay"></div>
+      </div>
+      <div class="barber-info">
+        <div class="barber-details">
+          <h2 class="barber-name">Ju</h2>
+        </div>
+        <div class="barber-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </a>
+
+    <!-- Jules : pas encore de photo, le fauteuil mystère en attendant -->
+    <a href="reserver.html?barber=Jules" class="barber-card" data-tilt>
+      <div class="barber-media vo-mystery">
+        <picture>
+          <source srcset="../../assets/images/barbers/barber-soon.webp?v=1" type="image/webp">
+          <img src="../../assets/images/barbers/barber-soon.jpg?v=1" alt="Jules — photo à venir" loading="lazy">
+        </picture>
+        <div class="barber-media-overlay"></div>
+      </div>
+      <div class="barber-info">
+        <div class="barber-details">
+          <h2 class="barber-name">Jules</h2>
+        </div>
+        <div class="barber-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </a>
+
+    <!-- Gabriel : apprenti, arrive le 15 octobre (contract_start en base) -->
+    <a href="reserver.html?barber=Gabriel" class="barber-card" data-tilt>
+      <div class="barber-media vo-mystery">
+        <picture>
+          <source srcset="../../assets/images/barbers/barber-soon.webp?v=1" type="image/webp">
+          <img src="../../assets/images/barbers/barber-soon.jpg?v=1" alt="Gabriel — photo à venir" loading="lazy">
+        </picture>
+        <div class="barber-media-overlay"></div>
+      </div>
+      <div class="barber-info">
+        <div class="barber-details">
+          <h2 class="barber-name">Gabriel</h2>
+        </div>
+        <div class="barber-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-row">
+      <a href="barbers.html" class="nav-item active" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Barbers
+      </a>
+      <a href="prestations.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        Tarifs
+      </a>
+      <a href="reserver.html" class="nav-cta">
+        <div class="nav-cta-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <span class="nav-cta-label">Réserver</span>
+      </a>
+      <a href="offres.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+        Offres
+      </a>
+      <a href="salon.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Salon
+      </a>
+    </div>
+  </nav>
+
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isTouch = matchMedia('(pointer: coarse)').matches;
+  const page = document.getElementById('page');
+  requestAnimationFrame(() => page.classList.add('loaded'));
+
+  /* Header scroll */
+  const header = document.getElementById('header');
+  window.addEventListener('scroll', () => {
+    header.classList.toggle('scrolled', window.scrollY > 50);
+  }, { passive: true });
+
+  /* Letter split — mot par mot, sinon le titre se coupe au milieu d'un mot :
+     chaque lettre etant un inline-block, le navigateur retourne a la ligne
+     n'importe ou. */
+  document.querySelectorAll('[data-split]').forEach(el => {
+    const words = el.textContent.split(' ');
+    el.innerHTML = '';
+    let i = 0;
+    words.forEach((word, w) => {
+      const wrap = document.createElement('span');
+      wrap.className = 'word';
+      [...word].forEach(ch => {
+        const s = document.createElement('span');
+        s.className = 'letter';
+        s.textContent = ch;
+        s.style.transitionDelay = `${0.15 + i * 0.06}s`;
+        i++;
+        wrap.appendChild(s);
+      });
+      el.appendChild(wrap);
+      if (w < words.length - 1) {
+        const space = document.createElement('span');
+        space.className = 'letter';
+        space.textContent = '\u00A0';
+        space.style.transitionDelay = `${0.15 + i * 0.06}s`;
+        i++;
+        el.appendChild(space);
+      }
+    });
+  });
+
+  /* 3D tilt on cards (desktop) */
+  if (!isTouch && !prefersReduced) {
+    document.querySelectorAll('[data-tilt]').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width;
+        const y = (e.clientY - r.top) / r.height;
+        card.style.transform = `perspective(800px) rotateX(${(0.5-y)*8}deg) rotateY(${(x-0.5)*8}deg) translateY(-4px)`;
+      });
+      card.addEventListener('mouseleave', () => { card.style.transform = ''; });
+    });
+  }
+
+  /* Custom cursor */
+  if (!isTouch) {
+    const dot = document.querySelector('.cursor-dot'), ring = document.querySelector('.cursor-ring');
+    let mx=-100,my=-100,rx=-100,ry=-100;
+    document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; dot.style.left=mx+'px'; dot.style.top=my+'px'; });
+    (function loop(){ rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(loop); })();
+    document.querySelectorAll('a,[data-tilt]').forEach(el => {
+      el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+      el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+    });
+  }
+})();
+</script>
+<script src="../../assets/js/barbers-cards.js" defer></script>
+<script src="../../assets/js/bottom-nav.js" defer></script>
+<script src="../../assets/js/cookie-consent.js" defer></script>
+</body>
+</html>

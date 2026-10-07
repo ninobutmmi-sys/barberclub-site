@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Contact Barbier Voiron | BarberClub - Adresse, Horaires, Itinéraire</title>
+    <meta name="description"
+        content="Contactez BarberClub Voiron : 5 Av. Léon et Joanny Tardy, 38500 Voiron, face à la gare. Téléphone, plan d'accès, horaires 9h-19h. Ouverture en octobre.">
+    <meta name="keywords"
+        content="contact barbier voiron, adresse barbier voiron, horaires barbier voiron, barbershop voiron gare, coiffeur homme voiron">
+    <link rel="manifest" href="../../config/manifest.json">
+    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/icons/favicon.png">
+    <link rel="apple-touch-icon" href="../../assets/icons/icon-192x192.png">
+    <link rel="canonical" href="https://barberclub-grenoble.fr/pages/voiron/contact.html">
+    <!-- Open Graph -->
+    <meta property="og:title" content="Contact Barbier Voiron | BarberClub - Adresse, Horaires, Itinéraire">
+    <meta property="og:description" content="Contactez BarberClub Voiron : 5 Av. Léon et Joanny Tardy, 38500 Voiron, face à la gare. Téléphone, plan d'accès, horaires 9h-19h. Ouverture en octobre.">
+    <meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-facade-nuit.jpg">
+    <meta property="og:url" content="https://barberclub-grenoble.fr/pages/voiron/contact.html">
+    <meta property="og:type" content="website">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Contact Barbier Voiron | BarberClub - Adresse, Horaires, Itinéraire">
+    <meta name="twitter:description" content="Contactez BarberClub Voiron : 5 Av. Léon et Joanny Tardy, 38500 Voiron, face à la gare. Téléphone, plan d'accès, horaires 9h-19h. Ouverture en octobre.">
+    <meta name="twitter:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-facade-nuit.jpg">
+    <!-- Leaflet CSS pour la carte -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" /> <!-- TODO: add SRI integrity hash -->
+    <link rel="stylesheet" href="../../assets/css/base.css">
+    <link rel="stylesheet" href="../../assets/css/contact.css">
+<link rel="stylesheet" href="../../assets/css/bottom-nav.css">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://barberclub-grenoble.fr/"},
+        {"@type": "ListItem", "position": 2, "name": "Voiron", "item": "https://barberclub-grenoble.fr/pages/voiron/"},
+        {"@type": "ListItem", "position": 3, "name": "Contact", "item": "https://barberclub-grenoble.fr/pages/voiron/contact.html"}
+      ]
+    }
+    </script>
+    <!-- Coordonnées : Nominatim / OpenStreetMap (nœud 11513451336), « 5, Avenue Léon et Joanny Tardy, 38500 Voiron ».
+         Pas d'openingHoursSpecification : les jours d'ouverture ne sont pas encore fixés. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BarberShop",
+      "name": "BarberClub Voiron",
+      "image": "https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-facade-nuit.jpg",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "5 Av. Léon et Joanny Tardy",
+        "addressLocality": "Voiron",
+        "postalCode": "38500",
+        "addressCountry": "FR"
+      },
+      "geo": {"@type": "GeoCoordinates", "latitude": 45.364736, "longitude": 5.5947044},
+      "telephone": "+33955208620",
+      "url": "https://barberclub-grenoble.fr/pages/voiron/",
+      "priceRange": "€€"
+    }
+    </script>
+<link rel="stylesheet" href="../../assets/css/page-transitions.css">
+    <style>
+        /* ── Voiron : accent bleu électrique (propre à ce salon) ── */
+        :root {
+            --vo-blue: #3D5AFE;
+            --vo-glow: rgba(61, 90, 254, 0.45);
+            --vo-soft: #AFC0FF;
+        }
+        ::selection { background: rgba(61, 90, 254, 0.35); color: #fff; }
+
+        /* En-tête : la vraie façade de nuit derrière le titre */
+        .vo-hero {
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
+        }
+        .vo-hero-media {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+        }
+        .vo-hero-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 30%;
+            opacity: 0.55;
+            filter: saturate(1.1);
+        }
+        .vo-hero-media::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 55% at 50% 30%, rgba(61, 90, 254, 0.22), transparent 70%),
+                linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 40%, #000 100%);
+        }
+        .vo-hero .page-header { padding-bottom: 40px; }
+        .vo-hero .page-subtitle { color: var(--vo-soft); opacity: 0.85; }
+        .vo-hero .page-intro { color: rgba(255, 255, 255, 0.7); }
+
+        /* Filets et icônes des sections */
+        .section-header-icon { color: var(--vo-soft); }
+        .section-header-line { background: linear-gradient(to right, rgba(61, 90, 254, 0.45), transparent) !important; }
+        .contact-card-icon { color: var(--vo-soft); }
+
+        /* Carte : liseré bleu + marqueur lumineux */
+        .map-container { border-color: rgba(61, 90, 254, 0.35); box-shadow: 0 0 40px rgba(61, 90, 254, 0.12); }
+        .vo-marker {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--vo-blue);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 0 6px rgba(61, 90, 254, 0.25), 0 0 26px var(--vo-glow);
+        }
+
+        /* Horaires : plage unique + note d'ouverture */
+        .status-badge.soon {
+            background: rgba(61, 90, 254, 0.14);
+            color: var(--vo-soft);
+            box-shadow: inset 0 0 0 1px rgba(61, 90, 254, 0.35);
+        }
+        .hours-row.vo-range { background: rgba(61, 90, 254, 0.08); border-color: rgba(61, 90, 254, 0.25); }
+        .hours-row.vo-range .hours-day { color: #fff; font-weight: 600; }
+        .hours-time.vo-time { color: var(--vo-soft); }
+        .vo-hours-note {
+            margin-top: 12px;
+            font-size: 13px;
+            line-height: 1.55;
+            color: rgba(255, 255, 255, 0.55);
+        }
+
+        .transport-time { color: var(--vo-soft); }
+
+        @media (min-width: 1024px) {
+            /* Photo portrait : on la cale à droite au lieu de l'étirer sur 1440px */
+            .vo-hero-media {
+                left: auto; width: 40%;
+                -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 45%);
+                mask-image: linear-gradient(to right, transparent 0%, #000 45%);
+            }
+            .vo-hero-media img { object-position: center 13%; opacity: 0.6; }
+            .vo-hero .page-header { padding-bottom: 48px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="grain"></div>
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+    <a href="#main-content" class="skip-to-content">Aller au contenu principal</a>
+
+    <!-- HEADER -->
+    <header class="header" id="header">
+        <a href="./" class="back-btn" onclick="if(history.length>1){history.back();return false}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+        </a>
+        <a href="../../" class="logo-link"><img src="../../assets/images/common/logo-blanc.png" alt="BarberClub" class="logo"></a>
+        <div class="header-spacer"></div>
+    </header>
+
+    <!-- PAGE HEADER -->
+    <div class="vo-hero">
+        <picture class="vo-hero-media" aria-hidden="true">
+            <source srcset="../../assets/images/salons/Voiron/voiron-facade-nuit.webp" type="image/webp">
+            <img src="../../assets/images/salons/Voiron/voiron-facade-nuit.jpg" alt="" decoding="async">
+        </picture>
+        <div class="page-header">
+            <h1 class="page-title" data-split>Contact Voiron</h1>
+            <p class="page-subtitle">Accès & Horaires</p>
+            <p class="page-intro">Retrouve le salon BarberClub au 5 avenue Léon et Joanny Tardy, juste en face de la gare de Voiron. Ouverture en octobre.</p>
+        </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content" id="main-content">
+        <!-- MAP -->
+        <div class="map-container" id="mapContainer">
+            <div id="map"></div>
+            <a href="#" id="openMapsBtn" class="map-overlay-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                </svg>
+                Itinéraire
+            </a>
+        </div>
+
+        <!-- LOCALISATION -->
+        <div class="contact-section">
+            <div class="section-header">
+                <span class="section-header-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                    </svg>
+                </span>
+                <h2 class="section-header-title">Nous Trouver</h2>
+                <span class="section-header-line"></span>
+            </div>
+            <div class="contact-card">
+                <div class="contact-card-header">
+                    <div class="contact-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                    </div>
+                    <span class="contact-card-label">Adresse</span>
+                </div>
+                <p class="contact-card-value">5 Av. Léon et Joanny Tardy<br>38500 Voiron</p>
+                <a href="#" id="addressBtn" class="action-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11" />
+                    </svg>
+                    Ouvrir dans Maps
+                </a>
+                <div class="transport-grid" style="margin-top: 16px;">
+                    <!-- Distance mesurée sur OpenStreetMap : ~120 m à pied jusqu'aux guichets de la gare -->
+                    <div class="transport-row">
+                        <div class="transport-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="3" width="16" height="16" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><circle cx="8" cy="21" r="1"/><circle cx="16" cy="21" r="1"/><path d="M8 19h8"/>
+                            </svg>
+                        </div>
+                        <div class="transport-info">
+                            <div class="transport-name">Gare SNCF de Voiron</div>
+                            <div class="transport-detail">Juste en face du salon</div>
+                        </div>
+                        <div class="transport-time">2 min</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOUS JOINDRE -->
+        <div class="contact-section">
+            <div class="section-header">
+                <span class="section-header-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                </span>
+                <h2 class="section-header-title">Nous Joindre</h2>
+                <span class="section-header-line"></span>
+            </div>
+            <div class="contact-card">
+                <div class="contact-card-header">
+                    <div class="contact-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg>
+                    </div>
+                    <span class="contact-card-label">Téléphone</span>
+                </div>
+                <p class="contact-card-value">09 55 20 86 20</p>
+                <a href="tel:+33955208620" class="action-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    Appeler le salon
+                </a>
+            </div>
+        </div>
+
+        <!-- HORAIRES -->
+        <div class="contact-section">
+            <div class="section-header">
+                <span class="section-header-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                </span>
+                <h2 class="section-header-title">Horaires</h2>
+                <span class="section-header-line"></span>
+            </div>
+            <div class="contact-card">
+                <div id="statusBadge" class="status-badge soon">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Ouverture en octobre</span>
+                </div>
+                <div class="hours-grid">
+                    <div class="hours-row vo-range">
+                        <span class="hours-day">Horaires</span>
+                        <span class="hours-time vo-time">9h – 19h</span>
+                    </div>
+                </div>
+                <p class="vo-hours-note">Jours d'ouverture communiqués à l'ouverture du salon, en octobre.</p>
+            </div>
+        </div>
+
+        <!-- LEGAL LINKS -->
+        <div class="legal-section">
+            <a href="../legal/mentions-legales.html" class="legal-link">Mentions légales</a>
+            <span class="legal-sep">•</span>
+            <a href="../legal/cgu.html" class="legal-link">CGU</a>
+            <span class="legal-sep">•</span>
+            <a href="../legal/politique-confidentialite.html" class="legal-link">Confidentialité</a>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+        <div class="nav-row">
+            <a href="barbers.html" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                Barbers
+            </a>
+            <a href="prestations.html" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                    <line x1="7" y1="7" x2="7.01" y2="7" />
+                </svg>
+                Tarifs
+            </a>
+            <!-- CTA Central -->
+            <a href="reserver.html" class="nav-cta">
+                <div class="nav-cta-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                </div>
+                <span class="nav-cta-label">Réserver</span>
+            </a>
+            <a href="salon.html" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                Salon
+            </a>
+            <a href="contact.html" class="nav-item active" aria-current="page">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                </svg>
+                Contact
+            </a>
+        </div>
+    </nav>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script> <!-- TODO: add SRI integrity hash -->
+    <script>
+        /* --- LETTER SPLIT --- */
+        document.querySelectorAll('[data-split]').forEach(el => {
+            const text = el.textContent;
+            el.innerHTML = '';
+            text.split('').forEach((ch, i) => {
+                const span = document.createElement('span');
+                span.className = 'letter';
+                span.textContent = ch === ' ' ? ' ' : ch;
+                span.style.transitionDelay = (i * 0.04) + 's';
+                el.appendChild(span);
+            });
+        });
+        requestAnimationFrame(() => { document.body.classList.add('loaded'); });
+
+        /* --- CUSTOM CURSOR (pointer:fine only) --- */
+        if (window.matchMedia('(pointer: fine)').matches) {
+            const dot = document.querySelector('.cursor-dot');
+            const ring = document.querySelector('.cursor-ring');
+            let mx = -100, my = -100, rx = -100, ry = -100;
+            document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; dot.style.left = mx + 'px'; dot.style.top = my + 'px'; });
+            (function loop() { rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15; ring.style.left = rx + 'px'; ring.style.top = ry + 'px'; requestAnimationFrame(loop); })();
+            document.querySelectorAll('a, button, .contact-card, .social-link, .action-btn, .nav-cta, .map-overlay-btn').forEach(el => {
+                el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+                el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+            });
+        }
+
+        // Coordonnées du salon Voiron (Nominatim / OpenStreetMap, nœud 11513451336)
+        const salonLat = 45.364736;
+        const salonLng = 5.5947044;
+        const salonAddress = "5 Av. Léon et Joanny Tardy, 38500 Voiron";
+
+        // Initialisation de la carte
+        const map = L.map('map', {
+            zoomControl: true,
+            scrollWheelZoom: false
+        }).setView([salonLat, salonLng], 16);
+
+        // Tuiles OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(map);
+
+        // Marqueur bleu électrique
+        const customIcon = L.divIcon({
+            html: `<div class="vo-marker">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                </svg>
+            </div>`,
+            className: 'custom-marker',
+            iconSize: [40, 40],
+            iconAnchor: [20, 40]
+        });
+
+        L.marker([salonLat, salonLng], { icon: customIcon }).addTo(map);
+
+        // Ouvre l'itinéraire dans l'app Maps native
+        function openInMaps() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+
+            if (isIOS) {
+                window.location.href = `maps://maps.apple.com/?daddr=${salonLat},${salonLng}&dirflg=d`;
+            } else if (isAndroid) {
+                window.location.href = `geo:${salonLat},${salonLng}?q=${encodeURIComponent(salonAddress)}`;
+            } else {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${salonLat},${salonLng}`, '_blank');
+            }
+        }
+
+        document.getElementById('openMapsBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            openInMaps();
+        });
+
+        document.getElementById('addressBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            openInMaps();
+        });
+
+        // Header scroll effect
+        const header = document.getElementById('header');
+        window.addEventListener('scroll', () => {
+            header.classList.toggle('scrolled', window.scrollY > 50);
+        }, { passive: true });
+
+        // Stagger reveal animations
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+        const mapEl = document.getElementById('mapContainer');
+        if (mapEl) revealObserver.observe(mapEl);
+
+        document.querySelectorAll('.contact-section').forEach(section => {
+            const cards = section.querySelectorAll('.contact-card');
+            cards.forEach((card, i) => {
+                card.style.transitionDelay = (i * 0.07) + 's';
+                revealObserver.observe(card);
+            });
+        });
+
+        // Statut : « Ouverture en octobre » jusqu'au 21/10/2026 (offre d'ouverture),
+        // ensuite ouvert/fermé selon la plage 9h-19h (jours pas encore fixés).
+        const OPENING_DATE = new Date(2026, 9, 21); // 21 octobre 2026, minuit local
+        function checkIfOpen() {
+            const now = new Date();
+            const statusBadge = document.getElementById('statusBadge');
+            const statusText = document.getElementById('statusText');
+            statusBadge.classList.remove('open', 'closed', 'soon');
+
+            if (now < OPENING_DATE) {
+                statusBadge.classList.add('soon');
+                statusText.textContent = 'Ouverture en octobre';
+                return;
+            }
+            const currentTime = now.getHours() + now.getMinutes() / 60;
+            const isOpen = currentTime >= 9 && currentTime < 19;
+            statusBadge.classList.add(isOpen ? 'open' : 'closed');
+            statusText.textContent = isOpen ? 'Ouvert' : 'Fermé';
+        }
+
+        checkIfOpen();
+        setInterval(checkIfOpen, 60000);
+    </script>
+<script src="../../assets/js/bottom-nav.js" defer></script>
+<script src="../../assets/js/cookie-consent.js" defer></script>
+</body>
+
+</html>
