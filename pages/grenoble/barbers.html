@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="../../assets/css/barbers.css">
 <link rel="stylesheet" href="../../assets/css/bottom-nav.css">
 <style>
-/* Grenoble — grille 8 cartes (6 barbers + 2 « prochainement »). Julien vient le jeudi. */
+/* Grenoble — grille 8 cartes. Julien vient le jeudi. */
 .page.loaded .barber-card:nth-child(5) { transition-delay: 0.7s; }
 .page.loaded .barber-card:nth-child(6) { transition-delay: 0.8s; }
 .page.loaded .barber-card:nth-child(7) { transition-delay: 0.9s; }
@@ -169,47 +169,46 @@
       </div>
     </a>
 
-    <div class="barber-card barber-card--soon" data-tilt data-soon role="img" aria-label="Eddine, nouveau barbier au salon de Grenoble, dès le 15 septembre">
-      <span class="soon-badge"><span class="dot" aria-hidden="true"></span>Prochainement</span>
+    <!-- Eddine et Durel sont arrivés (15 sept., 1er oct.) : plus de « Prochainement ».
+         Pas encore de fiche à eux : la carte mène à la réservation, barbier choisi. -->
+    <a href="reserver.html?barber=Eddine" class="barber-card" data-tilt>
       <div class="barber-media">
         <picture>
-          <source srcset="../../assets/images/barbers/barber-soon.webp?v=1" type="image/webp">
-          <img src="../../assets/images/barbers/barber-soon.jpg?v=1" alt="Fauteuil de barbier mystère annonçant l'arrivée de Eddine" loading="lazy">
+          <source srcset="../../assets/images/barbers/eddine.webp?v=2" type="image/webp">
+          <img src="../../assets/images/barbers/eddine.jpg?v=2" alt="Eddine" loading="lazy">
         </picture>
         <div class="barber-media-overlay"></div>
       </div>
       <div class="barber-info">
         <div class="barber-details">
           <h2 class="barber-name">Eddine</h2>
-          <p class="barber-role">Nouveau</p>
-          <p class="barber-when">Dès le 15 sept.</p>
+          <p class="barber-role">Barbier</p>
         </div>
-        <div class="barber-cta" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+        <div class="barber-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </div>
       </div>
-    </div>
+    </a>
 
-    <div class="barber-card barber-card--soon" data-tilt data-soon role="img" aria-label="Durel, nouveau barbier au salon de Grenoble, dès le 1er octobre">
-      <span class="soon-badge"><span class="dot" aria-hidden="true"></span>Prochainement</span>
+    <!-- Durel : pas encore de photo, le fauteuil mystère reste en attendant -->
+    <a href="reserver.html?barber=Durel" class="barber-card" data-tilt>
       <div class="barber-media">
         <picture>
           <source srcset="../../assets/images/barbers/barber-soon.webp?v=1" type="image/webp">
-          <img src="../../assets/images/barbers/barber-soon.jpg?v=1" alt="Fauteuil de barbier mystère annonçant l'arrivée de Durel" loading="lazy">
+          <img src="../../assets/images/barbers/barber-soon.jpg?v=1" alt="Durel — photo à venir" loading="lazy">
         </picture>
         <div class="barber-media-overlay"></div>
       </div>
       <div class="barber-info">
         <div class="barber-details">
           <h2 class="barber-name">Durel</h2>
-          <p class="barber-role">Nouveau</p>
-          <p class="barber-when">Dès le 1er oct.</p>
+          <p class="barber-role">Barbier</p>
         </div>
-        <div class="barber-cta" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+        <div class="barber-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </div>
       </div>
-    </div>
+    </a>
 
   </div>
 
