@@ -845,3 +845,50 @@ body.loaded .page-title .letter { opacity: 1; transform: translateY(0); }
     @keyframes ctaNavShimmer { 0%, 100% { left: -100%; } 50% { left: 100%; } }
 
 }
+
+/* ═══════════════════════════════════════════
+   CARTE PARTENAIRE — WiiKard (Meylan)
+   Le rouge de la marque en filet et en lueur, le logo sur sa pastille
+   blanche (texte sombre), comme dans la reservation.
+   ═══════════════════════════════════════════ */
+.tarif-category-group .tarif-card.tarif-partner {
+    border-color: rgba(255, 65, 54, 0.4);
+    background:
+        radial-gradient(120% 160% at 0% 0%, rgba(255, 65, 54, 0.16), transparent 55%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+        0 8px 32px rgba(255, 65, 54, 0.12);
+}
+@media (pointer: fine) {
+    .tarif-card.tarif-partner.visible:hover { border-color: rgba(255, 65, 54, 0.65); }
+}
+.tarif-partner-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.tarif-partner-logo {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    border-radius: 9px;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.tarif-partner-logo img { display: block; height: 17px; width: auto; }
+.tarif-partner-tag {
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 65, 54, 0.45);
+    background: rgba(255, 65, 54, 0.12);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #FFB3AD;
+    white-space: nowrap;
+}
