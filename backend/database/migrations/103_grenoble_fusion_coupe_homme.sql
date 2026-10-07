@@ -37,23 +37,31 @@ BEGIN
 
   -- Les barbiers de « sans barbe » font la coupe homme, à leur durée
   -- (celle qu'ils avaient, sinon celle de la prestation : 20 min) et à leur prix.
+  -- Pas d'ON CONFLICT : en prod, barber_services n'a pas de contrainte
+  -- d'unicité sur (barber_id, service_id). Mise à jour puis ajout des absents.
+  UPDATE barber_services cb
+  SET custom_duration = COALESCE(sb.custom_duration, s.duration),
+      custom_price = COALESCE(sb.custom_price, cb.custom_price)
+  FROM barber_services sb
+  JOIN services s ON s.id = sb.service_id
+  WHERE sb.service_id = source
+    AND cb.service_id = cible AND cb.barber_id = sb.barber_id;
+
   INSERT INTO barber_services (barber_id, service_id, custom_duration, custom_price)
-  SELECT bs.barber_id, cible,
-         COALESCE(bs.custom_duration, s.duration),
-         bs.custom_price
-  FROM barber_services bs
-  JOIN services s ON s.id = bs.service_id
-  WHERE bs.service_id = source
-  ON CONFLICT (barber_id, service_id) DO UPDATE
-    SET custom_duration = EXCLUDED.custom_duration,
-        custom_price = COALESCE(EXCLUDED.custom_price, barber_services.custom_price);
+  SELECT DISTINCT ON (sb.barber_id) sb.barber_id, cible, COALESCE(sb.custom_duration, s.duration), sb.custom_price
+  FROM barber_services sb
+  JOIN services s ON s.id = sb.service_id
+  WHERE sb.service_id = source
+    AND NOT EXISTS (SELECT 1 FROM barber_services x WHERE x.service_id = cible AND x.barber_id = sb.barber_id);
 
   -- Leurs créneaux réservés à cette coupe, s'il y en a, suivent.
   INSERT INTO service_restrictions (service_id, barber_id, day_of_week, start_time, end_time, salon_id)
-  SELECT cible, barber_id, day_of_week, start_time, end_time, salon_id
-  FROM service_restrictions
-  WHERE service_id = source
-  ON CONFLICT (service_id, barber_id, day_of_week, salon_id) DO NOTHING;
+  SELECT cible, r.barber_id, r.day_of_week, r.start_time, r.end_time, r.salon_id
+  FROM service_restrictions r
+  WHERE r.service_id = source
+    AND NOT EXISTS (SELECT 1 FROM service_restrictions x
+                    WHERE x.service_id = cible AND x.barber_id = r.barber_id
+                      AND x.day_of_week = r.day_of_week AND x.salon_id = r.salon_id);
 
   UPDATE services SET is_active = false WHERE id = source;
 
