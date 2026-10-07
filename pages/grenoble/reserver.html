@@ -1364,8 +1364,11 @@
             // Une case : le prix en titre, puisque c'est lui que le client compare.
             // 27 plutot que 27,00 ; un prix a zero s'ecrit « Offert ».
             const euros = (c) => Number(c) % 100 === 0 ? String(Number(c) / 100) : (Number(c) / 100).toFixed(2).replace('.', ',');
+            // Pas de duree sur les cases : elle depend du barbier (Clem et Ju
+            // coupent en 20 min ce que les autres font en 30). Elle s'affiche
+            // au recapitulatif, une fois le barbier connu.
             const caseHTML = (s) => `
-                        <div class="service-card service-case" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — ${s.duration} minutes — ${formatPrice(s.price)}">
+                        <div class="service-card service-case" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — ${formatPrice(s.price)}">
                             <div class="service-case-top">
                                 ${Number(s.price) === 0
                                     ? '<span class="service-case-price is-free">Offert</span>'
@@ -1374,7 +1377,6 @@
                             </div>
                             <div class="service-case-name">${esc(s.name)}</div>
                             ${s.description ? `<div class="service-case-desc">${esc(s.description)}</div>` : ''}
-                            <div class="service-duration">${clockSVG}${s.duration} min</div>
                         </div>`;
 
             // La carte du partenaire WiiKard : pleine largeur, le logo sur sa
@@ -1382,7 +1384,7 @@
             // filet, et le barbier qui la pratique, nomme avant l'etape barber.
             const partnerHTML = (s) => {
                 return `
-                        <div class="service-card service-case service-partner" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — tarif partenaire WiiKard — ${s.duration} minutes — ${formatPrice(s.price)}">
+                        <div class="service-card service-case service-partner" data-id="${esc(s.id)}" role="radio" tabindex="0" aria-checked="false" aria-label="${esc(s.name)} — tarif partenaire WiiKard — ${formatPrice(s.price)}">
                             <span class="partner-shine" aria-hidden="true"></span>
                             <div class="partner-head">
                                 <span class="partner-logo"><img src="../../assets/images/partners/wiikard.webp" alt="WiiKard" width="96" height="27"></span>
@@ -1393,7 +1395,6 @@
                                 <div class="partner-info">
                                     <div class="service-case-name">${esc(s.name)}</div>
                                     ${s.description ? `<div class="service-case-desc">${esc(s.description)}</div>` : ''}
-                                    <div class="partner-meta"><span class="service-duration">${clockSVG}${s.duration} min</span></div>
                                 </div>
                                 <span class="service-case-price">${euros(s.price)}<span class="service-case-euro">&euro;</span></span>
                             </div>

@@ -3347,8 +3347,10 @@ a:focus-visible, button:focus-visible {
     align-items: stretch;
     justify-content: flex-start;
     gap: 5px;
-    min-height: 150px;
-    padding: 14px 14px 13px;
+    /* Plus de duree en bas de case (elle depend du barbier) : la hauteur suit
+       le contenu, la grille aligne deja les cases d'une meme rangee. */
+    min-height: 0;
+    padding: 14px 14px 15px;
     border-radius: 16px;
     background: linear-gradient(160deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
     touch-action: manipulation;
