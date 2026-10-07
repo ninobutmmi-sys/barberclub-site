@@ -15,7 +15,7 @@ const SALONS = [
     id: 'grenoble',
     name: 'Grenoble',
     address: '5 Rue Clot Bey, 38000 Grenoble',
-    barbers: ['Tom', 'Alan', 'Clem', 'Nathan', 'Louay'],
+    barbers: ['Ju', 'Tom', 'Alan', 'Nathan', 'Louay'],
     image: '/salons/comptoir-grenoble.webp',
   },
   {
@@ -25,7 +25,7 @@ const SALONS = [
     id: 'voiron',
     name: 'Voiron',
     address: '5 Av. Leon et Joanny Tardy, 38500 Voiron',
-    barbers: [],
+    barbers: ['Ju', 'Jules', 'Gabriel', 'Clem'],
     image: '/salons/facade-voiron.webp',
   },
 ];
