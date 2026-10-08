@@ -252,10 +252,7 @@ router.post('/trigger-reminders', async (req, res, next) => {
         targetDate,
         found: bookings.rows.length,
         queued,
-        bySalon: {
-          meylan: bookings.rows.filter(r => (r.salon_id || 'meylan') === 'meylan').length,
-          grenoble: bookings.rows.filter(r => r.salon_id === 'grenoble').length,
-        },
+        bySalon: Object.fromEntries(config.SALON_IDS.map(id => [id, bookings.rows.filter(r => (r.salon_id || 'meylan') === id).length])),
       });
     }
 
@@ -278,10 +275,7 @@ router.post('/trigger-reminders', async (req, res, next) => {
       ok: true,
       mode: 'next-24h',
       pendingReminders: check.rows.length,
-      bySalon: {
-        meylan: check.rows.filter(r => (r.salon_id || 'meylan') === 'meylan').length,
-        grenoble: check.rows.filter(r => r.salon_id === 'grenoble').length,
-      },
+      bySalon: Object.fromEntries(config.SALON_IDS.map(id => [id, check.rows.filter(r => (r.salon_id || 'meylan') === id).length])),
       grenobleKeySet: !!brevoGre.apiKey,   // était grenobleConf.brevo?.apiKey — variable inexistante, la route plantait ici
       grenobleKeyPrefix: (brevoGre.apiKey || '').slice(0, 12) + '...',
     });

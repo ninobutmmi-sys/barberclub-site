@@ -8,6 +8,7 @@ const webpush = require('web-push');
 const db = require('../config/database');
 const config = require('../config/env');
 const logger = require('../utils/logger');
+const { getSalonLabel } = require('./notification/helpers');
 
 if (config.vapid.publicKey && config.vapid.privateKey) {
   webpush.setVapidDetails(
@@ -105,7 +106,7 @@ async function notifySalon(salonId, payload) {
 function notifyNewBooking(salonId, booking) {
   const clientName = [booking.first_name, booking.last_name].filter(Boolean).join(' ') || 'Client';
   const time = (booking.start_time || '').slice(0, 5);
-  const salonLabel = salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
+  const salonLabel = getSalonLabel(salonId);
   const barber = booking.barber_name || '';
   const service = booking.service_name || '';
   const date = booking.date || '';
@@ -138,7 +139,7 @@ function notifyNewBooking(salonId, booking) {
 function notifyCancellation(salonId, booking) {
   const clientName = [booking.first_name, booking.last_name].filter(Boolean).join(' ') || 'Client';
   const time = (booking.start_time || '').slice(0, 5);
-  const salonLabel = salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
+  const salonLabel = getSalonLabel(salonId);
   const barber = booking.barber_name || '';
   const date = booking.date || '';
 
@@ -165,7 +166,7 @@ function notifyCancellation(salonId, booking) {
 function notifyReschedule(salonId, booking) {
   const clientName = [booking.first_name, booking.last_name].filter(Boolean).join(' ') || 'Client';
   const time = (booking.start_time || '').slice(0, 5);
-  const salonLabel = salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
+  const salonLabel = getSalonLabel(salonId);
   const barber = booking.barber_name || '';
   const date = booking.date || '';
 
@@ -191,7 +192,7 @@ function notifyReschedule(salonId, booking) {
  * Reste affichee jusqu'a interaction (requireInteraction).
  */
 function notifySmsFailed(salonId, info) {
-  const salonLabel = salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
+  const salonLabel = getSalonLabel(salonId);
   const phone = info.phone || info.recipient || '';
   const reason = info.reason || info.event || 'rejete';
   const client = info.clientName || 'Client';

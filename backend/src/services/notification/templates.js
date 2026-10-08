@@ -18,6 +18,7 @@ const {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   TEXT_MUTED,
+  getSalonLabel,
 } = require('./helpers');
 const { loadTemplate } = require('./loadTemplate');
 
@@ -314,7 +315,7 @@ async function sendResetPasswordEmail({ email, first_name, resetUrl, salon_id, i
  */
 async function sendReminderSMSDirect(data) {
   const salonId = data.salon_id || 'meylan';
-  const salonShort = salonId === 'meylan' ? 'Meylan' : 'Grenoble';
+  const salonShort = getSalonLabel(salonId);
 
   const timeFormatted = formatTime(data.start_time);
   const dateFRFull = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);
@@ -331,7 +332,7 @@ async function sendReminderSMSDirect(data) {
  */
 async function sendConfirmationSMS(data) {
   const salonId = data.salon_id || 'meylan';
-  const salonShort = salonId === 'meylan' ? 'Meylan' : 'Grenoble';
+  const salonShort = getSalonLabel(salonId);
 
   const timeFormatted = formatTime(data.start_time);
   const dateFRFull = formatDateFR(typeof data.date === 'string' ? data.date.slice(0, 10) : data.date);

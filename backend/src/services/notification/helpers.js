@@ -85,9 +85,12 @@ const INSTAGRAM_URL = 'https://www.instagram.com/barberclub_grenoble/';
 
 /**
  * Extract display label from salon name (e.g. "BarberClub Meylan" -> "Meylan")
+ *
+ * Tiré de la configuration des salons : l'ancien ternaire grenoble/meylan
+ * signait « Meylan » les emails et les notifications de Voiron.
  */
 function getSalonLabel(salonId) {
-  return salonId === 'grenoble' ? 'Grenoble' : 'Meylan';
+  return config.getSalonConfig(salonId).name.replace(/^BarberClub\s+/i, '');
 }
 
 // Surnoms affichés (migration 099) -> prénom des fichiers photo

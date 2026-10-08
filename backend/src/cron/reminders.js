@@ -1,6 +1,6 @@
 const db = require('../config/database');
 const config = require('../config/env');
-const { queueNotification, formatDateFR, formatTime, toGSM, isFrenchMobile } = require('../services/notification');
+const { queueNotification, formatDateFR, formatTime, toGSM, isFrenchMobile, getSalonLabel } = require('../services/notification');
 const logger = require('../utils/logger');
 
 /**
@@ -65,7 +65,8 @@ async function queueReminders() {
         // rejette (Twilio 21635) et le client ne recevait alors RIEN, ni SMS
         // ni email, puisque la branche email ne se déclenchait pas.
         if (booking.phone && isFrenchMobile(booking.phone)) {
-          const salonShort = salonId === 'meylan' ? 'Meylan' : 'Grenoble';
+          // getSalonLabel : l'ancien ternaire envoyait « BarberClub Grenoble » aux clients de Voiron
+          const salonShort = getSalonLabel(salonId);
           const message = toGSM(`BarberClub ${salonShort} - RDV ${dateFR} a ${timeFormatted}. A bientot!`);
           await queueNotification(booking.id, 'reminder_sms', {
             phone: booking.phone,
