@@ -37,224 +37,110 @@
    ═══════════════════════════════════════════ */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 :root { --vo: #3D5AFE; --vo-glow: rgba(61,90,254,0.45); --vo-text: #AFC0FF; }
-/* Les visuels de Voiron sont déjà sombres : l'assombrissement des autres hubs
-   (0.28) les éteignait. On garde de la profondeur sans tuer le bleu. */
+/* La photo ne sert plus que de repli : moins d'animations demandé, économie
+   de données, ou vidéo que le navigateur refuse de lire. */
 .bg {
   background-image: url('../../assets/images/salons/Voiron/voiron-fauteuil-billard.jpg?v=1');
   background-image: image-set(url('../../assets/images/salons/Voiron/voiron-fauteuil-billard.webp?v=1') type('image/webp'), url('../../assets/images/salons/Voiron/voiron-fauteuil-billard.jpg?v=1') type('image/jpeg'));
-  /* en portrait on ne voit qu'un quart de la largeur : on cadre le fauteuil */
   background-position: 26% 50%;
   filter: brightness(0.82) saturate(1.05);
-  transition: opacity 1.4s ease;
 }
 @media (min-width: 768px) { .bg { background-position: 50% 50%; } }
-/* En portrait, la vidéo finit sur le billard : la photo prend le relais au
-   même endroit, puis glisse lentement jusqu'au fauteuil. */
-@media (max-width: 767px) {
-  .bg { transition: opacity 1.4s ease, background-position 11s cubic-bezier(0.45, 0, 0.2, 1) 0.4s; }
-  .page.is-teaser .bg { background-position: 78% 50%; transition: none; }
-}
 
-/* ── le teaser : il ouvre la page, puis s'efface sur la photo ──
-   La page démarre déjà en mode teaser (classe dans le HTML) : sinon la
-   photo s'affichait un instant avant la vidéo. Pas de teaser si l'on a
-   demandé moins d'animations ou économise ses données : la photo suffit. */
+/* ── le teaser ──
+   Il ouvre la page, seul à l'écran, puis reste figé sur sa dernière image :
+   pas de changement de décor, l'interface se pose simplement dessus. */
 .intro {
   position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
-  object-fit: cover; object-position: 46% 50%;
-  opacity: 0; pointer-events: none; transition: opacity 1.4s ease;
+  object-fit: cover; object-position: 46% 50%; pointer-events: none;
 }
-.page.is-teaser .intro { opacity: 1; }
-.page.is-teaser .bg, .page.is-teaser .spot { opacity: 0; }
-/* Pendant le teaser, rien par-dessus : ni compteur, ni logo, ni barre. Tout
-   entre en scène quand la vidéo s'achève (ou qu'on la passe). */
+.page.no-video .intro { display: none; }
+.page:not(.no-video) .bg, .page:not(.no-video) .particles { display: none; }
+
 .header, .hero, .bottom-nav, .bg-overlay { transition: opacity 0.9s ease 0.15s, visibility 0s; }
 .page.is-teaser .header, .page.is-teaser .hero, .page.is-teaser .bottom-nav {
   opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.3s ease, visibility 0s 0.3s;
 }
-.page.is-teaser .bg-overlay { opacity: 0.2; }
+.bg-overlay {
+  background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 46%, rgba(0,0,0,0.72) 72%, rgba(0,0,0,0.92) 100%);
+}
+.page.is-teaser .bg-overlay { opacity: 0; }
+
 .skip {
   position: absolute; z-index: 20; right: 16px; bottom: calc(26px + env(safe-area-inset-bottom));
   display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border-radius: 999px; cursor: pointer;
   font: 600 11px/1 'Inter', sans-serif; letter-spacing: 0.18em; text-transform: uppercase; color: #fff;
-  background: rgba(10,14,40,0.45); border: 1px solid rgba(175,192,255,0.28);
+  background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.22);
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0s 0.4s;
 }
 .skip svg { width: 14px; height: 14px; }
 .skip:focus-visible { outline: 2px solid var(--vo-text); outline-offset: 3px; }
 .page.is-teaser .skip { opacity: 1; visibility: visible; transition: opacity 0.6s ease 1.2s; }
-.teaser-bar { position: absolute; z-index: 20; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(175,192,255,0.12); opacity: 0; transition: opacity 0.4s; }
+.teaser-bar { position: absolute; z-index: 20; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255,255,255,0.1); opacity: 0; transition: opacity 0.4s; }
 .teaser-bar i { position: absolute; inset: 0; transform-origin: left; transform: scaleX(0); background: var(--vo); box-shadow: 0 0 10px var(--vo); }
 .page.is-teaser .teaser-bar { opacity: 1; }
-.replay {
-  display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: none; cursor: pointer;
-  font: 600 10px/1 'Inter', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: var(--vo-text);
-  opacity: 0; visibility: hidden; transition: opacity 0.6s ease, visibility 0s 0.6s;
-  min-height: 44px;
-}
-.replay svg { width: 26px; height: 26px; padding: 7px; border-radius: 50%; border: 1px solid rgba(175,192,255,0.3); background: rgba(10,14,40,0.45); box-sizing: border-box; }
-.replay:hover { color: #fff; }
-.replay:focus-visible { outline: 2px solid var(--vo-text); outline-offset: 4px; border-radius: 8px; }
-.page.teaser-done .replay { opacity: 1; visibility: visible; transition: opacity 0.6s ease; }
-.hero-foot { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: -4px; }
 
-.bg-overlay {
-  background:
-    linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 48%, rgba(0,0,0,0.78) 74%, rgba(0,0,0,0.96) 100%);
-}
-/* le projecteur des visuels, rendu vivant : un cône de lumière qui respire */
-.spot {
-  position: absolute; z-index: 2; top: -10%; left: 50%; width: 120vmin; height: 95%;
-  transform: translateX(-50%); pointer-events: none;
-  background: radial-gradient(ellipse 30% 60% at 50% 0%, rgba(140,165,255,0.28), rgba(61,90,254,0.08) 45%, transparent 70%);
-  mix-blend-mode: screen; opacity: 0;
-  transition: opacity 1.6s ease 0.2s;
-  animation: spotBreath 6s ease-in-out infinite;
-}
-.page.loaded .spot { opacity: 1; }
-@keyframes spotBreath { 0%, 100% { filter: brightness(0.85); } 50% { filter: brightness(1.15); } }
-/* brume au sol, qui glisse lentement */
-.fog {
-  position: absolute; z-index: 2; left: -20%; right: -20%; bottom: 14%; height: 34%;
-  pointer-events: none; opacity: 0.55;
-  background:
-    radial-gradient(ellipse 40% 50% at 30% 60%, rgba(120,140,220,0.18), transparent 70%),
-    radial-gradient(ellipse 35% 45% at 70% 55%, rgba(90,110,210,0.14), transparent 70%);
-  filter: blur(18px);
-  animation: fogDrift 18s ease-in-out infinite alternate;
-}
-@keyframes fogDrift { from { transform: translateX(-4%); } to { transform: translateX(4%); } }
-.particle { background: rgba(175,192,255,0.55); box-shadow: 0 0 6px rgba(61,90,254,0.8); }
-
-/* ── le bloc d'ouverture, posé au-dessus de la barre basse ── */
-.hero { justify-content: flex-end; padding: 20px 18px calc(178px + env(safe-area-inset-bottom)); }
-/* la barre basse et le badge APP sont fixés en bas : le bloc s'arrête au-dessus */
+/* ── l'ouverture, en bas, sans cadre ──
+   Une ligne, quatre nombres, une ligne. Rien qui cache l'image. */
+.hero { justify-content: flex-end; padding: 20px 20px calc(150px + env(safe-area-inset-bottom)); }
 .separator { display: none; }
-.open-block { width: 100%; max-width: 460px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.open-block { width: 100%; max-width: 520px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.open-block > * { opacity: 0; transform: translateY(14px); transition: opacity 0.8s ease, transform 1s cubic-bezier(0.16,1,0.3,1); }
+.page.revealed .open-block > * { opacity: 1; transform: none; }
+.page.revealed .open-block > :nth-child(2) { transition-delay: 0.12s; }
+.page.revealed .open-block > :nth-child(3) { transition-delay: 0.3s; }
+
 .open-chip {
-  display: inline-flex; align-items: center; gap: 9px;
-  padding: 7px 14px 7px 12px; border-radius: 999px;
-  border: 1px solid rgba(175,192,255,0.28); background: rgba(10,14,40,0.45);
-  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 700;
-  letter-spacing: 0.24em; text-transform: uppercase; color: #fff;
-  opacity: 0; transform: translateY(10px);
-  transition: opacity 0.6s ease 0.35s, transform 0.7s cubic-bezier(0.16,1,0.3,1) 0.35s;
+  display: inline-flex; align-items: center; gap: 10px;
+  font: 600 11px/1 'Inter', sans-serif; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(235,240,255,0.85);
 }
-.open-dot { position: relative; width: 7px; height: 7px; }
+.open-dot { position: relative; width: 6px; height: 6px; flex: none; }
 .open-dot::before, .open-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: #fff; }
-.open-dot::before { box-shadow: 0 0 8px #fff, 0 0 18px var(--vo); }
-.open-dot::after { animation: dotPing 1.7s cubic-bezier(0,0,0.2,1) infinite; }
-@keyframes dotPing { 0% { transform: scale(1); opacity: 0.9; } 80%, 100% { transform: scale(3.2); opacity: 0; } }
+.open-dot::before { box-shadow: 0 0 8px #fff, 0 0 16px var(--vo); }
+.open-dot::after { animation: dotPing 1.8s cubic-bezier(0,0,0.2,1) infinite; }
+@keyframes dotPing { 0% { transform: scale(1); opacity: 0.9; } 80%, 100% { transform: scale(3); opacity: 0; } }
 
-/* ── le compteur ──
-   Un cadran de soixante graduations autour du nombre de jours : chaque
-   seconde en éteint une, la minute pleine les rallume d'une vague. Dessous,
-   heures, minutes et secondes en rouleaux, comme un compteur mécanique. */
-.cd { --dial: min(60vw, 31vh, 250px); display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
-.cd-dial {
-  position: relative; width: var(--dial); aspect-ratio: 1; display: grid; place-items: center;
-  opacity: 0; transform: scale(0.86);
-  transition: opacity 0.8s ease 0.25s, transform 1.3s cubic-bezier(0.16,1,0.3,1) 0.25s;
-}
-.page.revealed .cd-dial { opacity: 1; transform: none; }
-.cd-dial::before {
-  content: ''; position: absolute; inset: 6%; border-radius: 50%;
-  background: radial-gradient(circle, rgba(61,90,254,0.42), rgba(61,90,254,0.1) 55%, transparent 72%);
-  filter: blur(8px); animation: dialBreath 4s ease-in-out infinite;
-}
-@keyframes dialBreath { 0%, 100% { opacity: 0.65; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.04); } }
-.cd-dial::after {
-  content: ''; position: absolute; inset: 11%; border-radius: 50%;
-  background: radial-gradient(circle at 50% 28%, rgba(255,255,255,0.1), rgba(6,9,26,0.62) 62%);
-  border: 1px solid rgba(175,192,255,0.18);
-  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 24px 60px rgba(0,0,0,0.6);
-}
-.cd-ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 1; }
-.cd-tick { stroke: rgba(175,192,255,0.14); stroke-width: 2; stroke-linecap: round; transition: stroke 0.3s ease; }
-.cd-tick.big { stroke-width: 3; }
-.cd-tick.on { stroke: #8EA2FF; }
-.cd-tick.on.big { stroke: #fff; }
-.cd-orbit { transform-origin: 100px 100px; transition: transform 0.95s linear; }
-.cd-orbit circle { fill: #fff; filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 9px #3D5AFE); }
-.cd-core { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
-.cd-days {
-  display: flex; font-family: 'Orbitron', sans-serif; font-weight: 800; line-height: 1;
-  font-size: calc(var(--dial) * 0.34); color: #fff;
-  /* la lueur en filtre, après le masque des rouleaux : en text-shadow, elle était coupée en rectangle */
-  filter: drop-shadow(0 0 14px rgba(61,90,254,0.85)) drop-shadow(0 0 1px rgba(255,255,255,0.6));
-}
-.cd-days-label { margin-top: 8px; padding-left: 0.34em; font: 600 10px/1 'Inter', sans-serif; letter-spacing: 0.34em; text-transform: uppercase; color: var(--vo-text); }
-/* un chiffre = une colonne qui défile dans une fenêtre d'une ligne */
-.roll { display: inline-block; height: 1em; width: 0.84em; overflow: hidden; text-align: center; font-variant-numeric: tabular-nums; }
-.roll-col { display: flex; flex-direction: column; transition: transform 0.6s cubic-bezier(0.2,0.9,0.25,1.12); }
-.roll-col > span { display: block; height: 1em; }
-.cd-hms {
-  display: flex; align-items: flex-start; gap: 4px; padding: 10px 18px 9px; border-radius: 18px;
-  background: linear-gradient(160deg, rgba(255,255,255,0.09), rgba(255,255,255,0.02)), rgba(6,9,26,0.55);
-  border: 1px solid rgba(175,192,255,0.16);
-  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 12px 30px rgba(0,0,0,0.45);
-  opacity: 0; transform: translateY(12px);
-  transition: opacity 0.6s ease 0.7s, transform 0.8s cubic-bezier(0.16,1,0.3,1) 0.7s;
-}
-.page.revealed .cd-hms { opacity: 1; transform: none; }
+.cd { display: flex; justify-content: center; gap: clamp(14px, 5vw, 34px); }
 .cd-unit { display: flex; flex-direction: column; align-items: center; }
-.cd-unit > b { display: flex; font: 800 26px/1 'Orbitron', sans-serif; color: #fff; filter: drop-shadow(0 0 8px rgba(61,90,254,0.7)); }
-.cd-unit > small { margin-top: 6px; font: 600 9px/1 'Inter', sans-serif; letter-spacing: 0.22em; text-transform: uppercase; color: var(--vo-text); opacity: 0.85; }
-.cd-sep { font: 800 22px/26px 'Orbitron', sans-serif; color: rgba(175,192,255,0.55); animation: sepBlink 1s steps(1) infinite; }
-@keyframes sepBlink { 50% { opacity: 0.25; } }
+.cd-unit > b {
+  display: flex; font: 700 clamp(36px, 11.5vw, 64px)/1 'Orbitron', sans-serif; color: #fff;
+  filter: drop-shadow(0 0 18px rgba(61,90,254,0.55));
+}
+.cd-unit > small { margin-top: 10px; font: 500 10px/1 'Inter', sans-serif; letter-spacing: 0.28em; text-transform: uppercase; color: rgba(225,232,255,0.6); padding-left: 0.28em; }
+/* un chiffre = une colonne qui défile dans une fenêtre d'une ligne */
+.roll { display: inline-block; height: 1em; width: 0.8em; overflow: hidden; text-align: center; font-variant-numeric: tabular-nums; }
+.roll-col { display: flex; flex-direction: column; transition: transform 0.6s cubic-bezier(0.2,0.9,0.25,1.1); }
+.roll-col > span { display: block; height: 1em; }
 
-/* l'offre : la même lumière que le badge de la landing */
+.open-foot { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
 .open-offer {
-  position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px;
-  padding: 11px 16px; border-radius: 16px; text-decoration: none; color: #fff;
-  background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03) 55%, rgba(61,90,254,0.14)), rgba(8,11,30,0.6);
-  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-  border: 1px solid rgba(175,192,255,0.2);
-  box-shadow: 0 14px 34px rgba(0,0,0,0.5), 0 0 30px rgba(61,90,254,0.18);
-  opacity: 0; transform: translateY(12px);
-  transition: opacity 0.6s ease 0.9s, transform 0.8s cubic-bezier(0.16,1,0.3,1) 0.9s;
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none;
+  font: 500 13px/1 'Inter', sans-serif; color: rgba(235,240,255,0.88);
 }
-.open-offer::after {
-  content: ''; position: absolute; top: -20%; bottom: -20%; left: 0; width: 35%;
-  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.22), transparent);
-  transform: translateX(-160%) skewX(-18deg);
-  animation: offerShine 5.5s cubic-bezier(0.4,0,0.2,1) 2.4s infinite;
+.open-offer b { font: 700 15px/1 'Orbitron', sans-serif; color: #fff; filter: drop-shadow(0 0 10px rgba(61,90,254,0.7)); }
+.open-offer svg { width: 14px; height: 14px; transition: transform 0.25s ease; }
+.open-offer:hover svg { transform: translateX(3px); }
+.open-offer:focus-visible, .replay:focus-visible { outline: 2px solid var(--vo-text); outline-offset: 4px; border-radius: 8px; }
+.replay {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 500 13px/1 'Inter', sans-serif; color: rgba(225,232,255,0.6);
 }
-@keyframes offerShine { 0% { transform: translateX(-160%) skewX(-18deg); } 30%, 100% { transform: translateX(380%) skewX(-18deg); } }
-.open-offer-num {
-  font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 26px; line-height: 1; letter-spacing: 0.02em;
-  background: linear-gradient(180deg, #fff 40%, #c8d4ff); -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 10px rgba(61,90,254,0.55));
-}
-.open-offer-sep { width: 1px; height: 28px; background: linear-gradient(180deg, transparent, rgba(255,255,255,0.4), transparent); }
-.open-offer-text { display: flex; flex-direction: column; gap: 4px; line-height: 1.15; text-align: left; }
-.open-offer-text b { font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; }
-.open-offer-text span { font-size: 12px; color: rgba(225,232,255,0.82); }
-.page.revealed .open-chip, .page.revealed .open-offer { opacity: 1; transform: none; }
+.replay svg { width: 12px; height: 12px; }
+.replay:hover { color: #fff; }
+.open-sep { width: 1px; height: 14px; background: rgba(255,255,255,0.22); }
 /* une fois ouvert, le compte à rebours laisse la place à « Ouvert » */
 .open-block.is-open #countdown { display: none; }
 
-@media (min-width: 768px) {
-  .hero { padding-bottom: 150px; }
-  .open-block { max-width: 520px; gap: 16px; }
-  .cd { --dial: min(30vh, 270px); }
-  .cd-unit > b { font-size: 32px; }
-  .open-offer { padding: 13px 20px; }
-  .open-offer-num { font-size: 30px; }
-}
 @media (max-height: 700px) {
-  .hero { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
-  .cd { --dial: min(52vw, 27vh, 210px); gap: 9px; } .cd-unit > b { font-size: 22px; } .open-block { gap: 10px; }
+  .hero { padding-bottom: calc(136px + env(safe-area-inset-bottom)); }
+  .open-block { gap: 12px; }
+  .cd-unit > b { font-size: clamp(30px, 10vw, 44px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .intro, .replay, .skip, .teaser-bar { display: none; }
-  .spot, .fog, .open-dot::after, .open-offer::after, .cd-dial::before, .cd-sep { animation: none !important; }
-  .spot, .open-chip, .open-offer, .cd-dial, .cd-hms, .bg { opacity: 1 !important; transform: none !important; transition: none !important; }
-  .roll-col, .cd-orbit, .cd-tick { transition: none !important; }
+  .skip, .teaser-bar, .replay, .open-sep { display: none; }
+  .open-dot::after { animation: none !important; }
+  .open-block > *, .roll-col { opacity: 1 !important; transform: none; transition: none !important; }
 }
 </style>
 <link rel="stylesheet" href="../../assets/css/page-transitions.css">
@@ -275,8 +161,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
   </button>
   <div class="teaser-bar" aria-hidden="true"><i id="teaserBar"></i></div>
-  <div class="spot" aria-hidden="true"></div>
-  <div class="fog" aria-hidden="true"></div>
   <div class="particles" aria-hidden="true"></div>
 
   <header class="header">
@@ -295,35 +179,21 @@
   <main class="hero">
     <h1 class="sr-only">BarberClub Voiron — barbier et coiffeur homme, ouverture le 21 octobre</h1>
     <div class="open-block" id="openBlock">
-      <span class="open-chip"><span class="open-dot" aria-hidden="true"></span><span id="openChipText">Ouverture le 21 octobre</span></span>
+      <span class="open-chip"><span class="open-dot" aria-hidden="true"></span><span id="openChipText">Ouverture · 21 octobre · 9h</span></span>
       <div class="cd" id="countdown" role="timer" aria-live="off" aria-label="Temps restant avant l'ouverture">
-        <div class="cd-dial">
-          <svg class="cd-ring" viewBox="0 0 200 200" aria-hidden="true">
-            <g id="cdTicks"></g>
-            <g class="cd-orbit" id="cdOrbit"><circle cx="100" cy="5" r="3.2"/></g>
-          </svg>
-          <div class="cd-core">
-            <div class="cd-days" aria-hidden="true"><span data-roll="d1" data-max="9"></span><span data-roll="d0" data-max="9"></span></div>
-            <div class="cd-days-label" aria-hidden="true">jours</div>
-          </div>
-        </div>
-        <div class="cd-hms" aria-hidden="true">
-          <div class="cd-unit"><b><span data-roll="h1" data-max="2"></span><span data-roll="h0" data-max="9"></span></b><small>Heures</small></div>
-          <span class="cd-sep">:</span>
-          <div class="cd-unit"><b><span data-roll="m1" data-max="5"></span><span data-roll="m0" data-max="9"></span></b><small>Min</small></div>
-          <span class="cd-sep">:</span>
-          <div class="cd-unit"><b><span data-roll="s1" data-max="5"></span><span data-roll="s0" data-max="9"></span></b><small>Sec</small></div>
-        </div>
+        <div class="cd-unit" aria-hidden="true"><b><span data-roll="d1" data-max="9"></span><span data-roll="d0" data-max="9"></span></b><small>Jours</small></div>
+        <div class="cd-unit" aria-hidden="true"><b><span data-roll="h1" data-max="2"></span><span data-roll="h0" data-max="9"></span></b><small>Heures</small></div>
+        <div class="cd-unit" aria-hidden="true"><b><span data-roll="m1" data-max="5"></span><span data-roll="m0" data-max="9"></span></b><small>Min</small></div>
+        <div class="cd-unit" aria-hidden="true"><b><span data-roll="s1" data-max="5"></span><span data-roll="s0" data-max="9"></span></b><small>Sec</small></div>
         <span class="sr-only" id="cdTexte"></span>
       </div>
-      <a href="offres.html" class="open-offer" id="openOffer">
-        <span class="open-offer-num">-50&#8239;%</span>
-        <span class="open-offer-sep" aria-hidden="true"></span>
-        <span class="open-offer-text"><b>Du 21 au 24 oct.</b><span>sur toutes les prestations</span></span>
-      </a>
-      <div class="hero-foot">
+      <div class="open-foot">
+        <a href="offres.html" class="open-offer" id="openOffer"><b>-50&#8239;%</b> sur tout, du 21 au 24 oct.
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <span class="open-sep" aria-hidden="true"></span>
         <button type="button" class="replay" id="replay" aria-label="Revoir le teaser">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Teaser
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Revoir
         </button>
       </div>
     </div>
@@ -402,26 +272,12 @@
     r.cur = d;
   }
 
-  // Cadran : 60 graduations, une plus marquée toutes les cinq
-  const NS = 'http://www.w3.org/2000/svg';
-  const ticks = [];
-  const g = document.getElementById('cdTicks');
-  for (let i = 0; i < 60; i++) {
-    const a = (i * 6 - 90) * Math.PI / 180, big = i % 5 === 0;
-    const r1 = big ? 83 : 86, r2 = 93;
-    const l = document.createElementNS(NS, 'line');
-    l.setAttribute('x1', 100 + r1 * Math.cos(a)); l.setAttribute('y1', 100 + r1 * Math.sin(a));
-    l.setAttribute('x2', 100 + r2 * Math.cos(a)); l.setAttribute('y2', 100 + r2 * Math.sin(a));
-    l.setAttribute('class', 'cd-tick' + (big ? ' big' : ''));
-    g.appendChild(l); ticks.push(l);
-  }
-  const orbit = document.getElementById('cdOrbit');
   const texte = document.getElementById('cdTexte');
-  let dernierS = null, premier = true;
+  let premier = true;
 
   function maj() {
     const now = Date.now();
-    if (now >= FIN_OFFRE) { if (offer) offer.remove(); document.querySelectorAll('[data-offre]').forEach(el => el.remove()); }
+    if (now >= FIN_OFFRE) { if (offer) { offer.remove(); document.querySelector('.open-sep')?.remove(); } document.querySelectorAll('[data-offre]').forEach(el => el.remove()); }
     if (now >= OUVERTURE) {
       block.classList.add('is-open');
       chip.textContent = 'Ouvert · 5 av. Léon et Joanny Tardy';
@@ -432,16 +288,8 @@
     const v = { d1: Math.floor(d / 10), d0: d % 10, h1: Math.floor(h / 10), h0: h % 10, m1: Math.floor(m / 10), m0: m % 10, s1: Math.floor(s / 10), s0: s % 10 };
     for (const k in v) poser(rolls[k], v[k], premier);
 
-    // graduations allumées = secondes restantes ; la minute pleine rallume tout en vague
-    const vague = dernierS === 0 && s === 59;
-    ticks.forEach((l, i) => {
-      l.style.transitionDelay = vague && !reduced ? `${i * 9}ms` : '';
-      l.classList.toggle('on', i < s);
-    });
-    orbit.style.transition = vague ? 'transform 0.75s cubic-bezier(0.65,0,0.35,1)' : '';
-    orbit.style.transform = `rotate(${s * 6}deg)`;
     if (s === 0 || premier) texte.textContent = `${d} jours, ${h} heures et ${m} minutes avant l'ouverture`;
-    dernierS = s; premier = false;
+    premier = false;
     return true;
   }
   if (maj()) { const id = setInterval(() => { if (!maj()) clearInterval(id); }, 1000); }
@@ -468,9 +316,14 @@
   if (!intro) return;
   const skip = document.getElementById('skip');
   const bar = document.getElementById('teaserBar');
+  const sansVideo = () => {
+    page.classList.add('no-video');
+    intro.pause(); replay.remove(); document.querySelector('.open-sep')?.remove();
+    fin();
+  };
   if (matchMedia('(prefers-reduced-motion: reduce)').matches || saveData) {
-    page.classList.remove('is-teaser'); page.classList.add('revealed');
-    intro.remove(); replay.remove(); skip.remove(); return;
+    page.classList.remove('is-teaser'); page.classList.add('revealed', 'no-video');
+    intro.remove(); replay.remove(); skip.remove(); document.querySelector('.open-sep')?.remove(); return;
   }
   const fin = () => {
     if (!page.classList.contains('is-teaser')) return;
@@ -481,16 +334,18 @@
     page.classList.remove('teaser-done', 'revealed');
     page.classList.add('is-teaser');
     intro.currentTime = 0;
+    intro.playbackRate = 1;
     const p = intro.play();
-    if (p && p.catch) p.catch(fin);
+    if (p && p.catch) p.catch(sansVideo);
   };
   intro.addEventListener('ended', fin);
-  intro.addEventListener('error', fin, true);
+  intro.addEventListener('error', sansVideo, true);
 
   // En portrait, le cadre 16:9 ne montre qu'un quart de l'image : il suit
   // l'action plan par plan (coupes à 2, 4 et 6 s), comme une caméra.
   // [temps, position horizontale en %] ; deux temps égaux = une coupe.
-  const CAMERA = [[0, 40], [2, 46], [2, 42], [4, 72], [4, 64], [6, 50], [6, 50], [7.3, 42], [7.8, 22], [10.1, 86]];
+  // Le dernier plan finit sur VOIRON : c'est l'image qui reste à l'écran.
+  const CAMERA = [[0, 40], [2, 46], [2, 42], [4, 72], [4, 64], [6, 50], [6, 50], [7.3, 42], [7.8, 22], [10.1, 52]];
   const portrait = () => innerWidth / innerHeight < 1.3;
   const lisse = x => x * x * (3 - 2 * x);
   function cadre() {
@@ -505,7 +360,15 @@
   }
   intro.addEventListener('playing', () => requestAnimationFrame(cadre));
   replay.addEventListener('click', jouer);
-  skip.addEventListener('click', () => { intro.pause(); fin(); });
+  // « Passer » mène à la dernière image : par un saut si le serveur le permet,
+  // sinon en accéléré, pour ne jamais rester figé sur une image du milieu.
+  skip.addEventListener('click', () => {
+    const fin_ = intro.duration ? intro.duration - 0.05 : 0;
+    const sautPossible = fin_ && intro.seekable.length && intro.seekable.end(intro.seekable.length - 1) >= fin_;
+    if (sautPossible) { intro.pause(); intro.currentTime = fin_; requestAnimationFrame(cadre); }
+    else { intro.playbackRate = 16; }
+    fin();
+  });
   jouer();
 })();
 
