@@ -3656,9 +3656,12 @@ a:focus-visible, button:focus-visible {
     opacity: 1;
     filter: none;
 }
-.barber-card.barber-a-venir:hover .barber-name,
-.barber-card.barber-a-venir.selected .barber-name {
+.barber-card.barber-a-venir:hover .barber-name {
     color: #fff;
+}
+/* Sélectionné, le bandeau du nom passe en blanc : le nom reste noir. */
+.barber-card.barber-a-venir.selected .barber-name {
+    color: #000;
 }
 
 /* A une semaine : la tuile prend le bleu froid, et lui seul respire sur cet

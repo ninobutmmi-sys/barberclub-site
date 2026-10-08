@@ -1260,8 +1260,8 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
       <div class="separator-glow"></div>
     </div>
 
-    <!-- ═══════ 3ᵉ SALON — VOIRON (réservation ouverte, mène droit au parcours) ═══════ -->
-    <a href="pages/voiron/reserver.html" class="salon salon-mystere" data-salon aria-label="BarberClub Voiron — ouverture le mercredi 21 octobre. Offre d'ouverture : toutes les prestations à -50 % du mercredi 21 au samedi 24 octobre. Réserver">
+    <!-- ═══════ 3ᵉ SALON — VOIRON (mène à sa page, comme les deux autres) ═══════ -->
+    <a href="pages/voiron/" class="salon salon-mystere" data-salon aria-label="BarberClub Voiron — ouverture le mercredi 21 octobre. Offre d'ouverture : toutes les prestations à -50 % du mercredi 21 au samedi 24 octobre. Découvrir">
       <div class="salon-bg"></div>
       <div class="salon-overlay"></div>
       <div class="mystere-sheen" aria-hidden="true"></div>
@@ -1280,7 +1280,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
         <h2 class="salon-title" data-split>Voiron</h2>
         <p class="salon-location">Ouverture le 21 octobre</p>
         <span class="salon-cta mystere-cta" data-magnetic>
-          <span class="cta-text">Réserver</span>
+          <span class="cta-text">Découvrir</span>
           <svg class="cta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </span>
       </div>
@@ -1305,7 +1305,7 @@ a:focus-visible { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 4px;
   if (promo && Date.now() > Date.parse('2026-10-24T23:59:59+02:00')) {
     promo.remove();
     const voiron = document.querySelector('.salon-mystere');
-    if (voiron) voiron.setAttribute('aria-label', 'BarberClub Voiron — ouvert depuis le 21 octobre, réserver');
+    if (voiron) voiron.setAttribute('aria-label', 'BarberClub Voiron — ouvert depuis le 21 octobre, découvrir');
   }
 
   /* ═══════════════════════════════════════

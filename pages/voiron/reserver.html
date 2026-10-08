@@ -213,12 +213,12 @@
         <div class="progress-bar" role="navigation" aria-label="Étapes de réservation">
             <div class="progress-step active" data-step="1" aria-current="step">
                 <div class="progress-circle">1</div>
-                <span class="progress-label">Barber</span>
+                <span class="progress-label">Prestation</span>
             </div>
             <div class="progress-line" data-after="1"></div>
             <div class="progress-step" data-step="2">
                 <div class="progress-circle">2</div>
-                <span class="progress-label">Prestation</span>
+                <span class="progress-label">Barber</span>
             </div>
             <div class="progress-line" data-after="2"></div>
             <div class="progress-step" data-step="3">
@@ -240,20 +240,23 @@
         <!-- STEPS -->
         <div class="steps-container">
 
-            <!-- STEP 1: BARBER -->
+            <!-- Voiron : la prestation d'abord, le barber ensuite (Meylan et
+                 Grenoble font l'inverse). Le client sait ce qu'il veut avant de
+                 savoir avec qui ; l'étape 2 ne montre que ceux qui la font. -->
+            <!-- STEP 1: SERVICE -->
             <div class="step active" id="step1">
-                <h2 class="step-title">Votre barber</h2>
-                <p class="step-desc">Choisissez votre barber préféré</p>
-                <div class="barber-grid" id="barberGrid" role="radiogroup" aria-label="Choisir un barber">
+                <h2 class="step-title">Prestation</h2>
+                <p class="step-desc">Sélectionnez votre prestation</p>
+                <div class="service-list" id="serviceList" role="radiogroup" aria-label="Choisir une prestation">
                     <!-- Filled by JS -->
                 </div>
             </div>
 
-            <!-- STEP 2: SERVICE -->
+            <!-- STEP 2: BARBER -->
             <div class="step" id="step2">
-                <h2 class="step-title">Prestation</h2>
-                <p class="step-desc">Sélectionnez votre prestation</p>
-                <div class="service-list" id="serviceList" role="radiogroup" aria-label="Choisir une prestation">
+                <h2 class="step-title">Votre barber</h2>
+                <p class="step-desc">Choisissez votre barber préféré</p>
+                <div class="barber-grid" id="barberGrid" role="radiogroup" aria-label="Choisir un barber">
                     <!-- Filled by JS -->
                 </div>
             </div>
@@ -900,10 +903,10 @@
             const n = state.step;
 
             if (n === 1) {
-                actionBtn.disabled = !state.selectedBarber;
+                actionBtn.disabled = !state.selectedService;
                 actionBtn.querySelector('.btn-text').textContent = 'Continuer';
             } else if (n === 2) {
-                actionBtn.disabled = !state.selectedService;
+                actionBtn.disabled = !state.selectedBarber;
                 actionBtn.querySelector('.btn-text').textContent = 'Continuer';
             } else if (n === 3) {
                 actionBtn.disabled = !state.selectedSlot && !state.wantWaitlist;
@@ -1047,7 +1050,9 @@
             };
 
             const enPlace = [], aVenir = [];
+            const offre = state.servicesParBarbier; // null tant qu'aucune prestation n'est choisie
             for (const b of state.barbers) {
+                if (offre && state.selectedService && !(offre[b.id] || []).some(s => s.id === state.selectedService.id)) continue;
                 (joursAvantArrivee(b) === null ? enPlace : aVenir).push(b);
             }
             // Ceux qui n'ont pas commence restent apres ceux qui coupent, meme
@@ -1132,8 +1137,15 @@
                         state.selectedBarber = state.barbers.find(b => b.id === id);
                     }
 
+                    // La prestation est déjà choisie : on reprend sa version
+                    // propre à ce barbier (durée personnalisée éventuelle).
+                    if (state.selectedService) {
+                        const base = state.services.find(s => s.id === state.selectedService.id) || state.selectedService;
+                        const sienne = id !== 'any' && (state.servicesParBarbier?.[id] || []).find(s => s.id === base.id);
+                        state.selectedService = sienne ? { ...sienne, duration: sienne.custom_duration || sienne.duration } : base;
+                    }
+
                     // Reset downstream selections
-                    state.selectedService = null;
                     state.selectedSlot = null;
                     state.selectedDate = null;
                     updateActionBtn();
@@ -1157,10 +1169,29 @@
             });
         }
 
-        // ---- STEP 2: SERVICES ----
+        // Les prestations de chaque barbier, une fois pour toutes : elles disent
+        // qui peut faire la prestation choisie, et avec quelle durée.
+        async function preparerBarbers() {
+            if (!state.servicesParBarbier) {
+                const listes = await Promise.all(state.barbers.map(b =>
+                    api('/services?barber_id=' + b.id).catch(() => null)));
+                const carte = {};
+                state.barbers.forEach((b, i) => { if (listes[i]) carte[b.id] = listes[i]; });
+                // Si un appel échoue, on n'écarte personne plutôt que de cacher un barbier à tort
+                state.servicesParBarbier = listes.every(Boolean) ? carte : null;
+            }
+            renderBarbers();
+            // Barbier venu du lien (?barber=Nom) : présélectionné s'il fait la prestation
+            if (state.barbierDuLien) {
+                const card = document.querySelector(`#barberGrid .barber-card[data-id="${state.barbierDuLien}"]`);
+                if (card) card.click();
+            }
+        }
+
+        // ---- STEP 1: SERVICES ----
         async function loadServices() {
             try {
-                const barberId = state.selectedBarber.id;
+                const barberId = state.selectedBarber ? state.selectedBarber.id : 'any';
                 const query = barberId !== 'any' ? `?barber_id=${barberId}` : '';
                 let services = await api('/services' + query);
                 // Deduplicate when "peu importe": keep general service over restricted one
@@ -1273,7 +1304,8 @@
                     if (navigator.vibrate) navigator.vibrate(10);
                     state.selectedService = state.services.find(s => s.id === id);
 
-                    // Reset downstream
+                    // Reset downstream : le barber se choisit après
+                    state.selectedBarber = null;
                     state.selectedSlot = null;
                     state.selectedDate = null;
                     updateActionBtn();
@@ -2241,7 +2273,7 @@
 
             try {
                 if (n === 1) {
-                    await loadServices();
+                    await preparerBarbers();
                     goToStep(2);
                 } else if (n === 2) {
                     // Initialize calendar at current month
@@ -2386,6 +2418,7 @@
                 }
                 await loadBarbers();
                 if (state.barbers.length === 0) throw new Error('no barbers');
+                await loadServices();
                 pageLoading.classList.add('hidden');
 
                 // Show policy modal (once per session)
@@ -2451,16 +2484,9 @@
                 const urlBarber = new URLSearchParams(window.location.search).get('barber');
                 if (urlBarber) {
                     const match = state.barbers.find(b => b.name.toLowerCase() === urlBarber.toLowerCase());
-                    if (match) {
-                        state.selectedBarber = match;
-                        const card = document.querySelector(`.barber-card[data-id="${match.id}"]`);
-                        if (card) {
-                            card.classList.add('selected');
-                            card.setAttribute('aria-checked', 'true');
-                        }
-                        goToStep(2);
-                        await loadServices();
-                    }
+                    // La prestation se choisit d'abord : le barbier sera
+                    // présélectionné à l'étape 2.
+                    if (match) state.barbierDuLien = match.id;
                 }
 
                 updateActionBtn();
