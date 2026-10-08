@@ -8,7 +8,10 @@
 --   - Gabriel : mardi, vendredi, samedi 10h-13h / 15h-19h. Lundi repos,
 --     mercredi et jeudi CFA.
 --   - Jules : lundi, mercredi à samedi 10h-13h / 15h-19h. Mardi repos.
---     Neuf lundis au CFA à partir de l'ouverture (le 12/10 tombe avant).
+--     Ses jours de CFA viennent de son calendrier d'apprenti (photo du
+--     08/10), pas du tableau 2 : dix lundis après l'ouverture (le tableau
+--     oubliait le 3 mai), et quatre mardis, jours où il est déjà en repos,
+--     posés quand même pour qu'un « Ouvrir » du planning ne les rouvre pas.
 --   - Julien n'est pas dans les tableaux : sa semaine type reste en repos.
 --
 -- Personne n'est réservable avant l'ouverture : contract_start au 21/10
@@ -34,11 +37,12 @@ SET is_working = (day_of_week IN (0, 2, 3, 4, 5)), start_time = '10:00', end_tim
     break_start = '13:00', break_end = '15:00'
 WHERE barber_id = 'e4b7e90e-83be-4ed4-b3fc-e52d1b3eec6d' AND salon_id = 'voiron';
 
--- Jules au CFA le lundi
+-- Jules au CFA
 INSERT INTO schedule_overrides (barber_id, date, is_day_off, salon_id, reason)
 SELECT 'e4b7e90e-83be-4ed4-b3fc-e52d1b3eec6d', d::date, true, 'voiron', 'CFA'
-FROM unnest(ARRAY['2026-11-09', '2026-11-30', '2027-01-11', '2027-02-01', '2027-03-01',
-                  '2027-03-22', '2027-04-12', '2027-05-10', '2027-05-31']) AS d
+FROM unnest(ARRAY['2026-11-03', '2026-11-09', '2026-11-30', '2027-01-05', '2027-01-11',
+                  '2027-02-01', '2027-03-01', '2027-03-16', '2027-03-22', '2027-04-12',
+                  '2027-05-03', '2027-05-04', '2027-05-10', '2027-05-31']) AS d
 WHERE NOT EXISTS (
   SELECT 1 FROM schedule_overrides o
   WHERE o.barber_id = 'e4b7e90e-83be-4ed4-b3fc-e52d1b3eec6d' AND o.date = d::date
