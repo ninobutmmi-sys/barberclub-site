@@ -8,12 +8,48 @@
         <priority>1.0</priority>
     </url>
 
-    <!-- Salon Voiron — ouverture octobre 2026 -->
+    <!-- Salon Voiron — ouvert le 21 octobre 2026 -->
     <url>
         <loc>https://barberclub-grenoble.fr/pages/voiron/</loc>
-        <lastmod>2026-08-10</lastmod>
+        <lastmod>2026-10-08</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>https://barberclub-grenoble.fr/pages/voiron/prestations.html</loc>
+        <lastmod>2026-10-08</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://barberclub-grenoble.fr/pages/voiron/barbers.html</loc>
+        <lastmod>2026-10-08</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>https://barberclub-grenoble.fr/pages/voiron/salon.html</loc>
+        <lastmod>2026-10-08</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    <url>
+        <loc>https://barberclub-grenoble.fr/pages/voiron/contact.html</loc>
+        <lastmod>2026-10-08</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    <url>
+        <loc>https://barberclub-grenoble.fr/pages/voiron/offres.html</loc>
+        <lastmod>2026-10-08</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
+    </url>
+    <url>
+        <loc>https://barberclub-grenoble.fr/pages/voiron/reserver.html</loc>
+        <lastmod>2026-10-08</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
     </url>
 
     <!-- Salon Grenoble -->
