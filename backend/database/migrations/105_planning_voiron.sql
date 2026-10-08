@@ -53,3 +53,8 @@ UPDATE barbers SET contract_start = '2026-10-21'
 WHERE id IN ('89670916-8e19-49d6-b80b-e3ba695dead4',
              'f1fa01de-9af5-4296-914c-dca33fc2dfe2',
              'e4b7e90e-83be-4ed4-b3fc-e52d1b3eec6d');
+
+-- 08/10, ajout de Ju : Clément en pause de 13h à 14h tous ses jours à Voiron
+-- (appliqué en prod séparément, après cette migration).
+UPDATE schedules SET break_start = '13:00', break_end = '14:00'
+WHERE barber_id = '89670916-8e19-49d6-b80b-e3ba695dead4' AND salon_id = 'voiron' AND is_working;
