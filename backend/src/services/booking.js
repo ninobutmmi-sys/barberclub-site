@@ -317,7 +317,7 @@ async function createBooking(data) {
     // n'est connu qu'ici. Un barbier peut avoir son propre tarif sur une
     // prestation — celles de Daryl sont offertes le temps de sa mise en route.
     const effectivePrice = await availability.resolveServicePrice({
-      client, serviceId: data.service_id, barberId,
+      client, serviceId: data.service_id, barberId, salonId, date: data.date,
     });
 
     // 7. Insert the booking

@@ -715,6 +715,17 @@
         const toastEl = $('#toast');
 
         // ---- HELPERS ----
+        // Offre d'ouverture : la même règle que le serveur (OPENING_OFFERS),
+        // qui fixe le prix enregistré. Ici, elle ne sert qu'à l'affichage.
+        const OFFRE = { from: '2026-10-21', to: '2026-10-24', percent: 50 };
+        const offreActive = () => new Date().toISOString().slice(0, 10) <= OFFRE.to;
+        const dansOffre = (date) => !!date && date >= OFFRE.from && date <= OFFRE.to;
+        function prixAffiche(cents, date) {
+            if (!dansOffre(date) || !Number(cents)) return formatPrice(cents);
+            const remise = Math.round(cents * (100 - OFFRE.percent) / 100);
+            return `<s style="opacity:.5;font-weight:400;margin-right:6px">${formatPrice(cents)}</s>${formatPrice(remise)}`;
+        }
+
         function formatPrice(cents) {
             // Un prix a zero n'est pas « 0,00 € » : c'est offert. Les coupes de
             // Daryl le sont le temps de sa mise en route.
@@ -1266,6 +1277,15 @@
                         </div>`;
 
             let html = '';
+            // L'offre d'ouverture, annoncée là où le client regarde les prix.
+            if (offreActive()) {
+                html += `<div class="service-offer-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                    <div>
+                        <b>Ouverture : -${OFFRE.percent}&nbsp;% sur tout</b>
+                        <span>Toutes les prestations à moitié prix pour un rendez-vous du 21 au 24 octobre. Le prix remisé s'affiche au récapitulatif.</span>
+                    </div>
+                </div>`;
+            }
             // Le client voit des prix a zero : on lui dit pourquoi, ici, au
             // moment ou il les regarde.
             const barbier = state.selectedBarber;
@@ -1775,8 +1795,8 @@
                     <span class="summary-value">${state.selectedService.duration} min</span>
                 </div>
                 <div class="summary-row total">
-                    <span class="summary-label">Prix</span>
-                    <span class="summary-value">${formatPrice(state.selectedService.price)}</span>
+                    <span class="summary-label">Prix${dansOffre(state.selectedDate) ? ' (-' + OFFRE.percent + ' %)' : ''}</span>
+                    <span class="summary-value">${prixAffiche(state.selectedService.price, state.selectedDate)}</span>
                 </div>
             `;
         }
@@ -2057,7 +2077,7 @@
                 </div>
                 <div class="success-detail-row">
                     <span class="success-detail-label">Prix</span>
-                    <span class="success-detail-value">${formatPrice(state.selectedService.price)}</span>
+                    <span class="success-detail-value">${prixAffiche(state.selectedService.price, state.selectedDate)}</span>
                 </div>
             `;
 

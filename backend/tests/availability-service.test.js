@@ -362,3 +362,22 @@ describe('Availability API — Additional scenarios', () => {
     expect(res.body).toEqual([]);
   });
 });
+
+describe('applyOpeningOffer (offre d\'ouverture)', () => {
+  const { applyOpeningOffer } = require('../src/services/availability');
+  test('Voiron du 21 au 24 octobre 2026 : moitie prix, bornes incluses', () => {
+    expect(applyOpeningOffer(2500, 'voiron', '2026-10-21')).toBe(1250);
+    expect(applyOpeningOffer(3500, 'voiron', '2026-10-24')).toBe(1750);
+  });
+  test('hors fenetre ou autre salon : prix inchange', () => {
+    expect(applyOpeningOffer(2500, 'voiron', '2026-10-20')).toBe(2500);
+    expect(applyOpeningOffer(2500, 'voiron', '2026-10-25')).toBe(2500);
+    expect(applyOpeningOffer(2500, 'meylan', '2026-10-22')).toBe(2500);
+  });
+  test('arrondi au centime, zero et null preserves', () => {
+    expect(applyOpeningOffer(2750, 'voiron', '2026-10-22')).toBe(1375);
+    expect(applyOpeningOffer(2501, 'voiron', '2026-10-22')).toBe(1251);
+    expect(applyOpeningOffer(0, 'voiron', '2026-10-22')).toBe(0);
+    expect(applyOpeningOffer(null, 'voiron', '2026-10-22')).toBe(null);
+  });
+});

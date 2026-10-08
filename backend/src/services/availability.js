@@ -5,6 +5,7 @@ const {
   SLOT_INTERVAL_ADMIN,
   ADMIN_SCHEDULE_END,
   MIN_BOOKING_LEAD_MINUTES,
+  OPENING_OFFERS,
 } = require('../constants');
 
 /**
@@ -89,7 +90,17 @@ async function getBarberHomeSalon(barberId) {
  * coupes de Daryl sont offertes le temps de sa mise en route — donc on teste
  * `IS NOT NULL` et jamais la verite du nombre.
  */
-async function resolveServicePrice({ client, serviceId, barberId }) {
+/**
+ * Offre d'ouverture (OPENING_OFFERS) : le prix remise si le RDV tombe dans la
+ * fenetre du salon. Arrondi au centime ; zero reste zero.
+ */
+function applyOpeningOffer(price, salonId, date) {
+  const offre = salonId && date ? OPENING_OFFERS[salonId] : null;
+  if (!offre || price === null || date < offre.from || date > offre.to) return price;
+  return Math.round(price * (100 - offre.percent) / 100);
+}
+
+async function resolveServicePrice({ client, serviceId, barberId, salonId, date }) {
   const queryFn = client ? client.query.bind(client) : db.query;
 
   const svcResult = await queryFn(
@@ -109,7 +120,7 @@ async function resolveServicePrice({ client, serviceId, barberId }) {
     }
   }
 
-  return price;
+  return applyOpeningOffer(price, salonId, date);
 }
 
 async function resolveServiceDuration({ client, serviceId, barberId, date }) {
@@ -1353,4 +1364,5 @@ module.exports = {
   getMonthAvailabilitySummary,
   resolveServiceDuration,
   resolveServicePrice,
+  applyOpeningOffer,
 };

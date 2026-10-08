@@ -326,7 +326,7 @@ router.put('/:id',
         if (serviceResult.rows.length === 0) throw ApiError.badRequest('Service introuvable');
 
         const price = await resolveServicePrice({
-          client, serviceId: newServiceId, barberId: newBarberId,
+          client, serviceId: newServiceId, barberId: newBarberId, salonId, date: newDate,
         });
         const duration = await resolveServiceDuration({
           client, serviceId: newServiceId, barberId: newBarberId, date: newDate,

@@ -60,4 +60,11 @@ module.exports = {
 
   // --- Graceful shutdown ---
   GRACEFUL_SHUTDOWN_TIMEOUT_MS: 10000,
+
+  // --- Offres d'ouverture ---
+  // Remise sur toutes les prestations d'un salon, selon la date du RDV (bornes
+  // incluses). Appliquee au prix enregistre, en ligne comme depuis le dashboard.
+  OPENING_OFFERS: {
+    voiron: { from: '2026-10-21', to: '2026-10-24', percent: 50 },
+  },
 };
