@@ -75,81 +75,7 @@
 .replay:focus-visible { outline: 2px solid var(--vo-text); outline-offset: 4px; border-radius: 8px; }
 .page.teaser-done .replay { opacity: 1; visibility: visible; transition: opacity 0.6s ease; }
 .hero-foot { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: -4px; }
-.scroll-cue {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none;
-  font: 600 10px/1 'Inter', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(225,232,255,0.75);
-  opacity: 0; transition: opacity 0.6s ease 1.2s;
-}
-.scroll-cue svg { width: 14px; height: 14px; animation: cueBob 2.2s ease-in-out infinite; }
-@keyframes cueBob { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(3px); } }
-.page.loaded .scroll-cue { opacity: 1; }
 
-/* ═══ LE DÉCOR — quatre plans, faits pour défiler ═══
-   Les visuels sont en 16:9 : en portrait, ils ne tiennent pas dans
-   l'écran. Plutôt que de couper le fauteuil OU le billard, le plan
-   glisse de l'un à l'autre au rythme du doigt, comme une caméra.
-   Sur grand écran, l'image tient en entier : elle se rapproche. */
-.story { position: relative; background: #000; padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
-.ch { position: relative; height: 210vh; height: 210svh; }
-.ch-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
-.ch-media { position: absolute; left: 0; right: 0; top: 0; height: 66%; overflow: hidden; }
-.ch-img {
-  position: absolute; top: 0; left: 0; height: 100%; width: auto; max-width: none;
-  transform-origin: 50% 40%; will-change: transform;
-}
-.ch-media::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 22%, transparent 62%, #000 100%);
-}
-.ch-text {
-  /* à droite, la place du badge APP fixé en bas d'écran */
-  position: absolute; left: 22px; right: 78px; bottom: calc(118px + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; gap: 12px;
-}
-.ch-kicker {
-  display: inline-flex; align-items: center; gap: 10px;
-  font: 700 10px/1 'Orbitron', sans-serif; letter-spacing: 0.28em; text-transform: uppercase; color: var(--vo-text);
-}
-.ch-kicker::before { content: ''; width: 26px; height: 1px; background: var(--vo); box-shadow: 0 0 8px var(--vo); }
-.ch-title {
-  margin: 0; font-family: 'Orbitron', sans-serif; font-weight: 800; text-transform: uppercase;
-  font-size: clamp(28px, 8.4vw, 64px); line-height: 1.02; letter-spacing: 0.01em; color: #fff;
-  text-shadow: 0 0 28px rgba(61,90,254,0.35);
-}
-.ch-sub { margin: 0; max-width: 34ch; font-size: 16px; line-height: 1.55; color: rgba(225,232,255,0.78); }
-.ch-sub b { color: #fff; font-weight: 600; }
-/* l'entrée du texte : il sort du flou, ligne après ligne */
-.ch-text > * { opacity: 0; transform: translateY(18px); filter: blur(8px); transition: opacity 0.8s ease, transform 0.9s cubic-bezier(0.16,1,0.3,1), filter 0.9s ease; }
-.ch.in .ch-text > * { opacity: 1; transform: none; filter: none; }
-.ch.in .ch-text > :nth-child(2) { transition-delay: 0.12s; }
-.ch.in .ch-text > :nth-child(3) { transition-delay: 0.24s; }
-.ch.in .ch-text > :nth-child(4) { transition-delay: 0.36s; }
-/* une barre de progression bleue, le long du plan */
-.ch-progress { position: absolute; left: 22px; right: 78px; bottom: calc(100px + env(safe-area-inset-bottom)); height: 1px; background: rgba(175,192,255,0.12); }
-.ch-progress i { position: absolute; inset: 0; transform-origin: left; transform: scaleX(var(--p, 0)); background: var(--vo); box-shadow: 0 0 10px var(--vo); }
-
-.ch-cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
-.btn-vo {
-  display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 0 22px;
-  border-radius: 999px; text-decoration: none; cursor: pointer;
-  font: 700 11px/1 'Orbitron', sans-serif; letter-spacing: 0.18em; text-transform: uppercase;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
-}
-.btn-vo:active { transform: scale(0.97); }
-.btn-vo:focus-visible { outline: 2px solid var(--vo-text); outline-offset: 3px; }
-.btn-vo--main { background: #fff; color: #000; box-shadow: 0 0 34px rgba(61,90,254,0.45); }
-.btn-vo--main:hover { box-shadow: 0 0 46px rgba(61,90,254,0.7); }
-.btn-vo--ghost { color: #fff; border: 1px solid rgba(175,192,255,0.3); background: rgba(10,14,40,0.5); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
-.btn-vo--ghost:hover { background: rgba(61,90,254,0.22); }
-.btn-vo svg { width: 16px; height: 16px; }
-
-@media (min-width: 768px) {
-  .ch-media { height: 100%; }
-  .ch-img { width: 100%; height: 100%; object-fit: cover; }
-  .ch-media::after { background: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 45%, transparent 70%), linear-gradient(180deg, transparent 60%, #000 100%); }
-  .ch-text { left: 6vw; right: auto; max-width: 560px; bottom: 150px; }
-  .ch-progress { left: 6vw; right: auto; width: 240px; bottom: 128px; }
-}
 .bg-overlay {
   background:
     linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 48%, rgba(0,0,0,0.78) 74%, rgba(0,0,0,0.96) 100%);
@@ -268,12 +194,7 @@
   .cd-num { font-size: 22px; } .cd-cell { padding: 9px 4px 8px; } .open-block { gap: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ch { height: auto; }
-  .ch-stage { position: relative; }
-  .ch-img { width: 100%; object-fit: cover; }
-  .ch-text > * { opacity: 1 !important; transform: none !important; filter: none !important; transition: none !important; }
-  .ch-progress, .intro, .replay { display: none; }
-  .scroll-cue svg { animation: none; }
+  .intro, .replay { display: none; }
   .spot, .fog, .open-dot::after, .open-offer::after, .cd-num.tick { animation: none !important; }
   .spot, .open-chip, .open-offer, .cd-cell { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
@@ -325,9 +246,6 @@
         <span class="open-offer-text"><b>Du 21 au 24 oct.</b><span>sur toutes les prestations</span></span>
       </a>
       <div class="hero-foot">
-        <a href="#story" class="scroll-cue">Le salon
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-        </a>
         <button type="button" class="replay" id="replay" aria-label="Revoir le teaser">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Teaser
         </button>
@@ -363,84 +281,6 @@
       </a>
     </div>
   </nav>
-</div>
-
-<!-- Le décor de Voiron, en quatre plans. data-from / data-to : où le plan
-     commence et finit sur la largeur de l'image (0 = bord gauche, 1 = bord
-     droit), là où l'écran est trop étroit pour la montrer en entier. -->
-<div class="story" id="story">
-  <section class="ch" data-from="0.58" data-to="0.28" aria-labelledby="ch1">
-    <div class="ch-stage">
-      <div class="ch-media">
-        <picture>
-          <source type="image/webp" srcset="../../assets/images/salons/Voiron/voiron-projecteur.webp?v=1">
-          <img class="ch-img" src="../../assets/images/salons/Voiron/voiron-projecteur.jpg?v=1" alt="Un projecteur s'allume dans la brume au-dessus du nom VOIRON" loading="lazy" decoding="async">
-        </picture>
-      </div>
-      <div class="ch-text">
-        <span class="ch-kicker">01 · La lumière</span>
-        <h2 class="ch-title" id="ch1">On allume<br>le 21 octobre.</h2>
-        <p class="ch-sub">Le troisième BarberClub ouvre au <b>5 av. Léon et Joanny Tardy</b>, à Voiron.</p>
-      </div>
-      <div class="ch-progress" aria-hidden="true"><i></i></div>
-    </div>
-  </section>
-
-  <section class="ch" data-from="0.08" data-to="0.96" aria-labelledby="ch2">
-    <div class="ch-stage">
-      <div class="ch-media">
-        <picture>
-          <source type="image/webp" srcset="../../assets/images/salons/Voiron/voiron-fauteuil-billard.webp?v=1">
-          <img class="ch-img" src="../../assets/images/salons/Voiron/voiron-fauteuil-billard.jpg?v=1" alt="Un fauteuil de barbier capitonné face à une table de billard bleue" loading="lazy" decoding="async">
-        </picture>
-      </div>
-      <div class="ch-text">
-        <span class="ch-kicker">02 · Le décor</span>
-        <h2 class="ch-title" id="ch2">Un fauteuil.<br>Un billard.</h2>
-        <p class="ch-sub">La coupe d'un côté, la partie de l'autre.</p>
-      </div>
-      <div class="ch-progress" aria-hidden="true"><i></i></div>
-    </div>
-  </section>
-
-  <section class="ch" data-from="0.22" data-to="0.9" aria-labelledby="ch3">
-    <div class="ch-stage">
-      <div class="ch-media">
-        <picture>
-          <source type="image/webp" srcset="../../assets/images/salons/Voiron/voiron-vue-fauteuil.webp?v=1">
-          <img class="ch-img" src="../../assets/images/salons/Voiron/voiron-vue-fauteuil.jpg?v=1" alt="Vue depuis le fauteuil : le nom VOIRON sous le projecteur, le billard à droite" loading="lazy" decoding="async">
-        </picture>
-      </div>
-      <div class="ch-text">
-        <span class="ch-kicker">03 · L'attente</span>
-        <h2 class="ch-title" id="ch3">Ici, on fait<br>la queue.</h2>
-        <p class="ch-sub">Celle de billard.</p>
-      </div>
-      <div class="ch-progress" aria-hidden="true"><i></i></div>
-    </div>
-  </section>
-
-  <section class="ch" data-from="0.15" data-to="0.62" aria-labelledby="ch4">
-    <div class="ch-stage">
-      <div class="ch-media">
-        <picture>
-          <source type="image/webp" srcset="../../assets/images/salons/Voiron/voiron-billard-gros-plan.webp?v=1">
-          <img class="ch-img" src="../../assets/images/salons/Voiron/voiron-billard-gros-plan.jpg?v=1" alt="Gros plan sur la bille blanche et les queues de billard, VOIRON en fond" loading="lazy" decoding="async">
-        </picture>
-      </div>
-      <div class="ch-text">
-        <span class="ch-kicker">04 · Ton tour</span>
-        <h2 class="ch-title" id="ch4">À toi<br>de jouer.</h2>
-        <div class="ch-cta">
-          <a href="reserver.html" class="btn-vo btn-vo--main">Réserver
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-          <a href="offres.html" class="btn-vo btn-vo--ghost" data-offre>-50&#8239;% · 21-24 oct.</a>
-        </div>
-      </div>
-      <div class="ch-progress" aria-hidden="true"><i></i></div>
-    </div>
-  </section>
 </div>
 
 <script>
@@ -501,42 +341,6 @@
   intro.addEventListener('error', fin, true);
   replay.addEventListener('click', jouer);
   jouer();
-})();
-
-/* Le décor : chaque plan glisse sur la largeur de son image et se
-   rapproche à mesure qu'on descend. Une seule boucle rAF, et seulement
-   quand un plan est à l'écran. */
-(() => {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const chs = [...document.querySelectorAll('.ch')].map(el => ({
-    el, img: el.querySelector('.ch-img'), bar: el.querySelector('.ch-progress'),
-    from: parseFloat(el.dataset.from), to: parseFloat(el.dataset.to), on: false,
-  }));
-  let raf = 0;
-  const clamp = v => Math.max(0, Math.min(1, v));
-  const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-  function frame() {
-    raf = 0;
-    const vh = innerHeight, vw = document.documentElement.clientWidth;
-    for (const c of chs) {
-      if (!c.on) continue;
-      const r = c.el.getBoundingClientRect();
-      const p = clamp(-r.top / (r.height - vh));
-      const e = ease(p);
-      const over = Math.max(0, c.img.offsetWidth - vw);
-      const x = -over * (c.from + (c.to - c.from) * e);
-      const s = 1.12 - 0.12 * e;
-      c.img.style.transform = `translate3d(${x.toFixed(1)}px,0,0) scale(${s.toFixed(4)})`;
-      c.bar.style.setProperty('--p', p.toFixed(3));
-      if (r.top < vh * 0.35) c.el.classList.add('in');
-    }
-  }
-  const tick = () => { if (!raf) raf = requestAnimationFrame(frame); };
-  const io = new IntersectionObserver(es => { es.forEach(e => { chs.find(c => c.el === e.target).on = e.isIntersecting; }); tick(); });
-  chs.forEach(c => { io.observe(c.el); c.img.addEventListener('load', tick); });
-  addEventListener('scroll', tick, { passive: true });
-  addEventListener('resize', tick);
-  tick();
 })();
 
 </script>
