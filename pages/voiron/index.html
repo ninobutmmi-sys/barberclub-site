@@ -15,7 +15,7 @@
 <meta property="og:site_name" content="BarberClub">
 <meta property="og:title" content="BarberClub Voiron - Ouverture le 21 octobre">
 <meta property="og:description" content="Le troisième salon BarberClub ouvre à Voiron. -50 % sur toutes les prestations du 21 au 24 octobre.">
-<meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-scene.jpg?v=1">
+<meta property="og:image" content="https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-fauteuil-billard.jpg?v=1">
 <meta property="og:url" content="https://barberclub-grenoble.fr/pages/voiron/">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BarberShop","name":"BarberClub Voiron","url":"https://barberclub-grenoble.fr/pages/voiron/","telephone":"+33955208620","image":"https://barberclub-grenoble.fr/assets/images/salons/Voiron/voiron-facade-nuit.jpg?v=1","address":{"@type":"PostalAddress","streetAddress":"5 Avenue Léon et Joanny Tardy","addressLocality":"Voiron","postalCode":"38500","addressCountry":"FR"},"priceRange":"€€"}
@@ -42,28 +42,26 @@
 /* Les visuels de Voiron sont déjà sombres : l'assombrissement des autres hubs
    (0.28) les éteignait. On garde de la profondeur sans tuer le bleu. */
 .bg {
-  background-image: url('../../assets/images/salons/Voiron/voiron-scene.jpg?v=1');
-  background-image: image-set(url('../../assets/images/salons/Voiron/voiron-scene.webp?v=1') type('image/webp'), url('../../assets/images/salons/Voiron/voiron-scene.jpg?v=1') type('image/jpeg'));
-  background-position: 50% 30%;
+  background-image: url('../../assets/images/salons/Voiron/voiron-fauteuil-billard.jpg?v=1');
+  background-image: image-set(url('../../assets/images/salons/Voiron/voiron-fauteuil-billard.webp?v=1') type('image/webp'), url('../../assets/images/salons/Voiron/voiron-fauteuil-billard.jpg?v=1') type('image/jpeg'));
+  /* en portrait on ne voit qu'un quart de la largeur : on cadre le fauteuil */
+  background-position: 26% 50%;
   filter: brightness(0.82) saturate(1.05);
   transition: opacity 1.4s ease;
 }
+@media (min-width: 768px) { .bg { background-position: 50% 50%; } }
 
-/* ── le teaser : il ouvre la page, puis s'efface sur la scène fixe ──
-   Il s'allume comme le projecteur qu'il montre : deux ratés, puis la
-   lumière. Pas de teaser si l'on a demandé moins d'animations ou
-   économise ses données : la scène fixe suffit. */
+/* ── le teaser : il ouvre la page, puis s'efface sur la photo ──
+   La page démarre déjà en mode teaser (classe dans le HTML) : sinon la
+   photo s'affichait un instant avant la vidéo. Pas de teaser si l'on a
+   demandé moins d'animations ou économise ses données : la photo suffit. */
 .intro {
   position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
   object-fit: cover; object-position: 46% 50%;
   opacity: 0; pointer-events: none; transition: opacity 1.4s ease;
 }
-.page.is-teaser .intro { opacity: 1; animation: ledOn 1.1s linear; }
+.page.is-teaser .intro { opacity: 1; }
 .page.is-teaser .bg, .page.is-teaser .spot { opacity: 0; }
-@keyframes ledOn {
-  0% { opacity: 0; } 7% { opacity: 0.9; } 11% { opacity: 0.05; }
-  19% { opacity: 1; } 24% { opacity: 0.3; } 32%, 100% { opacity: 1; }
-}
 .replay {
   display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: none; cursor: pointer;
   font: 600 10px/1 'Inter', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: var(--vo-text);
@@ -206,7 +204,7 @@
 <div class="cursor-dot" aria-hidden="true"></div>
 <div class="cursor-ring" aria-hidden="true"></div>
 
-<div class="page" id="page">
+<div class="page is-teaser" id="page">
   <div class="bg" role="img" aria-label="Un fauteuil de barbier et une table de billard sous un projecteur, le nom VOIRON en lettres bleues"></div>
   <video class="intro" id="intro" muted playsinline preload="auto" aria-hidden="true" tabindex="-1"
          poster="../../assets/videos/voiron/voiron-teaser-poster.webp?v=1">
@@ -328,15 +326,15 @@
   const replay = document.getElementById('replay');
   const saveData = navigator.connection && navigator.connection.saveData;
   if (!intro) return;
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches || saveData) { intro.remove(); replay.remove(); return; }
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || saveData) { page.classList.remove('is-teaser'); intro.remove(); replay.remove(); return; }
   const fin = () => { page.classList.remove('is-teaser'); page.classList.add('teaser-done'); };
   const jouer = () => {
     page.classList.remove('teaser-done');
+    page.classList.add('is-teaser');
     intro.currentTime = 0;
     const p = intro.play();
     if (p && p.catch) p.catch(fin);
   };
-  intro.addEventListener('playing', () => page.classList.add('is-teaser'));
   intro.addEventListener('ended', fin);
   intro.addEventListener('error', fin, true);
   replay.addEventListener('click', jouer);
